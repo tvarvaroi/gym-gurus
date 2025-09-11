@@ -373,12 +373,12 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   // Show login screen if not authenticated
   if (error || !user) {
 
-    // Video sources for each category - replace with your actual 4K videos
+    // Video sources for each category - converted to H.264 format for browser compatibility
     const videoSources = {
-      trainers: "/videos/trainers-4k.mp4",
-      athletes: "/videos/athletes-4k.mp4", 
-      programs: "/videos/training-programs-4k.mp4",
-      success: "/videos/client-success-4k.mp4"
+      trainers: "/videos/trainers-converted.mp4",
+      athletes: "/videos/athletes-converted.mp4", 
+      programs: "/videos/training-programs-converted.mp4",
+      success: "/videos/client-success-converted.mp4"
     };
 
     const categories = [
@@ -417,14 +417,31 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
             muted 
             loop 
             playsInline
-            preload="none"
+            preload="metadata"
+            crossOrigin="anonymous"
             className="w-full h-full object-cover"
             style={{ filter: 'brightness(0.8) contrast(1.1)' }}
             onError={(e) => {
               console.log(`Video error for ${activeCategory}, using gradient fallback`);
+              console.log(`Video error details:`, e.currentTarget.error);
+              console.log(`Video network state:`, e.currentTarget.networkState);
+              console.log(`Video ready state:`, e.currentTarget.readyState);
+              console.log(`Video src:`, e.currentTarget.currentSrc);
+            }}
+            onLoadStart={() => {
+              console.log(`Video loading started: ${activeCategory}`);
+            }}
+            onLoadedMetadata={() => {
+              console.log(`Video metadata loaded: ${activeCategory}`);
             }}
             onCanPlay={() => {
               console.log(`Video ready: ${activeCategory}`);
+            }}
+            onPlay={() => {
+              console.log(`Video playing: ${activeCategory}`);
+            }}
+            onLoadedData={() => {
+              console.log(`Video data loaded: ${activeCategory}`);
             }}
             ref={setVideoRef}
             key={`video-${activeCategory}`}
