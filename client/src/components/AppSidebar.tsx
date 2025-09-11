@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import logoImage from '@assets/Sophisticated Logo with Japanese Influences (2)_1757605753654.png'
+import logoImage from '@assets/Sophisticated Logo with Japanese Influences (3)_1757605872884.png'
 import { motion } from "framer-motion"
 import { useState } from "react"
 import { useLocation } from "wouter"
