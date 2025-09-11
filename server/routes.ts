@@ -3,9 +3,9 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertUserSchema, insertClientSchema, insertExerciseSchema, insertWorkoutSchema, 
-  insertWorkoutExerciseSchema, insertWorkoutAssignmentSchema,
+  insertWorkoutExerciseSchema, insertWorkoutAssignmentSchema, insertProgressEntrySchema,
   type InsertClient, type InsertExercise, type InsertWorkout, 
-  type InsertWorkoutExercise, type InsertWorkoutAssignment 
+  type InsertWorkoutExercise, type InsertWorkoutAssignment, type InsertProgressEntry
 } from "@shared/schema";
 import { ZodError } from "zod";
 
@@ -294,6 +294,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error completing workout assignment:", error);
       res.status(500).json({ error: "Failed to complete workout assignment" });
+    }
+  });
+
+  // Progress Tracking Routes
+
+  // GET /api/clients/:clientId/progress - Get client progress entries
+  app.get("/api/clients/:clientId/progress", async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const progress = await storage.getClientProgress(clientId);
+      res.json(progress);
+    } catch (error) {
+      console.error("Error fetching client progress:", error);
+      res.status(500).json({ error: "Failed to fetch progress" });
+    }
+  });
+
+  // POST /api/progress-entries - Add progress entry
+  app.post("/api/progress-entries", async (req, res) => {
+    try {
+      const validatedData = insertProgressEntrySchema.parse(req.body);
+      const entry = await storage.addProgressEntry(validatedData);
+      res.status(201).json(entry);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Invalid progress data", details: error.errors });
+      }
+      console.error("Error adding progress entry:", error);
+      res.status(500).json({ error: "Failed to add progress entry" });
     }
   });
 

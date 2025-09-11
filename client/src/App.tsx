@@ -19,6 +19,7 @@ import NotFound from "@/pages/not-found";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useReducedMotion } from "./hooks/use-reduced-motion";
+import { lazy, Suspense } from "react";
 
 // Pages for different sections of the app
 function HomePage() {
@@ -204,63 +205,13 @@ function WorkoutsPage() {
   );
 }
 
+const ProgressPageComponent = lazy(() => import("@/pages/ProgressPage"));
+
 function ProgressPage() {
-  // todo: remove mock functionality
-  const weightData = [
-    { date: 'Jan 1', value: 180 },
-    { date: 'Jan 8', value: 178 },
-    { date: 'Jan 15', value: 176 },
-    { date: 'Jan 22', value: 175 },
-    { date: 'Jan 29', value: 173 },
-    { date: 'Feb 5', value: 171 },
-    { date: 'Feb 12', value: 169 }
-  ];
-
-  const workoutData = [
-    { date: 'Week 1', value: 3 },
-    { date: 'Week 2', value: 4 },
-    { date: 'Week 3', value: 3 },
-    { date: 'Week 4', value: 5 },
-    { date: 'Week 5', value: 4 },
-    { date: 'Week 6', value: 6 }
-  ];
-
   return (
-    <PageTransition>
-      <div className="space-y-8">
-        <StaggerItem>
-          <div>
-            <h1 className="text-4xl font-light tracking-tight">Progress Tracking</h1>
-            <p className="text-lg font-light text-muted-foreground">Monitor client progress and achievements</p>
-          </div>
-        </StaggerItem>
-        
-        <StaggerContainer delay={0.2}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <StaggerItem index={0}>
-              <ProgressChart
-                title="Weight Progress"
-                description="Client weight tracking over time"
-                data={weightData}
-                type="line"
-                metric="Weight (lbs)"
-                trend={{ value: 6.1, direction: "down", period: "vs last month" }}
-              />
-            </StaggerItem>
-            <StaggerItem index={1}>
-              <ProgressChart
-                title="Weekly Workouts"
-                description="Number of completed workouts per week"
-                data={workoutData}
-                type="bar"
-                metric="Workouts completed"
-                trend={{ value: 25, direction: "up", period: "vs last month" }}
-              />
-            </StaggerItem>
-          </div>
-        </StaggerContainer>
-      </div>
-    </PageTransition>
+    <Suspense fallback={<div className="flex items-center justify-center h-64">Loading progress tracking...</div>}>
+      <ProgressPageComponent />
+    </Suspense>
   );
 }
 
