@@ -360,37 +360,98 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   // Show login screen if not authenticated
   if (error || !user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Card className="w-[400px]">
-          <CardHeader className="text-center space-y-2">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <Shield className="h-6 w-6 text-primary" />
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Header with logo */}
+        <header className="relative z-10 flex items-center justify-between p-8">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Shield className="h-5 w-5 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Gym Gurus</CardTitle>
-            <CardDescription>
-              Professional fitness management platform for personal trainers
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2 text-center">
-              <p className="text-sm text-muted-foreground">
-                Please sign in to access your trainer dashboard
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight">Gym Gurus</h1>
+              <p className="text-xs text-muted-foreground tracking-wide">Fitness Services</p>
+            </div>
+          </div>
+          <ThemeToggle />
+        </header>
+
+        {/* Main content */}
+        <main className="flex-1 flex flex-col items-center justify-center px-8 pb-16">
+          <div className="w-full max-w-md space-y-12 text-center">
+            
+            {/* Navigation-style categories */}
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <h2 className="text-4xl font-light tracking-wide text-foreground">
+                  Personal Training
+                </h2>
+                <div className="space-y-2 text-muted-foreground">
+                  <p className="text-sm tracking-wide">Client Management</p>
+                  <p className="text-sm tracking-wide">Workout Planning</p>
+                  <p className="text-sm tracking-wide">Progress Tracking</p>
+                  <p className="text-sm tracking-wide">Communication</p>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="w-24 h-px bg-border mx-auto"></div>
+
+              {/* Services section */}
+              <div className="grid grid-cols-2 gap-8 text-sm">
+                <div className="space-y-2">
+                  <p className="font-medium text-foreground">Trainers</p>
+                  <p className="text-muted-foreground tracking-wide">Professional Management</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="font-medium text-foreground">Athletes</p>
+                  <p className="text-muted-foreground tracking-wide">Performance Tracking</p>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-8 text-sm pt-4">
+                <div className="space-y-1">
+                  <p className="font-medium text-primary">Training Programs</p>
+                  <p className="text-xs text-muted-foreground tracking-wider">Unlimited</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="font-medium text-primary">Client Success</p>
+                  <p className="text-xs text-muted-foreground tracking-wider">Guaranteed</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sign in section */}
+            <div className="space-y-6 pt-8">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground tracking-wide">
+                  Access your trainer dashboard
+                </p>
+              </div>
+              
+              <Button 
+                onClick={() => window.location.href = '/api/login'}
+                variant="outline"
+                size="lg"
+                className="w-full py-3 text-sm tracking-wide hover-elevate"
+                data-testid="button-login"
+              >
+                Sign in with Replit
+              </Button>
+              
+              <p className="text-xs text-muted-foreground tracking-wider">
+                Secure authentication
               </p>
             </div>
-            <Button 
-              onClick={() => window.location.href = '/api/login'}
-              className="w-full"
-              size="lg"
-              data-testid="button-login"
-            >
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign in with Replit
-            </Button>
-            <div className="text-xs text-center text-muted-foreground">
-              Secure authentication powered by Replit Auth
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="p-8 text-center">
+          <p className="text-xs text-muted-foreground tracking-wider">
+            © 2025 Gym Gurus - Professional Fitness Management Platform
+          </p>
+        </footer>
       </div>
     );
   }
