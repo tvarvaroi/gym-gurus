@@ -339,6 +339,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   // Always call hooks at the top level
   const [activeCategory, setActiveCategory] = useState("trainers");
   const [theme, setTheme] = useState("dark");
+  const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null);
   
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['/api/auth/user'],
@@ -350,6 +351,8 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem("theme") || "dark";
     setTheme(savedTheme);
   }, []);
+
+  // No need for complex useEffect, React will handle key change
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -410,19 +413,24 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
         {/* Background Video */}
         <div className="absolute inset-0 z-0">
           <video 
-            key={activeCategory}
             autoPlay 
             muted 
             loop 
             playsInline
+            preload="none"
             className="w-full h-full object-cover"
             style={{ filter: 'brightness(0.8) contrast(1.1)' }}
             onError={(e) => {
-              // Hide video element if source fails to load
-              e.currentTarget.style.display = 'none';
+              console.log(`Video error for ${activeCategory}, using gradient fallback`);
             }}
+            onCanPlay={() => {
+              console.log(`Video ready: ${activeCategory}`);
+            }}
+            ref={setVideoRef}
+            key={`video-${activeCategory}`}
           >
             <source src={videoSources[activeCategory as keyof typeof videoSources]} type="video/mp4" />
+            Your browser does not support the video tag.
           </video>
           
           {/* Fallback gradient backgrounds for each category */}
