@@ -50,20 +50,23 @@ const menuItems = [
 
 export default function AppSidebar() {
   return (
-    <Sidebar>
-      <SidebarContent>
+    <Sidebar className="border-r border-border/50 bg-sidebar/95 backdrop-blur-xl">
+      <SidebarContent className="pt-8">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-bold text-primary">
+          <SidebarGroupLabel className="text-xl font-light text-foreground mb-6 tracking-tight px-4">
             Gym Gurus
           </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
+          <SidebarGroupContent className="px-2">
+            <SidebarMenu className="space-y-1">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton 
+                    asChild
+                    className="h-11 px-4 font-light hover:bg-sidebar-accent/50 rounded-xl transition-all duration-200"
+                  >
                     <a href={item.url} data-testid={`link-${item.title.toLowerCase().replace(' ', '-')}`}>
-                      <item.icon />
-                      <span>{item.title}</span>
+                      <item.icon className="h-5 w-5 opacity-80" />
+                      <span className="text-base">{item.title}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

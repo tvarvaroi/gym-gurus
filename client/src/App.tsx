@@ -61,14 +61,14 @@ function ClientsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">My Clients</h1>
-          <p className="text-muted-foreground">Manage and track your client progress</p>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-light tracking-tight">My Clients</h1>
+          <p className="text-lg font-light text-muted-foreground">Manage and track your client progress</p>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {mockClients.map((client, index) => (
           <ClientCard key={index} {...client} />
         ))}
@@ -305,12 +305,14 @@ export default function App() {
           <div className="flex h-screen w-full">
             <AppSidebar />
             <div className="flex flex-col flex-1">
-              <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
+              <header className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+                <SidebarTrigger data-testid="button-sidebar-toggle" className="hover-elevate" />
                 <ThemeToggle />
               </header>
-              <main className="flex-1 overflow-auto p-6">
-                <Router />
+              <main className="flex-1 overflow-auto p-8 bg-gradient-to-br from-background via-background to-muted/20">
+                <div className="max-w-7xl mx-auto">
+                  <Router />
+                </div>
               </main>
             </div>
           </div>

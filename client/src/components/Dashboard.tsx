@@ -22,46 +22,46 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Section */}
+      {/* Hero Section - Apple-inspired minimalist design */}
       <div 
-        className="relative h-64 rounded-lg bg-cover bg-center overflow-hidden"
+        className="relative h-80 rounded-xl bg-cover bg-center overflow-hidden"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/30" />
-        <div className="relative h-full flex flex-col justify-center px-8 text-white">
-          <h1 className="text-3xl font-bold font-sans mb-2" data-testid="text-dashboard-title">
-            Welcome Back, Trainer!
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
+        <div className="relative h-full flex flex-col justify-center items-center text-center px-8 text-white">
+          <h1 className="text-5xl font-light tracking-tight mb-4" data-testid="text-dashboard-title">
+            Your Fitness Studio
           </h1>
-          <p className="text-lg mb-4 text-white/90">
-            Ready to help your clients achieve their fitness goals today?
+          <p className="text-xl font-light mb-8 text-white/80 max-w-2xl">
+            Elevate your training practice with intelligent client management and progress tracking.
           </p>
           <div className="flex gap-4">
-            <Button variant="outline" className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20" data-testid="button-add-client">
+            <Button size="lg" className="bg-white text-black hover:bg-white/90 font-medium px-8" data-testid="button-add-client">
               <Plus className="w-4 h-4 mr-2" />
-              Add Client
+              New Client
             </Button>
-            <Button variant="outline" className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20" data-testid="button-create-workout">
+            <Button variant="outline" size="lg" className="bg-white/5 backdrop-blur-md border-white/20 text-white hover:bg-white/10 font-medium px-8" data-testid="button-create-workout">
               Create Workout
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats Grid - Apple-inspired clean cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {stats.map((stat, index) => (
-          <Card key={index} className="hover-elevate" data-testid={`card-stat-${index}`}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.label}
+          <Card key={index} className="hover-elevate bg-card/50 backdrop-blur-sm border-border/50" data-testid={`card-stat-${index}`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-sm font-light text-muted-foreground tracking-wide">
+                {stat.label.toUpperCase()}
               </CardTitle>
-              <stat.icon className="h-4 w-4 text-primary" />
+              <stat.icon className="h-5 w-5 text-primary opacity-80" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid={`text-stat-value-${index}`}>
+              <div className="text-3xl font-light mb-1" data-testid={`text-stat-value-${index}`}>
                 {stat.value}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground font-light">
                 {stat.trend}
               </p>
             </CardContent>
@@ -69,27 +69,29 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle data-testid="text-recent-activity-title">Recent Activity</CardTitle>
-          <CardDescription>
+      {/* Recent Activity - Apple-inspired clean list */}
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+        <CardHeader className="pb-6">
+          <CardTitle className="text-2xl font-light" data-testid="text-recent-activity-title">
+            Recent Activity
+          </CardTitle>
+          <CardDescription className="text-base font-light">
             Latest updates from your clients
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-1">
             {recentActivities.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover-elevate" data-testid={`activity-${index}`}>
-                <div>
+              <div key={index} className="flex items-center justify-between p-4 rounded-xl hover-elevate transition-all duration-200" data-testid={`activity-${index}`}>
+                <div className="space-y-1">
                   <p className="font-medium" data-testid={`text-client-${index}`}>
                     {activity.client}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground font-light">
                     {activity.action}
                   </p>
                 </div>
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs font-light bg-muted/50">
                   {activity.time}
                 </Badge>
               </div>
