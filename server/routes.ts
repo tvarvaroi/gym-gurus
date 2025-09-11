@@ -55,6 +55,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/clients/:trainerId - Get all clients for specific trainer (for development)
+  app.get("/api/clients/:trainerId", async (req, res) => {
+    try {
+      const { trainerId } = req.params;
+      const clients = await storage.getClientsByTrainer(trainerId);
+      res.json(clients);
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+      res.status(500).json({ error: "Failed to fetch clients" });
+    }
+  });
+
   // GET /api/clients/detail/:clientId - Get specific client details
   app.get("/api/clients/detail/:clientId", secureAuth, requireClientOwnership, async (req, res) => {
     try {
@@ -156,6 +168,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/workouts", secureAuth, async (req, res) => {
     try {
       const trainerId = req.user!.id;
+      const workouts = await storage.getWorkoutsByTrainer(trainerId);
+      res.json(workouts);
+    } catch (error) {
+      console.error("Error fetching workouts:", error);
+      res.status(500).json({ error: "Failed to fetch workouts" });
+    }
+  });
+
+  // GET /api/workouts/:trainerId - Get all workouts for specific trainer (for development)
+  app.get("/api/workouts/:trainerId", async (req, res) => {
+    try {
+      const { trainerId } = req.params;
       const workouts = await storage.getWorkoutsByTrainer(trainerId);
       res.json(workouts);
     } catch (error) {
@@ -372,6 +396,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/progress/:clientId - Get client progress entries (development route)
+  app.get("/api/progress/:clientId", async (req, res) => {
+    try {
+      const { clientId } = req.params;
+      const progress = await storage.getClientProgress(clientId);
+      res.json(progress);
+    } catch (error) {
+      console.error("Error fetching client progress:", error);
+      res.status(500).json({ error: "Failed to fetch progress" });
+    }
+  });
+
   // POST /api/progress-entries - Add progress entry
   app.post("/api/progress-entries", secureAuth, async (req, res) => {
     try {
@@ -395,6 +431,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Multi-Platform Messaging Routes
+  
+  // GET /api/messages - Get all messages for authenticated trainer
+  app.get("/api/messages", secureAuth, async (req, res) => {
+    try {
+      const trainerId = req.user!.id;
+      const { platform } = req.query;
+      const messages = await storage.getAllMessagesForTrainer(trainerId, platform as string);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
   
   // GET /api/clients/:clientId/messages - Get client messages with optional platform filter
   app.get("/api/clients/:clientId/messages", secureAuth, requireClientOwnership, async (req, res) => {

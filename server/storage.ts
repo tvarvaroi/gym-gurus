@@ -55,6 +55,7 @@ export interface IStorage {
   addProgressEntry(entry: InsertProgressEntry): Promise<ProgressEntry>;
 
   // Messages & Multi-Platform Communication
+  getAllMessagesForTrainer(trainerId: string, platform?: string): Promise<Message[]>;
   getClientMessages(clientId: string, platform?: string): Promise<Message[]>;
   sendMessage(message: InsertMessage): Promise<Message>;
   markMessageAsRead(id: string): Promise<Message | undefined>;
@@ -208,12 +209,43 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Messages & Multi-Platform Communication
-  async getClientMessages(clientId: string, platform?: string): Promise<Message[]> {
-    let whereCondition = eq(messages.clientId, clientId);
+  async getAllMessagesForTrainer(trainerId: string, platform?: string): Promise<Message[]> {
+    const baseCondition = eq(clients.trainerId, trainerId);
     
-    if (platform) {
-      whereCondition = and(eq(messages.clientId, clientId), eq(messages.platform, platform));
-    }
+    const whereCondition = platform 
+      ? and(baseCondition, eq(messages.platform, platform))
+      : baseCondition;
+    
+    const result = await db.select({
+      id: messages.id,
+      trainerId: messages.trainerId,
+      clientId: messages.clientId,
+      content: messages.content,
+      isFromTrainer: messages.isFromTrainer,
+      platform: messages.platform,
+      externalMessageId: messages.externalMessageId,
+      messageType: messages.messageType,
+      attachmentUrl: messages.attachmentUrl,
+      sentAt: messages.sentAt,
+      readAt: messages.readAt,
+      deliveredAt: messages.deliveredAt,
+      deliveryStatus: messages.deliveryStatus,
+      errorMessage: messages.errorMessage
+    })
+    .from(messages)
+    .innerJoin(clients, eq(messages.clientId, clients.id))
+    .where(whereCondition)
+    .orderBy(desc(messages.sentAt));
+    
+    return result;
+  }
+
+  async getClientMessages(clientId: string, platform?: string): Promise<Message[]> {
+    const baseCondition = eq(messages.clientId, clientId);
+    
+    const whereCondition = platform 
+      ? and(baseCondition, eq(messages.platform, platform))
+      : baseCondition;
     
     return await db.select().from(messages)
       .where(whereCondition)
@@ -234,11 +266,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMessageTemplates(trainerId: string, category?: string): Promise<MessageTemplate[]> {
-    let whereCondition = eq(messageTemplates.trainerId, trainerId);
+    const baseCondition = eq(messageTemplates.trainerId, trainerId);
     
-    if (category) {
-      whereCondition = and(eq(messageTemplates.trainerId, trainerId), eq(messageTemplates.category, category));
-    }
+    const whereCondition = category 
+      ? and(baseCondition, eq(messageTemplates.category, category))
+      : baseCondition;
     
     return await db.select().from(messageTemplates)
       .where(whereCondition)
@@ -252,7 +284,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMessageTemplate(id: string): Promise<boolean> {
     const result = await db.delete(messageTemplates).where(eq(messageTemplates.id, id));
-    return result.rowCount > 0;
+    return result.rowCount !== null && result.rowCount > 0;
   }
 
   async getClientCommunicationPrefs(clientId: string): Promise<ClientCommunicationPref[]> {

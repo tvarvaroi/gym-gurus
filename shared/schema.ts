@@ -114,6 +114,8 @@ export const messages = pgTable("messages", {
   sentAt: timestamp("sent_at").defaultNow().notNull(),
   readAt: timestamp("read_at"),
   deliveredAt: timestamp("delivered_at"),
+  deliveryStatus: text("delivery_status").default("pending"), // pending, sent, delivered, failed
+  errorMessage: text("error_message"), // Error details if delivery failed
 });
 
 // Client Communication Preferences
