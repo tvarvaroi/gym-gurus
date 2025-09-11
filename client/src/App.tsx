@@ -251,49 +251,14 @@ function ExercisesPage() {
   );
 }
 
+const MessagesPageComponent = lazy(() => import("@/pages/MessagesPage"));
+
 function MessagesPage() {
-  // todo: remove mock functionality
-  const sampleMessages = [
-    {
-      id: "1",
-      senderId: "client1", 
-      senderName: "Sarah Johnson",
-      content: "Hi! I completed yesterday's workout. The squats felt great!",
-      timestamp: "10:30 AM",
-      isTrainer: false
-    },
-    {
-      id: "2",
-      senderId: "trainer1",
-      senderName: "Trainer",
-      content: "That's awesome! How did your knees feel during the movement?",
-      timestamp: "10:35 AM", 
-      isTrainer: true
-    },
-    {
-      id: "3",
-      senderId: "client1",
-      senderName: "Sarah Johnson", 
-      content: "Much better than last week. No pain at all. Should I increase the weight next time?",
-      timestamp: "10:37 AM",
-      isTrainer: false
-    }
-  ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Messages</h1>
-        <p className="text-muted-foreground">Communicate with your clients</p>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MessageThread
-          clientName="Sarah Johnson"
-          messages={sampleMessages}
-          unreadCount={2}
-        />
-      </div>
-    </div>
+    <Suspense fallback={<div className="flex items-center justify-center h-64">Loading messaging system...</div>}>
+      <MessagesPageComponent />
+    </Suspense>
   );
 }
 

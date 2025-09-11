@@ -1,7 +1,7 @@
 import {
   users, clients, exercises, workouts, workoutExercises, workoutAssignments, 
-  progressEntries, messages, sessions,
-  type User, type InsertUser, type SafeUser,
+  progressEntries, messages, trainingSessions, clientCommunicationPrefs, messageTemplates,
+  type User, type InsertUser, type UpsertUser,
   type Client, type InsertClient,
   type Exercise, type InsertExercise,
   type Workout, type InsertWorkout,
@@ -9,17 +9,17 @@ import {
   type WorkoutAssignment, type InsertWorkoutAssignment,
   type ProgressEntry, type InsertProgressEntry,
   type Message, type InsertMessage,
-  type Session, type InsertSession
+  type ClientCommunicationPref, type InsertClientCommunicationPref,
+  type MessageTemplate, type InsertMessageTemplate,
+  type TrainingSession, type InsertTrainingSession
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
-import bcrypt from "bcryptjs";
 
 export interface IStorage {
-  // Users
-  getUser(id: string): Promise<SafeUser | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>; // Keep full User for auth
-  createUser(user: InsertUser): Promise<SafeUser>;
+  // Users - Replit Auth operations (IMPORTANT: mandatory for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
 
   // Clients
   getClient(id: string): Promise<Client | undefined>;
@@ -54,40 +54,44 @@ export interface IStorage {
   getClientProgress(clientId: string): Promise<ProgressEntry[]>;
   addProgressEntry(entry: InsertProgressEntry): Promise<ProgressEntry>;
 
-  // Messages
-  getClientMessages(clientId: string): Promise<Message[]>;
+  // Messages & Multi-Platform Communication
+  getClientMessages(clientId: string, platform?: string): Promise<Message[]>;
   sendMessage(message: InsertMessage): Promise<Message>;
   markMessageAsRead(id: string): Promise<Message | undefined>;
+  getMessageTemplates(trainerId: string, category?: string): Promise<MessageTemplate[]>;
+  createMessageTemplate(template: InsertMessageTemplate): Promise<MessageTemplate>;
+  deleteMessageTemplate(id: string): Promise<boolean>;
+  getClientCommunicationPrefs(clientId: string): Promise<ClientCommunicationPref[]>;
+  updateClientCommunicationPref(clientId: string, pref: InsertClientCommunicationPref): Promise<ClientCommunicationPref>;
+  sendMultiPlatformMessage(clientId: string, content: string, platforms: string[]): Promise<Message[]>;
 
-  // Sessions
-  getTrainerSessions(trainerId: string): Promise<Session[]>;
-  getClientSessions(clientId: string): Promise<Session[]>;
-  createSession(session: InsertSession): Promise<Session>;
-  updateSession(id: string, updates: Partial<InsertSession>): Promise<Session | undefined>;
+  // Training Sessions
+  getTrainerSessions(trainerId: string): Promise<TrainingSession[]>;
+  getClientSessions(clientId: string): Promise<TrainingSession[]>;
+  createTrainingSession(session: InsertTrainingSession): Promise<TrainingSession>;
+  updateTrainingSession(id: string, updates: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // Users
-  async getUser(id: string): Promise<SafeUser | undefined> {
+  // Users - Replit Auth operations (IMPORTANT: mandatory for Replit Auth)
+  async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    if (!user) return undefined;
-    const { password, ...safeUser } = user;
-    return safeUser;
+    return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<SafeUser> {
-    // Hash the password before storing
-    const hashedPassword = await bcrypt.hash(insertUser.password, 12);
-    const userWithHashedPassword = { ...insertUser, password: hashedPassword };
-    
-    const [user] = await db.insert(users).values(userWithHashedPassword).returning();
-    const { password, ...safeUser } = user;
-    return safeUser;
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
   // Clients
@@ -203,10 +207,16 @@ export class DatabaseStorage implements IStorage {
     return entry;
   }
 
-  // Messages
-  async getClientMessages(clientId: string): Promise<Message[]> {
+  // Messages & Multi-Platform Communication
+  async getClientMessages(clientId: string, platform?: string): Promise<Message[]> {
+    let whereCondition = eq(messages.clientId, clientId);
+    
+    if (platform) {
+      whereCondition = and(eq(messages.clientId, clientId), eq(messages.platform, platform));
+    }
+    
     return await db.select().from(messages)
-      .where(eq(messages.clientId, clientId))
+      .where(whereCondition)
       .orderBy(desc(messages.sentAt));
   }
 
@@ -223,26 +233,105 @@ export class DatabaseStorage implements IStorage {
     return message || undefined;
   }
 
-  // Sessions
-  async getTrainerSessions(trainerId: string): Promise<Session[]> {
-    return await db.select().from(sessions)
-      .where(eq(sessions.trainerId, trainerId))
-      .orderBy(desc(sessions.scheduledAt));
+  async getMessageTemplates(trainerId: string, category?: string): Promise<MessageTemplate[]> {
+    let whereCondition = eq(messageTemplates.trainerId, trainerId);
+    
+    if (category) {
+      whereCondition = and(eq(messageTemplates.trainerId, trainerId), eq(messageTemplates.category, category));
+    }
+    
+    return await db.select().from(messageTemplates)
+      .where(whereCondition)
+      .orderBy(messageTemplates.category, messageTemplates.title);
   }
 
-  async getClientSessions(clientId: string): Promise<Session[]> {
-    return await db.select().from(sessions)
-      .where(eq(sessions.clientId, clientId))
-      .orderBy(desc(sessions.scheduledAt));
+  async createMessageTemplate(insertTemplate: InsertMessageTemplate): Promise<MessageTemplate> {
+    const [template] = await db.insert(messageTemplates).values(insertTemplate).returning();
+    return template;
   }
 
-  async createSession(insertSession: InsertSession): Promise<Session> {
-    const [session] = await db.insert(sessions).values(insertSession).returning();
+  async deleteMessageTemplate(id: string): Promise<boolean> {
+    const result = await db.delete(messageTemplates).where(eq(messageTemplates.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getClientCommunicationPrefs(clientId: string): Promise<ClientCommunicationPref[]> {
+    return await db.select().from(clientCommunicationPrefs)
+      .where(eq(clientCommunicationPrefs.clientId, clientId))
+      .orderBy(desc(clientCommunicationPrefs.isPreferred), clientCommunicationPrefs.platform);
+  }
+
+  async updateClientCommunicationPref(clientId: string, insertPref: InsertClientCommunicationPref): Promise<ClientCommunicationPref> {
+    // Check if preference already exists for this client/platform
+    const existing = await db.select().from(clientCommunicationPrefs)
+      .where(
+        and(
+          eq(clientCommunicationPrefs.clientId, clientId),
+          eq(clientCommunicationPrefs.platform, insertPref.platform)
+        )
+      );
+    
+    if (existing.length > 0) {
+      // Update existing preference
+      const [updated] = await db.update(clientCommunicationPrefs)
+        .set(insertPref)
+        .where(eq(clientCommunicationPrefs.id, existing[0].id))
+        .returning();
+      return updated;
+    } else {
+      // Create new preference
+      const [created] = await db.insert(clientCommunicationPrefs)
+        .values({ ...insertPref, clientId })
+        .returning();
+      return created;
+    }
+  }
+
+  async sendMultiPlatformMessage(clientId: string, content: string, platforms: string[]): Promise<Message[]> {
+    // Get trainer ID for this client
+    const client = await this.getClient(clientId);
+    if (!client) throw new Error("Client not found");
+    
+    const messages: Message[] = [];
+    
+    // Send message to each platform
+    for (const platform of platforms) {
+      const messageData: InsertMessage = {
+        trainerId: client.trainerId,
+        clientId,
+        content,
+        isFromTrainer: true,
+        platform,
+        messageType: "text"
+      };
+      
+      const message = await this.sendMessage(messageData);
+      messages.push(message);
+    }
+    
+    return messages;
+  }
+
+  // Training Sessions
+  async getTrainerSessions(trainerId: string): Promise<TrainingSession[]> {
+    return await db.select().from(trainingSessions)
+      .where(eq(trainingSessions.trainerId, trainerId))
+      .orderBy(desc(trainingSessions.scheduledAt));
+  }
+
+  async getClientSessions(clientId: string): Promise<TrainingSession[]> {
+    return await db.select().from(trainingSessions)
+      .where(eq(trainingSessions.clientId, clientId))
+      .orderBy(desc(trainingSessions.scheduledAt));
+  }
+
+  async createTrainingSession(insertSession: InsertTrainingSession): Promise<TrainingSession> {
+    const [session] = await db.insert(trainingSessions).values(insertSession).returning();
     return session;
   }
 
-  async updateSession(id: string, updates: Partial<InsertSession>): Promise<Session | undefined> {
-    const [session] = await db.update(sessions).set(updates).where(eq(sessions.id, id)).returning();
+  async updateTrainingSession(id: string, updates: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined> {
+    const [session] = await db.update(trainingSessions).set(updates).where(eq(trainingSessions.id, id)).returning();
     return session || undefined;
   }
 }

@@ -1,16 +1,30 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, decimal, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, decimal, boolean, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users (Personal Trainers)
+// Session storage table for express-session with PostgreSQL
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// Users (Personal Trainers) - Updated for Replit Auth
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  displayName: text("display_name").notNull(),
-  email: text("email").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Clients
@@ -86,19 +100,46 @@ export const progressEntries = pgTable("progress_entries", {
   recordedAt: timestamp("recorded_at").defaultNow().notNull(),
 });
 
-// Messages (Trainer-Client Communication)
+// Messages (Multi-Platform Trainer-Client Communication)
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   isFromTrainer: boolean("is_from_trainer").notNull(),
+  platform: text("platform").notNull().default("app"), // app, whatsapp, telegram, facebook, instagram, sms
+  externalMessageId: text("external_message_id"), // ID from external platform
+  messageType: text("message_type").notNull().default("text"), // text, image, video, audio, file
+  attachmentUrl: text("attachment_url"), // For media messages
   sentAt: timestamp("sent_at").defaultNow().notNull(),
   readAt: timestamp("read_at"),
+  deliveredAt: timestamp("delivered_at"),
 });
 
-// Training Sessions
-export const sessions = pgTable("sessions", {
+// Client Communication Preferences
+export const clientCommunicationPrefs = pgTable("client_communication_prefs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  platform: text("platform").notNull(), // whatsapp, telegram, facebook, instagram, sms
+  platformUserId: text("platform_user_id").notNull(), // phone number, username, etc.
+  isPreferred: boolean("is_preferred").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Message Templates for Quick Responses
+export const messageTemplates = pgTable("message_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  category: text("category").notNull(), // workout_reminder, motivation, check_in, general
+  platform: text("platform").default("all"), // specific platform or all
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Training Sessions (renamed to avoid conflict with auth sessions)
+export const trainingSessions = pgTable("training_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
@@ -113,8 +154,9 @@ export const sessions = pgTable("sessions", {
 export const usersRelations = relations(users, ({ many }) => ({
   clients: many(clients),
   workouts: many(workouts),
-  sessions: many(sessions),
+  trainingSessions: many(trainingSessions),
   sentMessages: many(messages),
+  messageTemplates: many(messageTemplates),
 }));
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -122,7 +164,8 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
   workoutAssignments: many(workoutAssignments),
   progressEntries: many(progressEntries),
   messages: many(messages),
-  sessions: many(sessions),
+  trainingSessions: many(trainingSessions),
+  communicationPrefs: many(clientCommunicationPrefs),
 }));
 
 export const exercisesRelations = relations(exercises, ({ many }) => ({
@@ -154,15 +197,16 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   client: one(clients, { fields: [messages.clientId], references: [clients.id] }),
 }));
 
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-  trainer: one(users, { fields: [sessions.trainerId], references: [users.id] }),
-  client: one(clients, { fields: [sessions.clientId], references: [clients.id] }),
+export const trainingSessionsRelations = relations(trainingSessions, ({ one }) => ({
+  trainer: one(users, { fields: [trainingSessions.trainerId], references: [users.id] }),
+  client: one(clients, { fields: [trainingSessions.clientId], references: [clients.id] }),
 }));
 
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({
@@ -199,15 +243,23 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   sentAt: true,
 });
 
-export const insertSessionSchema = createInsertSchema(sessions).omit({
+export const insertClientCommunicationPrefSchema = createInsertSchema(clientCommunicationPrefs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMessageTemplateSchema = createInsertSchema(messageTemplates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTrainingSessionSchema = createInsertSchema(trainingSessions).omit({
   id: true,
   createdAt: true,
 });
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type SafeUser = Omit<User, 'password'>;
 
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clients.$inferSelect;
@@ -230,5 +282,15 @@ export type ProgressEntry = typeof progressEntries.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
 
-export type InsertSession = z.infer<typeof insertSessionSchema>;
-export type Session = typeof sessions.$inferSelect;
+export type InsertClientCommunicationPref = z.infer<typeof insertClientCommunicationPrefSchema>;
+export type ClientCommunicationPref = typeof clientCommunicationPrefs.$inferSelect;
+
+export type InsertMessageTemplate = z.infer<typeof insertMessageTemplateSchema>;
+export type MessageTemplate = typeof messageTemplates.$inferSelect;
+
+export type InsertTrainingSession = z.infer<typeof insertTrainingSessionSchema>;
+export type TrainingSession = typeof trainingSessions.$inferSelect;
+
+// Replit Auth required types
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
