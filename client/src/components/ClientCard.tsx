@@ -2,11 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { MessageSquare, Calendar, TrendingUp, MoreHorizontal } from "lucide-react"
+import { MessageSquare, Calendar, TrendingUp, Edit } from "lucide-react"
 import { motion, useSpring, useTransform } from "framer-motion"
 import { useState, useEffect } from "react"
+import { EditClientButton } from "./ClientFormModal"
+import type { Client } from "@shared/schema"
 
 interface ClientCardProps {
+  client: Client
+  trainerId: string
   name: string
   email: string
   avatarUrl?: string
@@ -18,6 +22,8 @@ interface ClientCardProps {
 }
 
 export default function ClientCard({ 
+  client,
+  trainerId,
   name, 
   email, 
   avatarUrl, 
@@ -154,9 +160,10 @@ export default function ClientCard({
           whileHover="hover"
           whileTap="tap"
         >
-          <Button variant="ghost" size="icon" className="opacity-60 hover:opacity-100" data-testid="button-client-menu">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          <EditClientButton 
+            client={client} 
+            trainerId={trainerId}
+          />
         </motion.div>
       </CardHeader>
       <CardContent className="space-y-6">

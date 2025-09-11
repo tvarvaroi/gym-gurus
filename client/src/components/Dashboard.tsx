@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/badge"
 import { Users, Calendar, TrendingUp, MessageSquare, Plus } from "lucide-react"
 import heroImage from '@assets/generated_images/Diverse_fitness_gym_hero_4eec9aff.png'
 import AnimatedButton from "./AnimatedButton"
+import { NewClientButton } from "./ClientFormModal"
 import { motion } from "framer-motion"
 import { useReducedMotion } from "../hooks/use-reduced-motion"
+import { useQuery } from "@tanstack/react-query"
 
 // Import StaggerContainer and StaggerItem components with reduced motion support
 const StaggerContainer = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
@@ -55,12 +57,30 @@ const StaggerItem = ({ children, index = 0 }: { children: React.ReactNode; index
 
 export default function Dashboard() {
   const prefersReducedMotion = useReducedMotion();
-  // todo: remove mock functionality
+  
+  // Temporary trainer ID for development - replace with real auth later
+  const TEMP_TRAINER_ID = "demo-trainer-123";
+  
+  // Fetch real client data for stats
+  const { data: clients, isLoading } = useQuery({
+    queryKey: ['/api/clients', TEMP_TRAINER_ID],
+    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}`).then(res => res.json())
+  });
+  
+  // Calculate real stats from client data
+  const activeClients = (clients || []).filter((c: any) => c.status === 'active').length;
+  const totalClients = (clients || []).length;
+  
   const stats = [
-    { label: "Active Clients", value: "24", icon: Users, trend: "+3 this week" },
-    { label: "Sessions This Week", value: "18", icon: Calendar, trend: "2 today" },
-    { label: "Avg Progress Score", value: "87%", icon: TrendingUp, trend: "+5% vs last month" },
-    { label: "Unread Messages", value: "6", icon: MessageSquare, trend: "3 urgent" },
+    { 
+      label: "Active Clients", 
+      value: isLoading ? "--" : activeClients.toString(), 
+      icon: Users, 
+      trend: `${totalClients} total clients` 
+    },
+    { label: "Sessions This Week", value: "0", icon: Calendar, trend: "Coming soon" },
+    { label: "Progress Tracking", value: "Ready", icon: TrendingUp, trend: "System active" },
+    { label: "Messages", value: "0", icon: MessageSquare, trend: "Coming soon" },
   ]
 
   const recentActivities = [
@@ -87,14 +107,10 @@ export default function Dashboard() {
           </p>
           {prefersReducedMotion ? (
             <div className="flex gap-4">
-              <AnimatedButton 
-                size="lg" 
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8" 
-                data-testid="button-add-client"
-                icon={<Plus className="w-4 h-4" />}
-              >
-                New Client
-              </AnimatedButton>
+              <NewClientButton 
+                trainerId={TEMP_TRAINER_ID}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8 h-11"
+              />
               <AnimatedButton 
                 variant="outline" 
                 size="lg" 
@@ -111,14 +127,10 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.5 }}
             >
-              <AnimatedButton 
-                size="lg" 
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8" 
-                data-testid="button-add-client"
-                icon={<Plus className="w-4 h-4" />}
-              >
-                New Client
-              </AnimatedButton>
+              <NewClientButton 
+                trainerId={TEMP_TRAINER_ID}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8 h-11"
+              />
               <AnimatedButton 
                 variant="outline" 
                 size="lg" 

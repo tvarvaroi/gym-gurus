@@ -1,6 +1,6 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -90,44 +90,77 @@ const StaggerItem = ({ children, index = 0 }: { children: React.ReactNode; index
 };
 
 function ClientsPage() {
-  // todo: remove mock functionality
-  const mockClients = [
-    {
-      name: "Sarah Johnson",
-      email: "sarah.j@email.com", 
-      goal: "Lose 20 lbs and build muscle",
-      progress: 78,
-      lastSession: "2 days ago",
-      status: "active" as const,
-      nextSession: "Tomorrow 3:00 PM"
-    },
-    {
-      name: "Mike Chen",
-      email: "mike.chen@email.com",
-      goal: "Marathon training preparation", 
-      progress: 92,
-      lastSession: "Yesterday",
-      status: "active" as const,
-      nextSession: "Friday 6:00 AM"
-    },
-    {
-      name: "Emma Davis",
-      email: "emma.davis@email.com",
-      goal: "Post-injury rehabilitation",
-      progress: 45,
-      lastSession: "5 days ago", 
-      status: "paused" as const
-    },
-    {
-      name: "Alex Rodriguez",
-      email: "alex.r@email.com",
-      goal: "Strength and conditioning", 
-      progress: 65,
-      lastSession: "3 days ago",
-      status: "active" as const,
-      nextSession: "Monday 4:00 PM"
-    }
-  ];
+  
+  // Temporary trainer ID for development - replace with real auth later
+  const TEMP_TRAINER_ID = "demo-trainer-123";
+  
+  const { data: clients, isLoading, error } = useQuery({
+    queryKey: ['/api/clients', TEMP_TRAINER_ID],
+    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}`).then(res => res.json())
+  });
+  
+  // Show loading state
+  if (isLoading) {
+    return (
+      <PageTransition>
+        <div className="space-y-8">
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-light tracking-tight">My Clients</h1>
+              <p className="text-lg font-light text-muted-foreground">Loading client data...</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-80 bg-card/50 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+  
+  // Show error state
+  if (error) {
+    return (
+      <PageTransition>
+        <div className="space-y-8">
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-light tracking-tight">My Clients</h1>
+              <p className="text-lg font-light text-red-500">Error loading clients. Please try again.</p>
+            </div>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+  
+  // Helper function to format session times
+  const formatSessionTime = (timestamp: string | null) => {
+    if (!timestamp) return "No session yet";
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays === 0) return "Today";
+    return `${diffDays} days ago`;
+  };
+  
+  // Transform database client data to match ClientCard props
+  const transformedClients = (clients || []).map((client: any) => ({
+    client: client, // Pass full client object
+    trainerId: TEMP_TRAINER_ID, // Pass trainerId for edit functionality
+    name: client.name,
+    email: client.email,
+    goal: client.goal,
+    progress: Math.floor(Math.random() * 100), // Temporary - will implement real progress tracking
+    lastSession: formatSessionTime(client.lastSession),
+    status: client.status,
+    nextSession: client.nextSession ? new Date(client.nextSession).toLocaleDateString() : undefined
+  }));
 
   return (
     <PageTransition>
@@ -142,13 +175,19 @@ function ClientsPage() {
         </StaggerItem>
         
         <StaggerContainer delay={0.2}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mockClients.map((client, index) => (
-              <StaggerItem key={index} index={index}>
-                <ClientCard {...client} />
-              </StaggerItem>
-            ))}
-          </div>
+          {transformedClients.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-lg font-light text-muted-foreground">No clients yet. Add your first client to get started!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {transformedClients.map((client: any, index: number) => (
+                <StaggerItem key={client.email} index={index}>
+                  <ClientCard {...client} />
+                </StaggerItem>
+              ))}
+            </div>
+          )}
         </StaggerContainer>
       </div>
     </PageTransition>
