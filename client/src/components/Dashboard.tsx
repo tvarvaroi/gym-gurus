@@ -36,7 +36,7 @@ export default function Dashboard() {
             Elevate your training practice with intelligent client management and progress tracking.
           </p>
           <div className="flex gap-4">
-            <Button size="lg" className="bg-white text-black hover:bg-white/90 font-medium px-8" data-testid="button-add-client">
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8" data-testid="button-add-client">
               <Plus className="w-4 h-4 mr-2" />
               New Client
             </Button>
