@@ -1,0 +1,89 @@
+# Gym Gurus - Fitness Management Platform
+
+## Overview
+
+Gym Gurus is a comprehensive fitness management platform designed specifically for personal trainers to manage their clients, create workout plans, track progress, and grow their business. The application provides an intuitive interface for trainers to streamline their operations, from client onboarding to progress monitoring and communication.
+
+The platform features a modern, responsive design with both light and dark modes, emphasizing accessibility and user experience. It's built as a full-stack application with real-time capabilities for client-trainer interactions.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript for type safety and modern development practices
+- **Build Tool**: Vite for fast development and optimized production builds
+- **Routing**: Wouter for lightweight client-side routing
+- **State Management**: TanStack Query (React Query) for server state management and caching
+- **UI Library**: Radix UI primitives with shadcn/ui component system for consistent, accessible components
+- **Styling**: Tailwind CSS with custom design system including dark/light theme support
+- **Animations**: Framer Motion for smooth, performant animations with reduced motion support
+- **Form Handling**: React Hook Form with Zod validation for type-safe form management
+
+### Backend Architecture
+- **Runtime**: Node.js with TypeScript
+- **Framework**: Express.js for REST API endpoints
+- **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
+- **Session Management**: Express sessions with PostgreSQL storage via connect-pg-simple
+- **API Design**: RESTful architecture with `/api` prefix for all backend routes
+
+### Database Design
+- **ORM**: Drizzle ORM with PostgreSQL adapter
+- **Schema Management**: Centralized schema definitions in `shared/schema.ts`
+- **Migrations**: Drizzle Kit for database migrations and schema synchronization
+- **Connection**: Neon PostgreSQL with connection pooling for scalability
+
+### Design System
+- **Typography**: Inter (primary) and Outfit (display) fonts from Google Fonts
+- **Color Palette**: Fitness-focused design with energetic green primary colors
+- **Component Library**: Custom components built on Radix UI primitives
+- **Responsive Design**: Mobile-first approach with Tailwind breakpoints
+- **Accessibility**: Built-in support for screen readers, keyboard navigation, and reduced motion preferences
+
+### Development Architecture
+- **Monorepo Structure**: Client, server, and shared code in single repository
+- **Path Aliases**: Configured for clean imports (`@/`, `@shared/`, `@assets/`)
+- **Development Server**: Vite dev server with Express API integration
+- **Build Process**: Separate client (Vite) and server (esbuild) build pipelines
+
+### Key Features
+- **Client Management**: Comprehensive client profiles with progress tracking
+- **Workout Planning**: Exercise library with customizable workout creation
+- **Progress Tracking**: Visual charts and metrics for client progress monitoring  
+- **Communication**: Real-time messaging system between trainers and clients
+- **Scheduling**: Calendar integration for session management
+- **Dashboard**: Analytics and overview for trainer business insights
+
+## External Dependencies
+
+### Database Services
+- **Neon PostgreSQL**: Cloud-native PostgreSQL database with serverless architecture
+- **Connection Pooling**: @neondatabase/serverless for optimized database connections
+
+### UI and Component Libraries
+- **Radix UI**: Comprehensive set of accessible, unstyled UI primitives
+- **Recharts**: Composable charting library for progress visualization
+- **Lucide Icons**: Consistent icon set for interface elements
+- **Framer Motion**: Animation library for enhanced user interactions
+
+### Development and Build Tools
+- **Vite**: Next-generation frontend build tool with hot module replacement
+- **TypeScript**: Static type checking for both client and server code
+- **Tailwind CSS**: Utility-first CSS framework with custom design tokens
+- **ESBuild**: Fast JavaScript bundler for server-side code compilation
+
+### Form and Validation
+- **React Hook Form**: Performant form library with minimal re-renders
+- **Zod**: TypeScript-first schema validation for forms and API data
+- **Hookform Resolvers**: Integration between React Hook Form and Zod validation
+
+### Authentication and Session Management
+- **Express Sessions**: Server-side session management
+- **Connect PG Simple**: PostgreSQL session store for Express sessions
+- **Crypto**: Built-in Node.js module for secure ID generation
+
+### Fonts and Assets
+- **Google Fonts**: Inter and Outfit font families for typography
+- **Generated Assets**: Custom fitness-related images and branding assets

@@ -3,8 +3,58 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Users, Calendar, TrendingUp, MessageSquare, Plus } from "lucide-react"
 import heroImage from '@assets/generated_images/Diverse_fitness_gym_hero_4eec9aff.png'
+import AnimatedButton from "./AnimatedButton"
+import { motion } from "framer-motion"
+import { useReducedMotion } from "../hooks/use-reduced-motion"
+
+// Import StaggerContainer and StaggerItem components with reduced motion support
+const StaggerContainer = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
+  const prefersReducedMotion = useReducedMotion();
+  
+  if (prefersReducedMotion) {
+    return <div>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ 
+        delay,
+        staggerChildren: 0.1,
+        delayChildren: 0.2 + delay
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+const StaggerItem = ({ children, index = 0 }: { children: React.ReactNode; index?: number }) => {
+  const prefersReducedMotion = useReducedMotion();
+  
+  if (prefersReducedMotion) {
+    return <div>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        type: "spring",
+        damping: 20,
+        stiffness: 300,
+        delay: index * 0.1
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 export default function Dashboard() {
+  const prefersReducedMotion = useReducedMotion();
   // todo: remove mock functionality
   const stats = [
     { label: "Active Clients", value: "24", icon: Users, trend: "+3 this week" },
@@ -35,39 +85,78 @@ export default function Dashboard() {
           <p className="text-xl font-light mb-8 text-white/80 max-w-2xl">
             Elevate your training practice with intelligent client management and progress tracking.
           </p>
-          <div className="flex gap-4">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8" data-testid="button-add-client">
-              <Plus className="w-4 h-4 mr-2" />
-              New Client
-            </Button>
-            <Button variant="outline" size="lg" className="bg-white/5 backdrop-blur-md border-white/20 text-white hover:bg-white/10 font-medium px-8" data-testid="button-create-workout">
-              Create Workout
-            </Button>
-          </div>
+          {prefersReducedMotion ? (
+            <div className="flex gap-4">
+              <AnimatedButton 
+                size="lg" 
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8" 
+                data-testid="button-add-client"
+                icon={<Plus className="w-4 h-4" />}
+              >
+                New Client
+              </AnimatedButton>
+              <AnimatedButton 
+                variant="outline" 
+                size="lg" 
+                className="bg-white/5 backdrop-blur-md border-white/20 text-white hover:bg-white/10 font-medium px-8" 
+                data-testid="button-create-workout"
+              >
+                Create Workout
+              </AnimatedButton>
+            </div>
+          ) : (
+            <motion.div 
+              className="flex gap-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+            >
+              <AnimatedButton 
+                size="lg" 
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8" 
+                data-testid="button-add-client"
+                icon={<Plus className="w-4 h-4" />}
+              >
+                New Client
+              </AnimatedButton>
+              <AnimatedButton 
+                variant="outline" 
+                size="lg" 
+                className="bg-white/5 backdrop-blur-md border-white/20 text-white hover:bg-white/10 font-medium px-8" 
+                data-testid="button-create-workout"
+              >
+                Create Workout
+              </AnimatedButton>
+            </motion.div>
+          )}
         </div>
       </div>
 
       {/* Stats Grid - Apple-inspired clean cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {stats.map((stat, index) => (
-          <Card key={index} className="hover-elevate bg-card/50 backdrop-blur-sm border-border/50" data-testid={`card-stat-${index}`}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-sm font-light text-muted-foreground tracking-wide">
-                {stat.label.toUpperCase()}
-              </CardTitle>
-              <stat.icon className="h-5 w-5 text-primary opacity-80" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-light mb-1" data-testid={`text-stat-value-${index}`}>
-                {stat.value}
-              </div>
-              <p className="text-sm text-muted-foreground font-light">
-                {stat.trend}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <StaggerContainer delay={0.3}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {stats.map((stat, index) => (
+            <StaggerItem key={index} index={index}>
+              <Card className="hover-elevate bg-card/50 backdrop-blur-sm border-border/50" data-testid={`card-stat-${index}`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                  <CardTitle className="text-sm font-light text-muted-foreground tracking-wide">
+                    {stat.label.toUpperCase()}
+                  </CardTitle>
+                  <stat.icon className="h-5 w-5 text-primary opacity-80" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-light mb-1" data-testid={`text-stat-value-${index}`}>
+                    {stat.value}
+                  </div>
+                  <p className="text-sm text-muted-foreground font-light">
+                    {stat.trend}
+                  </p>
+                </CardContent>
+              </Card>
+            </StaggerItem>
+          ))}
+        </div>
+      </StaggerContainer>
 
       {/* Recent Activity - Apple-inspired clean list */}
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">

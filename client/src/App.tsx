@@ -14,11 +14,80 @@ import ExerciseCard from "@/components/ExerciseCard";
 import MessageThread from "@/components/MessageThread";
 import CalendarView from "@/components/CalendarView";
 import NotFound from "@/pages/not-found";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "wouter";
+import { useReducedMotion } from "./hooks/use-reduced-motion";
 
 // Pages for different sections of the app
 function HomePage() {
-  return <Dashboard />;
+  return (
+    <PageTransition>
+      <Dashboard />
+    </PageTransition>
+  );
 }
+
+// Premium page transition components
+const PageTransition = ({ children }: { children: React.ReactNode }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{
+      type: "spring",
+      damping: 25,
+      stiffness: 200,
+      duration: 0.6
+    }}
+  >
+    {children}
+  </motion.div>
+);
+
+const StaggerContainer = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
+  const prefersReducedMotion = useReducedMotion();
+  
+  if (prefersReducedMotion) {
+    return <div>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ 
+        delay,
+        staggerChildren: 0.1,
+        delayChildren: 0.2 + delay
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+const StaggerItem = ({ children, index = 0 }: { children: React.ReactNode; index?: number }) => {
+  const prefersReducedMotion = useReducedMotion();
+  
+  if (prefersReducedMotion) {
+    return <div>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        type: "spring",
+        damping: 20,
+        stiffness: 300,
+        delay: index * 0.1
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 function ClientsPage() {
   // todo: remove mock functionality
@@ -61,19 +130,28 @@ function ClientsPage() {
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-light tracking-tight">My Clients</h1>
-          <p className="text-lg font-light text-muted-foreground">Manage and track your client progress</p>
-        </div>
+    <PageTransition>
+      <div className="space-y-8">
+        <StaggerItem>
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-light tracking-tight">My Clients</h1>
+              <p className="text-lg font-light text-muted-foreground">Manage and track your client progress</p>
+            </div>
+          </div>
+        </StaggerItem>
+        
+        <StaggerContainer delay={0.2}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {mockClients.map((client, index) => (
+              <StaggerItem key={index} index={index}>
+                <ClientCard {...client} />
+              </StaggerItem>
+            ))}
+          </div>
+        </StaggerContainer>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {mockClients.map((client, index) => (
-          <ClientCard key={index} {...client} />
-        ))}
-      </div>
-    </div>
+    </PageTransition>
   );
 }
 
@@ -126,19 +204,28 @@ function WorkoutsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Workout Plans</h1>
-          <p className="text-muted-foreground">Create and manage personalized workout routines</p>
-        </div>
+    <PageTransition>
+      <div className="space-y-8">
+        <StaggerItem>
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-light tracking-tight">Workout Plans</h1>
+              <p className="text-lg font-light text-muted-foreground">Create and manage personalized workout routines</p>
+            </div>
+          </div>
+        </StaggerItem>
+        
+        <StaggerContainer delay={0.2}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {mockWorkouts.map((workout, index) => (
+              <StaggerItem key={index} index={index}>
+                <WorkoutCard {...workout} />
+              </StaggerItem>
+            ))}
+          </div>
+        </StaggerContainer>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockWorkouts.map((workout, index) => (
-          <WorkoutCard key={index} {...workout} />
-        ))}
-      </div>
-    </div>
+    </PageTransition>
   );
 }
 
@@ -164,57 +251,77 @@ function ProgressPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Progress Tracking</h1>
-        <p className="text-muted-foreground">Monitor client progress and achievements</p>
+    <PageTransition>
+      <div className="space-y-8">
+        <StaggerItem>
+          <div>
+            <h1 className="text-4xl font-light tracking-tight">Progress Tracking</h1>
+            <p className="text-lg font-light text-muted-foreground">Monitor client progress and achievements</p>
+          </div>
+        </StaggerItem>
+        
+        <StaggerContainer delay={0.2}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <StaggerItem index={0}>
+              <ProgressChart
+                title="Weight Progress"
+                description="Client weight tracking over time"
+                data={weightData}
+                type="line"
+                metric="Weight (lbs)"
+                trend={{ value: 6.1, direction: "down", period: "vs last month" }}
+              />
+            </StaggerItem>
+            <StaggerItem index={1}>
+              <ProgressChart
+                title="Weekly Workouts"
+                description="Number of completed workouts per week"
+                data={workoutData}
+                type="bar"
+                metric="Workouts completed"
+                trend={{ value: 25, direction: "up", period: "vs last month" }}
+              />
+            </StaggerItem>
+          </div>
+        </StaggerContainer>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProgressChart
-          title="Weight Progress"
-          description="Client weight tracking over time"
-          data={weightData}
-          type="line"
-          metric="Weight (lbs)"
-          trend={{ value: 6.1, direction: "down", period: "vs last month" }}
-        />
-        <ProgressChart
-          title="Weekly Workouts"
-          description="Number of completed workouts per week"
-          data={workoutData}
-          type="bar"
-          metric="Workouts completed"
-          trend={{ value: 25, direction: "up", period: "vs last month" }}
-        />
-      </div>
-    </div>
+    </PageTransition>
   );
 }
 
 function ExercisesPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Exercise Library</h1>
-        <p className="text-muted-foreground">Browse and add exercises to your workout plans</p>
+    <PageTransition>
+      <div className="space-y-8">
+        <StaggerItem>
+          <div>
+            <h1 className="text-4xl font-light tracking-tight">Exercise Library</h1>
+            <p className="text-lg font-light text-muted-foreground">Browse and add exercises to your workout plans</p>
+          </div>
+        </StaggerItem>
+        
+        <StaggerContainer delay={0.2}>
+          <StaggerItem>
+            <ExerciseCard
+              name="Barbell Squat"
+              description="A compound exercise targeting the lower body and core"
+              category="Strength"
+              difficulty="Intermediate"
+              muscleGroups={["Quadriceps", "Glutes", "Hamstrings", "Core"]}
+              equipment={["Barbell", "Squat Rack"]}
+              instructions={[
+                "Stand with feet shoulder-width apart",
+                "Place barbell on upper back",
+                "Lower body by bending knees and hips",
+                "Keep chest up and back straight",
+                "Lower until thighs are parallel to ground",
+                "Push through heels to return to starting position"
+              ]}
+            />
+          </StaggerItem>
+        </StaggerContainer>
       </div>
-      <ExerciseCard
-        name="Barbell Squat"
-        description="A compound exercise targeting the lower body and core"
-        category="Strength"
-        difficulty="Intermediate"
-        muscleGroups={["Quadriceps", "Glutes", "Hamstrings", "Core"]}
-        equipment={["Barbell", "Squat Rack"]}
-        instructions={[
-          "Stand with feet shoulder-width apart",
-          "Place barbell on upper back",
-          "Lower body by bending knees and hips",
-          "Keep chest up and back straight",
-          "Lower until thighs are parallel to ground",
-          "Push through heels to return to starting position"
-        ]}
-      />
-    </div>
+    </PageTransition>
   );
 }
 
@@ -277,17 +384,23 @@ function SchedulePage() {
 }
 
 function Router() {
+  const [location] = useLocation();
+  
   return (
-    <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/clients" component={ClientsPage} />
-      <Route path="/workouts" component={WorkoutsPage} />
-      <Route path="/progress" component={ProgressPage} />
-      <Route path="/exercises" component={ExercisesPage} />
-      <Route path="/messages" component={MessagesPage} />
-      <Route path="/schedule" component={SchedulePage} />
-      <Route component={NotFound} />
-    </Switch>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div key={location} className="w-full">
+        <Switch>
+          <Route path="/" component={HomePage} />
+          <Route path="/clients" component={ClientsPage} />
+          <Route path="/workouts" component={WorkoutsPage} />
+          <Route path="/progress" component={ProgressPage} />
+          <Route path="/exercises" component={ExercisesPage} />
+          <Route path="/messages" component={MessagesPage} />
+          <Route path="/schedule" component={SchedulePage} />
+          <Route component={NotFound} />
+        </Switch>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
