@@ -124,21 +124,27 @@ export default function AppSidebar() {
               <motion.img 
                 src={logoImage} 
                 alt="Gym Gurus" 
-                className="w-12 h-12 rounded-lg"
+                className="w-16 h-16 rounded-lg"
                 whileHover={{ rotate: 3, scale: 1.05 }}
                 transition={{ type: "spring", damping: 15, stiffness: 300 }}
                 style={{ filter: 'brightness(1.1)' }}
               />
               <div className="flex flex-col">
                 <motion.span 
-                  className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent"
+                  className="text-2xl font-bold tracking-tight text-foreground"
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                  style={{ 
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    letterSpacing: '0.1em',
+                    fontWeight: '800'
+                  }}
                 >
-                  GYM
+                  GYM GURUS
                 </motion.span>
-                <span className="text-lg font-light tracking-wider text-muted-foreground -mt-1">
-                  GURUS
+                <span className="text-sm font-medium tracking-widest text-muted-foreground/80 -mt-1" 
+                      style={{ letterSpacing: '0.15em' }}>
+                  FITNESS STUDIO
                 </span>
               </div>
             </motion.div>
