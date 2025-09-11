@@ -19,7 +19,7 @@ import NotFound from "@/pages/not-found";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useReducedMotion } from "./hooks/use-reduced-motion";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, LogIn, Shield, User, LogOut } from "lucide-react";
@@ -286,6 +286,7 @@ function Router() {
       <motion.div key={location} className="w-full">
         <Switch>
           <Route path="/" component={HomePage} />
+          <Route path="/dashboard" component={HomePage} />
           <Route path="/clients" component={ClientsPage} />
           <Route path="/workouts" component={WorkoutsPage} />
           <Route path="/workout-builder/:id" component={WorkoutBuilder} />
@@ -335,11 +336,20 @@ function UserMenu() {
 
 // Authentication wrapper component
 function AuthWrapper({ children }: { children: React.ReactNode }) {
+  // Always call hooks at the top level
+  const [activeCategory, setActiveCategory] = useState("trainers");
+  const [theme, setTheme] = useState("dark");
+  
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['/api/auth/user'],
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    setTheme(savedTheme);
+  }, []);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -359,99 +369,202 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   // Show login screen if not authenticated
   if (error || !user) {
+
+    // Video sources for each category - replace with your actual 4K videos
+    const videoSources = {
+      trainers: "/videos/trainers-4k.mp4",
+      athletes: "/videos/athletes-4k.mp4", 
+      programs: "/videos/training-programs-4k.mp4",
+      success: "/videos/client-success-4k.mp4"
+    };
+
+    const categories = [
+      { 
+        id: "trainers", 
+        title: "Trainers", 
+        subtitle: "Professional Management",
+        description: "Expert certified trainers providing personalized guidance"
+      },
+      { 
+        id: "athletes", 
+        title: "Athletes", 
+        subtitle: "Performance Tracking",
+        description: "Advanced performance analytics and monitoring"
+      },
+      { 
+        id: "programs", 
+        title: "Training Programs", 
+        subtitle: "Unlimited",
+        description: "Customized workout programs for every fitness level"
+      },
+      { 
+        id: "success", 
+        title: "Client Success", 
+        subtitle: "Guaranteed",
+        description: "Proven results through data-driven methodologies"
+      }
+    ];
+
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        {/* Header with logo */}
-        <header className="relative z-10 flex items-center justify-between p-8">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight">Gym Gurus</h1>
-              <p className="text-xs text-muted-foreground tracking-wide">Fitness Services</p>
-            </div>
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Background Video */}
+        <div className="absolute inset-0 z-0">
+          <video 
+            key={activeCategory}
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            className="w-full h-full object-cover"
+            style={{ filter: 'brightness(0.8) contrast(1.1)' }}
+            onError={(e) => {
+              // Hide video element if source fails to load
+              e.currentTarget.style.display = 'none';
+            }}
+          >
+            <source src={videoSources[activeCategory as keyof typeof videoSources]} type="video/mp4" />
+          </video>
+          
+          {/* Fallback gradient backgrounds for each category */}
+          <div className={`absolute inset-0 transition-opacity duration-1000 ${
+            activeCategory === 'trainers' ? 'opacity-100' : 'opacity-0'
+          }`}>
+            <div className="w-full h-full bg-gradient-to-br from-emerald-600 via-emerald-700 to-gray-900" />
           </div>
-          <ThemeToggle />
-        </header>
+          <div className={`absolute inset-0 transition-opacity duration-1000 ${
+            activeCategory === 'athletes' ? 'opacity-100' : 'opacity-0'
+          }`}>
+            <div className="w-full h-full bg-gradient-to-br from-blue-600 via-emerald-600 to-gray-900" />
+          </div>
+          <div className={`absolute inset-0 transition-opacity duration-1000 ${
+            activeCategory === 'programs' ? 'opacity-100' : 'opacity-0'
+          }`}>
+            <div className="w-full h-full bg-gradient-to-br from-emerald-500 via-green-600 to-gray-800" />
+          </div>
+          <div className={`absolute inset-0 transition-opacity duration-1000 ${
+            activeCategory === 'success' ? 'opacity-100' : 'opacity-0'
+          }`}>
+            <div className="w-full h-full bg-gradient-to-br from-amber-500 via-emerald-600 to-gray-900" />
+          </div>
+          
+          {/* Dark overlay for dark theme */}
+          <div 
+            className={`absolute inset-0 bg-black transition-opacity duration-500 ${
+              theme === 'dark' ? 'opacity-40' : 'opacity-0'
+            }`}
+          />
+        </div>
 
-        {/* Main content */}
-        <main className="flex-1 flex flex-col items-center justify-center px-8 pb-16">
-          <div className="w-full max-w-md space-y-12 text-center">
-            
-            {/* Navigation-style categories */}
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h2 className="text-4xl font-light tracking-wide text-foreground">
-                  Personal Training
-                </h2>
-                <div className="space-y-2 text-muted-foreground">
-                  <p className="text-sm tracking-wide">Client Management</p>
-                  <p className="text-sm tracking-wide">Workout Planning</p>
-                  <p className="text-sm tracking-wide">Progress Tracking</p>
-                  <p className="text-sm tracking-wide">Communication</p>
-                </div>
+        {/* Content Overlay */}
+        <div className="relative z-10 min-h-screen flex flex-col text-white">
+          {/* Header with logo */}
+          <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-8">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-full bg-primary/20 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                <Shield className="h-6 w-6 text-primary" />
               </div>
-
-              {/* Divider */}
-              <div className="w-24 h-px bg-border mx-auto"></div>
-
-              {/* Services section */}
-              <div className="grid grid-cols-2 gap-8 text-sm">
-                <div className="space-y-2">
-                  <p className="font-medium text-foreground">Trainers</p>
-                  <p className="text-muted-foreground tracking-wide">Professional Management</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-medium text-foreground">Athletes</p>
-                  <p className="text-muted-foreground tracking-wide">Performance Tracking</p>
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-8 text-sm pt-4">
-                <div className="space-y-1">
-                  <p className="font-medium text-primary">Training Programs</p>
-                  <p className="text-xs text-muted-foreground tracking-wider">Unlimited</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="font-medium text-primary">Client Success</p>
-                  <p className="text-xs text-muted-foreground tracking-wider">Guaranteed</p>
-                </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-white">Gym Gurus</h1>
+                <p className="text-sm text-white/80 tracking-wide font-light">Fitness Services</p>
               </div>
             </div>
+            <div className="backdrop-blur-sm bg-white/10 rounded-full p-1">
+              <ThemeToggle />
+            </div>
+          </header>
 
-            {/* Sign in section */}
-            <div className="space-y-6 pt-8">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground tracking-wide">
-                  Access your trainer dashboard
+          {/* Main content */}
+          <main className="flex-1 flex flex-col items-center justify-center px-8 pt-32 pb-16">
+            <div className="w-full max-w-4xl space-y-16 text-center">
+              
+              {/* Professional Title */}
+              <div className="space-y-6">
+                <h2 className="text-6xl md:text-7xl font-extralight tracking-wider text-white leading-none">
+                  Personal
+                  <br />
+                  <span className="font-light text-primary">Trainers</span>
+                </h2>
+                <p className="text-xl text-white/90 font-light tracking-wide max-w-2xl mx-auto">
+                  Elite fitness management platform for professional trainers
                 </p>
               </div>
-              
-              <Button 
-                onClick={() => window.location.href = '/api/login'}
-                variant="outline"
-                size="lg"
-                className="w-full py-3 text-sm tracking-wide hover-elevate"
-                data-testid="button-login"
-              >
-                Sign in with Replit
-              </Button>
-              
-              <p className="text-xs text-muted-foreground tracking-wider">
-                Secure authentication
-              </p>
-            </div>
-          </div>
-        </main>
 
-        {/* Footer */}
-        <footer className="p-8 text-center">
-          <p className="text-xs text-muted-foreground tracking-wider">
-            © 2025 Gym Gurus - Professional Fitness Management Platform
-          </p>
-        </footer>
+              {/* Interactive Categories Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setActiveCategory(category.id)}
+                    className={`group relative p-6 rounded-lg backdrop-blur-md border transition-all duration-500 hover:scale-105 hover-elevate ${
+                      activeCategory === category.id 
+                        ? 'bg-primary/30 border-primary/50 shadow-lg shadow-primary/20' 
+                        : 'bg-white/10 border-white/20 hover:bg-white/20'
+                    }`}
+                    data-testid={`category-${category.id}`}
+                  >
+                    <div className="space-y-3">
+                      <h3 className={`text-lg font-semibold tracking-wide transition-colors ${
+                        activeCategory === category.id ? 'text-primary' : 'text-white'
+                      }`}>
+                        {category.title}
+                      </h3>
+                      <p className="text-sm text-white/80 font-light tracking-wider">
+                        {category.subtitle}
+                      </p>
+                      <p className="text-xs text-white/70 leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity">
+                        {category.description}
+                      </p>
+                    </div>
+                    
+                    {/* Active indicator */}
+                    {activeCategory === category.id && (
+                      <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50 rounded-b-lg" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Active Category Info */}
+              <div className="space-y-4 backdrop-blur-md bg-white/10 rounded-xl p-8 border border-white/20">
+                <h3 className="text-2xl font-light text-white tracking-wide">
+                  {categories.find(cat => cat.id === activeCategory)?.title}
+                </h3>
+                <p className="text-white/90 text-lg font-light max-w-2xl mx-auto leading-relaxed">
+                  {categories.find(cat => cat.id === activeCategory)?.description}
+                </p>
+              </div>
+
+              {/* Sign in section */}
+              <div className="space-y-8 pt-8">
+                <div className="space-y-3">
+                  <p className="text-lg text-white/90 tracking-wide font-light">
+                    Access your professional trainer dashboard
+                  </p>
+                </div>
+                
+                <Button 
+                  onClick={() => window.location.href = '/api/login'}
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-white border-0 px-12 py-4 text-lg tracking-wide font-medium backdrop-blur-sm shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300"
+                  data-testid="button-login"
+                >
+                  Sign in with Replit
+                </Button>
+                
+                <p className="text-sm text-white/70 tracking-wider font-light">
+                  Secure authentication & data protection
+                </p>
+              </div>
+            </div>
+          </main>
+
+          {/* Footer */}
+          <footer className="relative z-20 p-8 text-center backdrop-blur-sm">
+            <p className="text-sm text-white/60 tracking-wider font-light">
+              © 2025 Gym Gurus - Professional Fitness Management Platform
+            </p>
+          </footer>
+        </div>
       </div>
     );
   }
