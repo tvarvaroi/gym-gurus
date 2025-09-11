@@ -62,7 +62,7 @@ export default function AppSidebar() {
                 className="w-10 h-10 rounded-lg bg-primary/10 p-2"
               />
               <div className="flex flex-col">
-                <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary via-primary to-orange-400 bg-clip-text text-transparent">
+                <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
                   GYM
                 </span>
                 <span className="text-lg font-light tracking-wider text-muted-foreground -mt-1">
