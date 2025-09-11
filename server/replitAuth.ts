@@ -231,6 +231,10 @@ function setupDevAuth(app: Express) {
     expires_at: Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
   };
 
+  // Set up passport serialization for development
+  passport.serializeUser((user: Express.User, cb) => cb(null, user));
+  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+
   // Development login route
   app.get("/api/login", async (req: any, res) => {
     console.log("🔧 Development login - creating mock session");
