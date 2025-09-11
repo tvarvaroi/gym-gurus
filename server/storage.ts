@@ -37,6 +37,7 @@ export interface IStorage {
   getWorkout(id: string): Promise<Workout | undefined>;
   getWorkoutsByTrainer(trainerId: string): Promise<Workout[]>;
   createWorkout(workout: InsertWorkout): Promise<Workout>;
+  updateWorkout(id: string, updates: Partial<InsertWorkout>): Promise<Workout | undefined>;
   deleteWorkout(id: string): Promise<boolean>;
 
   // Workout Exercises
@@ -142,6 +143,11 @@ export class DatabaseStorage implements IStorage {
   async createWorkout(insertWorkout: InsertWorkout): Promise<Workout> {
     const [workout] = await db.insert(workouts).values(insertWorkout).returning();
     return workout;
+  }
+
+  async updateWorkout(id: string, updates: Partial<InsertWorkout>): Promise<Workout | undefined> {
+    const [workout] = await db.update(workouts).set(updates).where(eq(workouts.id, id)).returning();
+    return workout || undefined;
   }
 
   async deleteWorkout(id: string): Promise<boolean> {

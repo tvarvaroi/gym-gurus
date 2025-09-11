@@ -13,6 +13,8 @@ import ProgressChart from "@/components/ProgressChart";
 import ExerciseCard from "@/components/ExerciseCard";
 import MessageThread from "@/components/MessageThread";
 import CalendarView from "@/components/CalendarView";
+import WorkoutPlans from "@/pages/WorkoutPlans";
+import WorkoutBuilder from "@/pages/WorkoutBuilder";
 import NotFound from "@/pages/not-found";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
@@ -195,75 +197,9 @@ function ClientsPage() {
 }
 
 function WorkoutsPage() {
-  // todo: remove mock functionality
-  const mockWorkouts = [
-    {
-      title: "Upper Body Strength",
-      description: "Focus on building upper body muscle and strength",
-      duration: 45,
-      difficulty: "Intermediate" as const,
-      exercises: [
-        { name: "Bench Press", sets: 4, reps: "8-10", weight: "135 lbs" },
-        { name: "Pull-ups", sets: 3, reps: "6-8" },
-        { name: "Overhead Press", sets: 3, reps: "10-12", weight: "95 lbs" },
-        { name: "Barbell Rows", sets: 3, reps: "8-10", weight: "115 lbs" }
-      ],
-      assignedTo: 8,
-      createdDate: "3 days ago",
-      category: "Strength"
-    },
-    {
-      title: "Cardio Blast",
-      description: "High-intensity interval training for fat burning",
-      duration: 30,
-      difficulty: "Advanced" as const,
-      exercises: [
-        { name: "Burpees", sets: 4, reps: "45 sec" },
-        { name: "Mountain Climbers", sets: 4, reps: "30 sec" },
-        { name: "Jump Squats", sets: 4, reps: "20 reps" }
-      ],
-      assignedTo: 12,
-      createdDate: "1 week ago", 
-      category: "Cardio"
-    },
-    {
-      title: "Lower Body Power",
-      description: "Build leg strength and explosive power",
-      duration: 50,
-      difficulty: "Intermediate" as const,
-      exercises: [
-        { name: "Squats", sets: 4, reps: "10-12", weight: "185 lbs" },
-        { name: "Deadlifts", sets: 3, reps: "8-10", weight: "225 lbs" },
-        { name: "Lunges", sets: 3, reps: "12 each leg" }
-      ],
-      assignedTo: 6,
-      createdDate: "5 days ago",
-      category: "Strength"
-    }
-  ];
-
   return (
     <PageTransition>
-      <div className="space-y-8">
-        <StaggerItem>
-          <div className="flex justify-between items-center">
-            <div className="space-y-2">
-              <h1 className="text-4xl font-light tracking-tight">Workout Plans</h1>
-              <p className="text-lg font-light text-muted-foreground">Create and manage personalized workout routines</p>
-            </div>
-          </div>
-        </StaggerItem>
-        
-        <StaggerContainer delay={0.2}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mockWorkouts.map((workout, index) => (
-              <StaggerItem key={index} index={index}>
-                <WorkoutCard {...workout} />
-              </StaggerItem>
-            ))}
-          </div>
-        </StaggerContainer>
-      </div>
+      <WorkoutPlans />
     </PageTransition>
   );
 }
@@ -432,6 +368,7 @@ function Router() {
           <Route path="/" component={HomePage} />
           <Route path="/clients" component={ClientsPage} />
           <Route path="/workouts" component={WorkoutsPage} />
+          <Route path="/workout-builder/:id" component={WorkoutBuilder} />
           <Route path="/progress" component={ProgressPage} />
           <Route path="/exercises" component={ExercisesPage} />
           <Route path="/messages" component={MessagesPage} />

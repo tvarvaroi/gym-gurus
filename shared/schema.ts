@@ -37,6 +37,7 @@ export const exercises = pgTable("exercises", {
   muscleGroups: text("muscle_groups").array().notNull(),
   equipment: text("equipment").array().notNull(),
   instructions: text("instructions").array().notNull(),
+  youtubeUrl: text("youtube_url"), // YouTube video URL for demonstrations
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
