@@ -309,6 +309,8 @@ function UserMenu() {
 
   if (!user) return null;
 
+  const userData = user as any; // Type assertion for user data from API
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -318,8 +320,8 @@ function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-2 py-1.5">
-          <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
-          <p className="text-xs text-muted-foreground">{user.email}</p>
+          <p className="text-sm font-medium">{userData.firstName} {userData.lastName}</p>
+          <p className="text-xs text-muted-foreground">{userData.email}</p>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => window.location.href = '/api/logout'} data-testid="button-logout">

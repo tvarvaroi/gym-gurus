@@ -12,10 +12,17 @@ if (!process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
 }
 
+// Check if we have proper Replit Auth configuration
+const hasReplitAuth = !!(process.env.ISSUER_URL && process.env.REPL_ID);
+
 const getOidcConfig = memoize(
   async () => {
+    if (!hasReplitAuth) {
+      console.warn("Missing ISSUER_URL or REPL_ID - Replit Auth disabled for development");
+      return null;
+    }
     return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+      new URL(process.env.ISSUER_URL!),
       process.env.REPL_ID!
     );
   },
@@ -73,7 +80,17 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // If Replit Auth is not available, set up development auth
+  if (!hasReplitAuth) {
+    console.log("🔧 Development Mode: Setting up mock authentication");
+    setupDevAuth(app);
+    return;
+  }
+
   const config = await getOidcConfig();
+  if (!config) {
+    throw new Error("Failed to get OIDC configuration");
+  }
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
@@ -148,6 +165,10 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   try {
     const config = await getOidcConfig();
+    if (!config) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
     return next();
@@ -190,4 +211,59 @@ export async function authenticateWebSocketSession(sessionId: string, sessionSto
       resolve(session.passport.user.claims.sub);
     });
   });
+}
+
+// Development authentication setup when Replit Auth is not available
+function setupDevAuth(app: Express) {
+  // Create a mock user for development
+  const devUser = {
+    id: "dev-trainer-123",
+    email: "trainer@example.com",
+    firstName: "Demo",
+    lastName: "Trainer",
+    profileImageUrl: null,
+    claims: {
+      sub: "dev-trainer-123",
+      email: "trainer@example.com",
+      first_name: "Demo",
+      last_name: "Trainer"
+    },
+    expires_at: Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
+  };
+
+  // Development login route
+  app.get("/api/login", async (req: any, res) => {
+    console.log("🔧 Development login - creating mock session");
+    
+    // Ensure user exists in database
+    await storage.upsertUser({
+      id: devUser.id,
+      email: devUser.email,
+      firstName: devUser.firstName,
+      lastName: devUser.lastName,
+      profileImageUrl: devUser.profileImageUrl,
+    });
+
+    // Set up session
+    req.session.passport = { user: devUser };
+    req.session.save((err: any) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.status(500).json({ error: "Failed to create session" });
+      }
+      res.redirect("/");
+    });
+  });
+
+  // Development logout route
+  app.get("/api/logout", (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error("Session destroy error:", err);
+      }
+      res.redirect("/");
+    });
+  });
+
+  console.log("✅ Development authentication routes configured");
 }
