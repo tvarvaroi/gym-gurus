@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import logoImage from '@assets/Sophisticated Logo with Japanese Influences_1757604677443.png'
+import logoImage from '@assets/Sophisticated Logo with Japanese Influences (2)_1757605753654.png'
 import { motion } from "framer-motion"
 import { useState } from "react"
 import { useLocation } from "wouter"
@@ -145,7 +145,7 @@ export default function AppSidebar() {
                 <div className="w-full h-px bg-primary my-2"></div>
                 <span className="text-sm font-normal tracking-widest text-muted-foreground/80" 
                       style={{ letterSpacing: '0.2em' }}>
-                  fitness services
+                  Fitness Services
                 </span>
               </div>
             </motion.div>
