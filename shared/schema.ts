@@ -1,18 +1,233 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { sql, relations } from "drizzle-orm";
+import { pgTable, text, varchar, integer, timestamp, decimal, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Users (Personal Trainers)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  displayName: text("display_name").notNull(),
+  email: text("email").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+// Clients
+export const clients = pgTable("clients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  goal: text("goal").notNull(),
+  status: text("status").notNull().default("active"), // active, paused, inactive
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastSession: timestamp("last_session"),
+  nextSession: timestamp("next_session"),
 });
 
+// Exercise Library
+export const exercises = pgTable("exercises", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(), // strength, cardio, flexibility, etc.
+  difficulty: text("difficulty").notNull(), // beginner, intermediate, advanced
+  muscleGroups: text("muscle_groups").array().notNull(),
+  equipment: text("equipment").array().notNull(),
+  instructions: text("instructions").array().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Workout Templates
+export const workouts = pgTable("workouts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  duration: integer("duration").notNull(), // minutes
+  difficulty: text("difficulty").notNull(),
+  category: text("category").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Workout-Exercise Junction Table
+export const workoutExercises = pgTable("workout_exercises", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workoutId: varchar("workout_id").notNull().references(() => workouts.id, { onDelete: "cascade" }),
+  exerciseId: varchar("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
+  sets: integer("sets").notNull(),
+  reps: text("reps").notNull(), // can be "10-12" or "45 sec"
+  weight: text("weight"), // optional, like "135 lbs"
+  restTime: integer("rest_time"), // seconds
+  sortOrder: integer("sort_order").notNull(), // order in workout
+});
+
+// Workout Assignments to Clients
+export const workoutAssignments = pgTable("workout_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workoutId: varchar("workout_id").notNull().references(() => workouts.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  notes: text("notes"),
+});
+
+// Progress Tracking
+export const progressEntries = pgTable("progress_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // weight, body_fat, measurement, workout_completion
+  value: decimal("value", { precision: 8, scale: 2 }).notNull(),
+  unit: text("unit").notNull(), // lbs, kg, inches, cm, etc.
+  notes: text("notes"),
+  recordedAt: timestamp("recorded_at").defaultNow().notNull(),
+});
+
+// Messages (Trainer-Client Communication)
+export const messages = pgTable("messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  isFromTrainer: boolean("is_from_trainer").notNull(),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  readAt: timestamp("read_at"),
+});
+
+// Training Sessions
+export const sessions = pgTable("sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  duration: integer("duration").notNull(), // minutes
+  status: text("status").notNull().default("scheduled"), // scheduled, completed, cancelled
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  clients: many(clients),
+  workouts: many(workouts),
+  sessions: many(sessions),
+  sentMessages: many(messages),
+}));
+
+export const clientsRelations = relations(clients, ({ one, many }) => ({
+  trainer: one(users, { fields: [clients.trainerId], references: [users.id] }),
+  workoutAssignments: many(workoutAssignments),
+  progressEntries: many(progressEntries),
+  messages: many(messages),
+  sessions: many(sessions),
+}));
+
+export const exercisesRelations = relations(exercises, ({ many }) => ({
+  workoutExercises: many(workoutExercises),
+}));
+
+export const workoutsRelations = relations(workouts, ({ one, many }) => ({
+  trainer: one(users, { fields: [workouts.trainerId], references: [users.id] }),
+  workoutExercises: many(workoutExercises),
+  assignments: many(workoutAssignments),
+}));
+
+export const workoutExercisesRelations = relations(workoutExercises, ({ one }) => ({
+  workout: one(workouts, { fields: [workoutExercises.workoutId], references: [workouts.id] }),
+  exercise: one(exercises, { fields: [workoutExercises.exerciseId], references: [exercises.id] }),
+}));
+
+export const workoutAssignmentsRelations = relations(workoutAssignments, ({ one }) => ({
+  workout: one(workouts, { fields: [workoutAssignments.workoutId], references: [workouts.id] }),
+  client: one(clients, { fields: [workoutAssignments.clientId], references: [clients.id] }),
+}));
+
+export const progressEntriesRelations = relations(progressEntries, ({ one }) => ({
+  client: one(clients, { fields: [progressEntries.clientId], references: [clients.id] }),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  trainer: one(users, { fields: [messages.trainerId], references: [users.id] }),
+  client: one(clients, { fields: [messages.clientId], references: [clients.id] }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  trainer: one(users, { fields: [sessions.trainerId], references: [users.id] }),
+  client: one(clients, { fields: [sessions.clientId], references: [clients.id] }),
+}));
+
+// Insert Schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertClientSchema = createInsertSchema(clients).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertExerciseSchema = createInsertSchema(exercises).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWorkoutSchema = createInsertSchema(workouts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWorkoutExerciseSchema = createInsertSchema(workoutExercises).omit({
+  id: true,
+});
+
+export const insertWorkoutAssignmentSchema = createInsertSchema(workoutAssignments).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertProgressEntrySchema = createInsertSchema(progressEntries).omit({
+  id: true,
+  recordedAt: true,
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  sentAt: true,
+});
+
+export const insertSessionSchema = createInsertSchema(sessions).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type SafeUser = Omit<User, 'password'>;
+
+export type InsertClient = z.infer<typeof insertClientSchema>;
+export type Client = typeof clients.$inferSelect;
+
+export type InsertExercise = z.infer<typeof insertExerciseSchema>;
+export type Exercise = typeof exercises.$inferSelect;
+
+export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
+export type Workout = typeof workouts.$inferSelect;
+
+export type InsertWorkoutExercise = z.infer<typeof insertWorkoutExerciseSchema>;
+export type WorkoutExercise = typeof workoutExercises.$inferSelect;
+
+export type InsertWorkoutAssignment = z.infer<typeof insertWorkoutAssignmentSchema>;
+export type WorkoutAssignment = typeof workoutAssignments.$inferSelect;
+
+export type InsertProgressEntry = z.infer<typeof insertProgressEntrySchema>;
+export type ProgressEntry = typeof progressEntries.$inferSelect;
+
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type Message = typeof messages.$inferSelect;
+
+export type InsertSession = z.infer<typeof insertSessionSchema>;
+export type Session = typeof sessions.$inferSelect;
