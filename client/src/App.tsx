@@ -20,6 +20,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useReducedMotion } from "./hooks/use-reduced-motion";
 import { lazy, Suspense } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, LogIn, Shield, User, LogOut } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Pages for different sections of the app
 function HomePage() {
@@ -296,6 +300,103 @@ function Router() {
   );
 }
 
+// User menu component for authenticated users
+function UserMenu() {
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+  });
+
+  if (!user) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full" data-testid="button-user-menu">
+          <User className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="px-2 py-1.5">
+          <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
+          <p className="text-xs text-muted-foreground">{user.email}</p>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => window.location.href = '/api/logout'} data-testid="button-logout">
+          <LogOut className="mr-2 h-4 w-4" />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// Authentication wrapper component
+function AuthWrapper({ children }: { children: React.ReactNode }) {
+  const { data: user, isLoading, error } = useQuery({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Card className="w-[400px]">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Checking authentication...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (error || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Card className="w-[400px]">
+          <CardHeader className="text-center space-y-2">
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+              <Shield className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Gym Gurus</CardTitle>
+            <CardDescription>
+              Professional fitness management platform for personal trainers
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2 text-center">
+              <p className="text-sm text-muted-foreground">
+                Please sign in to access your trainer dashboard
+              </p>
+            </div>
+            <Button 
+              onClick={() => window.location.href = '/api/login'}
+              className="w-full"
+              size="lg"
+              data-testid="button-login"
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign in with Replit
+            </Button>
+            <div className="text-xs text-center text-muted-foreground">
+              Secure authentication powered by Replit Auth
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // User is authenticated, show the main app
+  return children;
+}
+
 export default function App() {
   // Custom sidebar width for fitness application
   const style = {
@@ -306,22 +407,27 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SidebarProvider style={style as React.CSSProperties}>
-          <div className="flex h-screen w-full">
-            <AppSidebar />
-            <div className="flex flex-col flex-1">
-              <header className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-                <SidebarTrigger data-testid="button-sidebar-toggle" className="hover-elevate" />
-                <ThemeToggle />
-              </header>
-              <main className="flex-1 overflow-auto p-8 bg-gradient-to-br from-background via-background to-muted/20">
-                <div className="max-w-7xl mx-auto">
-                  <Router />
-                </div>
-              </main>
+        <AuthWrapper>
+          <SidebarProvider style={style as React.CSSProperties}>
+            <div className="flex h-screen w-full">
+              <AppSidebar />
+              <div className="flex flex-col flex-1">
+                <header className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" className="hover-elevate" />
+                  <div className="flex items-center space-x-2">
+                    <UserMenu />
+                    <ThemeToggle />
+                  </div>
+                </header>
+                <main className="flex-1 overflow-auto p-8 bg-gradient-to-br from-background via-background to-muted/20">
+                  <div className="max-w-7xl mx-auto">
+                    <Router />
+                  </div>
+                </main>
+              </div>
             </div>
-          </div>
-        </SidebarProvider>
+          </SidebarProvider>
+        </AuthWrapper>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
