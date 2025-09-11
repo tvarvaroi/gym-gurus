@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import logoImage from '@assets/generated_images/Gym_Gurus_fitness_logo_194e0826.png'
+import logoImage from '@assets/Sophisticated Logo with Japanese Influences_1757604677443.png'
 import { motion } from "framer-motion"
 import { useState } from "react"
 import { useLocation } from "wouter"
@@ -124,9 +124,10 @@ export default function AppSidebar() {
               <motion.img 
                 src={logoImage} 
                 alt="Gym Gurus" 
-                className="w-10 h-10 rounded-lg bg-primary/10 p-2"
-                whileHover={{ rotate: 10, scale: 1.1 }}
+                className="w-12 h-12 rounded-lg"
+                whileHover={{ rotate: 3, scale: 1.05 }}
                 transition={{ type: "spring", damping: 15, stiffness: 300 }}
+                style={{ filter: 'brightness(1.1)' }}
               />
               <div className="flex flex-col">
                 <motion.span 
