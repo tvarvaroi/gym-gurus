@@ -324,13 +324,14 @@ function UserMenu() {
   );
 }
 
+// Video cycling order - defined outside component to prevent recreations
+const CATEGORY_ORDER = ["trainers", "athletes", "programs", "success"] as const;
+
 // Authentication wrapper component
 function AuthWrapper({ children }: { children: React.ReactNode }) {
   // Always call hooks at the top level
   const [activeCategory, setActiveCategory] = useState("trainers");
   const [theme, setTheme] = useState("dark");
-  const [isAutoCycling, setIsAutoCycling] = useState(true);
-  const [cycleIntervalId, setCycleIntervalId] = useState<NodeJS.Timeout | null>(null);
   
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['/api/auth/user'],
@@ -343,62 +344,27 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     setTheme(savedTheme);
   }, []);
 
-  // Video cycling order
-  const categoryOrder = ["trainers", "athletes", "programs", "success"] as const;
-
-  // Auto-cycling effect
+  // Auto-cycling effect - only run on login screen
   useEffect(() => {
-    if (!isAutoCycling || isLoading || user) {
-      // Clear any existing interval when conditions change
-      if (cycleIntervalId) {
-        clearInterval(cycleIntervalId);
-        setCycleIntervalId(null);
-      }
-      return;
-    }
-
-    // Clear any existing interval before creating a new one
-    if (cycleIntervalId) {
-      clearInterval(cycleIntervalId);
-    }
-
+    // Only auto-cycle if user is not authenticated (on login screen)
+    if (isLoading || user) return;
+    
     const interval = setInterval(() => {
       setActiveCategory(prev => {
-        const currentIndex = categoryOrder.indexOf(prev as any);
-        const nextIndex = (currentIndex + 1) % categoryOrder.length;
-        console.log(`Auto-cycling from ${prev} to ${categoryOrder[nextIndex]}`);
-        return categoryOrder[nextIndex];
+        const currentIndex = CATEGORY_ORDER.indexOf(prev as any);
+        const nextIndex = (currentIndex + 1) % CATEGORY_ORDER.length;
+        return CATEGORY_ORDER[nextIndex];
       });
     }, 15000); // Change video every 15 seconds
 
-    setCycleIntervalId(interval);
-    console.log(`Started auto-cycling interval for login screen`);
-    
     return () => {
       clearInterval(interval);
-      setCycleIntervalId(null);
     };
-  }, [isAutoCycling, isLoading, user]); // Removed categoryOrder to prevent infinite re-renders
+  }, [isLoading, user]); // Do NOT include activeCategory to avoid infinite loop
 
   // Handle category click
   const handleCategoryClick = (categoryId: string) => {
-    console.log(`Category clicked: ${categoryId}`);
-    
-    // Clear current cycling
-    if (cycleIntervalId) {
-      clearInterval(cycleIntervalId);
-      setCycleIntervalId(null);
-    }
-    
-    // Set new category immediately
     setActiveCategory(categoryId);
-    
-    // Stop cycling briefly then restart
-    setIsAutoCycling(false);
-    setTimeout(() => {
-      console.log(`Restarting auto-cycling from ${categoryId}`);
-      setIsAutoCycling(true);
-    }, 2000); // Give a bit more time before restarting
   };
 
   // No need for complex useEffect, React will handle key change
