@@ -355,12 +355,12 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
         const nextIndex = (currentIndex + 1) % CATEGORY_ORDER.length;
         return CATEGORY_ORDER[nextIndex];
       });
-    }, 15000); // Change video every 15 seconds
+    }, 10000); // Change video every 10 seconds
 
     return () => {
       clearInterval(interval);
     };
-  }, [isLoading, user]); // Do NOT include activeCategory to avoid infinite loop
+  }, [isLoading, user, activeCategory]); // Include activeCategory to restart interval on manual changes
 
   // Handle category click
   const handleCategoryClick = (categoryId: string) => {
@@ -474,13 +474,12 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
           {/* Header with logo */}
           <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-8">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-full bg-primary/20 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-white">Gym Gurus</h1>
-                <p className="text-sm text-white/80 tracking-wide font-light">Fitness Services</p>
-              </div>
+              <img 
+                src="/attached_assets/generated_images/Gym_Gurus_logo_design_a80cf837.png" 
+                alt="Gym Gurus Logo" 
+                className="h-16 w-auto object-contain"
+                data-testid="logo-gym-gurus"
+              />
             </div>
             <div className="backdrop-blur-sm bg-white/10 rounded-full p-1">
               <ThemeToggle />
