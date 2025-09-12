@@ -329,7 +329,8 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   // Always call hooks at the top level
   const [activeCategory, setActiveCategory] = useState("trainers");
   const [theme, setTheme] = useState("dark");
-  const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null);
+  const [isAutoCycling, setIsAutoCycling] = useState(true);
+  const [cycleIntervalId, setCycleIntervalId] = useState<NodeJS.Timeout | null>(null);
   
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['/api/auth/user'],
@@ -341,6 +342,44 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem("theme") || "dark";
     setTheme(savedTheme);
   }, []);
+
+  // Video cycling order
+  const categoryOrder = ["trainers", "athletes", "programs", "success"] as const;
+
+  // Auto-cycling effect
+  useEffect(() => {
+    if (!isAutoCycling || isLoading || user) return; // Only cycle on login screen
+
+    const interval = setInterval(() => {
+      setActiveCategory(prev => {
+        const currentIndex = categoryOrder.indexOf(prev as any);
+        const nextIndex = (currentIndex + 1) % categoryOrder.length;
+        return categoryOrder[nextIndex];
+      });
+    }, 15000); // Change video every 15 seconds (length of each video)
+
+    setCycleIntervalId(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isAutoCycling, isLoading, user, categoryOrder]);
+
+  // Handle category click
+  const handleCategoryClick = (categoryId: string) => {
+    // Clear current cycling
+    if (cycleIntervalId) {
+      clearInterval(cycleIntervalId);
+      setCycleIntervalId(null);
+    }
+    
+    // Set new category
+    setActiveCategory(categoryId);
+    
+    // Restart cycling from this category after a brief delay
+    setTimeout(() => {
+      setIsAutoCycling(true);
+    }, 1000);
+  };
 
   // No need for complex useEffect, React will handle key change
 
@@ -400,7 +439,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
     return (
       <div className="min-h-screen relative overflow-hidden">
-        {/* Background Videos - Load all videos once, show via CSS */}
+        {/* Background Videos - Auto-cycling through all videos */}
         <div className="absolute inset-0 z-0">
           {Object.entries(videoSources).map(([category, src]) => (
             <video 
@@ -410,39 +449,14 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
               loop 
               playsInline
               preload="auto"
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
                 activeCategory === category ? 'opacity-100' : 'opacity-0'
               }`}
               style={{ filter: 'brightness(0.8) contrast(1.1)' }}
-              onError={() => {
-                // Silent fallback to gradient background
-              }}
             >
               <source src={src} type="video/mp4" />
             </video>
           ))}
-          
-          {/* Fallback gradient backgrounds for each category */}
-          <div className={`absolute inset-0 transition-opacity duration-1000 ${
-            activeCategory === 'trainers' ? 'opacity-100' : 'opacity-0'
-          }`}>
-            <div className="w-full h-full bg-gradient-to-br from-emerald-600 via-emerald-700 to-gray-900" />
-          </div>
-          <div className={`absolute inset-0 transition-opacity duration-1000 ${
-            activeCategory === 'athletes' ? 'opacity-100' : 'opacity-0'
-          }`}>
-            <div className="w-full h-full bg-gradient-to-br from-blue-600 via-emerald-600 to-gray-900" />
-          </div>
-          <div className={`absolute inset-0 transition-opacity duration-1000 ${
-            activeCategory === 'programs' ? 'opacity-100' : 'opacity-0'
-          }`}>
-            <div className="w-full h-full bg-gradient-to-br from-emerald-500 via-green-600 to-gray-800" />
-          </div>
-          <div className={`absolute inset-0 transition-opacity duration-1000 ${
-            activeCategory === 'success' ? 'opacity-100' : 'opacity-0'
-          }`}>
-            <div className="w-full h-full bg-gradient-to-br from-amber-500 via-emerald-600 to-gray-900" />
-          </div>
           
           {/* Dark overlay for dark theme */}
           <div 
@@ -491,7 +505,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
                 {categories.map((category) => (
                   <button
                     key={category.id}
-                    onClick={() => setActiveCategory(category.id)}
+                    onClick={() => handleCategoryClick(category.id)}
                     className={`group relative p-6 rounded-lg backdrop-blur-md border transition-all duration-300 hover-elevate ${
                       activeCategory === category.id 
                         ? 'bg-primary/30 border-primary/50 shadow-lg shadow-primary/20' 
