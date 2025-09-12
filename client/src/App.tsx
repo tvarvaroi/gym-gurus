@@ -373,12 +373,12 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   // Show login screen if not authenticated
   if (error || !user) {
 
-    // Video sources for each category - converted to H.264 format for browser compatibility
+    // Optimized preview videos for faster loading (720p, 15s, 1-1.5MB each)
     const videoSources = {
-      trainers: "/videos/trainers-converted.mp4",
-      athletes: "/videos/athletes-converted.mp4", 
-      programs: "/videos/training-programs-converted.mp4",
-      success: "/videos/client-success-converted.mp4"
+      trainers: "/videos/trainers-preview.mp4",
+      athletes: "/videos/athletes-preview.mp4", 
+      programs: "/videos/programs-preview.mp4",
+      success: "/videos/success-preview.mp4"
     };
 
     const categories = [
@@ -410,45 +410,27 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
     return (
       <div className="min-h-screen relative overflow-hidden">
-        {/* Background Video */}
+        {/* Background Videos - Load all videos once, show via CSS */}
         <div className="absolute inset-0 z-0">
-          <video 
-            autoPlay 
-            muted 
-            loop 
-            playsInline
-            preload="metadata"
-            crossOrigin="anonymous"
-            className="w-full h-full object-cover"
-            style={{ filter: 'brightness(0.8) contrast(1.1)' }}
-            onError={(e) => {
-              console.log(`Video error for ${activeCategory}, using gradient fallback`);
-              console.log(`Video error details:`, e.currentTarget.error);
-              console.log(`Video network state:`, e.currentTarget.networkState);
-              console.log(`Video ready state:`, e.currentTarget.readyState);
-              console.log(`Video src:`, e.currentTarget.currentSrc);
-            }}
-            onLoadStart={() => {
-              console.log(`Video loading started: ${activeCategory}`);
-            }}
-            onLoadedMetadata={() => {
-              console.log(`Video metadata loaded: ${activeCategory}`);
-            }}
-            onCanPlay={() => {
-              console.log(`Video ready: ${activeCategory}`);
-            }}
-            onPlay={() => {
-              console.log(`Video playing: ${activeCategory}`);
-            }}
-            onLoadedData={() => {
-              console.log(`Video data loaded: ${activeCategory}`);
-            }}
-            ref={setVideoRef}
-            key={`video-${activeCategory}`}
-          >
-            <source src={videoSources[activeCategory as keyof typeof videoSources]} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+          {Object.entries(videoSources).map(([category, src]) => (
+            <video 
+              key={category}
+              autoPlay 
+              muted 
+              loop 
+              playsInline
+              preload="auto"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                activeCategory === category ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{ filter: 'brightness(0.8) contrast(1.1)' }}
+              onError={() => {
+                // Silent fallback to gradient background
+              }}
+            >
+              <source src={src} type="video/mp4" />
+            </video>
+          ))}
           
           {/* Fallback gradient backgrounds for each category */}
           <div className={`absolute inset-0 transition-opacity duration-1000 ${
@@ -520,7 +502,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
                   <button
                     key={category.id}
                     onClick={() => setActiveCategory(category.id)}
-                    className={`group relative p-6 rounded-lg backdrop-blur-md border transition-all duration-500 hover:scale-105 hover-elevate ${
+                    className={`group relative p-6 rounded-lg backdrop-blur-md border transition-all duration-300 hover-elevate ${
                       activeCategory === category.id 
                         ? 'bg-primary/30 border-primary/50 shadow-lg shadow-primary/20' 
                         : 'bg-white/10 border-white/20 hover:bg-white/20'
@@ -536,7 +518,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
                       <p className="text-sm text-white/80 font-light tracking-wider">
                         {category.subtitle}
                       </p>
-                      <p className="text-xs text-white/70 leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="text-xs text-white/70 leading-relaxed opacity-90">
                         {category.description}
                       </p>
                     </div>
