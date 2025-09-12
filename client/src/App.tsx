@@ -367,6 +367,19 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     setActiveCategory(categoryId);
   };
 
+  // Effect to ensure video plays when category changes
+  useEffect(() => {
+    if (isLoading || user) return;
+    
+    // Find and play the video
+    const videoElement = document.querySelector('video') as HTMLVideoElement;
+    if (videoElement && videoElement.paused) {
+      videoElement.play().catch(() => {
+        // Autoplay blocked, user interaction will be needed
+      });
+    }
+  }, [activeCategory, isLoading, user]);
+
   // No need for complex useEffect, React will handle key change
 
   // Show loading state while checking authentication
@@ -425,30 +438,28 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
     return (
       <div className="min-h-screen relative overflow-hidden">
-        {/* Background Videos - Auto-cycling through all videos */}
+        {/* Background Video - Single video element with changing src */}
         <div className="absolute inset-0 z-0">
-          {Object.entries(videoSources).map(([category, src]) => {
-            const isActive = activeCategory === category;
-            console.log(`Video ${category}: ${isActive ? 'ACTIVE' : 'hidden'} (src: ${src})`);
-            return (
-              <video 
-                key={category}
-                autoPlay 
-                muted 
-                loop 
-                playsInline
-                preload="auto"
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-                  isActive ? 'opacity-100' : 'opacity-0'
-                }`}
-                style={{ filter: 'brightness(0.8) contrast(1.1)' }}
-                onLoadedData={() => console.log(`Video loaded: ${category} from ${src}`)}
-                onError={(e) => console.error(`Video error for ${category}:`, e)}
-              >
-                <source src={src} type="video/mp4" />
-              </video>
-            );
-          })}
+          <video 
+            key="background-video"
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ filter: 'brightness(0.8) contrast(1.1)' }}
+            src={videoSources[activeCategory as keyof typeof videoSources]}
+            onLoadedData={() => {
+              // Ensure video plays when loaded
+              const video = document.querySelector('video') as HTMLVideoElement;
+              if (video && video.paused) {
+                video.play().catch(() => {
+                  // Autoplay might be blocked, will work after user interaction
+                });
+              }
+            }}
+          />
           
           {/* Dark overlay for dark theme */}
           <div 
