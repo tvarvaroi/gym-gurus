@@ -348,37 +348,57 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   // Auto-cycling effect
   useEffect(() => {
-    if (!isAutoCycling || isLoading || user) return; // Only cycle on login screen
+    if (!isAutoCycling || isLoading || user) {
+      // Clear any existing interval when conditions change
+      if (cycleIntervalId) {
+        clearInterval(cycleIntervalId);
+        setCycleIntervalId(null);
+      }
+      return;
+    }
+
+    // Clear any existing interval before creating a new one
+    if (cycleIntervalId) {
+      clearInterval(cycleIntervalId);
+    }
 
     const interval = setInterval(() => {
       setActiveCategory(prev => {
         const currentIndex = categoryOrder.indexOf(prev as any);
         const nextIndex = (currentIndex + 1) % categoryOrder.length;
+        console.log(`Auto-cycling from ${prev} to ${categoryOrder[nextIndex]}`);
         return categoryOrder[nextIndex];
       });
-    }, 15000); // Change video every 15 seconds (length of each video)
+    }, 15000); // Change video every 15 seconds
 
     setCycleIntervalId(interval);
+    console.log(`Started auto-cycling interval for login screen`);
+    
     return () => {
-      if (interval) clearInterval(interval);
+      clearInterval(interval);
+      setCycleIntervalId(null);
     };
-  }, [isAutoCycling, isLoading, user, categoryOrder]);
+  }, [isAutoCycling, isLoading, user]); // Removed categoryOrder to prevent infinite re-renders
 
   // Handle category click
   const handleCategoryClick = (categoryId: string) => {
+    console.log(`Category clicked: ${categoryId}`);
+    
     // Clear current cycling
     if (cycleIntervalId) {
       clearInterval(cycleIntervalId);
       setCycleIntervalId(null);
     }
     
-    // Set new category
+    // Set new category immediately
     setActiveCategory(categoryId);
     
-    // Restart cycling from this category after a brief delay
+    // Stop cycling briefly then restart
+    setIsAutoCycling(false);
     setTimeout(() => {
+      console.log(`Restarting auto-cycling from ${categoryId}`);
       setIsAutoCycling(true);
-    }, 1000);
+    }, 2000); // Give a bit more time before restarting
   };
 
   // No need for complex useEffect, React will handle key change
@@ -441,22 +461,28 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen relative overflow-hidden">
         {/* Background Videos - Auto-cycling through all videos */}
         <div className="absolute inset-0 z-0">
-          {Object.entries(videoSources).map(([category, src]) => (
-            <video 
-              key={category}
-              autoPlay 
-              muted 
-              loop 
-              playsInline
-              preload="auto"
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-                activeCategory === category ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{ filter: 'brightness(0.8) contrast(1.1)' }}
-            >
-              <source src={src} type="video/mp4" />
-            </video>
-          ))}
+          {Object.entries(videoSources).map(([category, src]) => {
+            const isActive = activeCategory === category;
+            console.log(`Video ${category}: ${isActive ? 'ACTIVE' : 'hidden'} (src: ${src})`);
+            return (
+              <video 
+                key={category}
+                autoPlay 
+                muted 
+                loop 
+                playsInline
+                preload="auto"
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                  isActive ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ filter: 'brightness(0.8) contrast(1.1)' }}
+                onLoadedData={() => console.log(`Video loaded: ${category} from ${src}`)}
+                onError={(e) => console.error(`Video error for ${category}:`, e)}
+              >
+                <source src={src} type="video/mp4" />
+              </video>
+            );
+          })}
           
           {/* Dark overlay for dark theme */}
           <div 
