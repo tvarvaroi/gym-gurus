@@ -34,18 +34,13 @@ function HomePage() {
   );
 }
 
-// Premium page transition components
+// Lightweight page transition components
 const PageTransition = ({ children }: { children: React.ReactNode }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    transition={{
-      type: "spring",
-      damping: 25,
-      stiffness: 200,
-      duration: 0.6
-    }}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.2 }}
   >
     {children}
   </motion.div>
@@ -64,8 +59,8 @@ const StaggerContainer = ({ children, delay = 0 }: { children: React.ReactNode; 
       animate={{ opacity: 1 }}
       transition={{ 
         delay,
-        staggerChildren: 0.1,
-        delayChildren: 0.2 + delay
+        staggerChildren: 0.05,
+        delayChildren: 0.1 + delay
       }}
     >
       {children}
@@ -82,14 +77,9 @@ const StaggerItem = ({ children, index = 0 }: { children: React.ReactNode; index
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        type: "spring",
-        damping: 20,
-        stiffness: 300,
-        delay: index * 0.1
-      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: index * 0.05, duration: 0.2 }}
     >
       {children}
     </motion.div>
