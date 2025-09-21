@@ -1,13 +1,17 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Clock, Target } from "lucide-react";
+import { Plus, Clock, Target, Copy, Download, Edit, MoreVertical, Trash2, BookOpen } from "lucide-react";
 import WorkoutFormModal from "../components/WorkoutFormModal";
 import SearchInput from "@/components/SearchInput";
 import { StaggerItem } from "@/components/AnimationComponents";
+import { exportWorkoutsToCSV } from "@/lib/exportUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Temporary trainer ID for development
 const TEMP_TRAINER_ID = "demo-trainer-123";
@@ -15,11 +19,89 @@ const TEMP_TRAINER_ID = "demo-trainer-123";
 export default function WorkoutPlans() {
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showTemplates, setShowTemplates] = useState(false);
+  const { toast } = useToast();
 
   const { data: workouts, isLoading, error } = useQuery({
     queryKey: ['/api/workouts', TEMP_TRAINER_ID],
     queryFn: () => fetch(`/api/workouts/${TEMP_TRAINER_ID}`).then(res => res.json())
   });
+
+  // Fetch workout templates
+  const { data: templates } = useQuery({
+    queryKey: ['/api/workout-templates'],
+    queryFn: () => fetch('/api/workout-templates').then(res => res.json()),
+    enabled: showTemplates,
+  });
+
+  // Duplicate workout mutation
+  const duplicateWorkoutMutation = useMutation({
+    mutationFn: (workoutId: string) => 
+      apiRequest('POST', `/api/workouts/${workoutId}/duplicate`),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workouts', TEMP_TRAINER_ID] });
+      toast({
+        title: "Workout Duplicated",
+        description: `Created "${data.title}"`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to duplicate workout",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete workout mutation
+  const deleteWorkoutMutation = useMutation({
+    mutationFn: (workoutId: string) => 
+      apiRequest('DELETE', `/api/workouts/${workoutId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workouts', TEMP_TRAINER_ID] });
+      toast({
+        title: "Workout Deleted",
+        description: "Workout plan removed successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete workout",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDuplicate = (workoutId: string) => {
+    duplicateWorkoutMutation.mutate(workoutId);
+  };
+
+  const handleDelete = (workoutId: string) => {
+    if (confirm("Are you sure you want to delete this workout?")) {
+      deleteWorkoutMutation.mutate(workoutId);
+    }
+  };
+
+  const handleExport = () => {
+    if (workouts?.length) {
+      exportWorkoutsToCSV(workouts);
+      toast({
+        title: "Workouts Exported",
+        description: `Exported ${workouts.length} workout plans to CSV`,
+      });
+    }
+  };
+
+  const handleUseTemplate = (template: any) => {
+    // Create workout from template
+    toast({
+      title: "Template Selected",
+      description: `Creating workout from "${template.title}" template`,
+    });
+    // In a real app, you would create a workout based on the template
+  };
 
   const PageTransition = ({ children }: { children: React.ReactNode }) => (
     <motion.div
@@ -36,7 +118,6 @@ export default function WorkoutPlans() {
       {children}
     </motion.div>
   );
-
 
   if (isLoading) {
     return (
@@ -94,16 +175,35 @@ export default function WorkoutPlans() {
                 Create and manage personalized workout routines
               </p>
             </div>
-            <WorkoutFormModal
-            mode="create"
-            trainerId={TEMP_TRAINER_ID}
-            trigger={
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium" data-testid="button-new-workout">
-                <Plus className="mr-2 h-4 w-4" />
-                New Workout Plan
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowTemplates(!showTemplates)}
+                data-testid="button-templates"
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                {showTemplates ? "Hide Templates" : "Use Template"}
               </Button>
-            }
-          />
+              <Button
+                variant="outline"
+                onClick={handleExport}
+                disabled={!workouts?.length}
+                data-testid="button-export-workouts"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+              <WorkoutFormModal
+                mode="create"
+                trainerId={TEMP_TRAINER_ID}
+                trigger={
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium" data-testid="button-new-workout">
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Workout Plan
+                  </Button>
+                }
+              />
+            </div>
           </div>
           <div className="w-full md:w-80">
             <SearchInput
@@ -114,6 +214,35 @@ export default function WorkoutPlans() {
             />
           </div>
         </div>
+
+        {/* Templates Section */}
+        {showTemplates && templates && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-light">Quick Start Templates</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {templates.map((template: any) => (
+                <Card key={template.id} className="cursor-pointer hover:shadow-lg transition-all duration-300 bg-muted/50">
+                  <CardContent className="p-4">
+                    <h3 className="font-medium mb-1">{template.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <Badge variant="outline" className="text-xs">{template.difficulty}</Badge>
+                        <Badge variant="outline" className="text-xs">{template.duration} min</Badge>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleUseTemplate(template)}
+                      >
+                        Use
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Workout Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -126,10 +255,10 @@ export default function WorkoutPlans() {
           ) : (
             filteredWorkouts.map((workout: any, index: number) => (
             <StaggerItem key={workout.id} index={index}>
-              <Card className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 border border-border/50 hover:border-primary/30 bg-card/50 backdrop-blur-sm hover:bg-card/80">
+              <Card className="group transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 border border-border/50 hover:border-primary/30 bg-card/50 backdrop-blur-sm hover:bg-card/80">
                 <CardHeader className="space-y-4">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-2">
+                    <div className="space-y-2 flex-1">
                       <CardTitle className="text-xl font-medium leading-snug group-hover:text-primary transition-colors">
                         {workout.title}
                       </CardTitle>
@@ -137,13 +266,52 @@ export default function WorkoutPlans() {
                         {workout.description}
                       </CardDescription>
                     </div>
-                    <Badge 
-                      variant={workout.difficulty === 'beginner' ? 'secondary' : 
-                               workout.difficulty === 'intermediate' ? 'default' : 'destructive'}
-                      className="capitalize"
-                    >
-                      {workout.difficulty}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant={workout.difficulty === 'beginner' ? 'secondary' : 
+                                 workout.difficulty === 'intermediate' ? 'default' : 'destructive'}
+                        className="capitalize"
+                      >
+                        {workout.difficulty}
+                      </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid={`button-menu-workout-${index}`}>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <WorkoutFormModal
+                            mode="edit"
+                            workout={workout}
+                            trainerId={TEMP_TRAINER_ID}
+                            trigger={
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                            }
+                          />
+                          <DropdownMenuItem 
+                            onClick={() => handleDuplicate(workout.id)}
+                            disabled={duplicateWorkoutMutation.isPending}
+                            data-testid={`button-duplicate-${index}`}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => handleDelete(workout.id)}
+                            disabled={deleteWorkoutMutation.isPending}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </CardHeader>
                 
@@ -169,16 +337,6 @@ export default function WorkoutPlans() {
                     >
                       Build Workout
                     </Button>
-                    <WorkoutFormModal
-                      mode="edit"
-                      workout={workout}
-                      trainerId={TEMP_TRAINER_ID}
-                      trigger={
-                        <Button variant="ghost" size="sm" data-testid={`button-edit-workout-${workout.id}`}>
-                          Edit
-                        </Button>
-                      }
-                    />
                   </div>
                 </CardContent>
               </Card>

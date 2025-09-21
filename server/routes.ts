@@ -70,6 +70,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/dashboard/stats - Get dashboard statistics
+  app.get("/api/dashboard/stats/:trainerId", async (req: Request, res: Response) => {
+    try {
+      const { trainerId } = req.params;
+      const stats = await storage.getDashboardStats(trainerId);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    }
+  });
+
   // GET /api/clients/:trainerId - Get all clients for specific trainer (for development)
   app.get("/api/clients/:trainerId", async (req: Request, res: Response) => {
     try {
@@ -165,6 +176,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       // Error logged internally
       res.status(500).json({ error: "Failed to delete client" });
+    }
+  });
+
+  // GET /api/clients/:clientId/notes - Get client notes
+  app.get("/api/clients/:clientId/notes", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
+    try {
+      const { clientId } = req.params;
+      const notes = await storage.getClientNotes(clientId);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client notes" });
+    }
+  });
+
+  // POST /api/clients/:clientId/notes - Add a note to a client
+  app.post("/api/clients/:clientId/notes", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
+    try {
+      const { clientId } = req.params;
+      const trainerId = (req.user as any).id as string;
+      const { content, category = 'general' } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: "Note content is required" });
+      }
+      
+      const note = await storage.addClientNote(clientId, trainerId, content, category);
+      res.json(note);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add client note" });
     }
   });
 
@@ -338,6 +378,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       // Error logged internally
       res.status(500).json({ error: "Failed to delete workout" });
+    }
+  });
+
+  // POST /api/workouts/:id/duplicate - Duplicate a workout
+  app.post("/api/workouts/:id/duplicate", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const trainerId = (req.user as any).id as string;
+      
+      // Verify workout belongs to authenticated trainer
+      const existingWorkout = await storage.getWorkout(id);
+      if (!existingWorkout) {
+        return res.status(404).json({ error: "Workout not found" });
+      }
+      if (existingWorkout.trainerId !== trainerId) {
+        return res.status(403).json({ error: "Access denied to this workout" });
+      }
+      
+      const duplicatedWorkout = await storage.duplicateWorkout(id, trainerId);
+      res.json(duplicatedWorkout);
+    } catch (error) {
+      // Error logged internally
+      res.status(500).json({ error: "Failed to duplicate workout" });
+    }
+  });
+
+  // GET /api/workout-templates - Get predefined workout templates
+  app.get("/api/workout-templates", async (_req: Request, res: Response) => {
+    try {
+      const templates = await storage.getWorkoutTemplates();
+      res.json(templates);
+    } catch (error) {
+      // Error logged internally
+      res.status(500).json({ error: "Failed to fetch workout templates" });
     }
   });
 

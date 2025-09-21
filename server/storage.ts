@@ -71,6 +71,13 @@ export interface IStorage {
   getClientSessions(clientId: string): Promise<TrainingSession[]>;
   createTrainingSession(session: InsertTrainingSession): Promise<TrainingSession>;
   updateTrainingSession(id: string, updates: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined>;
+
+  // Enhanced Features
+  duplicateWorkout(workoutId: string, trainerId: string): Promise<Workout>;
+  getWorkoutTemplates(): Promise<any[]>;
+  getDashboardStats(trainerId: string): Promise<any>;
+  getClientNotes(clientId: string): Promise<any[]>;
+  addClientNote(clientId: string, trainerId: string, content: string, category: string): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -365,6 +372,208 @@ export class DatabaseStorage implements IStorage {
   async updateTrainingSession(id: string, updates: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined> {
     const [session] = await db.update(trainingSessions).set(updates).where(eq(trainingSessions.id, id)).returning();
     return session || undefined;
+  }
+
+  // Enhanced Features
+  async duplicateWorkout(workoutId: string, trainerId: string): Promise<Workout> {
+    // Get the original workout
+    const original = await this.getWorkout(workoutId);
+    if (!original) {
+      throw new Error('Workout not found');
+    }
+
+    // Create a copy with new title
+    const duplicatedWorkout = await this.createWorkout({
+      trainerId,
+      title: `${original.title} (Copy)`,
+      description: original.description,
+      duration: original.duration,
+      difficulty: original.difficulty,
+      category: original.category,
+    });
+
+    // Copy all workout exercises
+    const exercises = await this.getWorkoutExercises(workoutId);
+    for (const exercise of exercises) {
+      await this.addExerciseToWorkout({
+        workoutId: duplicatedWorkout.id,
+        exerciseId: exercise.exerciseId,
+        sets: exercise.sets,
+        reps: exercise.reps,
+        weight: exercise.weight,
+        restTime: exercise.restTime,
+        sortOrder: exercise.sortOrder,
+      });
+    }
+
+    return duplicatedWorkout;
+  }
+
+  async getWorkoutTemplates(): Promise<any[]> {
+    // Return predefined workout templates
+    return [
+      {
+        id: 'template-1',
+        title: 'Full Body Strength',
+        description: 'Complete full body workout targeting all major muscle groups',
+        category: 'strength',
+        difficulty: 'intermediate',
+        duration: 45,
+        isTemplate: true,
+      },
+      {
+        id: 'template-2',
+        title: 'HIIT Cardio Blast',
+        description: 'High-intensity interval training for maximum calorie burn',
+        category: 'cardio',
+        difficulty: 'advanced',
+        duration: 30,
+        isTemplate: true,
+      },
+      {
+        id: 'template-3',
+        title: 'Beginner Basics',
+        description: 'Foundation workout for fitness beginners',
+        category: 'general',
+        difficulty: 'beginner',
+        duration: 30,
+        isTemplate: true,
+      },
+      {
+        id: 'template-4',
+        title: 'Core & Abs Focus',
+        description: 'Targeted workout for core strength and stability',
+        category: 'core',
+        difficulty: 'intermediate',
+        duration: 20,
+        isTemplate: true,
+      },
+      {
+        id: 'template-5',
+        title: 'Upper Body Power',
+        description: 'Build strength in chest, back, shoulders, and arms',
+        category: 'strength',
+        difficulty: 'intermediate',
+        duration: 40,
+        isTemplate: true,
+      },
+      {
+        id: 'template-6',
+        title: 'Leg Day Essentials',
+        description: 'Complete lower body workout for strength and endurance',
+        category: 'strength',
+        difficulty: 'intermediate',
+        duration: 45,
+        isTemplate: true,
+      },
+      {
+        id: 'template-7',
+        title: 'Yoga Flow',
+        description: 'Flexibility and mindfulness practice',
+        category: 'flexibility',
+        difficulty: 'beginner',
+        duration: 60,
+        isTemplate: true,
+      },
+      {
+        id: 'template-8',
+        title: 'Athletic Performance',
+        description: 'Sports-specific training for peak performance',
+        category: 'sports',
+        difficulty: 'advanced',
+        duration: 60,
+        isTemplate: true,
+      },
+    ];
+  }
+
+  async getDashboardStats(trainerId: string): Promise<any> {
+    // Get comprehensive dashboard statistics
+    const allClients = await this.getClientsByTrainer(trainerId);
+    const activeClients = allClients.filter(c => c.status === 'active');
+    const pausedClients = allClients.filter(c => c.status === 'paused');
+    
+    const allWorkouts = await this.getWorkoutsByTrainer(trainerId);
+    const sessions = await this.getTrainerSessions(trainerId);
+    const upcomingSessions = sessions.filter(s => 
+      new Date(s.scheduledAt) > new Date() && s.status === 'scheduled'
+    );
+    const completedThisWeek = sessions.filter(s => {
+      const sessionDate = new Date(s.scheduledAt);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return sessionDate > weekAgo && s.status === 'completed';
+    });
+
+    // Calculate client growth
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const newClientsThisMonth = allClients.filter(c => 
+      new Date(c.createdAt) > thirtyDaysAgo
+    ).length;
+
+    // Get recent messages for activity tracking
+    const messages = await this.getAllMessagesForTrainer(trainerId);
+    const unreadMessages = messages.filter(m => !m.isFromTrainer && !m.readAt).length;
+
+    return {
+      totalClients: allClients.length,
+      activeClients: activeClients.length,
+      pausedClients: pausedClients.length,
+      inactiveClients: allClients.length - activeClients.length - pausedClients.length,
+      totalWorkouts: allWorkouts.length,
+      upcomingSessions: upcomingSessions.length,
+      completedSessionsThisWeek: completedThisWeek.length,
+      newClientsThisMonth,
+      unreadMessages,
+      recentActivity: [
+        ...upcomingSessions.slice(0, 3).map(s => ({
+          type: 'session',
+          description: `Upcoming session scheduled`,
+          time: s.scheduledAt,
+        })),
+        ...messages.slice(0, 3).map(m => ({
+          type: 'message',
+          description: m.isFromTrainer ? 'Message sent' : 'Message received',
+          time: m.sentAt,
+        })),
+      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5),
+    };
+  }
+
+  async getClientNotes(clientId: string): Promise<any[]> {
+    // For now, return notes from client's goal field or empty array
+    // In a real app, you'd have a separate notes table
+    const client = await this.getClient(clientId);
+    if (!client) return [];
+    
+    return [
+      {
+        id: '1',
+        content: client.goal,
+        category: 'goal',
+        createdAt: client.createdAt,
+      },
+    ];
+  }
+
+  async addClientNote(clientId: string, trainerId: string, content: string, category: string): Promise<any> {
+    // For now, append to client's goal field
+    // In a real app, you'd have a separate notes table
+    const client = await this.getClient(clientId);
+    if (!client) throw new Error('Client not found');
+    
+    const updatedClient = await this.updateClient(clientId, {
+      goal: `${client.goal}\n\n[${category.toUpperCase()}]: ${content}`,
+    });
+    
+    return {
+      id: Date.now().toString(),
+      clientId,
+      content,
+      category,
+      createdAt: new Date(),
+    };
   }
 }
 
