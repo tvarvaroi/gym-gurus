@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Edit, MessageSquare } from "lucide-react";
 import { MessageTemplate } from "@shared/schema";
@@ -111,9 +112,7 @@ export default function MessageTemplateManager({ onTemplateSelect }: MessageTemp
   };
 
   const handleDeleteTemplate = (templateId: string) => {
-    if (confirm("Are you sure you want to delete this template?")) {
-      deleteTemplateMutation.mutate(templateId);
-    }
+    deleteTemplateMutation.mutate(templateId);
   };
 
   const filteredTemplates = templates.filter(template => 
@@ -335,17 +334,36 @@ export default function MessageTemplateManager({ onTemplateSelect }: MessageTemp
                               >
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-destructive hover:text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteTemplate(template.id);
-                                }}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive hover:text-destructive"
+                                    onClick={(e) => e.stopPropagation()}
+                                    data-testid={`button-delete-template-${template.id}`}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete "{template.title}"? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <div className="flex justify-end gap-4">
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteTemplate(template.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete Template
+                                    </AlertDialogAction>
+                                  </div>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </div>
                         </CardHeader>

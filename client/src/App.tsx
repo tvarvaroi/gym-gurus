@@ -15,6 +15,8 @@ import MessageThread from "@/components/MessageThread";
 import CalendarView from "@/components/CalendarView";
 import WorkoutPlans from "@/pages/WorkoutPlans";
 import WorkoutBuilder from "@/pages/WorkoutBuilder";
+import ExercisesPageComponent from "@/pages/ExercisesPage";
+import SchedulePageComponent from "@/pages/SchedulePage";
 import NotFound from "@/pages/not-found";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
@@ -212,35 +214,7 @@ function ProgressPage() {
 function ExercisesPage() {
   return (
     <PageTransition>
-      <div className="space-y-8">
-        <StaggerItem>
-          <div>
-            <h1 className="text-4xl font-light tracking-tight">Exercise Library</h1>
-            <p className="text-lg font-light text-muted-foreground">Browse and add exercises to your workout plans</p>
-          </div>
-        </StaggerItem>
-        
-        <StaggerContainer delay={0.2}>
-          <StaggerItem>
-            <ExerciseCard
-              name="Barbell Squat"
-              description="A compound exercise targeting the lower body and core"
-              category="Strength"
-              difficulty="Intermediate"
-              muscleGroups={["Quadriceps", "Glutes", "Hamstrings", "Core"]}
-              equipment={["Barbell", "Squat Rack"]}
-              instructions={[
-                "Stand with feet shoulder-width apart",
-                "Place barbell on upper back",
-                "Lower body by bending knees and hips",
-                "Keep chest up and back straight",
-                "Lower until thighs are parallel to ground",
-                "Push through heels to return to starting position"
-              ]}
-            />
-          </StaggerItem>
-        </StaggerContainer>
-      </div>
+      <ExercisesPageComponent />
     </PageTransition>
   );
 }
@@ -258,13 +232,9 @@ function MessagesPage() {
 
 function SchedulePage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Schedule</h1>
-        <p className="text-muted-foreground">Manage appointments and training sessions</p>
-      </div>
-      <CalendarView />
-    </div>
+    <PageTransition>
+      <SchedulePageComponent />
+    </PageTransition>
   );
 }
 

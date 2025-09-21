@@ -108,7 +108,12 @@ export default function AppSidebar() {
     }
   }
 
-  const isActive = (url: string) => location === url
+  const isActive = (url: string) => {
+    // Handle both "/" and "/dashboard" for the Dashboard route
+    if (url === '/' && (location === '/' || location === '/dashboard')) return true
+    // Handle exact match for other routes
+    return location === url
+  }
 
   return (
     <Sidebar className="border-r border-border/50 bg-sidebar/95 backdrop-blur-xl">
