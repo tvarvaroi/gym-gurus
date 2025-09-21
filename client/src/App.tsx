@@ -14,17 +14,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { exportClientsToCSV, exportWorkoutsToCSV } from "@/lib/exportUtils";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimationComponents";
 
-// Lazy load components for code splitting
-const AppSidebar = lazy(() => import("@/components/AppSidebar"));
-const ThemeToggle = lazy(() => import("@/components/ThemeToggle"));
-const Dashboard = lazy(() => import("@/components/Dashboard"));
-const ClientCard = lazy(() => import("@/components/ClientCard"));
+// Import critical components directly (not lazy loaded)
+import AppSidebar from "@/components/AppSidebar";
+import ThemeToggle from "@/components/ThemeToggle";
+import Dashboard from "@/components/Dashboard";
+import ClientCard from "@/components/ClientCard";
+import SearchInput from "@/components/SearchInput";
+import NotFound from "@/pages/not-found";
+
+// Lazy load only secondary pages for code splitting
 const WorkoutPlans = lazy(() => import("@/pages/WorkoutPlans"));
 const WorkoutBuilder = lazy(() => import("@/pages/WorkoutBuilder"));
 const ExercisesPageComponent = lazy(() => import("@/pages/ExercisesPage"));
 const SchedulePageComponent = lazy(() => import("@/pages/SchedulePage"));
-const NotFound = lazy(() => import("@/pages/not-found"));
-const SearchInput = lazy(() => import("@/components/SearchInput"));
 
 // Loading fallback component
 const LoadingFallback = memo(() => (
@@ -39,11 +41,9 @@ const LoadingFallback = memo(() => (
 // Pages for different sections of the app
 const HomePage = memo(() => {
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <PageTransition>
-        <Dashboard />
-      </PageTransition>
-    </Suspense>
+    <PageTransition>
+      <Dashboard />
+    </PageTransition>
   );
 });
 
