@@ -8,11 +8,6 @@ import AppSidebar from "@/components/AppSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 import Dashboard from "@/components/Dashboard";
 import ClientCard from "@/components/ClientCard";
-import WorkoutCard from "@/components/WorkoutCard";
-import ProgressChart from "@/components/ProgressChart";
-import ExerciseCard from "@/components/ExerciseCard";
-import MessageThread from "@/components/MessageThread";
-import CalendarView from "@/components/CalendarView";
 import WorkoutPlans from "@/pages/WorkoutPlans";
 import WorkoutBuilder from "@/pages/WorkoutBuilder";
 import ExercisesPageComponent from "@/pages/ExercisesPage";
@@ -20,14 +15,14 @@ import SchedulePageComponent from "@/pages/SchedulePage";
 import NotFound from "@/pages/not-found";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
-import { useReducedMotion } from "./hooks/use-reduced-motion";
 import { lazy, Suspense, useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, LogIn, Shield, User, LogOut, Download, FileDown } from "lucide-react";
+import { Loader2, User, LogOut, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import SearchInput from "@/components/SearchInput";
 import { exportClientsToCSV, exportWorkoutsToCSV } from "@/lib/exportUtils";
+import { PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimationComponents";
 
 // Pages for different sections of the app
 function HomePage() {
@@ -37,58 +32,6 @@ function HomePage() {
     </PageTransition>
   );
 }
-
-// Lightweight page transition components
-const PageTransition = ({ children }: { children: React.ReactNode }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 0.2 }}
-  >
-    {children}
-  </motion.div>
-);
-
-const StaggerContainer = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
-  const prefersReducedMotion = useReducedMotion();
-  
-  if (prefersReducedMotion) {
-    return <div>{children}</div>;
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ 
-        delay,
-        staggerChildren: 0.05,
-        delayChildren: 0.1 + delay
-      }}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-const StaggerItem = ({ children, index = 0 }: { children: React.ReactNode; index?: number }) => {
-  const prefersReducedMotion = useReducedMotion();
-  
-  if (prefersReducedMotion) {
-    return <div>{children}</div>;
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: index * 0.05, duration: 0.2 }}
-    >
-      {children}
-    </motion.div>
-  );
-};
 
 function ClientsPage() {
   

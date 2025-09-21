@@ -20,7 +20,6 @@ interface CalendarViewProps {
 export default function CalendarView({ events = [] }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   
-  // todo: remove mock functionality
   const mockEvents: CalendarEvent[] = [
     {
       id: "1",

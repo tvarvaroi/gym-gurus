@@ -1,59 +1,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Calendar, TrendingUp, MessageSquare, Plus } from "lucide-react"
+import { Users, Calendar, TrendingUp, MessageSquare } from "lucide-react"
 import heroImage from '@assets/generated_images/Diverse_fitness_gym_hero_4eec9aff.png'
 import AnimatedButton from "./AnimatedButton"
 import { NewClientButton } from "./ClientFormModal"
 import { motion } from "framer-motion"
 import { useReducedMotion } from "../hooks/use-reduced-motion"
 import { useQuery } from "@tanstack/react-query"
-
-// Import StaggerContainer and StaggerItem components with reduced motion support
-const StaggerContainer = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
-  const prefersReducedMotion = useReducedMotion();
-  
-  if (prefersReducedMotion) {
-    return <div>{children}</div>;
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ 
-        delay,
-        staggerChildren: 0.1,
-        delayChildren: 0.2 + delay
-      }}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-const StaggerItem = ({ children, index = 0 }: { children: React.ReactNode; index?: number }) => {
-  const prefersReducedMotion = useReducedMotion();
-  
-  if (prefersReducedMotion) {
-    return <div>{children}</div>;
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        type: "spring",
-        damping: 20,
-        stiffness: 300,
-        delay: index * 0.1
-      }}
-    >
-      {children}
-    </motion.div>
-  );
-};
+import { StaggerContainer, StaggerItem } from "@/components/AnimationComponents"
 
 export default function Dashboard() {
   const prefersReducedMotion = useReducedMotion();

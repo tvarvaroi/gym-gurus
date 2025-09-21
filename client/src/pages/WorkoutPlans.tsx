@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Clock, Target, Users } from "lucide-react";
+import { Plus, Clock, Target } from "lucide-react";
 import WorkoutFormModal from "../components/WorkoutFormModal";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import SearchInput from "@/components/SearchInput";
+import { StaggerItem } from "@/components/AnimationComponents";
 
 // Temporary trainer ID for development
 const TEMP_TRAINER_ID = "demo-trainer-123";
@@ -15,7 +15,6 @@ const TEMP_TRAINER_ID = "demo-trainer-123";
 export default function WorkoutPlans() {
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const prefersReducedMotion = useReducedMotion();
 
   const { data: workouts, isLoading, error } = useQuery({
     queryKey: ['/api/workouts', TEMP_TRAINER_ID],
@@ -38,26 +37,6 @@ export default function WorkoutPlans() {
     </motion.div>
   );
 
-  const StaggerItem = ({ children, index = 0 }: { children: React.ReactNode; index?: number }) => {
-    if (prefersReducedMotion) {
-      return <div>{children}</div>;
-    }
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{
-          type: "spring",
-          damping: 20,
-          stiffness: 300,
-          delay: index * 0.1
-        }}
-      >
-        {children}
-      </motion.div>
-    );
-  };
 
   if (isLoading) {
     return (
