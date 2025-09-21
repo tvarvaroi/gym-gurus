@@ -1,6 +1,7 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
+import type { IncomingMessage } from "http";
 import { parse as parseCookie } from "cookie";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, authenticateWebSocketSession, getSession } from "./replitAuth";
@@ -30,9 +31,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      // After isAuthenticated middleware, req.user contains JWT claims
+      const jwtUser = req.user as any;
+      const userId = jwtUser?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "User ID not found in token" });
+      }
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -44,9 +50,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Client Management Routes
   
   // GET /api/clients - Get all clients for authenticated trainer
-  app.get("/api/clients", secureAuth, async (req, res) => {
+  app.get("/api/clients", secureAuth, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.user!.id;
+      const trainerId = (req.user as any).id as string;
       const clients = await storage.getClientsByTrainer(trainerId);
       res.json(clients);
     } catch (error) {
@@ -56,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/clients/:trainerId - Get all clients for specific trainer (for development)
-  app.get("/api/clients/:trainerId", async (req, res) => {
+  app.get("/api/clients/:trainerId", async (req: Request, res: Response) => {
     try {
       const { trainerId } = req.params;
       const clients = await storage.getClientsByTrainer(trainerId);
@@ -68,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/clients/detail/:clientId - Get specific client details
-  app.get("/api/clients/detail/:clientId", secureAuth, requireClientOwnership, async (req, res) => {
+  app.get("/api/clients/detail/:clientId", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const client = await storage.getClient(clientId);
@@ -83,9 +89,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/clients - Create new client
-  app.post("/api/clients", secureAuth, async (req, res) => {
+  app.post("/api/clients", secureAuth, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.user!.id;
+      const trainerId = (req.user as any).id as string;
       const validatedData = insertClientSchema.parse({ ...req.body, trainerId });
       const client = await storage.createClient(validatedData);
       res.status(201).json(client);
@@ -99,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/clients/:clientId - Update client
-  app.put("/api/clients/:clientId", secureAuth, requireClientOwnership, async (req, res) => {
+  app.put("/api/clients/:clientId", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       // Prevent trainerId changes by omitting it from the validation schema
@@ -120,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/clients/:clientId - Delete client
-  app.delete("/api/clients/:clientId", secureAuth, requireClientOwnership, async (req, res) => {
+  app.delete("/api/clients/:clientId", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const success = await storage.deleteClient(clientId);
@@ -137,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Exercise Library Routes
   
   // GET /api/exercises - Get all exercises
-  app.get("/api/exercises", secureAuth, async (req, res) => {
+  app.get("/api/exercises", secureAuth, async (req: Request, res: Response) => {
     try {
       const exercises = await storage.getAllExercises();
       res.json(exercises);
@@ -148,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/exercises - Create new exercise
-  app.post("/api/exercises", secureAuth, async (req, res) => {
+  app.post("/api/exercises", secureAuth, async (req: Request, res: Response) => {
     try {
       const validatedData = insertExerciseSchema.parse(req.body);
       const exercise = await storage.createExercise(validatedData);
@@ -165,9 +171,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workout Management Routes
   
   // GET /api/workouts - Get all workouts for authenticated trainer
-  app.get("/api/workouts", secureAuth, async (req, res) => {
+  app.get("/api/workouts", secureAuth, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.user!.id;
+      const trainerId = (req.user as any).id as string;
       console.log("[GET /api/workouts] Fetching workouts for trainer:", trainerId);
       const workouts = await storage.getWorkoutsByTrainer(trainerId);
       console.log("[GET /api/workouts] Found", workouts.length, "workouts");
@@ -179,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/workouts/:trainerId - Get all workouts for specific trainer (for development)
-  app.get("/api/workouts/:trainerId", async (req, res) => {
+  app.get("/api/workouts/:trainerId", async (req: Request, res: Response) => {
     try {
       const { trainerId } = req.params;
       console.log("[GET /api/workouts/:trainerId] Fetching workouts for trainer:", trainerId);
@@ -193,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/workouts/detail/:id - Get specific workout with exercises
-  app.get("/api/workouts/detail/:id", secureAuth, async (req, res) => {
+  app.get("/api/workouts/detail/:id", secureAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const workout = await storage.getWorkout(id);
@@ -202,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verify workout belongs to authenticated trainer
-      if (workout.trainerId !== req.user!.id) {
+      if (workout.trainerId !== (req.user as any).id) {
         return res.status(403).json({ error: "Access denied to this workout" });
       }
       
@@ -215,9 +221,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/workouts - Create new workout
-  app.post("/api/workouts", secureAuth, async (req, res) => {
+  app.post("/api/workouts", secureAuth, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.user!.id;
+      const trainerId = (req.user as any).id as string;
       console.log("[POST /api/workouts] Creating workout for trainer:", trainerId);
       const validatedData = insertWorkoutSchema.parse({ ...req.body, trainerId });
       const workout = await storage.createWorkout(validatedData);
@@ -233,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/workouts/:id - Update workout
-  app.put("/api/workouts/:id", secureAuth, async (req, res) => {
+  app.put("/api/workouts/:id", secureAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -242,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingWorkout) {
         return res.status(404).json({ error: "Workout not found" });
       }
-      if (existingWorkout.trainerId !== req.user!.id) {
+      if (existingWorkout.trainerId !== (req.user as any).id) {
         return res.status(403).json({ error: "Access denied to this workout" });
       }
       
@@ -261,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/workouts/:id - Delete workout
-  app.delete("/api/workouts/:id", secureAuth, async (req, res) => {
+  app.delete("/api/workouts/:id", secureAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -270,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingWorkout) {
         return res.status(404).json({ error: "Workout not found" });
       }
-      if (existingWorkout.trainerId !== req.user!.id) {
+      if (existingWorkout.trainerId !== (req.user as any).id) {
         return res.status(403).json({ error: "Access denied to this workout" });
       }
       
@@ -285,13 +291,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workout Exercise Routes
   
   // POST /api/workouts/:workoutId/exercises - Add exercise to workout
-  app.post("/api/workouts/:workoutId/exercises", secureAuth, async (req, res) => {
+  app.post("/api/workouts/:workoutId/exercises", secureAuth, async (req: Request, res: Response) => {
     try {
       const { workoutId } = req.params;
       
       // Verify workout belongs to authenticated trainer
       const workout = await storage.getWorkout(workoutId);
-      if (!workout || workout.trainerId !== req.user!.id) {
+      if (!workout || workout.trainerId !== (req.user as any).id) {
         return res.status(403).json({ error: "Access denied to this workout" });
       }
       
@@ -311,13 +317,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/workouts/:workoutId/exercises/:exerciseId - Remove exercise from workout
-  app.delete("/api/workouts/:workoutId/exercises/:exerciseId", secureAuth, async (req, res) => {
+  app.delete("/api/workouts/:workoutId/exercises/:exerciseId", secureAuth, async (req: Request, res: Response) => {
     try {
       const { workoutId, exerciseId } = req.params;
       
       // Verify workout belongs to authenticated trainer
       const workout = await storage.getWorkout(workoutId);
-      if (!workout || workout.trainerId !== req.user!.id) {
+      if (!workout || workout.trainerId !== (req.user as any).id) {
         return res.status(403).json({ error: "Access denied to this workout" });
       }
       
@@ -335,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workout Assignment Routes
   
   // GET /api/clients/:clientId/workouts - Get client's assigned workouts
-  app.get("/api/clients/:clientId/workouts", async (req, res) => {
+  app.get("/api/clients/:clientId/workouts", async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const assignments = await storage.getClientWorkouts(clientId);
@@ -347,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/workout-assignments - Assign workout to client
-  app.post("/api/workout-assignments", async (req, res) => {
+  app.post("/api/workout-assignments", async (req: Request, res: Response) => {
     try {
       const validatedData = insertWorkoutAssignmentSchema.parse(req.body);
       const assignment = await storage.assignWorkoutToClient(validatedData);
@@ -362,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/workout-assignments/:id/complete - Mark workout assignment as completed
-  app.put("/api/workout-assignments/:id/complete", secureAuth, async (req, res) => {
+  app.put("/api/workout-assignments/:id/complete", secureAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const { notes } = req.body;
@@ -376,7 +382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify the client belongs to authenticated trainer
       const client = await storage.getClient(assignment.clientId);
-      if (!client || client.trainerId !== req.user!.id) {
+      if (!client || client.trainerId !== (req.user as any).id) {
         return res.status(403).json({ error: "Access denied to this assignment" });
       }
       
@@ -391,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Progress Tracking Routes
 
   // GET /api/clients/:clientId/progress - Get client progress entries
-  app.get("/api/clients/:clientId/progress", secureAuth, requireClientOwnership, async (req, res) => {
+  app.get("/api/clients/:clientId/progress", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const progress = await storage.getClientProgress(clientId);
@@ -403,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/progress/:clientId - Get client progress entries (development route)
-  app.get("/api/progress/:clientId", async (req, res) => {
+  app.get("/api/progress/:clientId", async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const progress = await storage.getClientProgress(clientId);
@@ -415,13 +421,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/progress-entries - Add progress entry
-  app.post("/api/progress-entries", secureAuth, async (req, res) => {
+  app.post("/api/progress-entries", secureAuth, async (req: Request, res: Response) => {
     try {
       const validatedData = insertProgressEntrySchema.parse(req.body);
       
       // Verify client belongs to authenticated trainer
       const client = await storage.getClient(validatedData.clientId);
-      if (!client || client.trainerId !== req.user!.id) {
+      if (!client || client.trainerId !== (req.user as any).id) {
         return res.status(403).json({ error: "Access denied to this client" });
       }
       
@@ -439,9 +445,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Multi-Platform Messaging Routes
   
   // GET /api/messages - Get all messages for authenticated trainer
-  app.get("/api/messages", secureAuth, async (req, res) => {
+  app.get("/api/messages", secureAuth, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.user!.id;
+      const trainerId = (req.user as any).id as string;
       const { platform } = req.query;
       const messages = await storage.getAllMessagesForTrainer(trainerId, platform as string);
       res.json(messages);
@@ -452,7 +458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // GET /api/clients/:clientId/messages - Get client messages with optional platform filter
-  app.get("/api/clients/:clientId/messages", secureAuth, requireClientOwnership, async (req, res) => {
+  app.get("/api/clients/:clientId/messages", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const { platform } = req.query;
@@ -465,9 +471,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/messages - Send new message
-  app.post("/api/messages", secureAuth, rateLimitMessages, async (req, res) => {
+  app.post("/api/messages", secureAuth, rateLimitMessages, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.user!.id;
+      const trainerId = (req.user as any).id as string;
       
       // Remove trainerId from request body and use authenticated trainer ID
       const { trainerId: _, ...messageData } = req.body;
@@ -482,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.sendMessage(validatedData);
       
       // Simulate message delivery for external platforms
-      if (validatedData.platform !== 'app') {
+      if (validatedData.platform && validatedData.platform !== 'app') {
         simulateMessageDelivery(message.id, validatedData.platform, validatedData.content);
       }
       
@@ -504,9 +510,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/messages/multi-platform - Send message to multiple platforms
-  app.post("/api/messages/multi-platform", secureAuth, rateLimitMessages, async (req, res) => {
+  app.post("/api/messages/multi-platform", secureAuth, rateLimitMessages, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.user!.id;
+      const trainerId = (req.user as any).id as string;
       const { clientId, content, platforms } = req.body;
       if (!clientId || !content || !platforms || !Array.isArray(platforms)) {
         return res.status(400).json({ error: "clientId, content, and platforms array required" });
@@ -522,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Simulate message delivery for external platforms
       messages.forEach(message => {
-        if (message.platform !== 'app') {
+        if (message.platform && message.platform !== 'app') {
           simulateMessageDelivery(message.id, message.platform, message.content);
         }
       });
@@ -546,7 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/messages/:id/read - Mark message as read
-  app.put("/api/messages/:id/read", secureAuth, async (req, res) => {
+  app.put("/api/messages/:id/read", secureAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const message = await storage.markMessageAsRead(id);
@@ -571,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Message Templates Routes
   
   // GET /api/trainers/:trainerId/message-templates - Get message templates
-  app.get("/api/trainers/:trainerId/message-templates", secureAuth, requireTrainerOwnership, async (req, res) => {
+  app.get("/api/trainers/:trainerId/message-templates", secureAuth, requireTrainerOwnership, async (req: Request, res: Response) => {
     try {
       const { trainerId } = req.params;
       const { category } = req.query;
@@ -584,9 +590,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/message-templates - Create message template
-  app.post("/api/message-templates", secureAuth, async (req, res) => {
+  app.post("/api/message-templates", secureAuth, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.user!.id;
+      const trainerId = (req.user as any).id as string;
       
       // Remove trainerId from request body and use authenticated trainer ID - CRITICAL SECURITY FIX
       const { trainerId: _, ...templateData } = req.body;
@@ -604,7 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/message-templates/:id - Delete message template
-  app.delete("/api/message-templates/:id", secureAuth, async (req, res) => {
+  app.delete("/api/message-templates/:id", secureAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteMessageTemplate(id);
@@ -619,9 +625,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/message-templates - Get message templates for authenticated trainer
-  app.get("/api/message-templates", secureAuth, async (req, res) => {
+  app.get("/api/message-templates", secureAuth, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.user!.id;
+      const trainerId = (req.user as any).id as string;
       const { category } = req.query;
       const templates = await storage.getMessageTemplates(trainerId, category as string);
       res.json(templates);
@@ -634,7 +640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Client Communication Preferences Routes
   
   // GET /api/clients/:clientId/communication-prefs - Get client communication preferences
-  app.get("/api/clients/:clientId/communication-prefs", secureAuth, requireClientOwnership, async (req, res) => {
+  app.get("/api/clients/:clientId/communication-prefs", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const prefs = await storage.getClientCommunicationPrefs(clientId);
@@ -646,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/clients/:clientId/communication-prefs - Update client communication preference
-  app.put("/api/clients/:clientId/communication-prefs", secureAuth, requireClientOwnership, async (req, res) => {
+  app.put("/api/clients/:clientId/communication-prefs", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const validatedData = insertClientCommunicationPrefSchema.parse(req.body);
@@ -664,11 +670,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // Secure WebSocket Server for Real-time Messaging
-  const sessionStore = getSession().store;
+  // Get session store from the session middleware configuration
+  const sessionMiddleware = getSession();
+  const sessionStore = (sessionMiddleware as any).store;
+  
   const wss = new WebSocketServer({ 
     server: httpServer, 
     path: '/ws',
-    verifyClient: async (info) => {
+    verifyClient: async (info: { req: IncomingMessage; secure: boolean; origin: string }) => {
       try {
         // Parse cookies from WebSocket handshake
         const cookies = parseCookie(info.req.headers.cookie || '');
@@ -700,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Store authenticated WebSocket connections by room
   const authenticatedConnections = new Map<string, Set<WebSocket>>();
 
-  wss.on('connection', (ws, req) => {
+  wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
     const authenticatedUserId = (req as any).authenticatedUserId;
     console.log(`Secure WebSocket connection established for user: ${authenticatedUserId}`);
     

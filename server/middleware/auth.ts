@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { storage } from '../storage';
 import { isAuthenticated, getAuthenticatedUserId } from '../replitAuth';
+import type { User } from '@shared/schema';
 
 // Extend Express Session interface to include user data
 declare module 'express-session' {
@@ -20,13 +21,7 @@ declare module 'express-session' {
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: string;
-        email?: string;
-        firstName?: string;
-        lastName?: string;
-        profileImageUrl?: string;
-      };
+      user?: User;
     }
   }
 }
