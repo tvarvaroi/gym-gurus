@@ -1,8 +1,24 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Add compression middleware for all responses
+app.use(compression({
+  filter: (req, res) => {
+    // Don't compress responses that are already compressed
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use default filter function
+    return compression.filter(req, res);
+  },
+  level: 6, // Compression level (0-9, higher = more compression)
+  threshold: 1024, // Only compress responses larger than 1KB
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

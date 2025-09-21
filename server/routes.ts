@@ -74,8 +74,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clients/:trainerId", async (req: Request, res: Response) => {
     try {
       const { trainerId } = req.params;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50; // Default 50 items per page
+      const offset = (page - 1) * limit;
+      
       const clients = await storage.getClientsByTrainer(trainerId);
-      res.json(clients);
+      
+      // Add caching headers
+      res.set({
+        'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=120',
+        'ETag': `W/"${clients.length}-${Date.now()}"`,
+      });
+      
+      // For now, return unpaginated data for backward compatibility
+      // Frontend can be updated gradually to use pagination
+      if (req.query.noPagination === 'true') {
+        res.json(clients);
+      } else {
+        // Implement pagination
+        const paginatedClients = clients.slice(offset, offset + limit);
+        res.json(paginatedClients);
+      }
     } catch (error) {
       // Error logged internally
       res.status(500).json({ error: "Failed to fetch clients" });
@@ -155,6 +174,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/exercises", secureAuth, async (req: Request, res: Response) => {
     try {
       const exercises = await storage.getAllExercises();
+      
+      // Add caching headers for exercises (they don't change often)
+      res.set({
+        'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=1800',
+        'ETag': `W/"${exercises.length}-${Date.now()}"`,
+      });
+      
       res.json(exercises);
     } catch (error) {
       // Error logged internally
@@ -197,10 +223,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/workouts/:trainerId", async (req: Request, res: Response) => {
     try {
       const { trainerId } = req.params;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50; // Default 50 items per page
+      const offset = (page - 1) * limit;
+      
       // Fetching workouts for trainer
       const workouts = await storage.getWorkoutsByTrainer(trainerId);
-      // Workouts retrieved successfully
-      res.json(workouts);
+      
+      // Add caching headers
+      res.set({
+        'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=120',
+        'ETag': `W/"${workouts.length}-${Date.now()}"`,
+      });
+      
+      // For now, return unpaginated data for backward compatibility
+      // Frontend can be updated gradually to use pagination
+      if (req.query.noPagination === 'true') {
+        res.json(workouts);
+      } else {
+        // Implement pagination
+        const paginatedWorkouts = workouts.slice(offset, offset + limit);
+        res.json(paginatedWorkouts);
+      }
     } catch (error) {
       // Error logged internally
       res.status(500).json({ error: "Failed to fetch workouts" });

@@ -2,24 +2,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Users, Calendar, TrendingUp, MessageSquare } from "lucide-react"
-import heroImage from '@assets/generated_images/Diverse_fitness_gym_hero_4eec9aff.png'
+import { Skeleton } from "@/components/ui/skeleton"
 import AnimatedButton from "./AnimatedButton"
 import { NewClientButton } from "./ClientFormModal"
 import { motion } from "framer-motion"
 import { useReducedMotion } from "../hooks/use-reduced-motion"
 import { useQuery } from "@tanstack/react-query"
 import { StaggerContainer, StaggerItem } from "@/components/AnimationComponents"
+import { memo, useState, useEffect } from "react"
 
-export default function Dashboard() {
+const Dashboard = memo(() => {
   const prefersReducedMotion = useReducedMotion();
   
   // Temporary trainer ID for development - replace with real auth later
   const TEMP_TRAINER_ID = "demo-trainer-123";
   
-  // Fetch real client data for stats
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false);
+  
+  // Lazy load hero image
+  useEffect(() => {
+    const img = new Image();
+    img.src = '/attached_assets/generated_images/Diverse_fitness_gym_hero_4eec9aff.png';
+    img.onload = () => {
+      setHeroImageLoaded(true);
+    };
+  }, []);
+  
+  // Fetch real client data for stats - with noPagination for backwards compatibility
   const { data: clients, isLoading } = useQuery({
-    queryKey: ['/api/clients', TEMP_TRAINER_ID],
-    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}`).then(res => res.json())
+    queryKey: ['/api/clients', TEMP_TRAINER_ID, 'noPagination'],
+    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}?noPagination=true`).then(res => res.json()),
+    staleTime: 60 * 1000, // Fresh for 1 minute
+    gcTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
   
   // Calculate real stats from client data
@@ -48,10 +62,16 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Hero Section - Apple-inspired minimalist design */}
-      <div 
-        className="relative h-80 rounded-xl bg-cover bg-center overflow-hidden"
-        style={{ backgroundImage: `url(${heroImage})` }}
-      >
+      {!heroImageLoaded ? (
+        <Skeleton className="h-80 rounded-xl" />
+      ) : (
+        <div 
+          className="relative h-80 rounded-xl bg-cover bg-center overflow-hidden"
+          style={{ 
+            backgroundImage: `url(/attached_assets/generated_images/Diverse_fitness_gym_hero_4eec9aff.png)`,
+            willChange: 'transform'
+          }}
+        >
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
         <div className="relative h-full flex flex-col justify-center items-center text-center px-8 text-white">
           <h1 className="text-5xl font-light tracking-tight mb-4" data-testid="text-dashboard-title">
@@ -97,7 +117,8 @@ export default function Dashboard() {
             </motion.div>
           )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Stats Grid - Apple-inspired clean cards */}
       <StaggerContainer delay={0.3}>
@@ -157,4 +178,6 @@ export default function Dashboard() {
       </Card>
     </div>
   )
-}
+});
+
+export default Dashboard;

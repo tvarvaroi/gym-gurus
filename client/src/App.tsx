@@ -4,36 +4,50 @@ import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import AppSidebar from "@/components/AppSidebar";
-import ThemeToggle from "@/components/ThemeToggle";
-import Dashboard from "@/components/Dashboard";
-import ClientCard from "@/components/ClientCard";
-import WorkoutPlans from "@/pages/WorkoutPlans";
-import WorkoutBuilder from "@/pages/WorkoutBuilder";
-import ExercisesPageComponent from "@/pages/ExercisesPage";
-import SchedulePageComponent from "@/pages/SchedulePage";
-import NotFound from "@/pages/not-found";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
-import { lazy, Suspense, useState, useEffect, useMemo } from "react";
+import { lazy, Suspense, useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, User, LogOut, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import SearchInput from "@/components/SearchInput";
 import { exportClientsToCSV, exportWorkoutsToCSV } from "@/lib/exportUtils";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimationComponents";
 
-// Pages for different sections of the app
-function HomePage() {
-  return (
-    <PageTransition>
-      <Dashboard />
-    </PageTransition>
-  );
-}
+// Lazy load components for code splitting
+const AppSidebar = lazy(() => import("@/components/AppSidebar"));
+const ThemeToggle = lazy(() => import("@/components/ThemeToggle"));
+const Dashboard = lazy(() => import("@/components/Dashboard"));
+const ClientCard = lazy(() => import("@/components/ClientCard"));
+const WorkoutPlans = lazy(() => import("@/pages/WorkoutPlans"));
+const WorkoutBuilder = lazy(() => import("@/pages/WorkoutBuilder"));
+const ExercisesPageComponent = lazy(() => import("@/pages/ExercisesPage"));
+const SchedulePageComponent = lazy(() => import("@/pages/SchedulePage"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const SearchInput = lazy(() => import("@/components/SearchInput"));
 
-function ClientsPage() {
+// Loading fallback component
+const LoadingFallback = memo(() => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="space-y-4 text-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+      <p className="text-sm text-muted-foreground">Loading...</p>
+    </div>
+  </div>
+));
+
+// Pages for different sections of the app
+const HomePage = memo(() => {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <PageTransition>
+        <Dashboard />
+      </PageTransition>
+    </Suspense>
+  );
+});
+
+const ClientsPage = memo(() => {
   
   // Temporary trainer ID for development - replace with real auth later
   const TEMP_TRAINER_ID = "demo-trainer-123";
@@ -41,7 +55,9 @@ function ClientsPage() {
   
   const { data: clients, isLoading, error } = useQuery({
     queryKey: ['/api/clients', TEMP_TRAINER_ID],
-    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}`).then(res => res.json())
+    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}`).then(res => res.json()),
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
   });
   
   // Show loading state
@@ -141,12 +157,15 @@ function ClientsPage() {
               </Button>
             </div>
             <div className="w-full md:w-80">
-              <SearchInput
-                placeholder="Search clients by name, email, goal..."
-                value={searchQuery}
-                onChange={setSearchQuery}
-                className="w-full"
-              />
+              <Suspense fallback={<div className="h-10 bg-muted rounded-md animate-pulse" />}>
+                <SearchInput
+                  placeholder="Search clients by name, email, goal..."
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  debounceMs={300}
+                  className="w-full"
+                />
+              </Suspense>
             </div>
           </div>
         </StaggerItem>
@@ -160,7 +179,9 @@ function ClientsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {transformedClients.map((client: any, index: number) => (
                 <StaggerItem key={client.email} index={index}>
-                  <ClientCard {...client} />
+                  <Suspense fallback={<div className="h-80 bg-card/50 rounded-xl animate-pulse" />}>
+                    <ClientCard {...client} />
+                  </Suspense>
                 </StaggerItem>
               ))}
             </div>
@@ -169,15 +190,17 @@ function ClientsPage() {
       </div>
     </PageTransition>
   );
-}
+});
 
-function WorkoutsPage() {
+const WorkoutsPage = memo(() => {
   return (
-    <PageTransition>
-      <WorkoutPlans />
-    </PageTransition>
+    <Suspense fallback={<LoadingFallback />}>
+      <PageTransition>
+        <WorkoutPlans />
+      </PageTransition>
+    </Suspense>
   );
-}
+});
 
 const ProgressPageComponent = lazy(() => import("@/pages/ProgressPage"));
 
@@ -189,13 +212,15 @@ function ProgressPage() {
   );
 }
 
-function ExercisesPage() {
+const ExercisesPage = memo(() => {
   return (
-    <PageTransition>
-      <ExercisesPageComponent />
-    </PageTransition>
+    <Suspense fallback={<LoadingFallback />}>
+      <PageTransition>
+        <ExercisesPageComponent />
+      </PageTransition>
+    </Suspense>
   );
-}
+});
 
 const MessagesPageComponent = lazy(() => import("@/pages/MessagesPage"));
 
@@ -208,13 +233,15 @@ function MessagesPage() {
   );
 }
 
-function SchedulePage() {
+const SchedulePage = memo(() => {
   return (
-    <PageTransition>
-      <SchedulePageComponent />
-    </PageTransition>
+    <Suspense fallback={<LoadingFallback />}>
+      <PageTransition>
+        <SchedulePageComponent />
+      </PageTransition>
+    </Suspense>
   );
-}
+});
 
 function Router() {
   const [location] = useLocation();
