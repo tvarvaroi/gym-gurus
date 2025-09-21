@@ -21,11 +21,13 @@ import NotFound from "@/pages/not-found";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useReducedMotion } from "./hooks/use-reduced-motion";
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, LogIn, Shield, User, LogOut } from "lucide-react";
+import { Loader2, LogIn, Shield, User, LogOut, Download, FileDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import SearchInput from "@/components/SearchInput";
+import { exportClientsToCSV, exportWorkoutsToCSV } from "@/lib/exportUtils";
 
 // Pages for different sections of the app
 function HomePage() {
@@ -92,6 +94,7 @@ function ClientsPage() {
   
   // Temporary trainer ID for development - replace with real auth later
   const TEMP_TRAINER_ID = "demo-trainer-123";
+  const [searchQuery, setSearchQuery] = useState("");
   
   const { data: clients, isLoading, error } = useQuery({
     queryKey: ['/api/clients', TEMP_TRAINER_ID],
@@ -149,26 +152,58 @@ function ClientsPage() {
   };
   
   // Transform database client data to match ClientCard props
-  const transformedClients = (clients || []).map((client: any) => ({
-    client: client, // Pass full client object
-    trainerId: TEMP_TRAINER_ID, // Pass trainerId for edit functionality
-    name: client.name,
-    email: client.email,
-    goal: client.goal,
-    progress: Math.floor(Math.random() * 100), // Temporary - will implement real progress tracking
-    lastSession: formatSessionTime(client.lastSession),
-    status: client.status,
-    nextSession: client.nextSession ? new Date(client.nextSession).toLocaleDateString() : undefined
-  }));
+  const transformedClients = useMemo(() => {
+    const allClients = (clients || []).map((client: any) => ({
+      client: client, // Pass full client object
+      trainerId: TEMP_TRAINER_ID, // Pass trainerId for edit functionality
+      name: client.name,
+      email: client.email,
+      goal: client.goal,
+      progress: Math.floor(Math.random() * 100), // Temporary - will implement real progress tracking
+      lastSession: formatSessionTime(client.lastSession),
+      status: client.status,
+      nextSession: client.nextSession ? new Date(client.nextSession).toLocaleDateString() : undefined
+    }));
+    
+    // Filter clients based on search query
+    if (!searchQuery.trim()) return allClients;
+    
+    const query = searchQuery.toLowerCase();
+    return allClients.filter((client: any) => 
+      client.name.toLowerCase().includes(query) ||
+      client.email.toLowerCase().includes(query) ||
+      client.goal?.toLowerCase().includes(query) ||
+      client.status.toLowerCase().includes(query)
+    );
+  }, [clients, searchQuery]);
 
   return (
     <PageTransition>
       <div className="space-y-8">
         <StaggerItem>
-          <div className="flex justify-between items-center">
-            <div className="space-y-2">
-              <h1 className="text-4xl font-light tracking-tight">My Clients</h1>
-              <p className="text-lg font-light text-muted-foreground">Manage and track your client progress</p>
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center flex-wrap gap-4">
+              <div className="space-y-2">
+                <h1 className="text-4xl font-light tracking-tight">My Clients</h1>
+                <p className="text-lg font-light text-muted-foreground">Manage and track your client progress</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => exportClientsToCSV(clients || [])}
+                disabled={!clients?.length}
+                data-testid="button-export-clients"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export to CSV
+              </Button>
+            </div>
+            <div className="w-full md:w-80">
+              <SearchInput
+                placeholder="Search clients by name, email, goal..."
+                value={searchQuery}
+                onChange={setSearchQuery}
+                className="w-full"
+              />
             </div>
           </div>
         </StaggerItem>

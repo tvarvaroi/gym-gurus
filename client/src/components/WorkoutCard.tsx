@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Users, Copy, Edit, MoreHorizontal } from "lucide-react"
 import { motion } from "framer-motion"
+import { memo } from "react"
 
 interface Exercise {
   name: string
@@ -22,7 +23,7 @@ interface WorkoutCardProps {
   category: string
 }
 
-export default function WorkoutCard({
+const WorkoutCard = memo(function WorkoutCard({
   title,
   description, 
   duration,
@@ -162,4 +163,6 @@ export default function WorkoutCard({
     </Card>
     </motion.div>
   )
-}
+})
+
+export default WorkoutCard

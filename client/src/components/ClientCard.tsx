@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { MessageSquare, Calendar, TrendingUp, Edit } from "lucide-react"
 import { motion, useSpring, useTransform } from "framer-motion"
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import { EditClientButton } from "./ClientFormModal"
 import type { Client } from "@shared/schema"
 
@@ -21,7 +21,7 @@ interface ClientCardProps {
   nextSession?: string
 }
 
-export default function ClientCard({ 
+const ClientCard = memo(function ClientCard({ 
   client,
   trainerId,
   name, 
@@ -259,4 +259,6 @@ export default function ClientCard({
     </Card>
     </motion.div>
   )
-}
+})
+
+export default ClientCard

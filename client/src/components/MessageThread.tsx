@@ -35,7 +35,7 @@ export default function MessageThread({
 
   const handleSend = () => {
     if (newMessage.trim()) {
-      console.log('Sending message:', newMessage)
+      // Send message logic
       setNewMessage("")
     }
   }

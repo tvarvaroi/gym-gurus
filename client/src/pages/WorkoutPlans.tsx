@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Clock, Target, Users } from "lucide-react";
 import WorkoutFormModal from "../components/WorkoutFormModal";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import SearchInput from "@/components/SearchInput";
 
 // Temporary trainer ID for development
 const TEMP_TRAINER_ID = "demo-trainer-123";
 
 export default function WorkoutPlans() {
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const prefersReducedMotion = useReducedMotion();
 
   const { data: workouts, isLoading, error } = useQuery({
@@ -88,18 +90,32 @@ export default function WorkoutPlans() {
     );
   }
 
+  // Filter workouts based on search query
+  const filteredWorkouts = useMemo(() => {
+    if (!searchQuery.trim()) return workouts || [];
+    
+    const query = searchQuery.toLowerCase();
+    return (workouts || []).filter((workout: any) => 
+      workout.title?.toLowerCase().includes(query) ||
+      workout.description?.toLowerCase().includes(query) ||
+      workout.category?.toLowerCase().includes(query) ||
+      workout.difficulty?.toLowerCase().includes(query)
+    );
+  }, [workouts, searchQuery]);
+
   return (
     <PageTransition>
       <div className="space-y-8">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-light tracking-tight">Workout Plans</h1>
-            <p className="text-lg font-light text-muted-foreground">
-              Create and manage personalized workout routines
-            </p>
-          </div>
-          <WorkoutFormModal
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center flex-wrap gap-4">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-light tracking-tight">Workout Plans</h1>
+              <p className="text-lg font-light text-muted-foreground">
+                Create and manage personalized workout routines
+              </p>
+            </div>
+            <WorkoutFormModal
             mode="create"
             trainerId={TEMP_TRAINER_ID}
             trigger={
@@ -109,11 +125,27 @@ export default function WorkoutPlans() {
               </Button>
             }
           />
+          </div>
+          <div className="w-full md:w-80">
+            <SearchInput
+              placeholder="Search workouts by title, category, difficulty..."
+              value={searchQuery}
+              onChange={setSearchQuery}
+              className="w-full"
+            />
+          </div>
         </div>
 
         {/* Workout Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {workouts?.map((workout: any, index: number) => (
+          {filteredWorkouts.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-lg font-light text-muted-foreground">
+                {searchQuery ? "No workouts found matching your search" : "No workout plans yet. Create your first workout!"}
+              </p>
+            </div>
+          ) : (
+            filteredWorkouts.map((workout: any, index: number) => (
             <StaggerItem key={workout.id} index={index}>
               <Card className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 border border-border/50 hover:border-primary/30 bg-card/50 backdrop-blur-sm hover:bg-card/80">
                 <CardHeader className="space-y-4">
@@ -172,7 +204,8 @@ export default function WorkoutPlans() {
                 </CardContent>
               </Card>
             </StaggerItem>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Empty State */}

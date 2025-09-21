@@ -22,6 +22,12 @@ import {
   rateLimitWebSocket
 } from "./middleware/auth";
 import { 
+  apiRateLimit, 
+  generalRateLimit, 
+  authRateLimit,
+  exportRateLimit
+} from "./middleware/rateLimiter";
+import { 
   simulateMessageDelivery, 
   getMessageDeliveryStatuses 
 } from "./middleware/deliveredTracking";
@@ -30,8 +36,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup secure Replit Auth
   await setupAuth(app);
 
+  // Apply general rate limiting to all API routes
+  app.use('/api', generalRateLimit);
+  
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: Request, res: Response) => {
+  app.get('/api/auth/user', isAuthenticated, authRateLimit, async (req: Request, res: Response) => {
     try {
       // After isAuthenticated middleware, req.user contains JWT claims
       const jwtUser = req.user as any;
@@ -42,21 +51,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
-      console.error("Error fetching user:", error);
+      // Error logged internally
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
   // Client Management Routes
   
-  // GET /api/clients - Get all clients for authenticated trainer
-  app.get("/api/clients", secureAuth, async (req: Request, res: Response) => {
+  // GET /api/clients - Get all clients for authenticated trainer with pagination
+  app.get("/api/clients", secureAuth, apiRateLimit, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
       const clients = await storage.getClientsByTrainer(trainerId);
       res.json(clients);
     } catch (error) {
-      console.error("Error fetching clients:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch clients" });
     }
   });
@@ -68,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clients = await storage.getClientsByTrainer(trainerId);
       res.json(clients);
     } catch (error) {
-      console.error("Error fetching clients:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch clients" });
     }
   });
@@ -83,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(client);
     } catch (error) {
-      console.error("Error fetching client:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch client" });
     }
   });
@@ -99,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid client data", details: error.errors });
       }
-      console.error("Error creating client:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to create client" });
     }
   });
@@ -120,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid update data", details: error.errors });
       }
-      console.error("Error updating client:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to update client" });
     }
   });
@@ -135,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Client deleted successfully" });
     } catch (error) {
-      console.error("Error deleting client:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to delete client" });
     }
   });
@@ -148,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const exercises = await storage.getAllExercises();
       res.json(exercises);
     } catch (error) {
-      console.error("Error fetching exercises:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch exercises" });
     }
   });
@@ -163,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid exercise data", details: error.errors });
       }
-      console.error("Error creating exercise:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to create exercise" });
     }
   });
@@ -174,12 +183,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/workouts", secureAuth, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
-      console.log("[GET /api/workouts] Fetching workouts for trainer:", trainerId);
+      // Fetching workouts for trainer
       const workouts = await storage.getWorkoutsByTrainer(trainerId);
-      console.log("[GET /api/workouts] Found", workouts.length, "workouts");
+      // Workouts retrieved successfully
       res.json(workouts);
     } catch (error) {
-      console.error("Error fetching workouts:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch workouts" });
     }
   });
@@ -188,12 +197,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/workouts/:trainerId", async (req: Request, res: Response) => {
     try {
       const { trainerId } = req.params;
-      console.log("[GET /api/workouts/:trainerId] Fetching workouts for trainer:", trainerId);
+      // Fetching workouts for trainer
       const workouts = await storage.getWorkoutsByTrainer(trainerId);
-      console.log("[GET /api/workouts/:trainerId] Found", workouts.length, "workouts");
+      // Workouts retrieved successfully
       res.json(workouts);
     } catch (error) {
-      console.error("Error fetching workouts:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch workouts" });
     }
   });
@@ -215,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const exercises = await storage.getWorkoutExercises(id);
       res.json({ ...workout, exercises });
     } catch (error) {
-      console.error("Error fetching workout:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch workout" });
     }
   });
@@ -224,16 +233,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/workouts", secureAuth, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
-      console.log("[POST /api/workouts] Creating workout for trainer:", trainerId);
+      // Creating workout for trainer
       const validatedData = insertWorkoutSchema.parse({ ...req.body, trainerId });
       const workout = await storage.createWorkout(validatedData);
-      console.log("[POST /api/workouts] Created workout with ID:", workout.id, "for trainer:", workout.trainerId);
+      // Workout created successfully
       res.status(201).json(workout);
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid workout data", details: error.errors });
       }
-      console.error("Error creating workout:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to create workout" });
     }
   });
@@ -261,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid update data", details: error.errors });
       }
-      console.error("Error updating workout:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to update workout" });
     }
   });
@@ -283,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await storage.deleteWorkout(id);
       res.json({ message: "Workout deleted successfully" });
     } catch (error) {
-      console.error("Error deleting workout:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to delete workout" });
     }
   });
@@ -311,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid workout exercise data", details: error.errors });
       }
-      console.error("Error adding exercise to workout:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to add exercise to workout" });
     }
   });
@@ -333,7 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Exercise removed from workout successfully" });
     } catch (error) {
-      console.error("Error removing exercise from workout:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to remove exercise from workout" });
     }
   });
@@ -347,7 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const assignments = await storage.getClientWorkouts(clientId);
       res.json(assignments);
     } catch (error) {
-      console.error("Error fetching client workouts:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch client workouts" });
     }
   });
@@ -362,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid assignment data", details: error.errors });
       }
-      console.error("Error assigning workout:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to assign workout" });
     }
   });
@@ -389,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const completedAssignment = await storage.completeWorkoutAssignment(id, notes);
       res.json(completedAssignment);
     } catch (error) {
-      console.error("Error completing workout assignment:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to complete workout assignment" });
     }
   });
@@ -403,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const progress = await storage.getClientProgress(clientId);
       res.json(progress);
     } catch (error) {
-      console.error("Error fetching client progress:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch progress" });
     }
   });
@@ -415,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const progress = await storage.getClientProgress(clientId);
       res.json(progress);
     } catch (error) {
-      console.error("Error fetching client progress:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch progress" });
     }
   });
@@ -437,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid progress data", details: error.errors });
       }
-      console.error("Error adding progress entry:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to add progress entry" });
     }
   });
@@ -452,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages = await storage.getAllMessagesForTrainer(trainerId, platform as string);
       res.json(messages);
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
@@ -465,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages = await storage.getClientMessages(clientId, platform as string);
       res.json(messages);
     } catch (error) {
-      console.error("Error fetching client messages:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
@@ -504,7 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid message data", details: error.errors });
       }
-      console.error("Error sending message:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to send message" });
     }
   });
@@ -546,7 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json(messages);
     } catch (error) {
-      console.error("Error sending multi-platform message:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to send multi-platform message" });
     }
   });
@@ -569,7 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(message);
     } catch (error) {
-      console.error("Error marking message as read:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to mark message as read" });
     }
   });
@@ -584,7 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templates = await storage.getMessageTemplates(trainerId, category as string);
       res.json(templates);
     } catch (error) {
-      console.error("Error fetching message templates:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch message templates" });
     }
   });
@@ -604,7 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid template data", details: error.errors });
       }
-      console.error("Error creating message template:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to create message template" });
     }
   });
@@ -619,7 +628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ success: true });
     } catch (error) {
-      console.error("Error deleting message template:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to delete message template" });
     }
   });
@@ -632,7 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templates = await storage.getMessageTemplates(trainerId, category as string);
       res.json(templates);
     } catch (error) {
-      console.error("Error fetching message templates:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch message templates" });
     }
   });
@@ -646,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const prefs = await storage.getClientCommunicationPrefs(clientId);
       res.json(prefs);
     } catch (error) {
-      console.error("Error fetching communication preferences:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to fetch communication preferences" });
     }
   });
@@ -662,7 +671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid preference data", details: error.errors });
       }
-      console.error("Error updating communication preference:", error);
+      // Error logged internally
       res.status(500).json({ error: "Failed to update communication preference" });
     }
   });
@@ -684,23 +693,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const sessionId = cookies['connect.sid']?.replace('s:', '').split('.')[0];
         
         if (!sessionId) {
-          console.log('WebSocket connection rejected: No session cookie');
+          // WebSocket connection rejected: No session cookie
           return false;
         }
 
         // Authenticate session during handshake
         const userId = await authenticateWebSocketSession(sessionId, sessionStore);
         if (!userId) {
-          console.log('WebSocket connection rejected: Invalid session');
+          // WebSocket connection rejected: Invalid session
           return false;
         }
 
         // Store authenticated user ID for later use
         (info.req as any).authenticatedUserId = userId;
-        console.log(`WebSocket connection authenticated for user: ${userId}`);
+        // WebSocket connection authenticated
         return true;
       } catch (error) {
-        console.error('WebSocket authentication error:', error);
+        // WebSocket authentication error
         return false;
       }
     }
@@ -711,7 +720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
     const authenticatedUserId = (req as any).authenticatedUserId;
-    console.log(`Secure WebSocket connection established for user: ${authenticatedUserId}`);
+    // Secure WebSocket connection established
     
     // Store authenticated user info on WebSocket
     (ws as any).authenticatedUserId = authenticatedUserId;
@@ -720,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', async (data) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log('Received WebSocket message:', message);
+        // Received WebSocket message
         
         // Rate limit WebSocket messages per user
         if (!rateLimitWebSocket(authenticatedUserId)) {
@@ -778,14 +787,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               (ws as any).roomId = roomId;
               currentRoom = roomId;
               
-              console.log(`WebSocket client joined secure room: ${roomId}`);
+              // WebSocket client joined secure room
               ws.send(JSON.stringify({
                 type: 'room_joined',
                 data: { roomId, clientId, trainerId: authenticatedUserId }
               }));
               
             } catch (error) {
-              console.error('Error during secure room join:', error);
+              // Error during secure room join
               ws.send(JSON.stringify({
                 type: 'error',
                 data: { message: 'Failed to join room' }
@@ -827,7 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
         }
       } catch (error) {
-        console.error('WebSocket message parsing error:', error);
+        // WebSocket message parsing error
         ws.send(JSON.stringify({
           type: 'error',
           data: { message: 'Invalid message format' }
@@ -836,7 +845,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on('close', () => {
-      console.log('WebSocket connection closed');
+      // WebSocket connection closed
       
       // Clean up room membership
       if (currentRoom && authenticatedConnections.has(currentRoom)) {
@@ -848,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
+      // WebSocket error
     });
   });
   

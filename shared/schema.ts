@@ -39,7 +39,11 @@ export const clients = pgTable("clients", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastSession: timestamp("last_session"),
   nextSession: timestamp("next_session"),
-});
+}, (table) => [
+  index("idx_clients_trainer_id").on(table.trainerId),
+  index("idx_clients_status").on(table.status),
+  index("idx_clients_email").on(table.email),
+]);
 
 // Exercise Library
 export const exercises = pgTable("exercises", {
@@ -65,7 +69,11 @@ export const workouts = pgTable("workouts", {
   difficulty: text("difficulty").notNull(),
   category: text("category").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_workouts_trainer_id").on(table.trainerId),
+  index("idx_workouts_category").on(table.category),
+  index("idx_workouts_difficulty").on(table.difficulty),
+]);
 
 // Workout-Exercise Junction Table
 export const workoutExercises = pgTable("workout_exercises", {
@@ -77,7 +85,10 @@ export const workoutExercises = pgTable("workout_exercises", {
   weight: text("weight"), // optional, like "135 lbs"
   restTime: integer("rest_time"), // seconds
   sortOrder: integer("sort_order").notNull(), // order in workout
-});
+}, (table) => [
+  index("idx_workout_exercises_workout_id").on(table.workoutId),
+  index("idx_workout_exercises_exercise_id").on(table.exerciseId),
+]);
 
 // Workout Assignments to Clients
 export const workoutAssignments = pgTable("workout_assignments", {
@@ -98,7 +109,10 @@ export const progressEntries = pgTable("progress_entries", {
   unit: text("unit").notNull(), // lbs, kg, inches, cm, etc.
   notes: text("notes"),
   recordedAt: timestamp("recorded_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_progress_entries_client_id").on(table.clientId),
+  index("idx_progress_entries_recorded_at").on(table.recordedAt),
+]);
 
 // Messages (Multi-Platform Trainer-Client Communication)
 export const messages = pgTable("messages", {
@@ -116,7 +130,11 @@ export const messages = pgTable("messages", {
   deliveredAt: timestamp("delivered_at"),
   deliveryStatus: text("delivery_status").default("pending"), // pending, sent, delivered, failed
   errorMessage: text("error_message"), // Error details if delivery failed
-});
+}, (table) => [
+  index("idx_messages_trainer_id").on(table.trainerId),
+  index("idx_messages_client_id").on(table.clientId),
+  index("idx_messages_sent_at").on(table.sentAt),
+]);
 
 // Client Communication Preferences
 export const clientCommunicationPrefs = pgTable("client_communication_prefs", {
