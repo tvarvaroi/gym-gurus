@@ -168,7 +168,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/workouts", secureAuth, async (req, res) => {
     try {
       const trainerId = req.user!.id;
+      console.log("[GET /api/workouts] Fetching workouts for trainer:", trainerId);
       const workouts = await storage.getWorkoutsByTrainer(trainerId);
+      console.log("[GET /api/workouts] Found", workouts.length, "workouts");
       res.json(workouts);
     } catch (error) {
       console.error("Error fetching workouts:", error);
@@ -180,7 +182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/workouts/:trainerId", async (req, res) => {
     try {
       const { trainerId } = req.params;
+      console.log("[GET /api/workouts/:trainerId] Fetching workouts for trainer:", trainerId);
       const workouts = await storage.getWorkoutsByTrainer(trainerId);
+      console.log("[GET /api/workouts/:trainerId] Found", workouts.length, "workouts");
       res.json(workouts);
     } catch (error) {
       console.error("Error fetching workouts:", error);
@@ -214,8 +218,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/workouts", secureAuth, async (req, res) => {
     try {
       const trainerId = req.user!.id;
+      console.log("[POST /api/workouts] Creating workout for trainer:", trainerId);
       const validatedData = insertWorkoutSchema.parse({ ...req.body, trainerId });
       const workout = await storage.createWorkout(validatedData);
+      console.log("[POST /api/workouts] Created workout with ID:", workout.id, "for trainer:", workout.trainerId);
       res.status(201).json(workout);
     } catch (error) {
       if (error instanceof ZodError) {

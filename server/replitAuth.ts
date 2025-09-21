@@ -217,13 +217,13 @@ export async function authenticateWebSocketSession(sessionId: string, sessionSto
 function setupDevAuth(app: Express) {
   // Create a mock user for development
   const devUser = {
-    id: "dev-trainer-123",
+    id: "demo-trainer-123",
     email: "trainer@example.com",
     firstName: "Demo",
     lastName: "Trainer",
     profileImageUrl: null,
     claims: {
-      sub: "dev-trainer-123",
+      sub: "demo-trainer-123",
       email: "trainer@example.com",
       first_name: "Demo",
       last_name: "Trainer"
