@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { useState } from "react"
+import { useState, useMemo, memo } from "react"
 
 interface CalendarEvent {
   id: string
@@ -17,7 +17,7 @@ interface CalendarViewProps {
   events?: CalendarEvent[]
 }
 
-export default function CalendarView({ events = [] }: CalendarViewProps) {
+const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date())
   
   const mockEvents: CalendarEvent[] = [
@@ -209,4 +209,8 @@ export default function CalendarView({ events = [] }: CalendarViewProps) {
       </Card>
     </div>
   )
-}
+})
+
+CalendarView.displayName = "CalendarView"
+
+export default CalendarView

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sidebar"
 import logoImage from '@assets/Sophisticated Logo with Japanese Influences (3)_1757605872884.png'
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useState, memo } from "react"
 import { useLocation } from "wouter"
 
 const menuItems = [
@@ -52,7 +52,7 @@ const menuItems = [
   },
 ]
 
-export default function AppSidebar() {
+const AppSidebar = memo(() => {
   const [location] = useLocation()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
@@ -232,4 +232,8 @@ export default function AppSidebar() {
       </SidebarContent>
     </Sidebar>
   )
-}
+})
+
+AppSidebar.displayName = "AppSidebar"
+
+export default AppSidebar

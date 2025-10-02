@@ -1,13 +1,24 @@
-import { useState } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, TrendingUp, TrendingDown, Activity, Weight, Target } from "lucide-react";
 import { motion } from "framer-motion";
 import ProgressFormModal from "../components/ProgressFormModal";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load chart components to reduce initial bundle size
+const LineChart = lazy(() => import('recharts').then(module => ({ default: module.LineChart })));
+const Line = lazy(() => import('recharts').then(module => ({ default: module.Line })));
+const XAxis = lazy(() => import('recharts').then(module => ({ default: module.XAxis })));
+const YAxis = lazy(() => import('recharts').then(module => ({ default: module.YAxis })));
+const CartesianGrid = lazy(() => import('recharts').then(module => ({ default: module.CartesianGrid })));
+const Tooltip = lazy(() => import('recharts').then(module => ({ default: module.Tooltip })));
+const ResponsiveContainer = lazy(() => import('recharts').then(module => ({ default: module.ResponsiveContainer })));
+const BarChart = lazy(() => import('recharts').then(module => ({ default: module.BarChart })));
+const Bar = lazy(() => import('recharts').then(module => ({ default: module.Bar })));
 
 // Temporary trainer/client IDs for development
 const TEMP_TRAINER_ID = "demo-trainer-123";
@@ -45,18 +56,20 @@ export default function ProgressPage() {
     enabled: !!selectedClient
   });
 
-  // Group progress data by type for charts
-  const groupedProgress = (progressData || []).reduce((acc: any, entry: ProgressEntry) => {
-    const type = entry.type;
-    if (!acc[type]) acc[type] = [];
-    acc[type].push({
-      date: new Date(entry.recordedAt).toLocaleDateString(),
-      value: parseFloat(entry.value),
-      fullDate: entry.recordedAt,
-      notes: entry.notes
-    });
-    return acc;
-  }, {});
+  // Group progress data by type for charts - memoized for performance
+  const groupedProgress = useMemo(() => {
+    return (progressData || []).reduce((acc: any, entry: ProgressEntry) => {
+      const type = entry.type;
+      if (!acc[type]) acc[type] = [];
+      acc[type].push({
+        date: new Date(entry.recordedAt).toLocaleDateString(),
+        value: parseFloat(entry.value),
+        fullDate: entry.recordedAt,
+        notes: entry.notes
+      });
+      return acc;
+    }, {});
+  }, [progressData]);
 
   // Calculate progress trends
   const calculateTrend = (data: any[]) => {
@@ -195,54 +208,56 @@ export default function ProgressPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[400px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        {type === 'workout_completion' ? (
-                          <BarChart data={groupedProgress[type]}>
-                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                            <XAxis 
-                              dataKey="date" 
-                              className="text-xs fill-muted-foreground"
-                            />
-                            <YAxis className="text-xs fill-muted-foreground" />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: 'hsl(var(--card))',
-                                border: '1px solid hsl(var(--border))',
-                                borderRadius: '6px'
-                              }}
-                            />
-                            <Bar 
-                              dataKey="value" 
-                              fill="hsl(var(--primary))"
-                              className="fill-emerald-600"
-                            />
-                          </BarChart>
-                        ) : (
-                          <LineChart data={groupedProgress[type]}>
-                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                            <XAxis 
-                              dataKey="date" 
-                              className="text-xs fill-muted-foreground"
-                            />
-                            <YAxis className="text-xs fill-muted-foreground" />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: 'hsl(var(--card))',
-                                border: '1px solid hsl(var(--border))',
-                                borderRadius: '6px'
-                              }}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="value" 
-                              stroke="hsl(var(--primary))"
-                              strokeWidth={3}
-                              dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 6 }}
-                              className="stroke-emerald-600"
-                            />
-                          </LineChart>
-                        )}
-                      </ResponsiveContainer>
+                      <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          {type === 'workout_completion' ? (
+                            <BarChart data={groupedProgress[type]}>
+                              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                              <XAxis 
+                                dataKey="date" 
+                                className="text-xs fill-muted-foreground"
+                              />
+                              <YAxis className="text-xs fill-muted-foreground" />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: 'hsl(var(--card))',
+                                  border: '1px solid hsl(var(--border))',
+                                  borderRadius: '6px'
+                                }}
+                              />
+                              <Bar 
+                                dataKey="value" 
+                                fill="hsl(var(--primary))"
+                                className="fill-emerald-600"
+                              />
+                            </BarChart>
+                          ) : (
+                            <LineChart data={groupedProgress[type]}>
+                              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                              <XAxis 
+                                dataKey="date" 
+                                className="text-xs fill-muted-foreground"
+                              />
+                              <YAxis className="text-xs fill-muted-foreground" />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: 'hsl(var(--card))',
+                                  border: '1px solid hsl(var(--border))',
+                                  borderRadius: '6px'
+                                }}
+                              />
+                              <Line 
+                                type="monotone" 
+                                dataKey="value" 
+                                stroke="hsl(var(--primary))"
+                                strokeWidth={3}
+                                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 6 }}
+                                className="stroke-emerald-600"
+                              />
+                            </LineChart>
+                          )}
+                        </ResponsiveContainer>
+                      </Suspense>
                     </div>
                   </CardContent>
                 </Card>

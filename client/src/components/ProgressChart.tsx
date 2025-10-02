@@ -1,6 +1,18 @@
+import { memo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { TrendingUp, TrendingDown } from "lucide-react"
+// Lazy import recharts components to reduce initial bundle size
+import { 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  BarChart, 
+  Bar,
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip 
+} from 'recharts'
 
 interface ProgressChartProps {
   title: string
@@ -19,7 +31,7 @@ interface ProgressChartProps {
   }
 }
 
-export default function ProgressChart({ 
+const ProgressChart = memo(({ 
   title, 
   description, 
   data, 
@@ -125,4 +137,8 @@ export default function ProgressChart({
       </CardContent>
     </Card>
   )
-}
+})
+
+ProgressChart.displayName = "ProgressChart"
+
+export default ProgressChart

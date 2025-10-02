@@ -9,7 +9,7 @@ import { motion } from "framer-motion"
 import { useReducedMotion } from "../hooks/use-reduced-motion"
 import { useQuery } from "@tanstack/react-query"
 import { StaggerContainer, StaggerItem } from "@/components/AnimationComponents"
-import { memo, useState, useEffect } from "react"
+import { memo, useState, useEffect, useMemo, useCallback } from "react"
 import { useLocation } from "wouter"
 import { exportClientsToCSV, exportWorkoutsToCSV } from "@/lib/exportUtils"
 import { useToast } from "@/hooks/use-toast"
@@ -146,8 +146,8 @@ const Dashboard = memo(() => {
     }
   }
 
-  // Format recent activities from dashboard stats
-  const formatTimeAgo = (date: string | Date) => {
+  // Format recent activities from dashboard stats - memoized for performance
+  const formatTimeAgo = useCallback((date: string | Date) => {
     const now = new Date();
     const past = new Date(date);
     const diffMs = now.getTime() - past.getTime();
@@ -158,16 +158,18 @@ const Dashboard = memo(() => {
     if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
     if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
     return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-  }
+  }, []);
 
-  const recentActivities = dashboardStats?.recentActivity?.map((activity: any) => ({
-    client: activity.type === 'session' ? 'Training Session' : 'Client Message',
-    action: activity.description,
-    time: formatTimeAgo(activity.time),
-    icon: activity.type === 'session' ? Calendar : MessageSquare,
-  })) || [
-    { client: "Welcome!", action: "Start by adding your first client", time: "Just now", icon: Users },
-  ]
+  const recentActivities = useMemo(() => {
+    return dashboardStats?.recentActivity?.map((activity: any) => ({
+      client: activity.type === 'session' ? 'Training Session' : 'Client Message',
+      action: activity.description,
+      time: formatTimeAgo(activity.time),
+      icon: activity.type === 'session' ? Calendar : MessageSquare,
+    })) || [
+      { client: "Welcome!", action: "Start by adding your first client", time: "Just now", icon: Users },
+    ]
+  }, [dashboardStats?.recentActivity, formatTimeAgo])
 
   return (
     <div className="space-y-6">
