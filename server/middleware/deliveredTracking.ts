@@ -1,5 +1,3 @@
-import { storage } from '../storage';
-
 /**
  * Add deliveredAt tracking to messages for delivery status monitoring
  */
@@ -67,8 +65,6 @@ export function getMessageDeliveryStatuses(messageId: string): MessageDeliverySt
  */
 export async function simulateMessageDelivery(messageId: string, platform: string, content: string): Promise<boolean> {
   try {
-    console.log(`Simulating delivery of message ${messageId} to ${platform}: ${content}`);
-    
     // Simulate random delivery success/failure for demo
     const deliverySuccess = Math.random() > 0.1; // 90% success rate
     
@@ -76,16 +72,13 @@ export async function simulateMessageDelivery(messageId: string, platform: strin
       // Simulate delivery delay
       await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 500));
       markMessageDelivered(messageId, platform);
-      console.log(`Message ${messageId} delivered successfully to ${platform}`);
       return true;
     } else {
       markMessageFailed(messageId, platform, 'Simulated delivery failure');
-      console.log(`Message ${messageId} failed to deliver to ${platform}`);
       return false;
     }
   } catch (error) {
     markMessageFailed(messageId, platform, `Delivery error: ${error}`);
-    console.error(`Error delivering message ${messageId} to ${platform}:`, error);
     return false;
   }
 }

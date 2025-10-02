@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2, GripVertical } from "lucide-react";
+import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2 } from "lucide-react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 // Temporary trainer ID for development

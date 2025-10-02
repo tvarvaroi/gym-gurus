@@ -18,7 +18,7 @@ const hasReplitAuth = !!(process.env.ISSUER_URL && process.env.REPL_ID);
 const getOidcConfig = memoize(
   async () => {
     if (!hasReplitAuth) {
-      console.warn("Missing ISSUER_URL or REPL_ID - Replit Auth disabled for development");
+      // Replit Auth disabled for development
       return null;
     }
     return await client.discovery(
@@ -82,7 +82,6 @@ export async function setupAuth(app: Express) {
 
   // If Replit Auth is not available, set up development auth
   if (!hasReplitAuth) {
-    console.log("🔧 Development Mode: Setting up mock authentication");
     setupDevAuth(app);
     return;
   }
@@ -237,8 +236,6 @@ function setupDevAuth(app: Express) {
 
   // Development login route
   app.get("/api/login", async (req: any, res) => {
-    console.log("🔧 Development login - creating mock session");
-    
     // Ensure user exists in database
     await storage.upsertUser({
       id: devUser.id,
@@ -252,7 +249,6 @@ function setupDevAuth(app: Express) {
     req.session.passport = { user: devUser };
     req.session.save((err: any) => {
       if (err) {
-        console.error("Session save error:", err);
         return res.status(500).json({ error: "Failed to create session" });
       }
       res.redirect("/");
@@ -262,12 +258,7 @@ function setupDevAuth(app: Express) {
   // Development logout route
   app.get("/api/logout", (req: any, res) => {
     req.session.destroy((err: any) => {
-      if (err) {
-        console.error("Session destroy error:", err);
-      }
       res.redirect("/");
     });
   });
-
-  console.log("✅ Development authentication routes configured");
 }
