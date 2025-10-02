@@ -8,8 +8,10 @@ import { Plus, TrendingUp, TrendingDown, Activity, Weight, Target } from "lucide
 import { motion } from "framer-motion";
 import ProgressFormModal from "../components/ProgressFormModal";
 import { Skeleton } from "@/components/ui/skeleton";
+// Import Bar directly to avoid type issues
+import { Bar } from 'recharts';
 
-// Lazy load chart components to reduce initial bundle size
+// Lazy load other chart components to reduce initial bundle size
 const LineChart = lazy(() => import('recharts').then(module => ({ default: module.LineChart })));
 const Line = lazy(() => import('recharts').then(module => ({ default: module.Line })));
 const XAxis = lazy(() => import('recharts').then(module => ({ default: module.XAxis })));
@@ -18,7 +20,6 @@ const CartesianGrid = lazy(() => import('recharts').then(module => ({ default: m
 const Tooltip = lazy(() => import('recharts').then(module => ({ default: module.Tooltip })));
 const ResponsiveContainer = lazy(() => import('recharts').then(module => ({ default: module.ResponsiveContainer })));
 const BarChart = lazy(() => import('recharts').then(module => ({ default: module.BarChart })));
-const Bar = lazy(() => import('recharts').then(module => ({ default: module.Bar })));
 
 // Temporary trainer/client IDs for development
 const TEMP_TRAINER_ID = "demo-trainer-123";
@@ -228,7 +229,6 @@ export default function ProgressPage() {
                               <Bar 
                                 dataKey="value" 
                                 fill="hsl(var(--primary))"
-                                className="fill-emerald-600"
                               />
                             </BarChart>
                           ) : (

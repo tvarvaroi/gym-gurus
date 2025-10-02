@@ -38,7 +38,7 @@ const ProgressChart = memo(({
   type, 
   metric,
   trend 
-}: ProgressChartProps) {
+}: ProgressChartProps) => {
   return (
     <Card className="hover-elevate" data-testid={`chart-${title.toLowerCase().replace(' ', '-')}`}>
       <CardHeader>

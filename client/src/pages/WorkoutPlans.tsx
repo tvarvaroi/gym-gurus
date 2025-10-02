@@ -36,8 +36,10 @@ export default function WorkoutPlans() {
 
   // Duplicate workout mutation
   const duplicateWorkoutMutation = useMutation({
-    mutationFn: (workoutId: string) => 
-      apiRequest('POST', `/api/workouts/${workoutId}/duplicate`),
+    mutationFn: async (workoutId: string) => {
+      const response = await apiRequest('POST', `/api/workouts/${workoutId}/duplicate`);
+      return await response.json();
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/workouts', TEMP_TRAINER_ID] });
       toast({

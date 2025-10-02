@@ -235,9 +235,10 @@ const Dashboard = memo(() => {
       )}
 
       {/* Stats Grid - Enhanced with real-time data */}
-      <StaggerContainer delay={0.1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <StaggerItem key={stat.label} index={index}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StaggerContainer delay={0.1}>
+          {stats.map((stat, index) => (
+            <StaggerItem key={stat.label} index={index}>
             <Card 
               className="bg-card/50 backdrop-blur-sm border-border/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group cursor-pointer" 
               onClick={() => {
@@ -263,9 +264,10 @@ const Dashboard = memo(() => {
                 </p>
               </CardContent>
             </Card>
-          </StaggerItem>
-        ))}
-      </StaggerContainer>
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
+      </div>
 
       {/* Quick Actions Section */}
       <div className="space-y-4">
@@ -279,25 +281,12 @@ const Dashboard = memo(() => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action) => (
             action.action === 'add-client' ? (
-              <NewClientButton
-                key={action.action}
-                trainerId={TEMP_TRAINER_ID}
-                trigger={
-                  <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 group bg-card/50 backdrop-blur-sm border-border/50">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col items-center text-center space-y-3">
-                        <div className={`p-3 rounded-xl ${action.color} text-white transition-transform group-hover:scale-110`}>
-                          <action.icon className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{action.label}</p>
-                          <p className="text-xs text-muted-foreground">{action.description}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                }
-              />
+              <div key={action.action}>
+                <NewClientButton
+                  trainerId={TEMP_TRAINER_ID}
+                  className="w-full h-full p-0"
+                />
+              </div>
             ) : (
               <Card 
                 key={action.action}
@@ -334,7 +323,7 @@ const Dashboard = memo(() => {
         </CardHeader>
         <CardContent>
           <div className="space-y-1">
-            {recentActivities.map((activity, index) => (
+            {recentActivities.map((activity: any, index: number) => (
               <div key={index} className="flex items-center justify-between p-4 rounded-xl hover-elevate transition-all duration-200" data-testid={`activity-${index}`}>
                 <div className="flex items-center space-x-3">
                   <div className="p-2 rounded-lg bg-muted/50">
