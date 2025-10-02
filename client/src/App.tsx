@@ -60,6 +60,46 @@ const ClientsPage = memo(() => {
     gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
   });
   
+  // Helper function to format session times
+  const formatSessionTime = useCallback((timestamp: string | null) => {
+    if (!timestamp) return "No session yet";
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays === 0) return "Today";
+    return `${diffDays} days ago`;
+  }, []);
+  
+  // Transform database client data to match ClientCard props
+  // This must be called BEFORE any conditional returns to follow React's Rules of Hooks
+  const transformedClients = useMemo(() => {
+    const allClients = (clients || []).map((client: any) => ({
+      client: client, // Pass full client object
+      trainerId: TEMP_TRAINER_ID, // Pass trainerId for edit functionality
+      name: client.name,
+      email: client.email,
+      goal: client.goal,
+      progress: Math.floor(Math.random() * 100), // Temporary - will implement real progress tracking
+      lastSession: formatSessionTime(client.lastSession),
+      status: client.status,
+      nextSession: client.nextSession ? new Date(client.nextSession).toLocaleDateString() : undefined
+    }));
+    
+    // Filter clients based on search query
+    if (!searchQuery.trim()) return allClients;
+    
+    const query = searchQuery.toLowerCase();
+    return allClients.filter((client: any) => 
+      client.name.toLowerCase().includes(query) ||
+      client.email.toLowerCase().includes(query) ||
+      client.goal?.toLowerCase().includes(query) ||
+      client.status.toLowerCase().includes(query)
+    );
+  }, [clients, searchQuery, formatSessionTime]);
+  
   // Show loading state
   if (isLoading) {
     return (
@@ -96,45 +136,6 @@ const ClientsPage = memo(() => {
       </PageTransition>
     );
   }
-  
-  // Helper function to format session times
-  const formatSessionTime = (timestamp: string | null) => {
-    if (!timestamp) return "No session yet";
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays === 0) return "Today";
-    return `${diffDays} days ago`;
-  };
-  
-  // Transform database client data to match ClientCard props
-  const transformedClients = useMemo(() => {
-    const allClients = (clients || []).map((client: any) => ({
-      client: client, // Pass full client object
-      trainerId: TEMP_TRAINER_ID, // Pass trainerId for edit functionality
-      name: client.name,
-      email: client.email,
-      goal: client.goal,
-      progress: Math.floor(Math.random() * 100), // Temporary - will implement real progress tracking
-      lastSession: formatSessionTime(client.lastSession),
-      status: client.status,
-      nextSession: client.nextSession ? new Date(client.nextSession).toLocaleDateString() : undefined
-    }));
-    
-    // Filter clients based on search query
-    if (!searchQuery.trim()) return allClients;
-    
-    const query = searchQuery.toLowerCase();
-    return allClients.filter((client: any) => 
-      client.name.toLowerCase().includes(query) ||
-      client.email.toLowerCase().includes(query) ||
-      client.goal?.toLowerCase().includes(query) ||
-      client.status.toLowerCase().includes(query)
-    );
-  }, [clients, searchQuery]);
 
   return (
     <PageTransition>
