@@ -488,57 +488,112 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDashboardStats(trainerId: string): Promise<any> {
-    // Get comprehensive dashboard statistics
-    const allClients = await this.getClientsByTrainer(trainerId);
-    const activeClients = allClients.filter(c => c.status === 'active');
-    const pausedClients = allClients.filter(c => c.status === 'paused');
-    
-    const allWorkouts = await this.getWorkoutsByTrainer(trainerId);
-    const sessions = await this.getTrainerSessions(trainerId);
-    const upcomingSessions = sessions.filter(s => 
-      new Date(s.scheduledAt) > new Date() && s.status === 'scheduled'
-    );
-    const completedThisWeek = sessions.filter(s => {
-      const sessionDate = new Date(s.scheduledAt);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return sessionDate > weekAgo && s.status === 'completed';
-    });
+    try {
+      // Get comprehensive dashboard statistics with error handling for each query
+      let allClients: Client[] = [];
+      try {
+        allClients = await this.getClientsByTrainer(trainerId);
+      } catch (error) {
+        console.warn('Failed to get clients for dashboard stats:', error);
+      }
+      
+      const activeClients = allClients.filter(c => c.status === 'active');
+      const pausedClients = allClients.filter(c => c.status === 'paused');
+      
+      let allWorkouts: Workout[] = [];
+      try {
+        allWorkouts = await this.getWorkoutsByTrainer(trainerId);
+      } catch (error) {
+        console.warn('Failed to get workouts for dashboard stats:', error);
+      }
+      
+      let sessions: TrainingSession[] = [];
+      try {
+        sessions = await this.getTrainerSessions(trainerId);
+      } catch (error) {
+        console.warn('Failed to get trainer sessions for dashboard stats:', error);
+      }
+      
+      const upcomingSessions = sessions.filter(s => 
+        new Date(s.scheduledAt) > new Date() && s.status === 'scheduled'
+      );
+      const completedThisWeek = sessions.filter(s => {
+        const sessionDate = new Date(s.scheduledAt);
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return sessionDate > weekAgo && s.status === 'completed';
+      });
 
-    // Calculate client growth
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const newClientsThisMonth = allClients.filter(c => 
-      new Date(c.createdAt) > thirtyDaysAgo
-    ).length;
+      // Calculate client growth
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const newClientsThisMonth = allClients.filter(c => 
+        new Date(c.createdAt) > thirtyDaysAgo
+      ).length;
 
-    // Get recent messages for activity tracking
-    const messages = await this.getAllMessagesForTrainer(trainerId);
-    const unreadMessages = messages.filter(m => !m.isFromTrainer && !m.readAt).length;
+      // Get recent messages for activity tracking with error handling
+      let messages: Message[] = [];
+      try {
+        messages = await this.getAllMessagesForTrainer(trainerId);
+      } catch (error) {
+        console.warn('Failed to get messages for dashboard stats:', error);
+      }
+      
+      const unreadMessages = messages.filter(m => !m.isFromTrainer && !m.readAt).length;
 
-    return {
-      totalClients: allClients.length,
-      activeClients: activeClients.length,
-      pausedClients: pausedClients.length,
-      inactiveClients: allClients.length - activeClients.length - pausedClients.length,
-      totalWorkouts: allWorkouts.length,
-      upcomingSessions: upcomingSessions.length,
-      completedSessionsThisWeek: completedThisWeek.length,
-      newClientsThisMonth,
-      unreadMessages,
-      recentActivity: [
-        ...upcomingSessions.slice(0, 3).map(s => ({
+      // Build recent activity list
+      const recentActivity: Array<{type: string, description: string, time: Date}> = [];
+      
+      // Add upcoming sessions to activity
+      upcomingSessions.slice(0, 3).forEach(s => {
+        recentActivity.push({
           type: 'session',
           description: `Upcoming session scheduled`,
           time: s.scheduledAt,
-        })),
-        ...messages.slice(0, 3).map(m => ({
+        });
+      });
+      
+      // Add messages to activity
+      messages.slice(0, 3).forEach(m => {
+        recentActivity.push({
           type: 'message',
           description: m.isFromTrainer ? 'Message sent' : 'Message received',
           time: m.sentAt,
-        })),
-      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5),
-    };
+        });
+      });
+      
+      // Sort and limit recent activity
+      recentActivity.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      const finalRecentActivity = recentActivity.slice(0, 5);
+
+      return {
+        totalClients: allClients.length,
+        activeClients: activeClients.length,
+        pausedClients: pausedClients.length,
+        inactiveClients: allClients.length - activeClients.length - pausedClients.length,
+        totalWorkouts: allWorkouts.length,
+        upcomingSessions: upcomingSessions.length,
+        completedSessionsThisWeek: completedThisWeek.length,
+        newClientsThisMonth,
+        unreadMessages,
+        recentActivity: finalRecentActivity,
+      };
+    } catch (error) {
+      console.error('Error in getDashboardStats:', error);
+      // Return default stats structure even if there's an error
+      return {
+        totalClients: 0,
+        activeClients: 0,
+        pausedClients: 0,
+        inactiveClients: 0,
+        totalWorkouts: 0,
+        upcomingSessions: 0,
+        completedSessionsThisWeek: 0,
+        newClientsThisMonth: 0,
+        unreadMessages: 0,
+        recentActivity: [],
+      };
+    }
   }
 
   async getClientNotes(clientId: string): Promise<any[]> {
