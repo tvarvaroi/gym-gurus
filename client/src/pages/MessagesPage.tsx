@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Send, Paperclip, MoreHorizontal, MessageSquare, Smartphone, 
-  MessageCircle, Instagram, Facebook, Phone, Plus, Settings, Zap
+  MessageCircle, Instagram, Facebook, Phone, Plus, Settings, Zap, ArrowLeft
 } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { apiRequest } from "@/lib/queryClient";
@@ -214,11 +214,11 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex gap-6">
-      {/* Client List */}
-      <div className="w-80 flex flex-col">
+    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-4 lg:gap-6">
+      {/* Client List - Hidden on mobile when a client is selected */}
+      <div className={`${selectedClientId ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 flex-col`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Conversations</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">Conversations</h2>
           <Badge variant={isConnected ? "default" : "destructive"} className="text-xs">
             {isConnected ? "Live" : "Offline"}
           </Badge>
@@ -270,14 +270,24 @@ export default function MessagesPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={`${!selectedClientId ? 'hidden lg:flex' : 'flex'} flex-1 flex-col`}>
         {selectedClient ? (
           <>
             {/* Chat Header */}
             <Card className="mb-4">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="h-10 w-10">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0 pb-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  {/* Back button for mobile */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="lg:hidden"
+                    onClick={() => setSelectedClientId("")}
+                    data-testid="button-back-to-conversations"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {selectedClient.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </AvatarFallback>

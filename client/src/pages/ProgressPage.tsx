@@ -93,22 +93,22 @@ export default function ProgressPage() {
       className="container mx-auto p-6 space-y-6"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-400 bg-clip-text text-transparent">
             Progress Tracking
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Monitor client progress and track fitness goals
           </p>
         </div>
         <Button 
           onClick={() => setShowAddModal(true)}
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
           data-testid="button-add-progress"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Progress Entry
+          <span className="text-sm">Add Progress Entry</span>
         </Button>
       </div>
 
@@ -144,7 +144,7 @@ export default function ProgressPage() {
       {selectedClientData && (
         <>
           {/* Progress Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {progressTypes.map((type) => {
               const data = groupedProgress[type];
               const trend = calculateTrend(data);

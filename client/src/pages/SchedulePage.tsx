@@ -254,18 +254,18 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             Schedule
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Manage your appointments and training sessions
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
             <TabsList>
               <TabsTrigger value="day">Day</TabsTrigger>
@@ -281,9 +281,9 @@ export default function SchedulePage() {
             }
           }}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90" data-testid="button-add-appointment">
+              <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto" data-testid="button-add-appointment">
                 <Plus className="mr-2 h-4 w-4" />
-                New Appointment
+                <span className="text-sm">New Appointment</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -352,7 +352,7 @@ export default function SchedulePage() {
                     )}
                   />
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="date"
@@ -421,7 +421,7 @@ export default function SchedulePage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="startTime"

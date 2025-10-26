@@ -119,9 +119,9 @@ const AppSidebar = memo(() => {
     <Sidebar className="border-r border-border/50 bg-sidebar/95 backdrop-blur-xl">
       <SidebarContent className="pt-8">
         <SidebarGroup>
-          <SidebarGroupLabel className="mb-8 px-4">
+          <SidebarGroupLabel className="mb-4 md:mb-8 px-2 md:px-4">
             <motion.div 
-              className="flex items-center gap-3 cursor-pointer"
+              className="flex items-center gap-2 md:gap-3 cursor-pointer"
               variants={logoVariants}
               initial="initial"
               whileHover="hover"
@@ -129,14 +129,14 @@ const AppSidebar = memo(() => {
               <motion.img 
                 src={logoImage} 
                 alt="Gym Gurus" 
-                className="w-20 h-20 rounded-lg"
+                className="w-12 h-12 md:w-20 md:h-20 rounded-lg"
                 whileHover={{ rotate: 3, scale: 1.05 }}
                 transition={{ type: "spring", damping: 15, stiffness: 300 }}
                 style={{ filter: 'brightness(1.1)' }}
               />
               <div className="flex flex-col">
                 <motion.span 
-                  className="text-2xl font-normal tracking-wide text-foreground"
+                  className="text-lg md:text-2xl font-normal tracking-wide text-foreground"
                   whileHover={{ scale: 1.05 }}
                   transition={{ type: "spring", damping: 20, stiffness: 300 }}
                   style={{ 
@@ -147,8 +147,8 @@ const AppSidebar = memo(() => {
                 >
                   GYM GURUS
                 </motion.span>
-                <div className="w-full h-px bg-primary my-2"></div>
-                <span className="text-sm font-normal tracking-widest text-muted-foreground/80" 
+                <div className="w-full h-px bg-primary my-1 md:my-2"></div>
+                <span className="text-xs md:text-sm font-normal tracking-widest text-muted-foreground/80" 
                       style={{ letterSpacing: '0.2em' }}>
                   Fitness Services
                 </span>

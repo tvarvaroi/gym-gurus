@@ -116,42 +116,42 @@ const ClientCard = memo(function ClientCard({
             : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.02)'
         }}
       >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 sm:pb-6">
         <motion.div 
-          className="flex items-center space-x-4"
+          className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
         >
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <motion.div
               whileHover={{ scale: 1.1, rotate: 5 }}
               transition={{ type: "spring", damping: 15, stiffness: 300 }}
             >
-              <Avatar className="h-14 w-14 border-2 border-border/20">
+              <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-border/20">
                 {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
-                <AvatarFallback className="bg-primary/10 text-foreground font-light text-lg">
+                <AvatarFallback className="bg-primary/10 text-foreground font-light text-base sm:text-lg">
                   {initials}
                 </AvatarFallback>
               </Avatar>
             </motion.div>
             <motion.div 
-              className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-background ${statusColors[status]}`}
+              className={`absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-background ${statusColors[status]}`}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.4, type: "spring", damping: 10, stiffness: 500 }}
             />
           </div>
           <motion.div 
-            className="space-y-1"
+            className="space-y-1 min-w-0 flex-1"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.4 }}
           >
-            <CardTitle className="text-xl font-light" data-testid={`text-client-name-${name.toLowerCase().replace(' ', '-')}`}>
+            <CardTitle className="text-lg sm:text-xl font-light truncate" data-testid={`text-client-name-${name.toLowerCase().replace(' ', '-')}`}>
               {name}
             </CardTitle>
-            <p className="text-sm text-muted-foreground font-light">{email}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground font-light truncate">{email}</p>
           </motion.div>
         </motion.div>
         <motion.div
@@ -218,7 +218,7 @@ const ClientCard = memo(function ClientCard({
         </div>
 
         <motion.div 
-          className="flex gap-2 pt-4"
+          className="flex flex-col sm:flex-row gap-2 pt-3 sm:pt-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8, duration: 0.4 }}
@@ -246,11 +246,11 @@ const ClientCard = memo(function ClientCard({
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="w-full font-light border-border/50 bg-background/50" 
+                className="w-full font-light border-border/50 bg-background/50 min-h-[36px] sm:min-h-[32px]" 
                 data-testid={testId}
               >
-                <Icon className="w-4 h-4 mr-2 opacity-80" />
-                {label}
+                <Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 opacity-80" />
+                <span className="text-xs sm:text-sm">{label}</span>
               </Button>
             </motion.div>
           ))}

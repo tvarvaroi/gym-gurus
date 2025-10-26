@@ -167,47 +167,49 @@ export default function WorkoutPlans() {
 
   return (
     <PageTransition>
-      <div className="space-y-8">
+      <div className="space-y-4 sm:space-y-6 md:space-y-8">
         {/* Header */}
         <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-center flex-wrap gap-4">
-            <div className="space-y-2">
-              <h1 className="text-4xl font-light tracking-tight">Workout Plans</h1>
-              <p className="text-lg font-light text-muted-foreground">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+            <div className="space-y-1 sm:space-y-2">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tight">Workout Plans</h1>
+              <p className="text-sm sm:text-base md:text-lg font-light text-muted-foreground">
                 Create and manage personalized workout routines
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 onClick={() => setShowTemplates(!showTemplates)}
                 data-testid="button-templates"
+                className="w-full sm:w-auto"
               >
                 <BookOpen className="mr-2 h-4 w-4" />
-                {showTemplates ? "Hide Templates" : "Use Template"}
+                <span className="text-xs sm:text-sm">{showTemplates ? "Hide Templates" : "Use Template"}</span>
               </Button>
               <Button
                 variant="outline"
                 onClick={handleExport}
                 disabled={!workouts?.length}
                 data-testid="button-export-workouts"
+                className="w-full sm:w-auto"
               >
                 <Download className="mr-2 h-4 w-4" />
-                Export
+                <span className="text-xs sm:text-sm">Export</span>
               </Button>
               <WorkoutFormModal
                 mode="create"
                 trainerId={TEMP_TRAINER_ID}
                 trigger={
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium" data-testid="button-new-workout">
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium w-full sm:w-auto" data-testid="button-new-workout">
                     <Plus className="mr-2 h-4 w-4" />
-                    New Workout Plan
+                    <span className="text-xs sm:text-sm">New Workout Plan</span>
                   </Button>
                 }
               />
             </div>
           </div>
-          <div className="w-full md:w-80">
+          <div className="w-full lg:w-80">
             <SearchInput
               placeholder="Search workouts by title, category, difficulty..."
               value={searchQuery}
@@ -220,8 +222,8 @@ export default function WorkoutPlans() {
         {/* Templates Section */}
         {showTemplates && templates && (
           <div className="space-y-4">
-            <h2 className="text-2xl font-light">Quick Start Templates</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <h2 className="text-xl sm:text-2xl font-light">Quick Start Templates</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {templates.map((template: any) => (
                 <Card key={template.id} className="cursor-pointer hover:shadow-lg transition-all duration-300 bg-muted/50">
                   <CardContent className="p-4">
@@ -247,7 +249,7 @@ export default function WorkoutPlans() {
         )}
 
         {/* Workout Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {filteredWorkouts.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <p className="text-lg font-light text-muted-foreground">

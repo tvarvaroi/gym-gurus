@@ -142,19 +142,20 @@ const ClientsPage = memo(() => {
       <div className="space-y-8">
         <StaggerItem>
           <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-              <div className="space-y-2">
-                <h1 className="text-4xl font-light tracking-tight">My Clients</h1>
-                <p className="text-lg font-light text-muted-foreground">Manage and track your client progress</p>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+              <div className="space-y-1 sm:space-y-2">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tight">My Clients</h1>
+                <p className="text-sm sm:text-base md:text-lg font-light text-muted-foreground">Manage and track your client progress</p>
               </div>
               <Button
                 variant="outline"
                 onClick={() => exportClientsToCSV(clients || [])}
                 disabled={!clients?.length}
                 data-testid="button-export-clients"
+                className="w-full sm:w-auto"
               >
                 <Download className="mr-2 h-4 w-4" />
-                Export to CSV
+                <span className="text-xs sm:text-sm">Export to CSV</span>
               </Button>
             </div>
             <div className="w-full md:w-80">
@@ -177,7 +178,7 @@ const ClientsPage = memo(() => {
               <p className="text-lg font-light text-muted-foreground">No clients yet. Add your first client to get started!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {transformedClients.map((client: any, index: number) => (
                 <StaggerItem key={client.email} index={index}>
                   <Suspense fallback={<div className="h-80 bg-card/50 rounded-xl animate-pulse" />}>
@@ -576,15 +577,15 @@ export default function App() {
           <SidebarProvider style={style as React.CSSProperties}>
             <div className="flex h-screen w-full">
               <AppSidebar />
-              <div className="flex flex-col flex-1">
-                <header className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+              <div className="flex flex-col flex-1 min-w-0">
+                <header className="flex items-center justify-between px-3 py-3 sm:px-4 sm:py-3 md:px-6 md:py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 h-14 md:h-16">
                   <SidebarTrigger data-testid="button-sidebar-toggle" className="hover-elevate" />
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <UserMenu />
                     <ThemeToggle />
                   </div>
                 </header>
-                <main className="flex-1 overflow-auto p-8 bg-gradient-to-br from-background via-background to-muted/20">
+                <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20">
                   <div className="max-w-7xl mx-auto">
                     <Router />
                   </div>

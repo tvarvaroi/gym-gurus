@@ -178,30 +178,30 @@ const Dashboard = memo(() => {
         <Skeleton className="h-80 rounded-xl" />
       ) : (
         <div 
-          className="relative h-80 rounded-xl bg-cover bg-center overflow-hidden"
+          className="relative h-64 sm:h-72 md:h-80 rounded-xl bg-cover bg-center overflow-hidden"
           style={{ 
             backgroundImage: `url(/attached_assets/generated_images/Diverse_fitness_gym_hero_4eec9aff.png)`,
             willChange: 'transform'
           }}
         >
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
-        <div className="relative h-full flex flex-col justify-center items-center text-center px-8 text-white">
-          <h1 className="text-5xl font-light tracking-tight mb-4" data-testid="text-dashboard-title">
+        <div className="relative h-full flex flex-col justify-center items-center text-center px-4 sm:px-6 md:px-8 text-white">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3 md:mb-4" data-testid="text-dashboard-title">
             Your Fitness Studio
           </h1>
-          <p className="text-xl font-light mb-8 text-white/80 max-w-2xl">
+          <p className="text-base sm:text-lg md:text-xl font-light mb-6 md:mb-8 text-white/80 max-w-2xl">
             Elevate your training practice with intelligent client management and progress tracking.
           </p>
           {prefersReducedMotion ? (
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <NewClientButton 
                 trainerId={TEMP_TRAINER_ID}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8 h-11"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 sm:px-8 h-11"
               />
               <AnimatedButton 
                 variant="outline" 
                 size="lg" 
-                className="bg-white/5 backdrop-blur-md border-white/20 text-white hover:bg-white/10 font-medium px-8" 
+                className="bg-white/5 backdrop-blur-md border-white/20 text-white hover:bg-white/10 font-medium px-6 sm:px-8" 
                 data-testid="button-create-workout"
                 onClick={() => navigate('/workouts')}
               >
@@ -210,19 +210,19 @@ const Dashboard = memo(() => {
             </div>
           ) : (
             <motion.div 
-              className="flex gap-4"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.5 }}
             >
               <NewClientButton 
                 trainerId={TEMP_TRAINER_ID}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8 h-11"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 sm:px-8 h-11"
               />
               <AnimatedButton 
                 variant="outline" 
                 size="lg" 
-                className="bg-white/5 backdrop-blur-md border-white/20 text-white hover:bg-white/10 font-medium px-8" 
+                className="bg-white/5 backdrop-blur-md border-white/20 text-white hover:bg-white/10 font-medium px-6 sm:px-8" 
                 data-testid="button-create-workout"
                 onClick={() => navigate('/workouts')}
               >
