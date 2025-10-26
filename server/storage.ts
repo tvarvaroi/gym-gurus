@@ -13,7 +13,7 @@ import {
   type MessageTemplate, type InsertMessageTemplate,
   type TrainingSession, type InsertTrainingSession
 } from "@shared/schema";
-import { db } from "./db";
+import { getDb } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
@@ -83,11 +83,13 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Users - Replit Auth operations (IMPORTANT: mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
+    const db = await getDb();
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    const db = await getDb();
     const [user] = await db
       .insert(users)
       .values(userData)
@@ -104,80 +106,96 @@ export class DatabaseStorage implements IStorage {
 
   // Clients
   async getClient(id: string): Promise<Client | undefined> {
+    const db = await getDb();
     const [client] = await db.select().from(clients).where(eq(clients.id, id));
     return client || undefined;
   }
 
   async getClientsByTrainer(trainerId: string): Promise<Client[]> {
+    const db = await getDb();
     return await db.select().from(clients).where(eq(clients.trainerId, trainerId));
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
+    const db = await getDb();
     const [client] = await db.insert(clients).values(insertClient).returning();
     return client;
   }
 
   async updateClient(id: string, updates: Partial<InsertClient>): Promise<Client | undefined> {
+    const db = await getDb();
     const [client] = await db.update(clients).set(updates).where(eq(clients.id, id)).returning();
     return client || undefined;
   }
 
   async deleteClient(id: string): Promise<boolean> {
+    const db = await getDb();
     const result = await db.delete(clients).where(eq(clients.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }
 
   // Exercises
   async getExercise(id: string): Promise<Exercise | undefined> {
+    const db = await getDb();
     const [exercise] = await db.select().from(exercises).where(eq(exercises.id, id));
     return exercise || undefined;
   }
 
   async getAllExercises(): Promise<Exercise[]> {
+    const db = await getDb();
     return await db.select().from(exercises);
   }
 
   async createExercise(insertExercise: InsertExercise): Promise<Exercise> {
+    const db = await getDb();
     const [exercise] = await db.insert(exercises).values(insertExercise).returning();
     return exercise;
   }
 
   // Workouts
   async getWorkout(id: string): Promise<Workout | undefined> {
+    const db = await getDb();
     const [workout] = await db.select().from(workouts).where(eq(workouts.id, id));
     return workout || undefined;
   }
 
   async getWorkoutsByTrainer(trainerId: string): Promise<Workout[]> {
+    const db = await getDb();
     return await db.select().from(workouts).where(eq(workouts.trainerId, trainerId));
   }
 
   async createWorkout(insertWorkout: InsertWorkout): Promise<Workout> {
+    const db = await getDb();
     const [workout] = await db.insert(workouts).values(insertWorkout).returning();
     return workout;
   }
 
   async updateWorkout(id: string, updates: Partial<InsertWorkout>): Promise<Workout | undefined> {
+    const db = await getDb();
     const [workout] = await db.update(workouts).set(updates).where(eq(workouts.id, id)).returning();
     return workout || undefined;
   }
 
   async deleteWorkout(id: string): Promise<boolean> {
+    const db = await getDb();
     const result = await db.delete(workouts).where(eq(workouts.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }
 
   // Workout Exercises
   async getWorkoutExercises(workoutId: string): Promise<WorkoutExercise[]> {
+    const db = await getDb();
     return await db.select().from(workoutExercises).where(eq(workoutExercises.workoutId, workoutId));
   }
 
   async addExerciseToWorkout(insertWorkoutExercise: InsertWorkoutExercise): Promise<WorkoutExercise> {
+    const db = await getDb();
     const [workoutExercise] = await db.insert(workoutExercises).values(insertWorkoutExercise).returning();
     return workoutExercise;
   }
 
   async removeExerciseFromWorkout(workoutId: string, exerciseId: string): Promise<boolean> {
+    const db = await getDb();
     const result = await db.delete(workoutExercises)
       .where(and(eq(workoutExercises.workoutId, workoutId), eq(workoutExercises.exerciseId, exerciseId)));
     return result.rowCount !== null && result.rowCount > 0;
@@ -185,17 +203,20 @@ export class DatabaseStorage implements IStorage {
 
   // Workout Assignments
   async getClientWorkouts(clientId: string): Promise<WorkoutAssignment[]> {
+    const db = await getDb();
     return await db.select().from(workoutAssignments)
       .where(eq(workoutAssignments.clientId, clientId))
       .orderBy(desc(workoutAssignments.assignedAt));
   }
 
   async assignWorkoutToClient(insertAssignment: InsertWorkoutAssignment): Promise<WorkoutAssignment> {
+    const db = await getDb();
     const [assignment] = await db.insert(workoutAssignments).values(insertAssignment).returning();
     return assignment;
   }
 
   async completeWorkoutAssignment(id: string, notes?: string): Promise<WorkoutAssignment | undefined> {
+    const db = await getDb();
     const [assignment] = await db.update(workoutAssignments)
       .set({ completedAt: new Date(), notes })
       .where(eq(workoutAssignments.id, id))
@@ -205,18 +226,21 @@ export class DatabaseStorage implements IStorage {
 
   // Progress Entries
   async getClientProgress(clientId: string): Promise<ProgressEntry[]> {
+    const db = await getDb();
     return await db.select().from(progressEntries)
       .where(eq(progressEntries.clientId, clientId))
       .orderBy(desc(progressEntries.recordedAt));
   }
 
   async addProgressEntry(insertEntry: InsertProgressEntry): Promise<ProgressEntry> {
+    const db = await getDb();
     const [entry] = await db.insert(progressEntries).values(insertEntry).returning();
     return entry;
   }
 
   // Messages & Multi-Platform Communication
   async getAllMessagesForTrainer(trainerId: string, platform?: string): Promise<Message[]> {
+    const db = await getDb();
     const baseCondition = eq(clients.trainerId, trainerId);
     
     const whereCondition = platform 
@@ -248,6 +272,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getClientMessages(clientId: string, platform?: string): Promise<Message[]> {
+    const db = await getDb();
     const baseCondition = eq(messages.clientId, clientId);
     
     const whereCondition = platform 
@@ -260,11 +285,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async sendMessage(insertMessage: InsertMessage): Promise<Message> {
+    const db = await getDb();
     const [message] = await db.insert(messages).values(insertMessage).returning();
     return message;
   }
 
   async markMessageAsRead(id: string): Promise<Message | undefined> {
+    const db = await getDb();
     const [message] = await db.update(messages)
       .set({ readAt: new Date() })
       .where(eq(messages.id, id))
@@ -273,6 +300,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMessageTemplates(trainerId: string, category?: string): Promise<MessageTemplate[]> {
+    const db = await getDb();
     const baseCondition = eq(messageTemplates.trainerId, trainerId);
     
     const whereCondition = category 
@@ -285,22 +313,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMessageTemplate(insertTemplate: InsertMessageTemplate): Promise<MessageTemplate> {
+    const db = await getDb();
     const [template] = await db.insert(messageTemplates).values(insertTemplate).returning();
     return template;
   }
 
   async deleteMessageTemplate(id: string): Promise<boolean> {
+    const db = await getDb();
     const result = await db.delete(messageTemplates).where(eq(messageTemplates.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }
 
   async getClientCommunicationPrefs(clientId: string): Promise<ClientCommunicationPref[]> {
+    const db = await getDb();
     return await db.select().from(clientCommunicationPrefs)
       .where(eq(clientCommunicationPrefs.clientId, clientId))
       .orderBy(desc(clientCommunicationPrefs.isPreferred), clientCommunicationPrefs.platform);
   }
 
   async updateClientCommunicationPref(clientId: string, insertPref: InsertClientCommunicationPref): Promise<ClientCommunicationPref> {
+    const db = await getDb();
     // Check if preference already exists for this client/platform
     const existing = await db.select().from(clientCommunicationPrefs)
       .where(
@@ -353,23 +385,27 @@ export class DatabaseStorage implements IStorage {
 
   // Training Sessions
   async getTrainerSessions(trainerId: string): Promise<TrainingSession[]> {
+    const db = await getDb();
     return await db.select().from(trainingSessions)
       .where(eq(trainingSessions.trainerId, trainerId))
       .orderBy(desc(trainingSessions.scheduledAt));
   }
 
   async getClientSessions(clientId: string): Promise<TrainingSession[]> {
+    const db = await getDb();
     return await db.select().from(trainingSessions)
       .where(eq(trainingSessions.clientId, clientId))
       .orderBy(desc(trainingSessions.scheduledAt));
   }
 
   async createTrainingSession(insertSession: InsertTrainingSession): Promise<TrainingSession> {
+    const db = await getDb();
     const [session] = await db.insert(trainingSessions).values(insertSession).returning();
     return session;
   }
 
   async updateTrainingSession(id: string, updates: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined> {
+    const db = await getDb();
     const [session] = await db.update(trainingSessions).set(updates).where(eq(trainingSessions.id, id)).returning();
     return session || undefined;
   }
