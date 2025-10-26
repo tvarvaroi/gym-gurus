@@ -145,10 +145,15 @@ async function fallbackToStandardPg() {
 
 // Initialize database connection
 let connectionEstablished = false;
+let connectionAttempted = false;
 
 async function ensureConnection() {
-  if (!connectionEstablished) {
+  if (!connectionAttempted) {
+    connectionAttempted = true;
     connectionEstablished = await initializeDatabase();
+    if (!connectionEstablished) {
+      console.log('❌ Could not establish database connection');
+    }
   }
   return connectionEstablished;
 }
