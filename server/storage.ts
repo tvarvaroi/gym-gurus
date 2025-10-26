@@ -15,6 +15,7 @@ import {
 } from "@shared/schema";
 import { getDb } from "./db";
 import { eq, desc, and } from "drizzle-orm";
+import { MemoryStorage } from "./memoryStorage";
 
 export interface IStorage {
   // Users - Replit Auth operations (IMPORTANT: mandatory for Replit Auth)
@@ -668,4 +669,44 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+// Create singleton instances
+const databaseStorage = new DatabaseStorage();
+const memoryStorage = new MemoryStorage();
+
+// Track if database is available
+let isDatabaseAvailable = false;
+
+// Function to check database availability
+export async function checkDatabaseAvailability(): Promise<boolean> {
+  try {
+    const db = await getDb();
+    // Try a simple query to test connection
+    await db.select().from(users).limit(1);
+    isDatabaseAvailable = true;
+    return true;
+  } catch (error) {
+    console.warn('Database is unavailable, using in-memory storage:', error);
+    isDatabaseAvailable = false;
+    return false;
+  }
+}
+
+// Function to get the appropriate storage
+export function getStorage(): IStorage {
+  if (isDatabaseAvailable) {
+    return databaseStorage;
+  }
+  console.info('Using in-memory storage (database unavailable)');
+  return memoryStorage;
+}
+
+// Export storage that dynamically switches between database and memory
+export const storage: IStorage = new Proxy({} as IStorage, {
+  get(target, prop: keyof IStorage) {
+    const actualStorage = getStorage();
+    return actualStorage[prop].bind(actualStorage);
+  }
+});
+
+// Check database availability on startup
+checkDatabaseAvailability().catch(console.error);
