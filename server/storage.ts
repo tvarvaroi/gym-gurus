@@ -138,24 +138,24 @@ export class DatabaseStorage implements IStorage {
             trainerId: trainerId,
             name: "John Smith",
             email: "john@example.com",
+            phone: "+1-555-0101",
             goal: "Build muscle and strength",
             status: "active",
             createdAt: new Date(),
-            updatedAt: new Date(),
-            nextSession: null,
-            lastSession: null
+            lastSession: null,
+            nextSession: null
           },
           {
             id: "client-2",
             trainerId: trainerId,
             name: "Sarah Johnson",
             email: "sarah@example.com",
+            phone: "+1-555-0102",
             goal: "Weight loss and toning",
             status: "active",
             createdAt: new Date(),
-            updatedAt: new Date(),
-            nextSession: null,
-            lastSession: null
+            lastSession: null,
+            nextSession: null
           }
         ] as Client[];
       }
@@ -195,38 +195,54 @@ export class DatabaseStorage implements IStorage {
           {
             id: "exercise-1",
             name: "Bench Press",
-            muscleGroup: "Chest",
-            equipment: "Barbell",
+            description: "A compound upper body exercise that targets the chest, shoulders, and triceps",
+            category: "strength",
             difficulty: "intermediate",
-            instructions: "Lie on bench, lower bar to chest, press up",
-            imageUrl: null,
-            videoUrl: null,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            muscleGroups: ["Chest", "Shoulders", "Triceps"],
+            equipment: ["Barbell", "Bench"],
+            instructions: [
+              "Lie flat on a bench with eyes aligned under the bar",
+              "Grip the bar slightly wider than shoulder-width",
+              "Lower the bar slowly to your chest",
+              "Press the bar back up to the starting position"
+            ],
+            youtubeUrl: null,
+            createdAt: new Date()
           },
           {
             id: "exercise-2",
             name: "Squat",
-            muscleGroup: "Legs",
-            equipment: "Barbell",
+            description: "A fundamental lower body exercise that builds strength and muscle in the legs and glutes",
+            category: "strength",
             difficulty: "intermediate",
-            instructions: "Stand with bar on shoulders, squat down, stand up",
-            imageUrl: null,
-            videoUrl: null,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            muscleGroups: ["Quadriceps", "Glutes", "Hamstrings", "Core"],
+            equipment: ["Barbell", "Squat Rack"],
+            instructions: [
+              "Position the bar on your upper back",
+              "Stand with feet shoulder-width apart",
+              "Lower your body by bending at the knees and hips",
+              "Descend until thighs are parallel to the floor",
+              "Drive through your heels to return to standing position"
+            ],
+            youtubeUrl: null,
+            createdAt: new Date()
           },
           {
             id: "exercise-3",
             name: "Push-ups",
-            muscleGroup: "Chest",
-            equipment: "Bodyweight",
+            description: "A classic bodyweight exercise that strengthens the upper body and core",
+            category: "strength",
             difficulty: "beginner",
-            instructions: "Start in plank position, lower body, push back up",
-            imageUrl: null,
-            videoUrl: null,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            muscleGroups: ["Chest", "Shoulders", "Triceps", "Core"],
+            equipment: ["Bodyweight"],
+            instructions: [
+              "Start in a plank position with hands shoulder-width apart",
+              "Keep your body in a straight line from head to heels",
+              "Lower your body until chest nearly touches the floor",
+              "Push through your palms to return to starting position"
+            ],
+            youtubeUrl: null,
+            createdAt: new Date()
           }
         ] as Exercise[];
       }
@@ -261,8 +277,7 @@ export class DatabaseStorage implements IStorage {
             duration: 45,
             difficulty: "intermediate",
             category: "strength",
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: new Date()
           },
           {
             id: "workout-2",
@@ -272,8 +287,7 @@ export class DatabaseStorage implements IStorage {
             duration: 30,
             difficulty: "advanced",
             category: "cardio",
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: new Date()
           }
         ] as Workout[];
       }
