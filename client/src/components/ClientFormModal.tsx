@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useCallback, memo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -118,7 +118,7 @@ export function ClientFormModal({ mode, client, trainerId, trigger, open, onOpen
     },
   })
 
-  const onSubmit = (data: ClientFormData) => {
+  const onSubmit = useCallback((data: ClientFormData) => {
     if (mode === "create") {
       createClientMutation.mutate(data)
     } else {
@@ -132,7 +132,7 @@ export function ClientFormModal({ mode, client, trainerId, trigger, open, onOpen
       
       updateClientMutation.mutate(changedData)
     }
-  }
+  }, [mode, createClientMutation, updateClientMutation, client])
 
   const isPending = createClientMutation.isPending || updateClientMutation.isPending
 

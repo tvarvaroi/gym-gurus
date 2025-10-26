@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Skeleton } from "@/components/ui/skeleton";
+import LazyImage from "@/components/LazyImage";
 
 // Exercise form schema
 const exerciseFormSchema = z.object({
@@ -44,7 +46,7 @@ interface Exercise {
   youtubeUrl?: string;
 }
 
-export default function ExercisesPage() {
+const ExercisesPage = memo(() => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
@@ -60,24 +62,34 @@ export default function ExercisesPage() {
       const response = await fetch('/api/exercises');
       if (!response.ok) throw new Error('Failed to fetch exercises');
       return response.json();
-    }
+    },
+    staleTime: 5 * 60 * 1000, // Fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Cache for 10 minutes
   });
 
-  // Filter exercises based on search and filters
-  const filteredExercises = exercises.filter((exercise) => {
-    const matchesSearch = exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          exercise.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || exercise.category === selectedCategory;
-    const matchesDifficulty = selectedDifficulty === "all" || exercise.difficulty === selectedDifficulty;
-    const matchesMuscleGroup = selectedMuscleGroup === "all" || 
-                               exercise.muscleGroups.some(mg => mg.toLowerCase() === selectedMuscleGroup.toLowerCase());
+  // Memoized filter function
+  const filteredExercises = useMemo(() => {
+    if (!exercises) return [];
     
-    return matchesSearch && matchesCategory && matchesDifficulty && matchesMuscleGroup;
-  });
+    const query = searchQuery.toLowerCase();
+    return exercises.filter((exercise) => {
+      const matchesSearch = !query || 
+                           exercise.name.toLowerCase().includes(query) ||
+                           exercise.description.toLowerCase().includes(query);
+      const matchesCategory = selectedCategory === "all" || exercise.category === selectedCategory;
+      const matchesDifficulty = selectedDifficulty === "all" || exercise.difficulty === selectedDifficulty;
+      const matchesMuscleGroup = selectedMuscleGroup === "all" || 
+                                 exercise.muscleGroups.some(mg => mg.toLowerCase() === selectedMuscleGroup.toLowerCase());
+      
+      return matchesSearch && matchesCategory && matchesDifficulty && matchesMuscleGroup;
+    });
+  }, [exercises, searchQuery, selectedCategory, selectedDifficulty, selectedMuscleGroup]);
 
-  // Get unique categories and muscle groups for filters
-  const categories = Array.from(new Set(exercises.map(e => e.category)));
-  const muscleGroups = Array.from(new Set(exercises.flatMap(e => e.muscleGroups)));
+  // Memoized categories and muscle groups
+  const categories = useMemo(() => 
+    Array.from(new Set(exercises.map(e => e.category))), [exercises]);
+  const muscleGroups = useMemo(() => 
+    Array.from(new Set(exercises.flatMap(e => e.muscleGroups))), [exercises]);
 
   const form = useForm<ExerciseFormData>({
     resolver: zodResolver(exerciseFormSchema),
@@ -532,4 +544,8 @@ export default function ExercisesPage() {
       )}
     </div>
   );
-}
+});
+
+ExercisesPage.displayName = 'ExercisesPage';
+
+export default ExercisesPage;

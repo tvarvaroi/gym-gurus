@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,137 @@ import { exportWorkoutsToCSV } from "@/lib/exportUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Temporary trainer ID for development
 const TEMP_TRAINER_ID = "demo-trainer-123";
 
-export default function WorkoutPlans() {
+// Memoized PageTransition component
+const PageTransition = memo(({ children }: { children: React.ReactNode }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{
+      type: "spring",
+      damping: 25,
+      stiffness: 200,
+      duration: 0.6
+    }}
+    style={{ willChange: 'opacity, transform' }}
+  >
+    {children}
+  </motion.div>
+));
+PageTransition.displayName = 'PageTransition';
+
+// Memoized WorkoutCard component
+const WorkoutCard = memo(({ 
+  workout, 
+  index, 
+  onDuplicate, 
+  onDelete,
+  isPendingDuplicate,
+  isPendingDelete
+}: {
+  workout: any;
+  index: number;
+  onDuplicate: (id: string) => void;
+  onDelete: (id: string) => void;
+  isPendingDuplicate: boolean;
+  isPendingDelete: boolean;
+}) => (
+  <StaggerItem index={index}>
+    <Card className="group transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 border border-border/50 hover:border-primary/30 bg-card/50 backdrop-blur-sm hover:bg-card/80">
+      <CardHeader className="space-y-4">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2 flex-1">
+            <CardTitle className="text-xl font-medium leading-snug group-hover:text-primary transition-colors">
+              {workout.title}
+            </CardTitle>
+            <CardDescription className="text-sm leading-relaxed">
+              {workout.description}
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge 
+              variant={workout.difficulty === 'beginner' ? 'secondary' : 
+                       workout.difficulty === 'intermediate' ? 'default' : 'destructive'}
+              className="capitalize"
+            >
+              {workout.difficulty}
+            </Badge>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid={`button-menu-workout-${index}`}>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <WorkoutFormModal
+                  mode="edit"
+                  workout={workout}
+                  trainerId={TEMP_TRAINER_ID}
+                  trigger={
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </DropdownMenuItem>
+                  }
+                />
+                <DropdownMenuItem 
+                  onClick={() => onDuplicate(workout.id)}
+                  disabled={isPendingDuplicate}
+                  data-testid={`button-duplicate-${index}`}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => onDelete(workout.id)}
+                  disabled={isPendingDelete}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Clock className="h-4 w-4" />
+            <span>{workout.duration} min</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Target className="h-4 w-4" />
+            <span className="capitalize">{workout.category}</span>
+          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1"
+            onClick={() => window.location.href = `/workout-builder/${workout.id}`}
+            data-testid={`button-view-workout-${workout.id}`}
+          >
+            Build Workout
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  </StaggerItem>
+));
+WorkoutCard.displayName = 'WorkoutCard';
+
+const WorkoutPlans = memo(() => {
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showTemplates, setShowTemplates] = useState(false);
@@ -76,17 +202,18 @@ export default function WorkoutPlans() {
     },
   });
 
-  const handleDuplicate = (workoutId: string) => {
+  // Memoized handlers with useCallback
+  const handleDuplicate = useCallback((workoutId: string) => {
     duplicateWorkoutMutation.mutate(workoutId);
-  };
+  }, [duplicateWorkoutMutation]);
 
-  const handleDelete = (workoutId: string) => {
+  const handleDelete = useCallback((workoutId: string) => {
     if (confirm("Are you sure you want to delete this workout?")) {
       deleteWorkoutMutation.mutate(workoutId);
     }
-  };
+  }, [deleteWorkoutMutation]);
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     if (workouts?.length) {
       exportWorkoutsToCSV(workouts);
       toast({
@@ -94,46 +221,55 @@ export default function WorkoutPlans() {
         description: `Exported ${workouts.length} workout plans to CSV`,
       });
     }
-  };
+  }, [workouts, toast]);
 
-  const handleUseTemplate = (template: any) => {
+  const handleUseTemplate = useCallback((template: any) => {
     // Create workout from template
     toast({
       title: "Template Selected",
       description: `Creating workout from "${template.title}" template`,
     });
     // In a real app, you would create a workout based on the template
-  };
+  }, [toast]);
 
-  const PageTransition = ({ children }: { children: React.ReactNode }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{
-        type: "spring",
-        damping: 25,
-        stiffness: 200,
-        duration: 0.6
-      }}
-    >
-      {children}
-    </motion.div>
-  );
-
+  // Improved loading state with skeletons
   if (isLoading) {
     return (
       <PageTransition>
-        <div className="space-y-8">
-          <div className="flex justify-between items-center">
+        <div className="space-y-4 sm:space-y-6 md:space-y-8">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
             <div className="space-y-2">
-              <h1 className="text-4xl font-light tracking-tight">Workout Plans</h1>
-              <p className="text-lg font-light text-muted-foreground">Loading workout plans...</p>
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-6 w-96" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-40" />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <Skeleton className="h-10 w-full lg:w-80" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-80 bg-card/50 rounded-xl animate-pulse" />
+              <Card key={i} className="space-y-4">
+                <CardHeader className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6" />
+                    </div>
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  <Skeleton className="h-9 w-full" />
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
@@ -258,93 +394,15 @@ export default function WorkoutPlans() {
             </div>
           ) : (
             filteredWorkouts.map((workout: any, index: number) => (
-            <StaggerItem key={workout.id} index={index}>
-              <Card className="group transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 border border-border/50 hover:border-primary/30 bg-card/50 backdrop-blur-sm hover:bg-card/80">
-                <CardHeader className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2 flex-1">
-                      <CardTitle className="text-xl font-medium leading-snug group-hover:text-primary transition-colors">
-                        {workout.title}
-                      </CardTitle>
-                      <CardDescription className="text-sm leading-relaxed">
-                        {workout.description}
-                      </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        variant={workout.difficulty === 'beginner' ? 'secondary' : 
-                                 workout.difficulty === 'intermediate' ? 'default' : 'destructive'}
-                        className="capitalize"
-                      >
-                        {workout.difficulty}
-                      </Badge>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid={`button-menu-workout-${index}`}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <WorkoutFormModal
-                            mode="edit"
-                            workout={workout}
-                            trainerId={TEMP_TRAINER_ID}
-                            trigger={
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                            }
-                          />
-                          <DropdownMenuItem 
-                            onClick={() => handleDuplicate(workout.id)}
-                            disabled={duplicateWorkoutMutation.isPending}
-                            data-testid={`button-duplicate-${index}`}
-                          >
-                            <Copy className="mr-2 h-4 w-4" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-destructive"
-                            onClick={() => handleDelete(workout.id)}
-                            disabled={deleteWorkoutMutation.isPending}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{workout.duration} min</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Target className="h-4 w-4" />
-                      <span className="capitalize">{workout.category}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => window.location.href = `/workout-builder/${workout.id}`}
-                      data-testid={`button-view-workout-${workout.id}`}
-                    >
-                      Build Workout
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </StaggerItem>
+              <WorkoutCard
+                key={workout.id}
+                workout={workout}
+                index={index}
+                onDuplicate={handleDuplicate}
+                onDelete={handleDelete}
+                isPendingDuplicate={duplicateWorkoutMutation.isPending}
+                isPendingDelete={deleteWorkoutMutation.isPending}
+              />
             ))
           )}
         </div>
@@ -381,4 +439,8 @@ export default function WorkoutPlans() {
       </div>
     </PageTransition>
   );
-}
+});
+
+WorkoutPlans.displayName = 'WorkoutPlans';
+
+export default WorkoutPlans;

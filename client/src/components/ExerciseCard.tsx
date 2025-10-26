@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Play, BookmarkPlus, Share } from "lucide-react"
 import { motion } from "framer-motion"
 import { memo } from "react"
+import LazyImage from "./LazyImage"
 
 interface ExerciseCardProps {
   name: string
@@ -88,11 +89,12 @@ const ExerciseCard = memo(function ExerciseCard({
             className="relative h-48 bg-muted"
             variants={imageVariants}
           >
-            <img 
+            <LazyImage
               src={imageUrl} 
               alt={name}
-              className="w-full h-full object-cover"
-              data-testid="img-exercise"
+              className="w-full h-full"
+              objectFit="cover"
+              loading="lazy"
             />
             {videoUrl && (
               <motion.div

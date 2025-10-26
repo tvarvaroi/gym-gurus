@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Message, Client, MessageTemplate } from "@shared/schema";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from 'date-fns';
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Trainer ID is now derived from authenticated session on server
 

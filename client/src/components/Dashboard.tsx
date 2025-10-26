@@ -13,6 +13,7 @@ import { memo, useState, useEffect, useMemo, useCallback } from "react"
 import { useLocation } from "wouter"
 import { exportClientsToCSV, exportWorkoutsToCSV } from "@/lib/exportUtils"
 import { useToast } from "@/hooks/use-toast"
+import LazyImage from "./LazyImage"
 
 const Dashboard = memo(() => {
   const prefersReducedMotion = useReducedMotion();

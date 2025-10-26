@@ -21,6 +21,7 @@ import Dashboard from "@/components/Dashboard";
 import ClientCard from "@/components/ClientCard";
 import SearchInput from "@/components/SearchInput";
 import NotFound from "@/pages/not-found";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Lazy load only secondary pages for code splitting
 const WorkoutPlans = lazy(() => import("@/pages/WorkoutPlans"));
@@ -587,7 +588,9 @@ export default function App() {
                 </header>
                 <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20">
                   <div className="max-w-7xl mx-auto">
-                    <Router />
+                    <ErrorBoundary>
+                      <Router />
+                    </ErrorBoundary>
                   </div>
                 </main>
               </div>

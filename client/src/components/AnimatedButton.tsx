@@ -1,7 +1,7 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ButtonProps } from "@/components/ui/button"
-import { forwardRef } from "react"
+import { forwardRef, memo } from "react"
 
 // Premium button animation variants based on Tesla & Apple research
 const buttonVariants = {
@@ -62,7 +62,7 @@ interface AnimatedButtonProps extends ButtonProps {
   hapticFeedback?: boolean
 }
 
-const AnimatedButton = forwardRef<HTMLButtonElement, AnimatedButtonProps>(
+const AnimatedButton = memo(forwardRef<HTMLButtonElement, AnimatedButtonProps>(
   ({ icon, children, hapticFeedback = true, className, ...props }, ref) => {
     
     const handleTap = () => {
@@ -133,7 +133,7 @@ const AnimatedButton = forwardRef<HTMLButtonElement, AnimatedButtonProps>(
       </motion.div>
     )
   }
-)
+))
 
 AnimatedButton.displayName = "AnimatedButton"
 
