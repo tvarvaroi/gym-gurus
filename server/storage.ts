@@ -83,25 +83,8 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Users - Replit Auth operations (IMPORTANT: mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
-    try {
-      const [user] = await db.select().from(users).where(eq(users.id, id));
-      return user;
-    } catch (error: any) {
-      // If database is unavailable in development mode, return a mock user
-      if (process.env.NODE_ENV === 'development' && id === 'demo-trainer-123') {
-        console.warn("Database unavailable, returning mock user for development");
-        return {
-          id: "demo-trainer-123",
-          email: "trainer@example.com",
-          firstName: "Demo",
-          lastName: "Trainer",
-          profileImageUrl: null,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        } as User;
-      }
-      throw error;
-    }
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -126,41 +109,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getClientsByTrainer(trainerId: string): Promise<Client[]> {
-    try {
-      return await db.select().from(clients).where(eq(clients.trainerId, trainerId));
-    } catch (error: any) {
-      // If database is unavailable in development mode, return mock clients
-      if (process.env.NODE_ENV === 'development') {
-        console.warn("Database unavailable, returning mock clients for development");
-        return [
-          {
-            id: "client-1",
-            trainerId: trainerId,
-            name: "John Smith",
-            email: "john@example.com",
-            phone: "+1-555-0101",
-            goal: "Build muscle and strength",
-            status: "active",
-            createdAt: new Date(),
-            lastSession: null,
-            nextSession: null
-          },
-          {
-            id: "client-2",
-            trainerId: trainerId,
-            name: "Sarah Johnson",
-            email: "sarah@example.com",
-            phone: "+1-555-0102",
-            goal: "Weight loss and toning",
-            status: "active",
-            createdAt: new Date(),
-            lastSession: null,
-            nextSession: null
-          }
-        ] as Client[];
-      }
-      throw error;
-    }
+    return await db.select().from(clients).where(eq(clients.trainerId, trainerId));
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
@@ -185,69 +134,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllExercises(): Promise<Exercise[]> {
-    try {
-      return await db.select().from(exercises);
-    } catch (error: any) {
-      // If database is unavailable in development mode, return mock exercises
-      if (process.env.NODE_ENV === 'development') {
-        console.warn("Database unavailable, returning mock exercises for development");
-        return [
-          {
-            id: "exercise-1",
-            name: "Bench Press",
-            description: "A compound upper body exercise that targets the chest, shoulders, and triceps",
-            category: "strength",
-            difficulty: "intermediate",
-            muscleGroups: ["Chest", "Shoulders", "Triceps"],
-            equipment: ["Barbell", "Bench"],
-            instructions: [
-              "Lie flat on a bench with eyes aligned under the bar",
-              "Grip the bar slightly wider than shoulder-width",
-              "Lower the bar slowly to your chest",
-              "Press the bar back up to the starting position"
-            ],
-            youtubeUrl: null,
-            createdAt: new Date()
-          },
-          {
-            id: "exercise-2",
-            name: "Squat",
-            description: "A fundamental lower body exercise that builds strength and muscle in the legs and glutes",
-            category: "strength",
-            difficulty: "intermediate",
-            muscleGroups: ["Quadriceps", "Glutes", "Hamstrings", "Core"],
-            equipment: ["Barbell", "Squat Rack"],
-            instructions: [
-              "Position the bar on your upper back",
-              "Stand with feet shoulder-width apart",
-              "Lower your body by bending at the knees and hips",
-              "Descend until thighs are parallel to the floor",
-              "Drive through your heels to return to standing position"
-            ],
-            youtubeUrl: null,
-            createdAt: new Date()
-          },
-          {
-            id: "exercise-3",
-            name: "Push-ups",
-            description: "A classic bodyweight exercise that strengthens the upper body and core",
-            category: "strength",
-            difficulty: "beginner",
-            muscleGroups: ["Chest", "Shoulders", "Triceps", "Core"],
-            equipment: ["Bodyweight"],
-            instructions: [
-              "Start in a plank position with hands shoulder-width apart",
-              "Keep your body in a straight line from head to heels",
-              "Lower your body until chest nearly touches the floor",
-              "Push through your palms to return to starting position"
-            ],
-            youtubeUrl: null,
-            createdAt: new Date()
-          }
-        ] as Exercise[];
-      }
-      throw error;
-    }
+    return await db.select().from(exercises);
   }
 
   async createExercise(insertExercise: InsertExercise): Promise<Exercise> {
@@ -262,37 +149,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkoutsByTrainer(trainerId: string): Promise<Workout[]> {
-    try {
-      return await db.select().from(workouts).where(eq(workouts.trainerId, trainerId));
-    } catch (error: any) {
-      // If database is unavailable in development mode, return mock workouts
-      if (process.env.NODE_ENV === 'development') {
-        console.warn("Database unavailable, returning mock workouts for development");
-        return [
-          {
-            id: "workout-1",
-            trainerId: trainerId,
-            title: "Full Body Strength",
-            description: "Complete strength training workout",
-            duration: 45,
-            difficulty: "intermediate",
-            category: "strength",
-            createdAt: new Date()
-          },
-          {
-            id: "workout-2",
-            trainerId: trainerId,
-            title: "HIIT Cardio",
-            description: "High intensity interval training",
-            duration: 30,
-            difficulty: "advanced",
-            category: "cardio",
-            createdAt: new Date()
-          }
-        ] as Workout[];
-      }
-      throw error;
-    }
+    return await db.select().from(workouts).where(eq(workouts.trainerId, trainerId));
   }
 
   async createWorkout(insertWorkout: InsertWorkout): Promise<Workout> {
