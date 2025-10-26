@@ -51,8 +51,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
-      // Error logged internally
-      res.status(500).json({ message: "Failed to fetch user" });
+      // If database fails, return user data from session
+      console.warn("Database unavailable, using session data:", error);
+      const jwtUser = req.user as any;
+      if (jwtUser?.claims) {
+        // Return user data from OIDC claims
+        res.json({
+          id: jwtUser.claims.sub,
+          email: jwtUser.claims.email || "user@example.com",
+          firstName: jwtUser.claims.first_name || jwtUser.claims.given_name || "User",
+          lastName: jwtUser.claims.last_name || jwtUser.claims.family_name || "",
+          profileImageUrl: jwtUser.claims.profile_image_url || null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      } else {
+        res.status(500).json({ message: "Failed to fetch user" });
+      }
     }
   });
 
