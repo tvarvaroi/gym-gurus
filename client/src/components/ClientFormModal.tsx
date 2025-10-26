@@ -334,9 +334,9 @@ export function NewClientButton({ trainerId, className }: { trainerId: string; c
       mode="create"
       trainerId={trainerId}
       trigger={
-        <Button className={className} data-testid="button-new-client">
+        <Button className={className} data-testid="button-add-client">
           <Plus className="mr-2 h-4 w-4" />
-          New Client
+          Add Client
         </Button>
       }
     />

@@ -22,6 +22,7 @@ import ClientCard from "@/components/ClientCard";
 import SearchInput from "@/components/SearchInput";
 import NotFound from "@/pages/not-found";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { NewClientButton } from "@/components/ClientFormModal";
 
 // Lazy load only secondary pages for code splitting
 const WorkoutPlans = lazy(() => import("@/pages/WorkoutPlans"));
@@ -50,13 +51,20 @@ const HomePage = memo(() => {
 
 const ClientsPage = memo(() => {
   
-  // Temporary trainer ID for development - replace with real auth later
-  const TEMP_TRAINER_ID = "demo-trainer-123";
+  // Get the authenticated user's ID from the auth system
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+  });
+  
+  // Use authenticated user's ID or fallback to demo ID
+  const trainerId = (user as any)?.id || "demo-trainer-123";
   const [searchQuery, setSearchQuery] = useState("");
   
   const { data: clients, isLoading, error } = useQuery({
-    queryKey: ['/api/clients', TEMP_TRAINER_ID],
-    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}`).then(res => res.json()),
+    queryKey: ['/api/clients', trainerId],
+    queryFn: () => fetch(`/api/clients/${trainerId}`).then(res => res.json()),
+    enabled: !!trainerId, // Only fetch when we have a trainerId
     staleTime: 30 * 1000, // Data is fresh for 30 seconds
     gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
   });
@@ -79,7 +87,7 @@ const ClientsPage = memo(() => {
   const transformedClients = useMemo(() => {
     const allClients = (clients || []).map((client: any) => ({
       client: client, // Pass full client object
-      trainerId: TEMP_TRAINER_ID, // Pass trainerId for edit functionality
+      trainerId: trainerId, // Pass trainerId for edit functionality
       name: client.name,
       email: client.email,
       goal: client.goal,
@@ -99,7 +107,7 @@ const ClientsPage = memo(() => {
       client.goal?.toLowerCase().includes(query) ||
       client.status.toLowerCase().includes(query)
     );
-  }, [clients, searchQuery, formatSessionTime]);
+  }, [clients, searchQuery, formatSessionTime, trainerId]);
   
   // Show loading state
   if (isLoading) {
@@ -148,16 +156,19 @@ const ClientsPage = memo(() => {
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tight">My Clients</h1>
                 <p className="text-sm sm:text-base md:text-lg font-light text-muted-foreground">Manage and track your client progress</p>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => exportClientsToCSV(clients || [])}
-                disabled={!clients?.length}
-                data-testid="button-export-clients"
-                className="w-full sm:w-auto"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                <span className="text-xs sm:text-sm">Export to CSV</span>
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                <NewClientButton trainerId={trainerId} className="w-full sm:w-auto" />
+                <Button
+                  variant="outline"
+                  onClick={() => exportClientsToCSV(clients || [])}
+                  disabled={!clients?.length}
+                  data-testid="button-export-clients"
+                  className="w-full sm:w-auto"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  <span className="text-xs sm:text-sm">Export to CSV</span>
+                </Button>
+              </div>
             </div>
             <div className="w-full md:w-80">
               <Suspense fallback={<div className="h-10 bg-muted rounded-md animate-pulse" />}>
@@ -175,8 +186,9 @@ const ClientsPage = memo(() => {
         
         <StaggerContainer delay={0.2}>
           {transformedClients.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 space-y-6">
               <p className="text-lg font-light text-muted-foreground">No clients yet. Add your first client to get started!</p>
+              <NewClientButton trainerId={trainerId} className="mx-auto" />
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">

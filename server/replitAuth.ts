@@ -118,9 +118,22 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
+    const claims = tokens.claims();
+    if (!claims || !claims.sub) {
+      return verified(null, false);
+    }
+    
+    const user: Express.User = {
+      id: claims.sub as string,
+      email: (claims.email || '') as string,
+      firstName: (claims.given_name || null) as string | null,
+      lastName: (claims.family_name || null) as string | null,
+      profileImageUrl: (claims.picture || null) as string | null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
     updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
+    await upsertUser(claims);
     verified(null, user);
   };
 

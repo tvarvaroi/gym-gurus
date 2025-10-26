@@ -17,11 +17,18 @@ declare module 'express-session' {
   }
 }
 
-// Extend Express Request interface to include user data
+// Augment the Express.User type that Passport uses
 declare global {
   namespace Express {
-    interface Request {
-      user?: User & { id: string };
+    // Passport already declares User, we need to merge with it
+    interface User {
+      id: string;
+      email?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+      profileImageUrl?: string | null;
+      createdAt?: Date | null;
+      updatedAt?: Date | null;
     }
   }
 }
@@ -41,8 +48,56 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       });
     }
 
-    // Validate user exists in database
-    const user = await storage.getUser(userId);
+    // Try to get user from database, fall back to session data in development
+    let user: User | undefined;
+    try {
+      user = await storage.getUser(userId);
+    } catch (dbError) {
+      // In development mode when database is unavailable, use session data
+      if (process.env.NODE_ENV === 'development') {
+        const sessionUser = (req as any).user;
+        if (sessionUser?.claims) {
+          // Construct user object from session claims
+          user = {
+            id: sessionUser.claims.sub || sessionUser.id || "demo-trainer-123",
+            email: sessionUser.claims.email || sessionUser.email || "trainer@example.com",
+            firstName: sessionUser.claims.first_name || sessionUser.firstName || "Demo",
+            lastName: sessionUser.claims.last_name || sessionUser.lastName || "Trainer",
+            profileImageUrl: sessionUser.claims.profile_image_url || sessionUser.profileImageUrl || null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+        } else {
+          // Fallback to demo user in development
+          user = {
+            id: "demo-trainer-123",
+            email: "trainer@example.com",
+            firstName: "Demo",
+            lastName: "Trainer",
+            profileImageUrl: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+        }
+      } else {
+        throw dbError;
+      }
+    }
+    
+    // If user is still not found, synthesize demo user in development mode
+    if (!user && process.env.NODE_ENV === 'development' && userId === "demo-trainer-123") {
+      // Synthesize demo user when storage.getUser returns undefined
+      user = {
+        id: "demo-trainer-123",
+        email: "trainer@example.com",
+        firstName: "Demo",
+        lastName: "Trainer",
+        profileImageUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    }
+    
     if (!user) {
       return res.status(401).json({ 
         error: 'Invalid authentication',

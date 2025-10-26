@@ -99,8 +99,8 @@ export class MemoryStorage implements IStorage {
       this.exercises.set(exercise.id, exercise);
     });
 
-    // Initialize with mock clients for trainer-123
-    const mockClients = getMockClients("trainer-123");
+    // Initialize with mock clients for demo-trainer-123
+    const mockClients = getMockClients("demo-trainer-123");
     mockClients.forEach(client => {
       this.clients.set(client.id, client);
       
@@ -109,14 +109,14 @@ export class MemoryStorage implements IStorage {
       this.progressEntries.set(client.id, progress);
       
       // Add mock messages for each client
-      const clientMessages = getMockMessages("trainer-123", client.id);
+      const clientMessages = getMockMessages("demo-trainer-123", client.id);
       clientMessages.forEach(msg => {
         this.messages.set(msg.id, msg);
       });
     });
 
     // Initialize with mock message templates
-    const mockTemplates = getMockMessageTemplates("trainer-123");
+    const mockTemplates = getMockMessageTemplates("demo-trainer-123");
     mockTemplates.forEach(template => {
       this.messageTemplates.set(template.id, template);
     });
@@ -124,7 +124,27 @@ export class MemoryStorage implements IStorage {
 
   // Users - Replit Auth operations
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    // Return existing user if found
+    const existingUser = this.users.get(id);
+    if (existingUser) return existingUser;
+    
+    // For development mode, return a demo user when requested
+    if (id === "demo-trainer-123") {
+      const demoUser: User = {
+        id: "demo-trainer-123",
+        email: "trainer@example.com",
+        firstName: "Demo",
+        lastName: "Trainer",
+        profileImageUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      // Store it for consistency
+      this.users.set(demoUser.id, demoUser);
+      return demoUser;
+    }
+    
+    return undefined;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
