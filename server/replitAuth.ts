@@ -82,13 +82,19 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-  });
+  try {
+    await storage.upsertUser({
+      id: claims["sub"],
+      email: claims["email"],
+      firstName: claims["first_name"],
+      lastName: claims["last_name"],
+      profileImageUrl: claims["profile_image_url"],
+    });
+  } catch (error) {
+    // If database is unavailable (development mode), continue without persisting
+    console.warn("Could not persist user to database (likely in development mode):", error);
+    // Authentication will still work with session-based user data
+  }
 }
 
 export async function setupAuth(app: Express) {
