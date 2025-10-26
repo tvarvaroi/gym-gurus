@@ -83,8 +83,25 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Users - Replit Auth operations (IMPORTANT: mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    } catch (error: any) {
+      // If database is unavailable in development mode, return a mock user
+      if (process.env.NODE_ENV === 'development' && id === 'demo-trainer-123') {
+        console.warn("Database unavailable, returning mock user for development");
+        return {
+          id: "demo-trainer-123",
+          email: "trainer@example.com",
+          firstName: "Demo",
+          lastName: "Trainer",
+          profileImageUrl: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } as User;
+      }
+      throw error;
+    }
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -109,7 +126,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getClientsByTrainer(trainerId: string): Promise<Client[]> {
-    return await db.select().from(clients).where(eq(clients.trainerId, trainerId));
+    try {
+      return await db.select().from(clients).where(eq(clients.trainerId, trainerId));
+    } catch (error: any) {
+      // If database is unavailable in development mode, return mock clients
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Database unavailable, returning mock clients for development");
+        return [
+          {
+            id: "client-1",
+            trainerId: trainerId,
+            name: "John Smith",
+            email: "john@example.com",
+            goal: "Build muscle and strength",
+            status: "active",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            nextSession: null,
+            lastSession: null
+          },
+          {
+            id: "client-2",
+            trainerId: trainerId,
+            name: "Sarah Johnson",
+            email: "sarah@example.com",
+            goal: "Weight loss and toning",
+            status: "active",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            nextSession: null,
+            lastSession: null
+          }
+        ] as Client[];
+      }
+      throw error;
+    }
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
@@ -134,7 +185,53 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllExercises(): Promise<Exercise[]> {
-    return await db.select().from(exercises);
+    try {
+      return await db.select().from(exercises);
+    } catch (error: any) {
+      // If database is unavailable in development mode, return mock exercises
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Database unavailable, returning mock exercises for development");
+        return [
+          {
+            id: "exercise-1",
+            name: "Bench Press",
+            muscleGroup: "Chest",
+            equipment: "Barbell",
+            difficulty: "intermediate",
+            instructions: "Lie on bench, lower bar to chest, press up",
+            imageUrl: null,
+            videoUrl: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: "exercise-2",
+            name: "Squat",
+            muscleGroup: "Legs",
+            equipment: "Barbell",
+            difficulty: "intermediate",
+            instructions: "Stand with bar on shoulders, squat down, stand up",
+            imageUrl: null,
+            videoUrl: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: "exercise-3",
+            name: "Push-ups",
+            muscleGroup: "Chest",
+            equipment: "Bodyweight",
+            difficulty: "beginner",
+            instructions: "Start in plank position, lower body, push back up",
+            imageUrl: null,
+            videoUrl: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ] as Exercise[];
+      }
+      throw error;
+    }
   }
 
   async createExercise(insertExercise: InsertExercise): Promise<Exercise> {
@@ -149,7 +246,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkoutsByTrainer(trainerId: string): Promise<Workout[]> {
-    return await db.select().from(workouts).where(eq(workouts.trainerId, trainerId));
+    try {
+      return await db.select().from(workouts).where(eq(workouts.trainerId, trainerId));
+    } catch (error: any) {
+      // If database is unavailable in development mode, return mock workouts
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Database unavailable, returning mock workouts for development");
+        return [
+          {
+            id: "workout-1",
+            trainerId: trainerId,
+            title: "Full Body Strength",
+            description: "Complete strength training workout",
+            duration: 45,
+            difficulty: "intermediate",
+            category: "strength",
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: "workout-2",
+            trainerId: trainerId,
+            title: "HIIT Cardio",
+            description: "High intensity interval training",
+            duration: 30,
+            difficulty: "advanced",
+            category: "cardio",
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ] as Workout[];
+      }
+      throw error;
+    }
   }
 
   async createWorkout(insertWorkout: InsertWorkout): Promise<Workout> {

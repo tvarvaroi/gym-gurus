@@ -31,16 +31,33 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true, // Allow creation of express-session table
-    ttl: sessionTtl,
-    tableName: "sessions", // Match the table name defined in schema.ts
-  });
+  
+  // In development mode, always use memory store to avoid database dependency issues
+  let sessionStore: any;
+  
+  if (process.env.NODE_ENV === 'development') {
+    // Use default memory store for development
+    console.warn("Using memory session store for development");
+    sessionStore = undefined; // Express-session will use default MemoryStore
+  } else {
+    // Production mode - try to use PostgreSQL store
+    try {
+      const pgStore = connectPg(session);
+      sessionStore = new pgStore({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: true, // Allow creation of express-session table
+        ttl: sessionTtl,
+        tableName: "sessions", // Match the table name defined in schema.ts
+      });
+    } catch (error) {
+      console.warn("Failed to create PostgreSQL session store, using memory store");
+      sessionStore = undefined; // Fall back to MemoryStore
+    }
+  }
+  
   return session({
     secret: process.env.SESSION_SECRET || 'fitness-trainer-secure-session-key-2024',
-    store: sessionStore,
+    ...(sessionStore && { store: sessionStore }), // Only add store if it exists
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -236,14 +253,20 @@ function setupDevAuth(app: Express) {
 
   // Development login route
   app.get("/api/login", async (req: any, res) => {
-    // Ensure user exists in database
-    await storage.upsertUser({
-      id: devUser.id,
-      email: devUser.email,
-      firstName: devUser.firstName,
-      lastName: devUser.lastName,
-      profileImageUrl: devUser.profileImageUrl,
-    });
+    // Skip database upsert in development mode when database is unavailable
+    try {
+      // Try to upsert user if database is available
+      await storage.upsertUser({
+        id: devUser.id,
+        email: devUser.email,
+        firstName: devUser.firstName,
+        lastName: devUser.lastName,
+        profileImageUrl: devUser.profileImageUrl,
+      });
+    } catch (error: any) {
+      // Database unavailable - continue without database
+      console.warn("Database unavailable in development mode, continuing without user persistence");
+    }
 
     // Set up session
     req.session.passport = { user: devUser };
