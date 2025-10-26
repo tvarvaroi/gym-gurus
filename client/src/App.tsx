@@ -576,21 +576,23 @@ export default function App() {
       <TooltipProvider>
         <AuthWrapper>
           <SidebarProvider style={style as React.CSSProperties}>
-            <div className="flex h-screen w-full">
+            <div className="flex h-screen w-full overflow-hidden">
               <AppSidebar />
-              <div className="flex flex-col flex-1 min-w-0">
-                <header className="flex items-center justify-between px-3 py-3 sm:px-4 sm:py-3 md:px-6 md:py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 h-14 md:h-16">
+              <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+                <header className="sticky top-0 z-40 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-3 md:px-6 md:py-4 border-b border-border/50 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/85 h-14 md:h-16 shrink-0">
                   <SidebarTrigger data-testid="button-sidebar-toggle" className="hover-elevate" />
                   <div className="flex items-center gap-2">
                     <UserMenu />
                     <ThemeToggle />
                   </div>
                 </header>
-                <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20">
-                  <div className="max-w-7xl mx-auto">
-                    <ErrorBoundary>
-                      <Router />
-                    </ErrorBoundary>
+                <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                  <div className="p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20 min-h-full">
+                    <div className="max-w-7xl mx-auto">
+                      <ErrorBoundary>
+                        <Router />
+                      </ErrorBoundary>
+                    </div>
                   </div>
                 </main>
               </div>

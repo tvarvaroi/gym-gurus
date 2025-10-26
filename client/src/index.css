@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Z-INDEX SCALE */
+:root {
+  /* Define consistent z-index scale */
+  --z-dropdown: 50;
+  --z-sticky: 40;
+  --z-sidebar: 30;
+  --z-sidebar-rail: 30;
+  --z-fixed: 20;
+  --z-overlay: 50;
+  --z-modal: 50;
+  --z-popover: 50;
+  --z-tooltip: 50;
+  --z-notification: 100;
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);
@@ -205,6 +220,49 @@
 }
 
 @layer base {
+  /* Consistent Container Widths */
+  .container-readable {
+    max-width: 65ch;
+  }
+  
+  .container-content {
+    max-width: 1280px;
+  }
+  
+  /* Prevent header overlap with sticky positioning */
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+  }
+  
+  /* Ensure proper scrollable areas */
+  .scrollable-area {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix modal backdrop issues */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+  }
+  
+  /* Consistent card spacing */
+  .card-spacing {
+    padding: 1.5rem;
+  }
+  
+  @media (max-width: 640px) {
+    .card-spacing {
+      padding: 1rem;
+    }
+  }
+}
+
+@layer base {
   * {
     @apply border-border;
   }
@@ -302,7 +360,7 @@
     inset: 0px;
     /*border-radius: inherit;   match rounded corners */
     border-radius: inherit;
-    z-index: 999;
+    z-index: 2;
     /* sits in front of content */
   }
 
