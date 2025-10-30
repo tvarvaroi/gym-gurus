@@ -49,7 +49,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', generalRateLimit);
   
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, authRateLimit, async (req: Request, res: Response) => {
+  // Note: No rate limiting on auth check as it's frequently called to verify session
+  app.get('/api/auth/user', isAuthenticated, async (req: Request, res: Response) => {
     try {
       // After isAuthenticated middleware, req.user contains JWT claims
       const jwtUser = req.user as any;
