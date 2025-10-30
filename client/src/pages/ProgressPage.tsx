@@ -47,13 +47,13 @@ export default function ProgressPage() {
 
   // Fetch clients for trainer
   const { data: clients = [], isLoading: loadingClients } = useQuery<Client[]>({
-    queryKey: ['/api/clients', TEMP_TRAINER_ID],
+    queryKey: ['/api/clients'],
     enabled: !!TEMP_TRAINER_ID
   });
 
-  // Fetch selected client's progress
+  // Fetch selected client's progress - using development endpoint that doesn't require auth
   const { data: progressData = [], isLoading: loadingProgress } = useQuery<ProgressEntry[]>({
-    queryKey: ['/api/clients', selectedClient, 'progress'],
+    queryKey: [`/api/progress/${selectedClient}`],
     enabled: !!selectedClient
   });
 
