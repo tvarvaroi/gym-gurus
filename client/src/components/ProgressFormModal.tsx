@@ -44,7 +44,7 @@ type ProgressFormData = z.infer<typeof progressFormSchema>;
 interface ProgressFormModalProps {
   open: boolean;
   onClose: () => void;
-  clientId: string;
+  clientId: string | null;
 }
 
 const progressTypes = [
@@ -70,7 +70,7 @@ export default function ProgressFormModal({ open, onClose, clientId }: ProgressF
   const form = useForm<ProgressFormData>({
     resolver: zodResolver(progressFormSchema),
     defaultValues: {
-      clientId,
+      clientId: clientId || "",
       type: "",
       value: "",
       unit: "",

@@ -1,10 +1,10 @@
-import { useState, useMemo, lazy, Suspense } from "react";
+import { useState, useMemo, lazy, Suspense, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, TrendingUp, TrendingDown, Activity, Weight, Target } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Activity, Weight, Target, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import ProgressFormModal from "../components/ProgressFormModal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,9 +20,6 @@ const CartesianGrid = lazy(() => import('recharts').then(module => ({ default: m
 const Tooltip = lazy(() => import('recharts').then(module => ({ default: module.Tooltip })));
 const ResponsiveContainer = lazy(() => import('recharts').then(module => ({ default: module.ResponsiveContainer })));
 const BarChart = lazy(() => import('recharts').then(module => ({ default: module.BarChart })));
-
-// Temporary client ID for development (should be replaced with client selection)
-const TEMP_CLIENT_ID = "6ebb94f5-fe56-4902-96d8-3b35a268ad46"; // Valid client ID from database
 
 interface ProgressEntry {
   id: string;
@@ -41,7 +38,7 @@ interface Client {
 }
 
 export default function ProgressPage() {
-  const [selectedClient, setSelectedClient] = useState<string>(TEMP_CLIENT_ID);
+  const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Fetch authenticated user
@@ -61,6 +58,13 @@ export default function ProgressPage() {
     queryKey: ['/api/clients'],
     enabled: !!user?.id // Only fetch when user is available
   });
+
+  // Auto-select the first client when clients are loaded
+  useEffect(() => {
+    if (clients && clients.length > 0 && !selectedClient) {
+      setSelectedClient(clients[0].id);
+    }
+  }, [clients, selectedClient]);
 
   // Fetch selected client's progress - using development endpoint that doesn't require auth
   const { data: progressData = [], isLoading: loadingProgress } = useQuery<ProgressEntry[]>({
@@ -117,6 +121,7 @@ export default function ProgressPage() {
           onClick={() => setShowAddModal(true)}
           className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
           data-testid="button-add-progress"
+          disabled={!selectedClient}
         >
           <Plus className="w-4 h-4 mr-2" />
           <span className="text-sm">Add Progress Entry</span>
@@ -127,14 +132,23 @@ export default function ProgressPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-emerald-600" />
+            <Users className="w-5 h-5 text-emerald-600" />
             Client Selection
           </CardTitle>
+          {selectedClientData && (
+            <CardDescription>
+              Currently viewing progress for {selectedClientData.name}
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 flex-wrap">
             {loadingClients ? (
               <div className="text-muted-foreground">Loading clients...</div>
+            ) : clients.length === 0 ? (
+              <div className="text-muted-foreground">
+                No clients found. Please add clients from the Clients page first.
+              </div>
             ) : (
               (clients || []).map((client: Client) => (
                 <Button
@@ -151,6 +165,18 @@ export default function ProgressPage() {
           </div>
         </CardContent>
       </Card>
+
+      {!selectedClient && clients.length > 0 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Select a Client to View Progress</h3>
+            <p className="text-muted-foreground">
+              Choose a client from above to view their progress data and fitness metrics.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {selectedClientData && (
         <>
