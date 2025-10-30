@@ -50,28 +50,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Auth routes
   // Note: No rate limiting on auth check as it's frequently called to verify session
-  app.get('/api/auth/user', isAuthenticated, async (req: Request, res: Response) => {
+  app.get('/api/auth/user', async (req: Request, res: Response) => {
     try {
-      // After isAuthenticated middleware, req.user contains JWT claims
-      const jwtUser = req.user as any;
-      const userId = jwtUser?.claims?.sub;
-      if (!userId) {
-        return res.status(401).json({ message: "User ID not found in token" });
+      // In development mode, automatically set up session if not authenticated
+      if (process.env.NODE_ENV === 'development' && !req.isAuthenticated()) {
+        const devUser = {
+          id: "demo-trainer-123",
+          email: "trainer@example.com",
+          firstName: "Demo",
+          lastName: "Trainer",
+          profileImageUrl: null,
+          claims: {
+            sub: "demo-trainer-123",
+            email: "trainer@example.com",
+            first_name: "Demo",
+            last_name: "Trainer"
+          },
+          expires_at: Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
+        };
+        
+        // Set up session automatically in development
+        (req as any).session.passport = { user: devUser };
+        (req as any).user = devUser;
+        
+        // Save session
+        await new Promise((resolve, reject) => {
+          (req as any).session.save((err: any) => {
+            if (err) reject(err);
+            else resolve(true);
+          });
+        });
+        
+        return res.json({
+          id: devUser.id,
+          email: devUser.email,
+          firstName: devUser.firstName,
+          lastName: devUser.lastName,
+          profileImageUrl: devUser.profileImageUrl,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
       }
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      // If database fails, return user data from session
-      console.warn("Database unavailable, using session data:", error);
+      
+      // Use isAuthenticated middleware for non-development mode
+      if (process.env.NODE_ENV !== 'development') {
+        const jwtUser = req.user as any;
+        if (!req.isAuthenticated() || !jwtUser?.expires_at) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+        
+        const now = Math.floor(Date.now() / 1000);
+        if (now > jwtUser.expires_at) {
+          return res.status(401).json({ message: "Token expired" });
+        }
+      }
+      
+      // Get user ID from session
       const jwtUser = req.user as any;
-      if (jwtUser?.claims) {
-        // Return user data from OIDC claims
+      const userId = jwtUser?.claims?.sub || jwtUser?.id || "demo-trainer-123";
+      
+      // Try to get user from database
+      try {
+        const user = await storage.getUser(userId);
+        if (user) {
+          return res.json(user);
+        }
+      } catch (dbError) {
+        console.warn("Database unavailable, using session data:", dbError);
+      }
+      
+      // Return session user data if database unavailable
+      if (jwtUser?.claims || jwtUser?.id) {
         res.json({
-          id: jwtUser.claims.sub,
-          email: jwtUser.claims.email || "user@example.com",
-          firstName: jwtUser.claims.first_name || jwtUser.claims.given_name || "User",
-          lastName: jwtUser.claims.last_name || jwtUser.claims.family_name || "",
-          profileImageUrl: jwtUser.claims.profile_image_url || null,
+          id: userId,
+          email: jwtUser?.claims?.email || jwtUser?.email || "trainer@example.com",
+          firstName: jwtUser?.claims?.first_name || jwtUser?.firstName || "Demo",
+          lastName: jwtUser?.claims?.last_name || jwtUser?.lastName || "Trainer",
+          profileImageUrl: jwtUser?.claims?.profile_image_url || jwtUser?.profileImageUrl || null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      } else {
+        // Fallback to demo user in development
+        res.json({
+          id: "demo-trainer-123",
+          email: "trainer@example.com",
+          firstName: "Demo",
+          lastName: "Trainer",
+          profileImageUrl: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+    } catch (error: any) {
+      console.error("Auth error:", error);
+      // In development mode, return demo user
+      if (process.env.NODE_ENV === 'development') {
+        res.json({
+          id: "demo-trainer-123",
+          email: "trainer@example.com",
+          firstName: "Demo",
+          lastName: "Trainer",
+          profileImageUrl: null,
           createdAt: new Date(),
           updatedAt: new Date()
         });
