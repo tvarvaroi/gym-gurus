@@ -467,7 +467,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
               <img 
                 src="/attached_assets/generated_images/Gym_Gurus_logo_design_a80cf837.png" 
                 alt="Gym Gurus Logo" 
-                className="h-16 w-auto object-contain"
+                className="h-16 w-auto object-contain drop-shadow-2xl"
                 data-testid="logo-gym-gurus"
               />
             </div>

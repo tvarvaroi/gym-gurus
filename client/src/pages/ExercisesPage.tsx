@@ -44,6 +44,7 @@ interface Exercise {
   equipment: string[];
   instructions: string[];
   youtubeUrl?: string;
+  imageUrl?: string;
 }
 
 const ExercisesPage = memo(() => {
@@ -61,7 +62,19 @@ const ExercisesPage = memo(() => {
     queryFn: async () => {
       const response = await fetch('/api/exercises');
       if (!response.ok) throw new Error('Failed to fetch exercises');
-      return response.json();
+      const data = await response.json();
+      
+      // Add image URLs to exercises based on their names
+      const exerciseImages: Record<string, string> = {
+        'Squat': '/attached_assets/generated_images/Exercise_demonstration_squat_7251d7fb.png',
+        'Push-up': '/attached_assets/generated_images/Exercise_demonstration_pushup_b45f3658.png',
+        'Deadlift': '/attached_assets/generated_images/Exercise_demonstration_deadlift_3c7319dc.png',
+      };
+      
+      return data.map((exercise: any) => ({
+        ...exercise,
+        imageUrl: exerciseImages[exercise.name] || null
+      }));
     },
     staleTime: 5 * 60 * 1000, // Fresh for 5 minutes
     gcTime: 10 * 60 * 1000, // Cache for 10 minutes
@@ -462,7 +475,17 @@ const ExercisesPage = memo(() => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredExercises.map((exercise, index) => (
             <StaggerItem key={exercise.id} index={index}>
-              <Card className="hover-elevate h-full" data-testid={`card-exercise-${exercise.id}`}>
+              <Card className="hover-elevate h-full overflow-hidden" data-testid={`card-exercise-${exercise.id}`}>
+                {exercise.imageUrl && (
+                  <div className="relative h-48 bg-muted">
+                    <LazyImage
+                      src={exercise.imageUrl}
+                      alt={exercise.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 flex-1">
