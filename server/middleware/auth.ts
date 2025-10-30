@@ -57,9 +57,9 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       if (process.env.NODE_ENV === 'development') {
         const sessionUser = (req as any).user;
         if (sessionUser?.claims) {
-          // Construct user object from session claims
+          // Construct user object from session claims - ensure consistent demo-trainer-123 ID in development
           user = {
-            id: sessionUser.claims.sub || sessionUser.id || "demo-trainer-123",
+            id: "demo-trainer-123", // Always use consistent demo trainer ID in development
             email: sessionUser.claims.email || sessionUser.email || "trainer@example.com",
             firstName: sessionUser.claims.first_name || sessionUser.firstName || "Demo",
             lastName: sessionUser.claims.last_name || sessionUser.lastName || "Trainer",

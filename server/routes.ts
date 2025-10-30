@@ -294,12 +294,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/workouts/:trainerId", async (req: Request, res: Response) => {
     try {
       const { trainerId } = req.params;
+      console.log('🔍 Fetching workouts for trainer:', trainerId);
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50; // Default 50 items per page
       const offset = (page - 1) * limit;
       
       // Fetching workouts for trainer
       const workouts = await storage.getWorkoutsByTrainer(trainerId);
+      console.log(`📚 Found ${workouts.length} workouts for trainer ${trainerId}`);
       
       // Add caching headers
       res.set({
@@ -348,16 +350,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/workouts", secureAuth, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
-      // Creating workout for trainer
-      const validatedData = insertWorkoutSchema.parse({ ...req.body, trainerId });
+      console.log('🏋️ Creating workout for trainer:', trainerId);
+      console.log('📝 Request body trainerId:', req.body.trainerId);
+      
+      // In development, ensure we use demo-trainer-123
+      const finalTrainerId = process.env.NODE_ENV === 'development' ? 'demo-trainer-123' : trainerId;
+      console.log('✅ Final trainerId used:', finalTrainerId);
+      
+      const validatedData = insertWorkoutSchema.parse({ ...req.body, trainerId: finalTrainerId });
       const workout = await storage.createWorkout(validatedData);
-      // Workout created successfully
+      console.log('💪 Workout created successfully:', workout);
+      
       res.status(201).json(workout);
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({ error: "Invalid workout data", details: error.errors });
       }
-      // Error logged internally
+      console.error('❌ Failed to create workout:', error);
       res.status(500).json({ error: "Failed to create workout" });
     }
   });
