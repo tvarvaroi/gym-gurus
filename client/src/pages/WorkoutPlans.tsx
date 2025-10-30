@@ -248,7 +248,7 @@ const WorkoutPlans = memo(() => {
   }, [toast]);
 
   // Improved loading state with skeletons
-  if (isLoading) {
+  if (userLoading || isLoading) {
     return (
       <PageTransition>
         <div className="space-y-4 sm:space-y-6 md:space-y-8">
@@ -350,9 +350,9 @@ const WorkoutPlans = memo(() => {
               </Button>
               <WorkoutFormModal
                 mode="create"
-                trainerId={user?.id}
+                trainerId={user?.id || "demo-trainer-123"}
                 trigger={
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium w-full sm:w-auto" data-testid="button-new-workout">
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium w-full sm:w-auto" data-testid="button-create-workout">
                     <Plus className="mr-2 h-4 w-4" />
                     <span className="text-xs sm:text-sm">New Workout Plan</span>
                   </Button>
