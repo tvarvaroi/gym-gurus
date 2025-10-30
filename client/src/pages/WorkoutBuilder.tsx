@@ -13,9 +13,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2 } from "lucide-react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
-// Temporary trainer ID for development
-const TEMP_TRAINER_ID = "demo-trainer-123";
-
 export default function WorkoutBuilder() {
   const params = useParams();
   const workoutId = params.id as string;
@@ -31,6 +28,18 @@ export default function WorkoutBuilder() {
   const queryClient = useQueryClient();
   const prefersReducedMotion = useReducedMotion();
 
+  // Fetch authenticated user
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: async () => {
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch user');
+      return response.json();
+    }
+  });
+
   // Fetch workout details with exercises
   const { data: workout, isLoading: workoutLoading } = useQuery({
     queryKey: ['/api/workouts/detail', workoutId],
@@ -45,8 +54,9 @@ export default function WorkoutBuilder() {
 
   // Fetch clients for assignment
   const { data: clients } = useQuery({
-    queryKey: ['/api/clients', TEMP_TRAINER_ID],
-    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}`).then(res => res.json())
+    queryKey: ['/api/clients', user?.id],
+    queryFn: () => fetch(`/api/clients/${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id // Only fetch when user is available
   });
 
   // Add exercise to workout mutation

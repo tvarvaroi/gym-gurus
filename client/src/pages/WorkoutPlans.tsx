@@ -14,9 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Temporary trainer ID for development
-const TEMP_TRAINER_ID = "demo-trainer-123";
-
 // Memoized PageTransition component
 const PageTransition = memo(({ children }: { children: React.ReactNode }) => (
   <motion.div
@@ -148,9 +145,22 @@ const WorkoutPlans = memo(() => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { toast } = useToast();
 
+  // Fetch authenticated user
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: async () => {
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch user');
+      return response.json();
+    }
+  });
+
   const { data: workouts, isLoading, error } = useQuery({
-    queryKey: ['/api/workouts', TEMP_TRAINER_ID],
-    queryFn: () => fetch(`/api/workouts/${TEMP_TRAINER_ID}`).then(res => res.json())
+    queryKey: ['/api/workouts', user?.id],
+    queryFn: () => fetch(`/api/workouts/${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id // Only fetch when user is available
   });
 
   // Fetch workout templates
@@ -167,7 +177,7 @@ const WorkoutPlans = memo(() => {
       return await response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/workouts', TEMP_TRAINER_ID] });
+      queryClient.invalidateQueries({ queryKey: ['/api/workouts', user?.id] });
       toast({
         title: "Workout Duplicated",
         description: `Created "${data.title}"`,
@@ -187,7 +197,7 @@ const WorkoutPlans = memo(() => {
     mutationFn: (workoutId: string) => 
       apiRequest('DELETE', `/api/workouts/${workoutId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/workouts', TEMP_TRAINER_ID] });
+      queryClient.invalidateQueries({ queryKey: ['/api/workouts', user?.id] });
       toast({
         title: "Workout Deleted",
         description: "Workout plan removed successfully",
@@ -340,7 +350,7 @@ const WorkoutPlans = memo(() => {
               </Button>
               <WorkoutFormModal
                 mode="create"
-                trainerId={TEMP_TRAINER_ID}
+                trainerId={user?.id}
                 trigger={
                   <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium w-full sm:w-auto" data-testid="button-new-workout">
                     <Plus className="mr-2 h-4 w-4" />
@@ -432,7 +442,7 @@ const WorkoutPlans = memo(() => {
             </div>
             <WorkoutFormModal
               mode="create"
-              trainerId={TEMP_TRAINER_ID}
+              trainerId={user?.id}
               trigger={
                 <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium">
                   <Plus className="mr-2 h-4 w-4" />
@@ -448,7 +458,7 @@ const WorkoutPlans = memo(() => {
           <WorkoutFormModal
             mode="edit"
             workout={editingWorkout}
-            trainerId={TEMP_TRAINER_ID}
+            trainerId={user?.id}
             open={isEditModalOpen}
             onOpenChange={(open) => {
               setIsEditModalOpen(open);

@@ -60,9 +60,6 @@ interface Appointment {
   };
 }
 
-// Temporary trainer ID for development
-const TEMP_TRAINER_ID = "demo-trainer-123";
-
 export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -70,25 +67,39 @@ export default function SchedulePage() {
   const [viewMode, setViewMode] = useState<"week" | "day" | "calendar">("week");
   const { toast } = useToast();
   const prefersReducedMotion = useReducedMotion();
+  
+  // Fetch authenticated user
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: async () => {
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch user');
+      return response.json();
+    }
+  });
 
   // Fetch appointments
   const { data: appointments = [], isLoading, error } = useQuery<Appointment[]>({
-    queryKey: ['/api/appointments', TEMP_TRAINER_ID],
+    queryKey: ['/api/appointments', user?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/appointments/${TEMP_TRAINER_ID}`);
+      const response = await fetch(`/api/appointments/${user?.id}`);
       if (!response.ok) {
         // Return empty array if appointments endpoint doesn't exist yet
         if (response.status === 404) return [];
         throw new Error('Failed to fetch appointments');
       }
       return response.json();
-    }
+    },
+    enabled: !!user?.id // Only fetch when user is available
   });
 
   // Fetch clients for appointment creation
   const { data: clients = [] } = useQuery({
-    queryKey: ['/api/clients', TEMP_TRAINER_ID],
-    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}`).then(res => res.json())
+    queryKey: ['/api/clients', user?.id],
+    queryFn: () => fetch(`/api/clients/${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id // Only fetch when user is available
   });
 
   const form = useForm<AppointmentFormData>({
@@ -111,7 +122,7 @@ export default function SchedulePage() {
     mutationFn: async (data: AppointmentFormData) => {
       const formattedData = {
         ...data,
-        trainerId: TEMP_TRAINER_ID,
+        trainerId: user?.id,
         date: format(data.date, 'yyyy-MM-dd'),
         status: "scheduled",
       };

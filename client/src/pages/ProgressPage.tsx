@@ -21,8 +21,7 @@ const Tooltip = lazy(() => import('recharts').then(module => ({ default: module.
 const ResponsiveContainer = lazy(() => import('recharts').then(module => ({ default: module.ResponsiveContainer })));
 const BarChart = lazy(() => import('recharts').then(module => ({ default: module.BarChart })));
 
-// Temporary trainer/client IDs for development
-const TEMP_TRAINER_ID = "demo-trainer-123";
+// Temporary client ID for development (should be replaced with client selection)
 const TEMP_CLIENT_ID = "6ebb94f5-fe56-4902-96d8-3b35a268ad46"; // Valid client ID from database
 
 interface ProgressEntry {
@@ -45,10 +44,22 @@ export default function ProgressPage() {
   const [selectedClient, setSelectedClient] = useState<string>(TEMP_CLIENT_ID);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Fetch authenticated user
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: async () => {
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch user');
+      return response.json();
+    }
+  });
+
   // Fetch clients for trainer
   const { data: clients = [], isLoading: loadingClients } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
-    enabled: !!TEMP_TRAINER_ID
+    enabled: !!user?.id // Only fetch when user is available
   });
 
   // Fetch selected client's progress - using development endpoint that doesn't require auth

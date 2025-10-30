@@ -20,8 +20,17 @@ const Dashboard = memo(() => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   
-  // Temporary trainer ID for development - replace with real auth later
-  const TEMP_TRAINER_ID = "demo-trainer-123";
+  // Fetch authenticated user
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: async () => {
+      const response = await fetch('/api/auth/user', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch user');
+      return response.json();
+    }
+  });
   
   const [heroImageLoaded, setHeroImageLoaded] = useState(false);
   
@@ -36,24 +45,27 @@ const Dashboard = memo(() => {
   
   // Fetch real client data for stats - with noPagination for backwards compatibility
   const { data: clients, isLoading: loadingClients } = useQuery({
-    queryKey: ['/api/clients', TEMP_TRAINER_ID, 'noPagination'],
-    queryFn: () => fetch(`/api/clients/${TEMP_TRAINER_ID}?noPagination=true`).then(res => res.json()),
+    queryKey: ['/api/clients', user?.id, 'noPagination'],
+    queryFn: () => fetch(`/api/clients/${user?.id}?noPagination=true`).then(res => res.json()),
     staleTime: 60 * 1000, // Fresh for 1 minute
     gcTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !!user?.id, // Only fetch when user is available
   });
   
   // Fetch workouts for stats
   const { data: workouts } = useQuery({
-    queryKey: ['/api/workouts', TEMP_TRAINER_ID],
-    queryFn: () => fetch(`/api/workouts/${TEMP_TRAINER_ID}`).then(res => res.json()),
+    queryKey: ['/api/workouts', user?.id],
+    queryFn: () => fetch(`/api/workouts/${user?.id}`).then(res => res.json()),
+    enabled: !!user?.id, // Only fetch when user is available
   });
   
   // Fetch comprehensive dashboard stats
   const { data: dashboardStats, isLoading: loadingStats } = useQuery({
-    queryKey: ['/api/dashboard/stats', TEMP_TRAINER_ID],
-    queryFn: () => fetch(`/api/dashboard/stats/${TEMP_TRAINER_ID}`).then(res => res.json()),
+    queryKey: ['/api/dashboard/stats', user?.id],
+    queryFn: () => fetch(`/api/dashboard/stats/${user?.id}`).then(res => res.json()),
     staleTime: 30 * 1000, // Fresh for 30 seconds
     refetchInterval: 60 * 1000, // Refetch every minute for real-time updates
+    enabled: !!user?.id, // Only fetch when user is available
   });
   
   const stats = [
@@ -196,7 +208,7 @@ const Dashboard = memo(() => {
           {prefersReducedMotion ? (
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <NewClientButton 
-                trainerId={TEMP_TRAINER_ID}
+                trainerId={user?.id}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 sm:px-8 h-11"
               />
               <AnimatedButton 
@@ -217,7 +229,7 @@ const Dashboard = memo(() => {
               transition={{ delay: 0.6, duration: 0.5 }}
             >
               <NewClientButton 
-                trainerId={TEMP_TRAINER_ID}
+                trainerId={user?.id}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6 sm:px-8 h-11"
               />
               <AnimatedButton 
@@ -284,7 +296,7 @@ const Dashboard = memo(() => {
             action.action === 'add-client' ? (
               <div key={action.action}>
                 <NewClientButton
-                  trainerId={TEMP_TRAINER_ID}
+                  trainerId={user?.id}
                   className="w-full h-full p-0"
                 />
               </div>
