@@ -42,6 +42,7 @@ const WorkoutCard = memo(({
   index, 
   onDuplicate, 
   onDelete,
+  onEdit,
   isPendingDuplicate,
   isPendingDelete
 }: {
@@ -49,6 +50,7 @@ const WorkoutCard = memo(({
   index: number;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (workout: any) => void;
   isPendingDuplicate: boolean;
   isPendingDelete: boolean;
 }) => (
@@ -79,17 +81,13 @@ const WorkoutCard = memo(({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <WorkoutFormModal
-                  mode="edit"
-                  workout={workout}
-                  trainerId={TEMP_TRAINER_ID}
-                  trigger={
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                  }
-                />
+                <DropdownMenuItem 
+                  onClick={() => onEdit(workout)}
+                  data-testid={`button-edit-${index}`}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => onDuplicate(workout.id)}
                   disabled={isPendingDuplicate}
@@ -146,6 +144,8 @@ const WorkoutPlans = memo(() => {
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showTemplates, setShowTemplates] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: workouts, isLoading, error } = useQuery({
@@ -212,6 +212,11 @@ const WorkoutPlans = memo(() => {
       deleteWorkoutMutation.mutate(workoutId);
     }
   }, [deleteWorkoutMutation]);
+
+  const handleEdit = useCallback((workout: any) => {
+    setEditingWorkout(workout);
+    setIsEditModalOpen(true);
+  }, []);
 
   const handleExport = useCallback(() => {
     if (workouts?.length) {
@@ -400,6 +405,7 @@ const WorkoutPlans = memo(() => {
                 index={index}
                 onDuplicate={handleDuplicate}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
                 isPendingDuplicate={duplicateWorkoutMutation.isPending}
                 isPendingDelete={deleteWorkoutMutation.isPending}
               />
@@ -435,6 +441,22 @@ const WorkoutPlans = memo(() => {
               }
             />
           </motion.div>
+        )}
+
+        {/* Edit Modal */}
+        {editingWorkout && (
+          <WorkoutFormModal
+            mode="edit"
+            workout={editingWorkout}
+            trainerId={TEMP_TRAINER_ID}
+            open={isEditModalOpen}
+            onOpenChange={(open) => {
+              setIsEditModalOpen(open);
+              if (!open) {
+                setEditingWorkout(null);
+              }
+            }}
+          />
         )}
       </div>
     </PageTransition>
