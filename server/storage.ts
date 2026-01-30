@@ -1,6 +1,7 @@
 import {
-  users, clients, exercises, workouts, workoutExercises, workoutAssignments, 
-  progressEntries, messages, trainingSessions, clientCommunicationPrefs, messageTemplates,
+  users, clients, exercises, workouts, workoutExercises, workoutAssignments,
+  progressEntries, trainingSessions,
+  userOnboardingProgress, appointments,
   type User, type InsertUser, type UpsertUser,
   type Client, type InsertClient,
   type Exercise, type InsertExercise,
@@ -8,25 +9,71 @@ import {
   type WorkoutExercise, type InsertWorkoutExercise,
   type WorkoutAssignment, type InsertWorkoutAssignment,
   type ProgressEntry, type InsertProgressEntry,
-  type Message, type InsertMessage,
-  type ClientCommunicationPref, type InsertClientCommunicationPref,
-  type MessageTemplate, type InsertMessageTemplate,
-  type TrainingSession, type InsertTrainingSession
+  type TrainingSession, type InsertTrainingSession,
+  type UserOnboardingProgress, type InsertUserOnboardingProgress,
+  type Appointment, type InsertAppointment
 } from "@shared/schema";
 import { getDb } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql, isNotNull } from "drizzle-orm";
 import { MemoryStorage } from "./memoryStorage";
 
+/**
+ * Storage interface for database operations
+ * Provides abstraction over database implementation with fallback to memory storage
+ */
 export interface IStorage {
   // Users - Replit Auth operations (IMPORTANT: mandatory for Replit Auth)
+
+  /**
+   * Get user by ID
+   * @param id - User ID
+   * @returns User object or undefined if not found
+   */
   getUser(id: string): Promise<User | undefined>;
+
+  /**
+   * Create or update user (used by Replit Auth)
+   * @param user - User data to upsert
+   * @returns Created or updated user
+   */
   upsertUser(user: UpsertUser): Promise<User>;
 
   // Clients
+
+  /**
+   * Get client by ID
+   * @param id - Client ID
+   * @returns Client object or undefined if not found
+   */
   getClient(id: string): Promise<Client | undefined>;
+
+  /**
+   * Get all clients for a specific trainer
+   * @param trainerId - Trainer (user) ID
+   * @returns Array of clients
+   */
   getClientsByTrainer(trainerId: string): Promise<Client[]>;
+
+  /**
+   * Create a new client
+   * @param client - Client data
+   * @returns Created client
+   */
   createClient(client: InsertClient): Promise<Client>;
+
+  /**
+   * Update existing client
+   * @param id - Client ID
+   * @param updates - Partial client data to update
+   * @returns Updated client or undefined if not found
+   */
   updateClient(id: string, updates: Partial<InsertClient>): Promise<Client | undefined>;
+
+  /**
+   * Delete a client
+   * @param id - Client ID
+   * @returns True if deleted, false if not found
+   */
   deleteClient(id: string): Promise<boolean>;
 
   // Exercises
@@ -48,6 +95,8 @@ export interface IStorage {
 
   // Workout Assignments
   getClientWorkouts(clientId: string): Promise<WorkoutAssignment[]>;
+  getClientWorkoutsByWeek(clientId: string, weekStart: string, weekEnd: string): Promise<any[]>;
+  getTrainerWorkoutAssignments(trainerId: string): Promise<any[]>; // Get all workout assignments for trainer's clients
   assignWorkoutToClient(assignment: InsertWorkoutAssignment): Promise<WorkoutAssignment>;
   completeWorkoutAssignment(id: string, notes?: string): Promise<WorkoutAssignment | undefined>;
 
@@ -55,23 +104,18 @@ export interface IStorage {
   getClientProgress(clientId: string): Promise<ProgressEntry[]>;
   addProgressEntry(entry: InsertProgressEntry): Promise<ProgressEntry>;
 
-  // Messages & Multi-Platform Communication
-  getAllMessagesForTrainer(trainerId: string, platform?: string): Promise<Message[]>;
-  getClientMessages(clientId: string, platform?: string): Promise<Message[]>;
-  sendMessage(message: InsertMessage): Promise<Message>;
-  markMessageAsRead(id: string): Promise<Message | undefined>;
-  getMessageTemplates(trainerId: string, category?: string): Promise<MessageTemplate[]>;
-  createMessageTemplate(template: InsertMessageTemplate): Promise<MessageTemplate>;
-  deleteMessageTemplate(id: string): Promise<boolean>;
-  getClientCommunicationPrefs(clientId: string): Promise<ClientCommunicationPref[]>;
-  updateClientCommunicationPref(clientId: string, pref: InsertClientCommunicationPref): Promise<ClientCommunicationPref>;
-  sendMultiPlatformMessage(clientId: string, content: string, platforms: string[]): Promise<Message[]>;
-
   // Training Sessions
   getTrainerSessions(trainerId: string): Promise<TrainingSession[]>;
   getClientSessions(clientId: string): Promise<TrainingSession[]>;
   createTrainingSession(session: InsertTrainingSession): Promise<TrainingSession>;
   updateTrainingSession(id: string, updates: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined>;
+
+  // Appointments
+  getAppointmentsByTrainer(trainerId: string): Promise<Appointment[]>;
+  getAppointmentsByClient(clientId: string): Promise<Appointment[]>;
+  createAppointment(appointment: InsertAppointment): Promise<Appointment>;
+  updateAppointment(id: string, updates: Partial<InsertAppointment>): Promise<Appointment | undefined>;
+  deleteAppointment(id: string): Promise<boolean>;
 
   // Enhanced Features
   duplicateWorkout(workoutId: string, trainerId: string): Promise<Workout>;
@@ -79,6 +123,10 @@ export interface IStorage {
   getDashboardStats(trainerId: string): Promise<any>;
   getClientNotes(clientId: string): Promise<any[]>;
   addClientNote(clientId: string, trainerId: string, content: string, category: string): Promise<any>;
+
+  // User Onboarding Progress
+  getUserOnboardingProgress(userId: string): Promise<UserOnboardingProgress | undefined>;
+  updateUserOnboardingProgress(userId: string, updates: Partial<InsertUserOnboardingProgress>): Promise<UserOnboardingProgress>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -205,9 +253,345 @@ export class DatabaseStorage implements IStorage {
   // Workout Assignments
   async getClientWorkouts(clientId: string): Promise<WorkoutAssignment[]> {
     const db = await getDb();
-    return await db.select().from(workoutAssignments)
+    const results = await db.select({
+      id: workoutAssignments.id,
+      workoutId: workoutAssignments.workoutId,
+      clientId: workoutAssignments.clientId,
+      assignedAt: workoutAssignments.assignedAt,
+      completedAt: workoutAssignments.completedAt,
+      notes: workoutAssignments.notes,
+      // Scheduling fields
+      scheduledDate: workoutAssignments.scheduledDate,
+      scheduledTime: workoutAssignments.scheduledTime,
+      timezone: workoutAssignments.timezone,
+      dayOfWeek: workoutAssignments.dayOfWeek,
+      weekNumber: workoutAssignments.weekNumber,
+      weekYear: workoutAssignments.weekYear,
+      durationMinutes: workoutAssignments.durationMinutes,
+      // Customization fields
+      isCustomized: workoutAssignments.isCustomized,
+      customTitle: workoutAssignments.customTitle,
+      customNotes: workoutAssignments.customNotes,
+      // Status tracking
+      status: workoutAssignments.status,
+      cancelledAt: workoutAssignments.cancelledAt,
+      cancellationReason: workoutAssignments.cancellationReason,
+      notificationsSent: workoutAssignments.notificationsSent,
+      workout: {
+        id: workouts.id,
+        title: workouts.title,
+        description: workouts.description,
+        duration: workouts.duration,
+        difficulty: workouts.difficulty,
+        category: workouts.category,
+      }
+    })
+      .from(workoutAssignments)
+      .leftJoin(workouts, eq(workoutAssignments.workoutId, workouts.id))
       .where(eq(workoutAssignments.clientId, clientId))
       .orderBy(desc(workoutAssignments.assignedAt));
+
+    // Flatten workout data to top level for easier frontend consumption
+    return results.map(result => ({
+      id: result.id,
+      workoutId: result.workoutId,
+      clientId: result.clientId,
+      assignedAt: result.assignedAt,
+      completedAt: result.completedAt,
+      notes: result.notes,
+      // Scheduling fields
+      scheduledDate: result.scheduledDate,
+      scheduledTime: result.scheduledTime,
+      timezone: result.timezone,
+      dayOfWeek: result.dayOfWeek,
+      weekNumber: result.weekNumber,
+      weekYear: result.weekYear,
+      durationMinutes: result.durationMinutes,
+      // Customization fields
+      isCustomized: result.isCustomized,
+      customTitle: result.customTitle,
+      customNotes: result.customNotes,
+      // Status tracking
+      status: result.status,
+      cancelledAt: result.cancelledAt,
+      cancellationReason: result.cancellationReason,
+      notificationsSent: result.notificationsSent,
+      // Flatten workout properties to top level
+      title: result.customTitle || result.workout?.title || '',
+      description: result.workout?.description || '',
+      duration: result.durationMinutes || result.workout?.duration || 0,
+      difficulty: result.workout?.difficulty || 'beginner',
+      category: result.workout?.category || '',
+    })) as any;
+  }
+
+  async getClientWorkoutsByWeek(
+    clientId: string,
+    weekStart: string,
+    weekEnd: string
+  ): Promise<any[]> {
+    const db = await getDb();
+
+    console.log(`[Storage] getClientWorkoutsByWeek query params:`, { clientId, weekStart, weekEnd });
+
+    // Fetch workout assignments for the specified week with workout details
+    const assignmentResults = await db.select({
+      id: workoutAssignments.id,
+      workoutId: workoutAssignments.workoutId,
+      clientId: workoutAssignments.clientId,
+      assignedAt: workoutAssignments.assignedAt,
+      completedAt: workoutAssignments.completedAt,
+      notes: workoutAssignments.notes,
+      scheduledDate: workoutAssignments.scheduledDate,
+      scheduledTime: workoutAssignments.scheduledTime,
+      timezone: workoutAssignments.timezone,
+      dayOfWeek: workoutAssignments.dayOfWeek,
+      weekNumber: workoutAssignments.weekNumber,
+      weekYear: workoutAssignments.weekYear,
+      durationMinutes: workoutAssignments.durationMinutes,
+      isCustomized: workoutAssignments.isCustomized,
+      customTitle: workoutAssignments.customTitle,
+      customNotes: workoutAssignments.customNotes,
+      status: workoutAssignments.status,
+      cancelledAt: workoutAssignments.cancelledAt,
+      cancellationReason: workoutAssignments.cancellationReason,
+      workout: {
+        id: workouts.id,
+        title: workouts.title,
+        description: workouts.description,
+        duration: workouts.duration,
+        difficulty: workouts.difficulty,
+        category: workouts.category,
+      }
+    })
+      .from(workoutAssignments)
+      .leftJoin(workouts, eq(workoutAssignments.workoutId, workouts.id))
+      .where(
+        and(
+          eq(workoutAssignments.clientId, clientId),
+          isNotNull(workoutAssignments.scheduledDate),
+          gte(workoutAssignments.scheduledDate, weekStart),
+          lte(workoutAssignments.scheduledDate, weekEnd)
+        )
+      )
+      .orderBy(workoutAssignments.scheduledDate);
+
+    console.log(`[Storage] Assignment results count: ${assignmentResults.length}`);
+
+    // Fetch all appointments for this client in the week range
+    const appointmentsInWeek = await db.select()
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.clientId, clientId),
+          gte(appointments.date, weekStart),
+          lte(appointments.date, weekEnd)
+        )
+      );
+
+    // Create a map of date -> appointment data
+    const appointmentsByDate = new Map<string, typeof appointmentsInWeek[0]>();
+    appointmentsInWeek.forEach((apt: any) => {
+      if (apt.date) {
+        appointmentsByDate.set(apt.date, apt);
+      }
+    });
+
+    // Track which dates have workout assignments
+    const datesWithWorkouts = new Set<string>();
+    assignmentResults.forEach((assignment: any) => {
+      if (assignment.scheduledDate) {
+        datesWithWorkouts.add(assignment.scheduledDate);
+      }
+    });
+
+    // For each workout assignment, fetch its exercises
+    const workoutsWithExercises = await Promise.all(
+      assignmentResults.map(async (assignment: any) => {
+        if (!assignment.workoutId) {
+          // Get appointment for this date if available
+          const appointment = assignment.scheduledDate
+            ? appointmentsByDate.get(assignment.scheduledDate)
+            : undefined;
+
+          return {
+            ...assignment,
+            scheduledStartTime: appointment?.startTime || null,
+            scheduledEndTime: appointment?.endTime || null,
+            title: assignment.workout?.title || '',
+            description: assignment.workout?.description || '',
+            duration: assignment.workout?.duration || 0,
+            difficulty: assignment.workout?.difficulty || 'beginner',
+            category: assignment.workout?.category || '',
+            exercises: []
+          };
+        }
+
+        // Fetch exercises for this workout
+        const exerciseResults = await db.select()
+          .from(workoutExercises)
+          .leftJoin(exercises, eq(workoutExercises.exerciseId, exercises.id))
+          .where(eq(workoutExercises.workoutId, assignment.workoutId))
+          .orderBy(workoutExercises.sortOrder);
+
+        // Get appointment for this date if available
+        const appointment = assignment.scheduledDate
+          ? appointmentsByDate.get(assignment.scheduledDate)
+          : undefined;
+
+        return {
+          id: assignment.id,
+          workoutId: assignment.workoutId,
+          clientId: assignment.clientId,
+          assignedAt: assignment.assignedAt,
+          completedAt: assignment.completedAt,
+          notes: assignment.notes,
+          scheduledDate: assignment.scheduledDate,
+          dayOfWeek: assignment.dayOfWeek,
+          weekNumber: assignment.weekNumber,
+          weekYear: assignment.weekYear,
+          scheduledStartTime: appointment?.startTime || null,
+          scheduledEndTime: appointment?.endTime || null,
+          title: assignment.workout?.title || '',
+          description: assignment.workout?.description || '',
+          duration: assignment.workout?.duration || 0,
+          difficulty: assignment.workout?.difficulty || 'beginner',
+          category: assignment.workout?.category || '',
+          exercises: exerciseResults.map((ex: any) => ({
+            id: ex.workout_exercises?.id,
+            exerciseId: ex.workout_exercises?.exerciseId,
+            name: ex.exercises?.name || 'Exercise',
+            description: ex.exercises?.description || '',
+            muscleGroups: ex.exercises?.muscleGroups || [],
+            equipment: ex.exercises?.equipment || [],
+            instructions: ex.exercises?.instructions || [],
+            youtubeUrl: ex.exercises?.youtubeUrl || null,
+            sets: ex.workout_exercises?.sets || 0,
+            reps: ex.workout_exercises?.reps || '',
+            weight: ex.workout_exercises?.weight || null,
+            restTime: ex.workout_exercises?.restTime || 60,
+            sortOrder: ex.workout_exercises?.sortOrder || 0,
+          }))
+        };
+      })
+    );
+
+    // Add standalone appointments (appointments without workout assignments) as calendar items
+    const standaloneAppointments = appointmentsInWeek
+      .filter((apt: any) => apt.date && !datesWithWorkouts.has(apt.date))
+      .map((apt: any) => {
+        // Calculate day of week from the appointment date
+        const appointmentDate = new Date(apt.date!);
+        const dayOfWeek = appointmentDate.getDay();
+
+        // Calculate duration from time slots if available
+        let duration = 60; // Default
+        if (apt.startTime && apt.endTime) {
+          try {
+            const [startHour, startMin] = apt.startTime.split(':').map(Number);
+            const [endHour, endMin] = apt.endTime.split(':').map(Number);
+            const startMinutes = startHour * 60 + startMin;
+            const endMinutes = endHour * 60 + endMin;
+            duration = Math.max(0, endMinutes - startMinutes);
+          } catch {
+            duration = 60;
+          }
+        }
+
+        return {
+          id: apt.id!,
+          workoutId: null,
+          clientId: apt.clientId!,
+          assignedAt: apt.createdAt || new Date(),
+          completedAt: apt.status === 'completed' ? apt.createdAt : null,
+          notes: apt.notes || null,
+          scheduledDate: apt.date!,
+          dayOfWeek: dayOfWeek,
+          weekNumber: null,
+          weekYear: null,
+          scheduledStartTime: apt.startTime || null,
+          scheduledEndTime: apt.endTime || null,
+          title: apt.title || 'Training Session',
+          description: apt.notes || 'Scheduled training session',
+          duration: duration,
+          difficulty: 'intermediate',
+          category: apt.type || 'training',
+          exercises: []
+        };
+      });
+
+    console.log(`[Storage] Adding ${standaloneAppointments.length} standalone appointments`);
+
+    // Combine workout assignments and standalone appointments, then sort by date
+    const allItems = [...workoutsWithExercises, ...standaloneAppointments]
+      .sort((a, b) => (a.scheduledDate || '').localeCompare(b.scheduledDate || ''));
+
+    return allItems;
+  }
+
+  async getTrainerWorkoutAssignments(trainerId: string): Promise<any[]> {
+    const db = await getDb();
+
+    console.log(`[Storage] getTrainerWorkoutAssignments for trainer:`, trainerId);
+
+    // Get all workout assignments for this trainer's clients with scheduledDate
+    const assignmentResults = await db.select({
+      id: workoutAssignments.id,
+      workoutId: workoutAssignments.workoutId,
+      clientId: workoutAssignments.clientId,
+      assignedAt: workoutAssignments.assignedAt,
+      completedAt: workoutAssignments.completedAt,
+      notes: workoutAssignments.notes,
+      scheduledDate: workoutAssignments.scheduledDate,
+      scheduledTime: workoutAssignments.scheduledTime,
+      timezone: workoutAssignments.timezone,
+      dayOfWeek: workoutAssignments.dayOfWeek,
+      durationMinutes: workoutAssignments.durationMinutes,
+      customTitle: workoutAssignments.customTitle,
+      customNotes: workoutAssignments.customNotes,
+      status: workoutAssignments.status,
+      workout: {
+        id: workouts.id,
+        title: workouts.title,
+        description: workouts.description,
+        duration: workouts.duration,
+        difficulty: workouts.difficulty,
+        category: workouts.category,
+      },
+      client: {
+        id: clients.id,
+        name: clients.name,
+        email: clients.email,
+      }
+    })
+      .from(workoutAssignments)
+      .leftJoin(workouts, eq(workoutAssignments.workoutId, workouts.id))
+      .leftJoin(clients, eq(workoutAssignments.clientId, clients.id))
+      .where(
+        and(
+          eq(clients.trainerId, trainerId),
+          isNotNull(workoutAssignments.scheduledDate)
+        )
+      )
+      .orderBy(workoutAssignments.scheduledDate);
+
+    console.log(`[Storage] Found ${assignmentResults.length} scheduled workout assignments for trainer ${trainerId}`);
+
+    // Map to simpler format for calendar display
+    return assignmentResults.map(result => ({
+      id: result.id,
+      workoutId: result.workoutId,
+      clientId: result.clientId,
+      clientName: result.client?.name || 'Unknown Client',
+      scheduledDate: result.scheduledDate,
+      scheduledTime: result.scheduledTime,
+      duration: result.durationMinutes || result.workout?.duration || 60,
+      title: result.customTitle || result.workout?.title || 'Workout',
+      difficulty: result.workout?.difficulty || 'beginner',
+      category: result.workout?.category || '',
+      status: result.status,
+      completedAt: result.completedAt,
+    }));
   }
 
   async assignWorkoutToClient(insertAssignment: InsertWorkoutAssignment): Promise<WorkoutAssignment> {
@@ -239,151 +623,6 @@ export class DatabaseStorage implements IStorage {
     return entry;
   }
 
-  // Messages & Multi-Platform Communication
-  async getAllMessagesForTrainer(trainerId: string, platform?: string): Promise<Message[]> {
-    const db = await getDb();
-    const baseCondition = eq(clients.trainerId, trainerId);
-    
-    const whereCondition = platform 
-      ? and(baseCondition, eq(messages.platform, platform))
-      : baseCondition;
-    
-    const result = await db.select({
-      id: messages.id,
-      trainerId: messages.trainerId,
-      clientId: messages.clientId,
-      content: messages.content,
-      isFromTrainer: messages.isFromTrainer,
-      platform: messages.platform,
-      externalMessageId: messages.externalMessageId,
-      messageType: messages.messageType,
-      attachmentUrl: messages.attachmentUrl,
-      sentAt: messages.sentAt,
-      readAt: messages.readAt,
-      deliveredAt: messages.deliveredAt,
-      deliveryStatus: messages.deliveryStatus,
-      errorMessage: messages.errorMessage
-    })
-    .from(messages)
-    .innerJoin(clients, eq(messages.clientId, clients.id))
-    .where(whereCondition)
-    .orderBy(desc(messages.sentAt));
-    
-    return result;
-  }
-
-  async getClientMessages(clientId: string, platform?: string): Promise<Message[]> {
-    const db = await getDb();
-    const baseCondition = eq(messages.clientId, clientId);
-    
-    const whereCondition = platform 
-      ? and(baseCondition, eq(messages.platform, platform))
-      : baseCondition;
-    
-    return await db.select().from(messages)
-      .where(whereCondition)
-      .orderBy(desc(messages.sentAt));
-  }
-
-  async sendMessage(insertMessage: InsertMessage): Promise<Message> {
-    const db = await getDb();
-    const [message] = await db.insert(messages).values(insertMessage).returning();
-    return message;
-  }
-
-  async markMessageAsRead(id: string): Promise<Message | undefined> {
-    const db = await getDb();
-    const [message] = await db.update(messages)
-      .set({ readAt: new Date() })
-      .where(eq(messages.id, id))
-      .returning();
-    return message || undefined;
-  }
-
-  async getMessageTemplates(trainerId: string, category?: string): Promise<MessageTemplate[]> {
-    const db = await getDb();
-    const baseCondition = eq(messageTemplates.trainerId, trainerId);
-    
-    const whereCondition = category 
-      ? and(baseCondition, eq(messageTemplates.category, category))
-      : baseCondition;
-    
-    return await db.select().from(messageTemplates)
-      .where(whereCondition)
-      .orderBy(messageTemplates.category, messageTemplates.title);
-  }
-
-  async createMessageTemplate(insertTemplate: InsertMessageTemplate): Promise<MessageTemplate> {
-    const db = await getDb();
-    const [template] = await db.insert(messageTemplates).values(insertTemplate).returning();
-    return template;
-  }
-
-  async deleteMessageTemplate(id: string): Promise<boolean> {
-    const db = await getDb();
-    const result = await db.delete(messageTemplates).where(eq(messageTemplates.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
-  }
-
-  async getClientCommunicationPrefs(clientId: string): Promise<ClientCommunicationPref[]> {
-    const db = await getDb();
-    return await db.select().from(clientCommunicationPrefs)
-      .where(eq(clientCommunicationPrefs.clientId, clientId))
-      .orderBy(desc(clientCommunicationPrefs.isPreferred), clientCommunicationPrefs.platform);
-  }
-
-  async updateClientCommunicationPref(clientId: string, insertPref: InsertClientCommunicationPref): Promise<ClientCommunicationPref> {
-    const db = await getDb();
-    // Check if preference already exists for this client/platform
-    const existing = await db.select().from(clientCommunicationPrefs)
-      .where(
-        and(
-          eq(clientCommunicationPrefs.clientId, clientId),
-          eq(clientCommunicationPrefs.platform, insertPref.platform)
-        )
-      );
-    
-    if (existing.length > 0) {
-      // Update existing preference
-      const [updated] = await db.update(clientCommunicationPrefs)
-        .set(insertPref)
-        .where(eq(clientCommunicationPrefs.id, existing[0].id))
-        .returning();
-      return updated;
-    } else {
-      // Create new preference
-      const [created] = await db.insert(clientCommunicationPrefs)
-        .values({ ...insertPref, clientId })
-        .returning();
-      return created;
-    }
-  }
-
-  async sendMultiPlatformMessage(clientId: string, content: string, platforms: string[]): Promise<Message[]> {
-    // Get trainer ID for this client
-    const client = await this.getClient(clientId);
-    if (!client) throw new Error("Client not found");
-    
-    const messages: Message[] = [];
-    
-    // Send message to each platform
-    for (const platform of platforms) {
-      const messageData: InsertMessage = {
-        trainerId: client.trainerId,
-        clientId,
-        content,
-        isFromTrainer: true,
-        platform,
-        messageType: "text"
-      };
-      
-      const message = await this.sendMessage(messageData);
-      messages.push(message);
-    }
-    
-    return messages;
-  }
-
   // Training Sessions
   async getTrainerSessions(trainerId: string): Promise<TrainingSession[]> {
     const db = await getDb();
@@ -409,6 +648,85 @@ export class DatabaseStorage implements IStorage {
     const db = await getDb();
     const [session] = await db.update(trainingSessions).set(updates).where(eq(trainingSessions.id, id)).returning();
     return session || undefined;
+  }
+
+  // Appointments
+  async getAppointmentsByTrainer(trainerId: string): Promise<Appointment[]> {
+    const db = await getDb();
+    const results = await db.select({
+      id: appointments.id,
+      trainerId: appointments.trainerId,
+      clientId: appointments.clientId,
+      title: appointments.title,
+      date: appointments.date,
+      startTime: appointments.startTime,
+      endTime: appointments.endTime,
+      type: appointments.type,
+      status: appointments.status,
+      notes: appointments.notes,
+      createdAt: appointments.createdAt,
+      updatedAt: appointments.updatedAt,
+      client: clients
+    })
+    .from(appointments)
+    .leftJoin(clients, eq(appointments.clientId, clients.id))
+    .where(eq(appointments.trainerId, trainerId))
+    .orderBy(desc(appointments.date));
+
+    // Transform results to include client name
+    return results.map(result => ({
+      ...result,
+      client: result.client ? { name: result.client.name } : undefined
+    })) as any;
+  }
+
+  async getAppointmentsByClient(clientId: string): Promise<Appointment[]> {
+    const db = await getDb();
+    const results = await db.select({
+      id: appointments.id,
+      trainerId: appointments.trainerId,
+      clientId: appointments.clientId,
+      title: appointments.title,
+      date: appointments.date,
+      startTime: appointments.startTime,
+      endTime: appointments.endTime,
+      type: appointments.type,
+      status: appointments.status,
+      notes: appointments.notes,
+      createdAt: appointments.createdAt,
+      updatedAt: appointments.updatedAt,
+      client: clients
+    })
+    .from(appointments)
+    .leftJoin(clients, eq(appointments.clientId, clients.id))
+    .where(eq(appointments.clientId, clientId))
+    .orderBy(desc(appointments.date));
+
+    return results.map(result => ({
+      ...result,
+      client: result.client ? { name: result.client.name } : undefined
+    })) as any;
+  }
+
+  async createAppointment(insertAppointment: InsertAppointment): Promise<Appointment> {
+    const db = await getDb();
+    const [appointment] = await db.insert(appointments).values(insertAppointment).returning();
+    return appointment;
+  }
+
+  async updateAppointment(id: string, updates: Partial<InsertAppointment>): Promise<Appointment | undefined> {
+    const db = await getDb();
+    const [appointment] = await db.update(appointments)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(appointments.id, id))
+      .returning();
+    return appointment || undefined;
+  }
+
+  async deleteAppointment(id: string): Promise<boolean> {
+    const db = await getDb();
+    const result = await db.delete(appointments).where(eq(appointments.id, id)).returning();
+    return result.length > 0;
   }
 
   // Enhanced Features
@@ -564,23 +882,13 @@ export class DatabaseStorage implements IStorage {
       // Calculate client growth
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const newClientsThisMonth = allClients.filter(c => 
+      const newClientsThisMonth = allClients.filter(c =>
         new Date(c.createdAt) > thirtyDaysAgo
       ).length;
 
-      // Get recent messages for activity tracking with error handling
-      let messages: Message[] = [];
-      try {
-        messages = await this.getAllMessagesForTrainer(trainerId);
-      } catch (error) {
-        console.warn('Failed to get messages for dashboard stats:', error);
-      }
-      
-      const unreadMessages = messages.filter(m => !m.isFromTrainer && !m.readAt).length;
-
       // Build recent activity list
       const recentActivity: Array<{type: string, description: string, time: Date}> = [];
-      
+
       // Add upcoming sessions to activity
       upcomingSessions.slice(0, 3).forEach(s => {
         recentActivity.push({
@@ -589,16 +897,7 @@ export class DatabaseStorage implements IStorage {
           time: s.scheduledAt,
         });
       });
-      
-      // Add messages to activity
-      messages.slice(0, 3).forEach(m => {
-        recentActivity.push({
-          type: 'message',
-          description: m.isFromTrainer ? 'Message sent' : 'Message received',
-          time: m.sentAt,
-        });
-      });
-      
+
       // Sort and limit recent activity
       recentActivity.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
       const finalRecentActivity = recentActivity.slice(0, 5);
@@ -612,7 +911,6 @@ export class DatabaseStorage implements IStorage {
         upcomingSessions: upcomingSessions.length,
         completedSessionsThisWeek: completedThisWeek.length,
         newClientsThisMonth,
-        unreadMessages,
         recentActivity: finalRecentActivity,
       };
     } catch (error) {
@@ -627,7 +925,6 @@ export class DatabaseStorage implements IStorage {
         upcomingSessions: 0,
         completedSessionsThisWeek: 0,
         newClientsThisMonth: 0,
-        unreadMessages: 0,
         recentActivity: [],
       };
     }
@@ -654,11 +951,11 @@ export class DatabaseStorage implements IStorage {
     // In a real app, you'd have a separate notes table
     const client = await this.getClient(clientId);
     if (!client) throw new Error('Client not found');
-    
+
     const updatedClient = await this.updateClient(clientId, {
       goal: `${client.goal}\n\n[${category.toUpperCase()}]: ${content}`,
     });
-    
+
     return {
       id: Date.now().toString(),
       clientId,
@@ -666,6 +963,43 @@ export class DatabaseStorage implements IStorage {
       category,
       createdAt: new Date(),
     };
+  }
+
+  // User Onboarding Progress
+  async getUserOnboardingProgress(userId: string): Promise<UserOnboardingProgress | undefined> {
+    const db = await getDb();
+    const [progress] = await db
+      .select()
+      .from(userOnboardingProgress)
+      .where(eq(userOnboardingProgress.userId, userId));
+    return progress || undefined;
+  }
+
+  async updateUserOnboardingProgress(
+    userId: string,
+    updates: Partial<InsertUserOnboardingProgress>
+  ): Promise<UserOnboardingProgress> {
+    const db = await getDb();
+
+    // Check if progress record exists
+    const existing = await this.getUserOnboardingProgress(userId);
+
+    if (existing) {
+      // Update existing record
+      const [progress] = await db
+        .update(userOnboardingProgress)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(userOnboardingProgress.userId, userId))
+        .returning();
+      return progress;
+    } else {
+      // Create new record
+      const [progress] = await db
+        .insert(userOnboardingProgress)
+        .values({ userId, ...updates })
+        .returning();
+      return progress;
+    }
   }
 }
 

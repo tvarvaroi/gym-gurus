@@ -4,21 +4,24 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { IncomingMessage } from "http";
 import { parse as parseCookie } from "cookie";
 import { storage } from "./storage";
+import { getDb } from "./db";
 import { setupAuth, isAuthenticated, authenticateWebSocketSession, getSession } from "./replitAuth";
-import { 
-  insertUserSchema, insertClientSchema, insertExerciseSchema, insertWorkoutSchema, 
+import {
+  insertUserSchema, insertClientSchema, insertExerciseSchema, insertWorkoutSchema,
   insertWorkoutExerciseSchema, insertWorkoutAssignmentSchema, insertProgressEntrySchema,
-  insertMessageSchema, insertMessageTemplateSchema, insertClientCommunicationPrefSchema,
-  type InsertClient, type InsertExercise, type InsertWorkout, 
+  insertUserOnboardingProgressSchema, insertTrainingSessionSchema, insertAppointmentSchema,
+  type InsertClient, type InsertExercise, type InsertWorkout,
   type InsertWorkoutExercise, type InsertWorkoutAssignment, type InsertProgressEntry,
-  type InsertMessage, type InsertMessageTemplate, type InsertClientCommunicationPref
+  type InsertUserOnboardingProgress, type InsertAppointment,
+  clients, workoutAssignments, workouts, workoutExercises, exercises
 } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { ZodError } from "zod";
-import { 
-  secureAuth, 
-  requireClientOwnership, 
-  requireTrainerOwnership, 
-  rateLimitMessages,
+import { startOfWeek, endOfWeek, addWeeks, format, getISOWeek, getISOWeekYear } from "date-fns";
+import {
+  secureAuth,
+  requireClientOwnership,
+  requireTrainerOwnership,
   rateLimitWebSocket
 } from "./middleware/auth";
 import { 
@@ -27,18 +30,13 @@ import {
   authRateLimit,
   exportRateLimit
 } from "./middleware/rateLimiter";
-import { 
-  simulateMessageDelivery, 
-  getMessageDeliveryStatuses 
-} from "./middleware/deliveredTracking";
+import { getMessageDeliveryStatuses } from "./middleware/deliveredTracking";
 import {
   getMockClients,
-  getMockMessages,
   getMockProgress,
   getMockSettings,
   getMockAnalytics,
-  getMockDashboardStats,
-  getMockMessageTemplates
+  getMockDashboardStats
 } from "./mockData";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -52,63 +50,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Note: No rate limiting on auth check as it's frequently called to verify session
   app.get('/api/auth/user', async (req: Request, res: Response) => {
     try {
-      // In development mode, automatically set up session if not authenticated
-      if (process.env.NODE_ENV === 'development' && !req.isAuthenticated()) {
-        const devUser = {
-          id: "demo-trainer-123",
-          email: "trainer@example.com",
-          firstName: "Demo",
-          lastName: "Trainer",
-          profileImageUrl: null,
-          claims: {
-            sub: "demo-trainer-123",
-            email: "trainer@example.com",
-            first_name: "Demo",
-            last_name: "Trainer"
-          },
-          expires_at: Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
-        };
-        
-        // Set up session automatically in development
-        (req as any).session.passport = { user: devUser };
-        (req as any).user = devUser;
-        
-        // Save session
-        await new Promise((resolve, reject) => {
-          (req as any).session.save((err: any) => {
-            if (err) reject(err);
-            else resolve(true);
-          });
-        });
-        
-        return res.json({
-          id: devUser.id,
-          email: devUser.email,
-          firstName: devUser.firstName,
-          lastName: devUser.lastName,
-          profileImageUrl: devUser.profileImageUrl,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
+      // Check if user is authenticated - return 401 if not
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
       }
-      
-      // Use isAuthenticated middleware for non-development mode
+
+      // For production, check token expiration
       if (process.env.NODE_ENV !== 'development') {
         const jwtUser = req.user as any;
-        if (!req.isAuthenticated() || !jwtUser?.expires_at) {
+        if (!jwtUser?.expires_at) {
           return res.status(401).json({ message: "Unauthorized" });
         }
-        
+
         const now = Math.floor(Date.now() / 1000);
         if (now > jwtUser.expires_at) {
           return res.status(401).json({ message: "Token expired" });
         }
       }
-      
+
       // Get user ID from session
       const jwtUser = req.user as any;
-      const userId = jwtUser?.claims?.sub || jwtUser?.id || "demo-trainer-123";
-      
+      const userId = jwtUser?.claims?.sub || jwtUser?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
       // Try to get user from database
       try {
         const user = await storage.getUser(userId);
@@ -118,46 +85,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (dbError) {
         console.warn("Database unavailable, using session data:", dbError);
       }
-      
+
       // Return session user data if database unavailable
-      if (jwtUser?.claims || jwtUser?.id) {
-        res.json({
-          id: userId,
-          email: jwtUser?.claims?.email || jwtUser?.email || "trainer@example.com",
-          firstName: jwtUser?.claims?.first_name || jwtUser?.firstName || "Demo",
-          lastName: jwtUser?.claims?.last_name || jwtUser?.lastName || "Trainer",
-          profileImageUrl: jwtUser?.claims?.profile_image_url || jwtUser?.profileImageUrl || null,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-      } else {
-        // Fallback to demo user in development
-        res.json({
-          id: "demo-trainer-123",
-          email: "trainer@example.com",
-          firstName: "Demo",
-          lastName: "Trainer",
-          profileImageUrl: null,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-      }
+      // Detect role from user ID (mock-client-* = client, otherwise trainer)
+      const role = userId.startsWith('mock-client-') ? 'client' : 'trainer';
+
+      res.json({
+        id: userId,
+        email: jwtUser?.claims?.email || jwtUser?.email || (role === 'client' ? 'client@example.com' : 'trainer@example.com'),
+        firstName: jwtUser?.claims?.first_name || jwtUser?.firstName || "Demo",
+        lastName: jwtUser?.claims?.last_name || jwtUser?.lastName || (role === 'client' ? 'Client' : 'Trainer'),
+        profileImageUrl: jwtUser?.claims?.profile_image_url || jwtUser?.profileImageUrl || null,
+        role: role, // Detect role from user ID
+        trainerId: role === 'client' ? 'demo-trainer-123' : null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
     } catch (error: any) {
       console.error("Auth error:", error);
-      // In development mode, return demo user
-      if (process.env.NODE_ENV === 'development') {
-        res.json({
-          id: "demo-trainer-123",
-          email: "trainer@example.com",
-          firstName: "Demo",
-          lastName: "Trainer",
-          profileImageUrl: null,
-          createdAt: new Date(),
-          updatedAt: new Date()
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Onboarding Progress Routes
+
+  // GET /api/onboarding/progress - Get user's onboarding progress
+  app.get("/api/onboarding/progress", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as any).id as string;
+      const progress = await storage.getUserOnboardingProgress(userId);
+
+      // If no progress exists, return default values
+      if (!progress) {
+        return res.json({
+          userId,
+          welcomeModalCompleted: false,
+          selectedGoal: null,
+          addedFirstClient: false,
+          createdFirstWorkout: false,
+          assignedFirstWorkout: false,
+          scheduledFirstSession: false,
+          loggedFirstProgress: false,
+          sentFirstMessage: false,
+          completedProductTour: false,
+          dismissedFeaturePrompts: [],
+          onboardingCompletedAt: null,
         });
-      } else {
-        res.status(500).json({ message: "Failed to fetch user" });
       }
+
+      res.json(progress);
+    } catch (error) {
+      console.error("Failed to fetch onboarding progress:", error);
+      res.status(500).json({ error: "Failed to fetch onboarding progress" });
+    }
+  });
+
+  // PUT /api/onboarding/progress - Update user's onboarding progress
+  app.put("/api/onboarding/progress", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as any).id as string;
+
+      // Prevent userId from being overridden in request body
+      const { userId: _, ...updateData } = req.body;
+
+      // Convert ISO string to Date object if onboardingCompletedAt is present
+      if (updateData.onboardingCompletedAt && typeof updateData.onboardingCompletedAt === 'string') {
+        updateData.onboardingCompletedAt = new Date(updateData.onboardingCompletedAt);
+      }
+
+      const validatedData = insertUserOnboardingProgressSchema.partial().parse(updateData);
+
+      const progress = await storage.updateUserOnboardingProgress(userId, validatedData);
+      res.json(progress);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Invalid onboarding data", details: error.errors });
+      }
+      console.error("Failed to update onboarding progress:", error);
+      res.status(500).json({ error: "Failed to update onboarding progress" });
     }
   });
 
@@ -223,6 +228,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/client/profile - Get current user's client profile (for client users)
+  app.get("/api/client/profile", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get user to check role and email
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Only clients can use this endpoint
+      if (user.role !== 'client') {
+        return res.status(403).json({ error: "This endpoint is for clients only" });
+      }
+
+      // Find client record by matching email using direct database query
+      const db = await getDb();
+      const clientRecords = await db.select().from(clients).where(eq(clients.email, user.email));
+
+      console.log(`🔍 Looking for client with email: ${user.email}`);
+      console.log(`📋 Found ${clientRecords.length} client record(s)`);
+
+      if (clientRecords.length === 0) {
+        console.log(`❌ Client profile not found for email: ${user.email}`);
+        return res.status(404).json({ error: "Client profile not found" });
+      }
+
+      const clientRecord = clientRecords[0];
+      console.log(`✅ Found client profile:`, { id: clientRecord.id, name: clientRecord.name, email: clientRecord.email });
+      res.json(clientRecord);
+    } catch (error) {
+      console.error("Error fetching client profile:", error);
+      res.status(500).json({ error: "Failed to fetch client profile" });
+    }
+  });
+
   // GET /api/clients/detail/:clientId - Get specific client details
   app.get("/api/clients/detail/:clientId", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
@@ -244,6 +289,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trainerId = (req.user as any).id as string;
       const validatedData = insertClientSchema.parse({ ...req.body, trainerId });
       const client = await storage.createClient(validatedData);
+
+      // Automatic milestone tracking: Mark first client added
+      try {
+        await storage.updateUserOnboardingProgress(trainerId, {
+          addedFirstClient: true,
+        });
+      } catch (onboardingError) {
+        // Don't fail client creation if onboarding update fails
+        console.warn("Failed to update onboarding progress:", onboardingError);
+      }
+
       res.status(201).json(client);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -440,7 +496,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertWorkoutSchema.parse({ ...req.body, trainerId: finalTrainerId });
       const workout = await storage.createWorkout(validatedData);
       console.log('💪 Workout created successfully:', workout);
-      
+
+      // Automatic milestone tracking: Mark first workout created
+      try {
+        await storage.updateUserOnboardingProgress(finalTrainerId, {
+          createdFirstWorkout: true,
+        });
+      } catch (onboardingError) {
+        // Don't fail workout creation if onboarding update fails
+        console.warn("Failed to update onboarding progress:", onboardingError);
+      }
+
       res.status(201).json(workout);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -588,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workout Assignment Routes
   
   // GET /api/clients/:clientId/workouts - Get client's assigned workouts
-  app.get("/api/clients/:clientId/workouts", async (req: Request, res: Response) => {
+  app.get("/api/clients/:clientId/workouts", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const assignments = await storage.getClientWorkouts(clientId);
@@ -599,11 +665,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/client/workouts/weekly - Get current user's (client) workouts for a specific week
+  app.get("/api/client/workouts/weekly", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get user to check role and email
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Only clients can use this endpoint
+      if (user.role !== 'client') {
+        return res.status(403).json({ error: "This endpoint is for clients only" });
+      }
+
+      // Find client record by matching email
+      const db = await getDb();
+      const clientRecords = await db.select().from(clients).where(eq(clients.email, user.email));
+
+      if (clientRecords.length === 0) {
+        return res.status(404).json({ error: "Client profile not found" });
+      }
+
+      const client = clientRecords[0];
+      const weekOffset = parseInt(req.query.weekOffset as string) || 0;
+
+      // Calculate week start and end dates (week starts on Monday)
+      const currentDate = new Date();
+      const targetWeek = addWeeks(currentDate, weekOffset);
+      const weekStart = startOfWeek(targetWeek, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(targetWeek, { weekStartsOn: 1 });
+
+      // Format dates as YYYY-MM-DD
+      const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+      const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+
+      // Fetch workouts for this week
+      const workouts = await storage.getClientWorkoutsByWeek(client.id, weekStartStr, weekEndStr);
+
+      console.log(`[Client Weekly Workouts]`);
+      console.log(`  User Email: ${user.email}`);
+      console.log(`  Client ID: ${client.id}`);
+      console.log(`  Week Offset: ${weekOffset}`);
+      console.log(`  Week Start: ${weekStartStr}`);
+      console.log(`  Week End: ${weekEndStr}`);
+      console.log(`  Workouts Found: ${workouts.length}`);
+
+      res.json({
+        weekStart: weekStartStr,
+        weekEnd: weekEndStr,
+        weekNumber: getISOWeek(weekStart),
+        year: getISOWeekYear(weekStart),
+        workouts
+      });
+    } catch (error) {
+      console.error("Error fetching client weekly workouts:", error);
+      res.status(500).json({ error: "Failed to fetch weekly workouts" });
+    }
+  });
+
+  // GET /api/clients/:clientId/workouts/weekly - Get client's workouts for a specific week (for trainers)
+  app.get("/api/clients/:clientId/workouts/weekly", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
+    try {
+      const { clientId } = req.params;
+      const weekOffset = parseInt(req.query.weekOffset as string) || 0;
+
+      // Calculate week start and end dates (week starts on Monday)
+      const currentDate = new Date();
+      const targetWeek = addWeeks(currentDate, weekOffset);
+      const weekStart = startOfWeek(targetWeek, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(targetWeek, { weekStartsOn: 1 });
+
+      // Format dates as YYYY-MM-DD
+      const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+      const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+
+      // Fetch workouts for this week
+      const workouts = await storage.getClientWorkoutsByWeek(clientId, weekStartStr, weekEndStr);
+
+      console.log(`[Weekly Workouts Debug]`);
+      console.log(`  Client ID: ${clientId}`);
+      console.log(`  Week Offset: ${weekOffset}`);
+      console.log(`  Week Start: ${weekStartStr}`);
+      console.log(`  Week End: ${weekEndStr}`);
+      console.log(`  Workouts Found: ${workouts.length}`);
+
+      res.json({
+        weekStart: weekStartStr,
+        weekEnd: weekEndStr,
+        weekNumber: getISOWeek(weekStart),
+        year: getISOWeekYear(weekStart),
+        workouts
+      });
+    } catch (error) {
+      console.error("Error fetching weekly workouts:", error);
+      res.status(500).json({ error: "Failed to fetch weekly workouts" });
+    }
+  });
+
+  // GET /api/workout-assignments/trainer/:trainerId - Get all scheduled workout assignments for trainer's clients
+  app.get("/api/workout-assignments/trainer/:trainerId", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const { trainerId } = req.params;
+      const workoutAssignments = await storage.getTrainerWorkoutAssignments(trainerId);
+      res.json(workoutAssignments);
+    } catch (error) {
+      console.error("Error fetching trainer workout assignments:", error);
+      res.status(500).json({ error: "Failed to fetch workout assignments" });
+    }
+  });
+
   // POST /api/workout-assignments - Assign workout to client
+  // Supports enhanced scheduling: date, time, timezone, status, customization
   app.post("/api/workout-assignments", async (req: Request, res: Response) => {
     try {
       const validatedData = insertWorkoutAssignmentSchema.parse(req.body);
-      const assignment = await storage.assignWorkoutToClient(validatedData);
+
+      // Validate scheduledTime format if provided (HH:MM)
+      if (validatedData.scheduledTime) {
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRegex.test(validatedData.scheduledTime)) {
+          return res.status(400).json({
+            error: "Invalid scheduledTime format. Expected HH:MM (e.g., '14:30')"
+          });
+        }
+      }
+
+      // Auto-calculate week fields if scheduledDate is provided
+      const assignmentData = { ...validatedData };
+      if (validatedData.scheduledDate) {
+        const scheduledDate = new Date(validatedData.scheduledDate);
+        assignmentData.dayOfWeek = scheduledDate.getDay(); // 0 = Sunday, 6 = Saturday
+        assignmentData.weekNumber = getISOWeek(scheduledDate);
+        assignmentData.weekYear = getISOWeekYear(scheduledDate);
+      }
+
+      // Set defaults for new fields if not provided
+      assignmentData.timezone = assignmentData.timezone || "UTC";
+      assignmentData.status = assignmentData.status || "scheduled";
+      assignmentData.isCustomized = assignmentData.isCustomized ?? false;
+
+      const assignment = await storage.assignWorkoutToClient(assignmentData);
+
+      // Automatic milestone tracking: Mark first workout assigned
+      try {
+        // Get the client to find the trainer ID
+        const client = await storage.getClient(validatedData.clientId);
+        if (client) {
+          await storage.updateUserOnboardingProgress(client.trainerId, {
+            assignedFirstWorkout: true,
+          });
+        }
+      } catch (onboardingError) {
+        // Don't fail assignment if onboarding update fails
+        console.warn("Failed to update onboarding progress:", onboardingError);
+      }
+
       res.status(201).json(assignment);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -611,6 +833,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Error logged internally
       res.status(500).json({ error: "Failed to assign workout" });
+    }
+  });
+
+  // GET /api/workout-assignments/:id - Get workout assignment details with exercises
+  app.get("/api/workout-assignments/:id", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const db = await getDb();
+
+      // Fetch assignment with workout details
+      const assignmentResults = await db.select({
+        id: workoutAssignments.id,
+        workoutId: workoutAssignments.workoutId,
+        clientId: workoutAssignments.clientId,
+        assignedAt: workoutAssignments.assignedAt,
+        completedAt: workoutAssignments.completedAt,
+        notes: workoutAssignments.notes,
+        // Scheduling fields
+        scheduledDate: workoutAssignments.scheduledDate,
+        scheduledTime: workoutAssignments.scheduledTime,
+        timezone: workoutAssignments.timezone,
+        dayOfWeek: workoutAssignments.dayOfWeek,
+        weekNumber: workoutAssignments.weekNumber,
+        weekYear: workoutAssignments.weekYear,
+        durationMinutes: workoutAssignments.durationMinutes,
+        // Customization fields
+        isCustomized: workoutAssignments.isCustomized,
+        customTitle: workoutAssignments.customTitle,
+        customNotes: workoutAssignments.customNotes,
+        // Status tracking
+        status: workoutAssignments.status,
+        cancelledAt: workoutAssignments.cancelledAt,
+        cancellationReason: workoutAssignments.cancellationReason,
+        notificationsSent: workoutAssignments.notificationsSent,
+        workout: {
+          id: workouts.id,
+          title: workouts.title,
+          description: workouts.description,
+          duration: workouts.duration,
+          difficulty: workouts.difficulty,
+          category: workouts.category,
+        }
+      })
+        .from(workoutAssignments)
+        .leftJoin(workouts, eq(workoutAssignments.workoutId, workouts.id))
+        .where(eq(workoutAssignments.id, id))
+        .limit(1);
+
+      if (assignmentResults.length === 0) {
+        return res.status(404).json({ error: "Workout assignment not found" });
+      }
+
+      const assignment = assignmentResults[0];
+
+      // Fetch exercises for this workout
+      const exerciseResults = await db.select()
+        .from(workoutExercises)
+        .leftJoin(exercises, eq(workoutExercises.exerciseId, exercises.id))
+        .where(eq(workoutExercises.workoutId, assignment.workoutId))
+        .orderBy(workoutExercises.sortOrder);
+
+      // Return combined data
+      res.json({
+        ...assignment,
+        title: assignment.workout?.title || '',
+        description: assignment.workout?.description || '',
+        duration: assignment.workout?.duration || 0,
+        difficulty: assignment.workout?.difficulty || 'beginner',
+        category: assignment.workout?.category || '',
+        exercises: exerciseResults.map((ex: any) => ({
+          id: ex.workout_exercises.id,
+          exerciseId: ex.workout_exercises.exerciseId,
+          name: ex.exercises?.name || 'Exercise',
+          muscleGroup: ex.exercises?.muscleGroup || 'General',
+          equipment: ex.exercises?.equipment,
+          instructions: ex.exercises?.instructions,
+          sets: ex.workout_exercises.sets,
+          reps: ex.workout_exercises.reps,
+          weight: ex.workout_exercises.weight,
+          restTime: ex.workout_exercises.restTime,
+          sortOrder: ex.workout_exercises.sortOrder,
+        }))
+      });
+    } catch (error) {
+      console.error("Error fetching workout assignment:", error);
+      res.status(500).json({ error: "Failed to fetch workout assignment" });
+    }
+  });
+
+  // PATCH /api/workout-assignments/:id - Update workout assignment (status, completion, cancellation)
+  app.patch("/api/workout-assignments/:id", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const db = await getDb();
+
+      // Validate allowed updates
+      const allowedFields = [
+        'status', 'completedAt', 'cancelledAt', 'cancellationReason',
+        'customTitle', 'customNotes', 'notes', 'scheduledTime', 'timezone',
+        'scheduledDate', 'durationMinutes'
+      ];
+
+      const updateData: any = {};
+      for (const field of allowedFields) {
+        if (field in updates) {
+          updateData[field] = updates[field];
+        }
+      }
+
+      // Auto-set timestamps based on status changes
+      if (updates.status === 'completed' && !updateData.completedAt) {
+        updateData.completedAt = new Date();
+      }
+      if (updates.status === 'cancelled' && !updateData.cancelledAt) {
+        updateData.cancelledAt = new Date();
+      }
+
+      // Recalculate week fields if scheduledDate changed
+      if (updates.scheduledDate) {
+        const scheduledDate = new Date(updates.scheduledDate);
+        updateData.dayOfWeek = scheduledDate.getDay();
+        updateData.weekNumber = getISOWeek(scheduledDate);
+        updateData.weekYear = getISOWeekYear(scheduledDate);
+      }
+
+      // Update the assignment
+      const result = await db
+        .update(workoutAssignments)
+        .set(updateData)
+        .where(eq(workoutAssignments.id, id))
+        .returning();
+
+      if (result.length === 0) {
+        return res.status(404).json({ error: "Workout assignment not found" });
+      }
+
+      res.json(result[0]);
+    } catch (error) {
+      console.error("Error updating workout assignment:", error);
+      res.status(500).json({ error: "Failed to update workout assignment" });
     }
   });
 
@@ -655,8 +1018,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/progress/:clientId - Get client progress entries (development route)
-  app.get("/api/progress/:clientId", async (req: Request, res: Response) => {
+  // GET /api/progress/:clientId - Get client progress entries
+  app.get("/api/progress/:clientId", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const progress = await storage.getClientProgress(clientId);
@@ -691,234 +1054,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Multi-Platform Messaging Routes
-  
-  // GET /api/messages - Get all messages for authenticated trainer
-  app.get("/api/messages", secureAuth, async (req: Request, res: Response) => {
-    try {
-      const trainerId = (req.user as any).id as string;
-      const { platform } = req.query;
-      const messages = await storage.getAllMessagesForTrainer(trainerId, platform as string);
-      res.json(messages);
-    } catch (error) {
-      // Return mock data when database is unavailable
-      console.warn("Database unavailable, returning mock messages:", error);
-      const trainerId = (req.user as any).id as string;
-      const mockMessages = getMockMessages(trainerId);
-      res.json(mockMessages);
-    }
-  });
-  
-  // GET /api/clients/:clientId/messages - Get client messages with optional platform filter
-  app.get("/api/clients/:clientId/messages", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
+  // Training Sessions Routes
+
+  // GET /api/clients/:clientId/sessions - Get client's training sessions
+  app.get("/api/clients/:clientId/sessions", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
-      const { platform } = req.query;
-      const messages = await storage.getClientMessages(clientId, platform as string);
-      res.json(messages);
+      const sessions = await storage.getClientSessions(clientId);
+      res.json(sessions);
     } catch (error) {
-      // Error logged internally
-      res.status(500).json({ error: "Failed to fetch messages" });
+      console.error("Failed to fetch client sessions:", error);
+      res.status(500).json({ error: "Failed to fetch training sessions" });
     }
   });
 
-  // POST /api/messages - Send new message
-  app.post("/api/messages", secureAuth, rateLimitMessages, async (req: Request, res: Response) => {
+  // POST /api/training-sessions - Create new training session
+  app.post("/api/training-sessions", secureAuth, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
-      
-      // Remove trainerId from request body and use authenticated trainer ID
-      const { trainerId: _, ...messageData } = req.body;
-      const validatedData = insertMessageSchema.parse({ ...messageData, trainerId });
-      
+      const validatedData = insertTrainingSessionSchema.parse({ ...req.body, trainerId });
+
       // Verify client belongs to authenticated trainer
       const client = await storage.getClient(validatedData.clientId);
       if (!client || client.trainerId !== trainerId) {
         return res.status(403).json({ error: "Access denied to this client" });
       }
-      
-      const message = await storage.sendMessage(validatedData);
-      
-      // Simulate message delivery for external platforms
-      if (validatedData.platform && validatedData.platform !== 'app') {
-        simulateMessageDelivery(message.id, validatedData.platform, validatedData.content);
-      }
-      
-      // Broadcast to WebSocket clients in the specific room using server-verified trainer ID
-      const roomId = `${trainerId}:${validatedData.clientId}`;
-      broadcastToRoom(roomId, {
-        type: 'new_message',
-        data: message
-      });
-      
-      res.status(201).json(message);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ error: "Invalid message data", details: error.errors });
-      }
-      // Error logged internally
-      res.status(500).json({ error: "Failed to send message" });
-    }
-  });
 
-  // POST /api/messages/multi-platform - Send message to multiple platforms
-  app.post("/api/messages/multi-platform", secureAuth, rateLimitMessages, async (req: Request, res: Response) => {
-    try {
-      const trainerId = (req.user as any).id as string;
-      const { clientId, content, platforms } = req.body;
-      if (!clientId || !content || !platforms || !Array.isArray(platforms)) {
-        return res.status(400).json({ error: "clientId, content, and platforms array required" });
-      }
-      
-      // Verify client belongs to authenticated trainer - CRITICAL SECURITY CHECK
-      const client = await storage.getClient(clientId);
-      if (!client || client.trainerId !== trainerId) {
-        return res.status(403).json({ error: "Access denied to this client" });
-      }
-      
-      const messages = await storage.sendMultiPlatformMessage(clientId, content, platforms);
-      
-      // Simulate message delivery for external platforms
-      messages.forEach(message => {
-        if (message.platform && message.platform !== 'app') {
-          simulateMessageDelivery(message.id, message.platform, message.content);
-        }
-      });
-      
-      // Broadcast to WebSocket clients in the specific room
-      if (messages.length > 0) {
-        const roomId = `${messages[0].trainerId}:${clientId}`;
-        messages.forEach(message => {
-          broadcastToRoom(roomId, {
-            type: 'new_message',
-            data: message
-          });
+      const session = await storage.createTrainingSession(validatedData);
+
+      // Automatic milestone tracking: Mark first session scheduled
+      try {
+        await storage.updateUserOnboardingProgress(trainerId, {
+          scheduledFirstSession: true,
         });
+      } catch (onboardingError) {
+        // Don't fail session creation if onboarding update fails
+        console.warn("Failed to update onboarding progress:", onboardingError);
       }
-      
-      res.status(201).json(messages);
-    } catch (error) {
-      // Error logged internally
-      res.status(500).json({ error: "Failed to send multi-platform message" });
-    }
-  });
 
-  // PUT /api/messages/:id/read - Mark message as read
-  app.put("/api/messages/:id/read", secureAuth, async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      const message = await storage.markMessageAsRead(id);
-      if (!message) {
-        return res.status(404).json({ error: "Message not found" });
-      }
-      
-      // Broadcast read status to WebSocket clients in the specific room
-      const roomId = `${message.trainerId}:${message.clientId}`;
-      broadcastToRoom(roomId, {
-        type: 'message_read',
-        data: { messageId: id, readAt: message.readAt }
-      });
-      
-      res.json(message);
-    } catch (error) {
-      // Error logged internally
-      res.status(500).json({ error: "Failed to mark message as read" });
-    }
-  });
-
-  // Message Templates Routes
-  
-  // GET /api/trainers/:trainerId/message-templates - Get message templates
-  app.get("/api/trainers/:trainerId/message-templates", secureAuth, requireTrainerOwnership, async (req: Request, res: Response) => {
-    try {
-      const { trainerId } = req.params;
-      const { category } = req.query;
-      const templates = await storage.getMessageTemplates(trainerId, category as string);
-      res.json(templates);
-    } catch (error) {
-      // Error logged internally
-      res.status(500).json({ error: "Failed to fetch message templates" });
-    }
-  });
-
-  // POST /api/message-templates - Create message template
-  app.post("/api/message-templates", secureAuth, async (req: Request, res: Response) => {
-    try {
-      const trainerId = (req.user as any).id as string;
-      
-      // Remove trainerId from request body and use authenticated trainer ID - CRITICAL SECURITY FIX
-      const { trainerId: _, ...templateData } = req.body;
-      const validatedData = insertMessageTemplateSchema.parse({ ...templateData, trainerId });
-      
-      const template = await storage.createMessageTemplate(validatedData);
-      res.status(201).json(template);
+      res.status(201).json(session);
     } catch (error) {
       if (error instanceof ZodError) {
-        return res.status(400).json({ error: "Invalid template data", details: error.errors });
+        return res.status(400).json({ error: "Invalid session data", details: error.errors });
       }
-      // Error logged internally
-      res.status(500).json({ error: "Failed to create message template" });
-    }
-  });
-
-  // DELETE /api/message-templates/:id - Delete message template
-  app.delete("/api/message-templates/:id", secureAuth, async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      const success = await storage.deleteMessageTemplate(id);
-      if (!success) {
-        return res.status(404).json({ error: "Template not found" });
-      }
-      res.json({ success: true });
-    } catch (error) {
-      // Error logged internally
-      res.status(500).json({ error: "Failed to delete message template" });
-    }
-  });
-
-  // GET /api/message-templates - Get message templates for authenticated trainer
-  app.get("/api/message-templates", secureAuth, async (req: Request, res: Response) => {
-    try {
-      const trainerId = (req.user as any).id as string;
-      const { category } = req.query;
-      const templates = await storage.getMessageTemplates(trainerId, category as string);
-      res.json(templates);
-    } catch (error) {
-      // Return mock data when database is unavailable
-      console.warn("Database unavailable, returning mock message templates:", error);
-      const trainerId = (req.user as any).id as string;
-      const mockTemplates = getMockMessageTemplates(trainerId);
-      res.json(mockTemplates);
-    }
-  });
-
-  // Client Communication Preferences Routes
-  
-  // GET /api/clients/:clientId/communication-prefs - Get client communication preferences
-  app.get("/api/clients/:clientId/communication-prefs", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
-    try {
-      const { clientId } = req.params;
-      const prefs = await storage.getClientCommunicationPrefs(clientId);
-      res.json(prefs);
-    } catch (error) {
-      // Error logged internally
-      res.status(500).json({ error: "Failed to fetch communication preferences" });
-    }
-  });
-
-  // PUT /api/clients/:clientId/communication-prefs - Update client communication preference
-  app.put("/api/clients/:clientId/communication-prefs", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
-    try {
-      const { clientId } = req.params;
-      const validatedData = insertClientCommunicationPrefSchema.parse(req.body);
-      const pref = await storage.updateClientCommunicationPref(clientId, validatedData);
-      res.json(pref);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ error: "Invalid preference data", details: error.errors });
-      }
-      // Error logged internally
-      res.status(500).json({ error: "Failed to update communication preference" });
+      res.status(500).json({ error: "Failed to create training session" });
     }
   });
 
@@ -969,6 +1148,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.warn("Returning mock analytics for trainer:", error);
       const analytics = getMockAnalytics(req.params.trainerId);
       res.json(analytics);
+    }
+  });
+
+  // Appointment Routes
+
+  // GET /api/appointments/:trainerId - Get all appointments for a trainer
+  app.get("/api/appointments/:trainerId", async (req: Request, res: Response) => {
+    try {
+      const { trainerId } = req.params;
+      const appointments = await storage.getAppointmentsByTrainer(trainerId);
+      res.json(appointments);
+    } catch (error) {
+      console.error("Failed to fetch appointments:", error);
+      res.status(500).json({ error: "Failed to fetch appointments" });
+    }
+  });
+
+  // GET /api/appointments/client/:clientId - Get all appointments for a client
+  app.get("/api/appointments/client/:clientId", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const { clientId } = req.params;
+      const appointments = await storage.getAppointmentsByClient(clientId);
+      res.json(appointments);
+    } catch (error) {
+      console.error("Failed to fetch client appointments:", error);
+      res.status(500).json({ error: "Failed to fetch appointments" });
+    }
+  });
+
+  // POST /api/appointments - Create a new appointment
+  app.post("/api/appointments", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const trainerId = (req.user as any).id as string;
+
+      // Extract workout assignment fields if present
+      const { workoutId, workoutDuration, workoutCustomTitle, workoutCustomNotes, ...appointmentFields } = req.body;
+
+      const validatedData = insertAppointmentSchema.parse({ ...appointmentFields, trainerId });
+      const appointment = await storage.createAppointment(validatedData);
+
+      // If workout details are provided, also create a workout assignment
+      if (workoutId && workoutId.trim() !== "") {
+        console.log('💪 [Appointments API] Creating workout assignment for appointment:', appointment.id);
+
+        const workoutAssignmentData = {
+          workoutId,
+          clientId: validatedData.clientId,
+          scheduledDate: validatedData.date,
+          scheduledTime: validatedData.startTime,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+          durationMinutes: workoutDuration,
+          customTitle: workoutCustomTitle || undefined,
+          customNotes: workoutCustomNotes || undefined,
+        };
+
+        try {
+          const workoutAssignment = await storage.assignWorkoutToClient(workoutAssignmentData);
+          console.log('✅ [Appointments API] Workout assignment created:', workoutAssignment.id);
+        } catch (workoutError) {
+          console.error('❌ [Appointments API] Failed to create workout assignment:', workoutError);
+          // Don't fail the whole request if workout assignment fails
+          // The appointment is still created successfully
+        }
+      }
+
+      res.status(201).json(appointment);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Invalid appointment data", details: error.errors });
+      }
+      console.error("Failed to create appointment:", error);
+      res.status(500).json({ error: "Failed to create appointment" });
+    }
+  });
+
+  // PUT /api/appointments/:id - Update an appointment
+  app.put("/api/appointments/:id", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const validatedUpdates = insertAppointmentSchema.partial().parse(req.body);
+      const appointment = await storage.updateAppointment(id, validatedUpdates);
+
+      if (!appointment) {
+        return res.status(404).json({ error: "Appointment not found" });
+      }
+
+      res.json(appointment);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: "Invalid appointment data", details: error.errors });
+      }
+      console.error("Failed to update appointment:", error);
+      res.status(500).json({ error: "Failed to update appointment" });
+    }
+  });
+
+  // DELETE /api/appointments/:id - Delete an appointment
+  app.delete("/api/appointments/:id", secureAuth, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteAppointment(id);
+
+      if (!success) {
+        return res.status(404).json({ error: "Appointment not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete appointment:", error);
+      res.status(500).json({ error: "Failed to delete appointment" });
     }
   });
 
@@ -1156,18 +1445,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // WebSocket error
     });
   });
-  
-  // Helper function to broadcast message to specific room
-  function broadcastToRoom(roomId: string, message: any) {
-    const roomClients = authenticatedConnections.get(roomId);
-    if (roomClients) {
-      roomClients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify(message));
-        }
-      });
-    }
-  }
 
   return httpServer;
 }

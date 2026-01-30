@@ -122,9 +122,23 @@ export default function WorkoutBuilder() {
 
   const handleAddExercise = () => {
     if (!selectedExercise) return;
-    
+
     const exercise = exercises?.find((e: any) => e.id === selectedExercise);
     if (!exercise) return;
+
+    // Check if exercise already exists in workout
+    const isDuplicate = workout?.exercises?.some(
+      (ex: any) => ex.exerciseId === selectedExercise
+    );
+
+    if (isDuplicate) {
+      toast({
+        title: "Exercise Already Added",
+        description: `${exercise.name} is already in this workout. Remove it first to add it again.`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     addExerciseMutation.mutate({
       exerciseId: selectedExercise,
@@ -136,14 +150,56 @@ export default function WorkoutBuilder() {
   if (workoutLoading) {
     return (
       <div className="space-y-8">
-        <div className="h-8 bg-card/50 rounded animate-pulse" />
+        <motion.div
+          className="space-y-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+        >
+          <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
+            Loading <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Workout</span>
+          </h1>
+          <p className="text-base font-light text-muted-foreground/80 flex items-center gap-2">
+            <motion.span
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              Preparing workout builder...
+            </motion.span>
+          </p>
+        </motion.div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-32 bg-card/50 rounded-xl animate-pulse" />
+              <motion.div
+                key={i}
+                className="h-32 glass-strong rounded-2xl overflow-hidden relative"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.4 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
+                  animate={{ x: ['-100%', '100%'] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: i * 0.15 }}
+                />
+              </motion.div>
             ))}
           </div>
-          <div className="h-64 bg-card/50 rounded-xl animate-pulse" />
+          <motion.div
+            className="h-64 glass-strong rounded-2xl overflow-hidden relative"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            />
+          </motion.div>
         </div>
       </div>
     );
@@ -151,12 +207,34 @@ export default function WorkoutBuilder() {
 
   if (!workout) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 space-y-4">
-        <h2 className="text-2xl font-semibold">Workout not found</h2>
-        <Button onClick={() => setLocation('/workouts')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Workouts
-        </Button>
+      <div className="flex flex-col items-center justify-center py-16 space-y-6">
+        <div className="relative inline-block">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+          >
+            <Target className="h-20 w-20 text-muted-foreground/50" />
+          </motion.div>
+          <motion.div
+            className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+        <div className="space-y-2 text-center">
+          <h2 className="text-2xl font-light">Workout not found</h2>
+          <p className="text-base font-light text-muted-foreground/80">The workout you're looking for doesn't exist</p>
+        </div>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Button onClick={() => setLocation('/workouts')} className="shadow-premium hover:shadow-premium-lg transition-all duration-300">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Workouts
+          </Button>
+        </motion.div>
       </div>
     );
   }
@@ -165,64 +243,100 @@ export default function WorkoutBuilder() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
       className="space-y-8"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+      {/* Header - Premium */}
+      <div className="flex flex-col gap-6">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setLocation('/workouts')}
             data-testid="button-back-to-workouts"
+            className="hover:bg-primary/5 hover:text-primary transition-colors duration-300"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Workouts
           </Button>
-          <div className="space-y-1">
-            <h1 className="text-3xl font-light tracking-tight">{workout.title}</h1>
-            <p className="text-muted-foreground">{workout.description}</p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                <span>{workout.duration} min</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Target className="h-4 w-4" />
-                <span className="capitalize">{workout.difficulty}</span>
-              </div>
-              <Badge variant="outline" className="capitalize">
-                {workout.category}
-              </Badge>
-            </div>
+        </motion.div>
+
+        <motion.div
+          className="space-y-3"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
+            <span className="font-light bg-gradient-to-r from-[#c9a855] to-[#0d9488] bg-clip-text text-transparent">
+              {workout.title}
+            </span>
+          </h1>
+          <p className="text-base font-light text-muted-foreground/80">{workout.description}</p>
+          <div className="flex items-center gap-4 text-sm font-light text-muted-foreground/70">
+            <motion.div
+              className="flex items-center gap-1.5"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              <Clock className="h-4 w-4 text-primary" />
+              <span>{workout.duration} min</span>
+            </motion.div>
+            <motion.div
+              className="flex items-center gap-1.5"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              <Target className="h-4 w-4 text-primary" />
+              <span className="capitalize">{workout.difficulty}</span>
+            </motion.div>
+            <Badge variant="outline" className="capitalize border-primary/30 text-primary/90 font-light">
+              {workout.category}
+            </Badge>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Exercise List */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-medium">Exercises</h2>
+          <motion.div
+            className="flex items-center justify-between"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <h2 className="text-2xl font-extralight tracking-tight">
+              <span className="font-light">Exercises</span>
+            </h2>
             <Dialog>
               <DialogTrigger asChild>
-                <Button size="sm" data-testid="button-add-exercise">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Exercise
+                <Button
+                  size="sm"
+                  data-testid="button-add-exercise"
+                  className="relative bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-premium hover:shadow-premium-lg transition-all duration-300 overflow-hidden group"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  <Plus className="mr-2 h-4 w-4 relative z-10" />
+                  <span className="relative z-10">Add Exercise</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="sm:max-w-[500px] glass-strong border-border/50">
                 <DialogHeader>
-                  <DialogTitle>Add Exercise to Workout</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className="font-light text-2xl">Add Exercise to Workout</DialogTitle>
+                  <DialogDescription className="font-light text-muted-foreground/70">
                     Select an exercise and configure the sets, reps, and rest time.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Exercise</label>
+                  <div className="space-y-2">
+                    <label className="text-sm font-light text-muted-foreground">Exercise</label>
                     <Select value={selectedExercise} onValueChange={setSelectedExercise}>
-                      <SelectTrigger data-testid="select-exercise">
+                      <SelectTrigger data-testid="select-exercise" className="glass border-border/50">
                         <SelectValue placeholder="Select an exercise" />
                       </SelectTrigger>
                       <SelectContent>
@@ -237,69 +351,92 @@ export default function WorkoutBuilder() {
                     </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Sets</label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-light text-muted-foreground">Sets</label>
                       <Input
                         type="number"
                         value={exerciseData.sets}
                         onChange={(e) => setExerciseData(prev => ({ ...prev, sets: parseInt(e.target.value) || 0 }))}
                         data-testid="input-sets"
+                        className="glass border-border/50"
                       />
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Reps</label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-light text-muted-foreground">Reps</label>
                       <Input
                         value={exerciseData.reps}
                         onChange={(e) => setExerciseData(prev => ({ ...prev, reps: e.target.value }))}
                         placeholder="e.g., 10-12 or 45 sec"
                         data-testid="input-reps"
+                        className="glass border-border/50"
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Weight (optional)</label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-light text-muted-foreground">Weight (optional)</label>
                       <Input
                         value={exerciseData.weight}
                         onChange={(e) => setExerciseData(prev => ({ ...prev, weight: e.target.value }))}
                         placeholder="e.g., 135 lbs"
                         data-testid="input-weight"
+                        className="glass border-border/50"
                       />
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Rest Time (sec)</label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-light text-muted-foreground">Rest Time (sec)</label>
                       <Input
                         type="number"
                         value={exerciseData.restTime}
                         onChange={(e) => setExerciseData(prev => ({ ...prev, restTime: parseInt(e.target.value) || 0 }))}
                         data-testid="input-rest-time"
+                        className="glass border-border/50"
                       />
                     </div>
                   </div>
-                  <Button 
-                    onClick={handleAddExercise} 
+                  <Button
+                    onClick={handleAddExercise}
                     disabled={!selectedExercise || addExerciseMutation.isPending}
-                    className="w-full"
+                    className="w-full relative bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-premium hover:shadow-premium-lg transition-all duration-300 overflow-hidden group"
                     data-testid="button-confirm-add-exercise"
                   >
-                    Add to Workout
+                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    <span className="relative z-10">Add to Workout</span>
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
+          </motion.div>
 
           {/* Exercise Cards */}
-          <div className="space-y-4">
+          <motion.div
+            className="space-y-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
             {workout.exercises?.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Target className="w-6 h-6 text-primary" />
+              <Card className="border-dashed border-border/50 glass-strong">
+                <CardContent className="flex flex-col items-center justify-center py-16 space-y-6">
+                  <div className="relative inline-block">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                    >
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Target className="w-8 h-8 text-primary" />
+                      </div>
+                    </motion.div>
+                    <motion.div
+                      className="absolute inset-0 rounded-full bg-primary/20 blur-xl"
+                      animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    />
                   </div>
                   <div className="text-center space-y-2">
-                    <h3 className="font-medium">No exercises added yet</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-lg font-light">No exercises added yet</h3>
+                    <p className="text-sm font-light text-muted-foreground/80">
                       Add exercises to build your workout plan
                     </p>
                   </div>
@@ -309,116 +446,170 @@ export default function WorkoutBuilder() {
               workout.exercises?.map((workoutExercise: any, index: number) => {
                 const exercise = exercises?.find((e: any) => e.id === workoutExercise.exerciseId);
                 return (
-                  <Card key={workoutExercise.id} className="group">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
-                              {index + 1}
+                  <motion.div
+                    key={workoutExercise.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05, duration: 0.3 }}
+                    whileHover={{ y: -4 }}
+                  >
+                    <Card className="glass-strong border-border/50 hover:shadow-premium-lg transition-all duration-300 group overflow-hidden">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-center gap-3">
+                              <motion.div
+                                className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-sm font-light relative overflow-hidden"
+                                whileHover={{ scale: 1.1 }}
+                                transition={{ type: "spring", stiffness: 400 }}
+                              >
+                                <span className="relative z-10 text-primary font-medium">{index + 1}</span>
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
+                              </motion.div>
+                              <div className="flex-1">
+                                <h3 className="font-light text-lg">{exercise?.name}</h3>
+                                <p className="text-sm font-light text-muted-foreground/70">{exercise?.description}</p>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-medium">{exercise?.name}</h3>
-                              <p className="text-sm text-muted-foreground">{exercise?.description}</p>
+
+                            <div className="flex items-center gap-6 text-sm font-light text-muted-foreground/80">
+                              <span className="flex items-center gap-1">
+                                <span className="text-primary font-medium">Sets:</span> {workoutExercise.sets}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="text-primary font-medium">Reps:</span> {workoutExercise.reps}
+                              </span>
+                              {workoutExercise.weight && (
+                                <span className="flex items-center gap-1">
+                                  <span className="text-primary font-medium">Weight:</span> {workoutExercise.weight}
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <span className="text-primary font-medium">Rest:</span> {workoutExercise.restTime}s
+                              </span>
                             </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-6 text-sm">
-                            <span><strong>Sets:</strong> {workoutExercise.sets}</span>
-                            <span><strong>Reps:</strong> {workoutExercise.reps}</span>
-                            {workoutExercise.weight && (
-                              <span><strong>Weight:</strong> {workoutExercise.weight}</span>
+
+                            {exercise?.youtubeUrl && (
+                              <motion.div
+                                className="flex items-center gap-2 text-sm"
+                                whileHover={{ x: 4 }}
+                                transition={{ type: "spring", stiffness: 400 }}
+                              >
+                                <Play className="h-4 w-4 text-primary" />
+                                <a
+                                  href={exercise.youtubeUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:text-primary/80 transition-colors font-light"
+                                >
+                                  Watch demonstration video
+                                </a>
+                              </motion.div>
                             )}
-                            <span><strong>Rest:</strong> {workoutExercise.restTime}s</span>
                           </div>
 
-                          {exercise?.youtubeUrl && (
-                            <div className="flex items-center gap-2 text-sm text-primary">
-                              <Play className="h-4 w-4" />
-                              <a 
-                                href={exercise.youtubeUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="hover:underline"
-                              >
-                                Watch demonstration video
-                              </a>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeExerciseMutation.mutate(workoutExercise.exerciseId)}
+                              data-testid={`button-remove-exercise-${workoutExercise.id}`}
+                              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removeExerciseMutation.mutate(workoutExercise.exerciseId)}
-                            data-testid={`button-remove-exercise-${workoutExercise.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 );
               })
             )}
-          </div>
+          </motion.div>
         </div>
 
-        {/* Workout Actions Sidebar */}
+        {/* Workout Actions Sidebar - Premium */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Assign to Client
-              </CardTitle>
-              <CardDescription>
-                Assign this workout to a specific client
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Select onValueChange={(clientId) => assignWorkoutMutation.mutate(clientId)}>
-                <SelectTrigger data-testid="select-assign-client">
-                  <SelectValue placeholder="Select a client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients?.map((client: any) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <Card className="glass-strong border-border/50 shadow-premium hover:shadow-premium-lg transition-all duration-300">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-light text-xl">
+                  <Users className="h-5 w-5 text-primary" />
+                  Assign to Client
+                </CardTitle>
+                <CardDescription className="font-light text-muted-foreground/70">
+                  Assign this workout to a specific client
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Select onValueChange={(clientId) => assignWorkoutMutation.mutate(clientId)}>
+                  <SelectTrigger data-testid="select-assign-client" className="glass border-border/50">
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients?.map((client: any) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Workout Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Total Exercises:</span>
-                  <span className="font-medium">{workout.exercises?.length || 0}</span>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
+            <Card className="glass-strong border-border/50 shadow-premium">
+              <CardHeader>
+                <CardTitle className="font-light text-xl">Workout Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3 text-sm font-light">
+                  <motion.div
+                    className="flex justify-between items-center p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
+                    whileHover={{ x: 4 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <span className="text-muted-foreground/70">Total Exercises:</span>
+                    <span className="font-medium text-primary text-lg">{workout.exercises?.length || 0}</span>
+                  </motion.div>
+                  <motion.div
+                    className="flex justify-between items-center p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
+                    whileHover={{ x: 4 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <span className="text-muted-foreground/70">Duration:</span>
+                    <span className="font-medium text-primary">{workout.duration} minutes</span>
+                  </motion.div>
+                  <motion.div
+                    className="flex justify-between items-center p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
+                    whileHover={{ x: 4 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <span className="text-muted-foreground/70">Difficulty:</span>
+                    <span className="font-medium text-primary capitalize">{workout.difficulty}</span>
+                  </motion.div>
+                  <motion.div
+                    className="flex justify-between items-center p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
+                    whileHover={{ x: 4 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <span className="text-muted-foreground/70">Category:</span>
+                    <span className="font-medium text-primary capitalize">{workout.category}</span>
+                  </motion.div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Duration:</span>
-                  <span className="font-medium">{workout.duration} minutes</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Difficulty:</span>
-                  <span className="font-medium capitalize">{workout.difficulty}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Category:</span>
-                  <span className="font-medium capitalize">{workout.category}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </div>
     </motion.div>

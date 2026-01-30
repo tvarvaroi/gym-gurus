@@ -64,6 +64,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
             firstName: sessionUser.claims.first_name || sessionUser.firstName || "Demo",
             lastName: sessionUser.claims.last_name || sessionUser.lastName || "Trainer",
             profileImageUrl: sessionUser.claims.profile_image_url || sessionUser.profileImageUrl || null,
+            role: "trainer",
+            trainerId: null,
             createdAt: new Date(),
             updatedAt: new Date()
           };
@@ -75,6 +77,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
             firstName: "Demo",
             lastName: "Trainer",
             profileImageUrl: null,
+            role: "trainer",
+            trainerId: null,
             createdAt: new Date(),
             updatedAt: new Date()
           };
@@ -93,6 +97,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
         firstName: "Demo",
         lastName: "Trainer",
         profileImageUrl: null,
+        role: "trainer",
+        trainerId: null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -125,48 +131,80 @@ export const secureAuth = [isAuthenticated, requireAuth];
 
 /**
  * Secure authorization middleware - ensures trainer can only access their own clients
+ * OR client can access their own data
  */
 export async function requireClientOwnership(req: Request, res: Response, next: NextFunction) {
   try {
     const { clientId } = req.params;
-    const trainerId = req.user?.id;
+    const userId = req.user?.id;
 
-    if (!trainerId) {
-      return res.status(401).json({ 
+    if (!userId) {
+      return res.status(401).json({
         error: 'Authentication required',
-        message: 'No authenticated user found' 
+        message: 'No authenticated user found'
       });
     }
 
     if (!clientId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Bad request',
-        message: 'Client ID is required' 
+        message: 'Client ID is required'
       });
     }
 
-    // Verify the client belongs to the authenticated trainer
+    // Get the authenticated user to check their role
+    const authenticatedUser = await storage.getUser(userId);
+    if (!authenticatedUser) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'User not found'
+      });
+    }
+
+    // If user is a client, they can only access their own data
+    if (authenticatedUser.role === 'client') {
+      // Look up the client record by email to match user to client
+      const client = await storage.getClient(clientId);
+      if (!client) {
+        return res.status(404).json({
+          error: 'Client not found',
+          message: 'The specified client does not exist'
+        });
+      }
+
+      // Check if the client's email matches the authenticated user's email
+      if (client.email !== authenticatedUser.email) {
+        return res.status(403).json({
+          error: 'Access denied',
+          message: 'You can only access your own data'
+        });
+      }
+      // Client accessing their own data - allowed
+      return next();
+    }
+
+    // If user is a trainer, verify the client belongs to them
     const client = await storage.getClient(clientId);
     if (!client) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Client not found',
-        message: 'The specified client does not exist' 
+        message: 'The specified client does not exist'
       });
     }
 
-    if (client.trainerId !== trainerId) {
-      return res.status(403).json({ 
+    if (client.trainerId !== userId) {
+      return res.status(403).json({
         error: 'Access denied',
-        message: 'You can only access your own clients' 
+        message: 'You can only access your own clients'
       });
     }
 
     next();
   } catch (error) {
     console.error('Authorization error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Authorization failed',
-      message: 'Internal server error during authorization' 
+      message: 'Internal server error during authorization'
     });
   }
 }
@@ -211,47 +249,11 @@ export async function requireTrainerOwnership(req: Request, res: Response, next:
 }
 
 /**
- * Secure rate limiting middleware for messaging endpoints and WebSocket connections
+ * Secure rate limiting for WebSocket connections
  */
-const messageLimits = new Map<string, { count: number; resetTime: number }>();
 const wsConnectionLimits = new Map<string, { count: number; resetTime: number }>();
-const MESSAGE_RATE_LIMIT = 30; // messages per minute
 const WS_RATE_LIMIT = 100; // WebSocket messages per minute
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute in milliseconds
-
-export function rateLimitMessages(req: Request, res: Response, next: NextFunction) {
-  const userId = req.user?.id;
-  
-  if (!userId) {
-    return res.status(401).json({ 
-      error: 'Authentication required',
-      message: 'Cannot apply rate limiting without authentication' 
-    });
-  }
-
-  const now = Date.now();
-  const userLimit = messageLimits.get(userId);
-
-  if (!userLimit || now > userLimit.resetTime) {
-    // Reset or initialize rate limit
-    messageLimits.set(userId, {
-      count: 1,
-      resetTime: now + RATE_LIMIT_WINDOW
-    });
-    return next();
-  }
-
-  if (userLimit.count >= MESSAGE_RATE_LIMIT) {
-    return res.status(429).json({
-      error: 'Rate limit exceeded',
-      message: `Too many messages. Limit: ${MESSAGE_RATE_LIMIT} per minute`,
-      retryAfter: Math.ceil((userLimit.resetTime - now) / 1000)
-    });
-  }
-
-  userLimit.count++;
-  next();
-}
 
 /**
  * WebSocket rate limiting - prevents abuse of real-time connections

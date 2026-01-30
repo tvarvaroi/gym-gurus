@@ -17,18 +17,19 @@ export const PageTransition = memo(({ children }: { children: React.ReactNode })
 PageTransition.displayName = 'PageTransition';
 
 // Shared stagger container component
-export const StaggerContainer = memo(({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
+export const StaggerContainer = memo(({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) => {
   const prefersReducedMotion = useReducedMotion();
-  
+
   if (prefersReducedMotion) {
-    return <div>{children}</div>;
+    return <div className={className}>{children}</div>;
   }
 
   return (
     <motion.div
+      className={className}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ 
+      transition={{
         delay,
         staggerChildren: 0.05,
         delayChildren: 0.1 + delay

@@ -1,9 +1,30 @@
+// Load .env file before anything else
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+try {
+  const envPath = join(process.cwd(), '.env');
+  const envFile = readFileSync(envPath, 'utf-8');
+  const envVars = envFile.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+
+  envVars.forEach(line => {
+    const [key, ...valueParts] = line.split('=');
+    const value = valueParts.join('=').trim();
+    if (key && value && !process.env[key.trim()]) {
+      process.env[key.trim()] = value;
+    }
+  });
+} catch (error) {
+  // .env file is optional
+}
+
 import { Pool as NeonPool, neonConfig } from '@neondatabase/serverless';
 import { Pool as PgPool } from 'pg';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { drizzle as pgDrizzle } from 'drizzle-orm/node-postgres';
 import ws from "ws";
 import * as schema from "@shared/schema";
+import { logger } from './logger';
 
 // Configure Neon
 neonConfig.webSocketConstructor = ws;
@@ -12,13 +33,13 @@ neonConfig.webSocketConstructor = ws;
 function getConnectionString(): string {
   // First, check for REPLIT_DB_URL (new Replit database) - but only if it's a PostgreSQL URL
   if (process.env.REPLIT_DB_URL && process.env.REPLIT_DB_URL.startsWith('postgresql://')) {
-    console.log('📌 Using REPLIT_DB_URL for database connection');
+    logger.info('Using REPLIT_DB_URL for database connection');
     return process.env.REPLIT_DB_URL;
   }
-  
+
   // Then, check for DATABASE_URL
   if (process.env.DATABASE_URL) {
-    console.log('📌 Using DATABASE_URL for database connection');
+    logger.info('Using DATABASE_URL for database connection');
     return process.env.DATABASE_URL;
   }
   
@@ -33,8 +54,8 @@ function getConnectionString(): string {
     // Check if it's a Neon host
     const isNeon = host.includes('neon.tech');
     const sslMode = isNeon ? '?sslmode=require' : '';
-    
-    console.log('📌 Constructing database URL from PG* environment variables');
+
+    logger.info('Constructing database URL from PG* environment variables');
     return `postgresql://${user}:${password}@${host}:${port}/${database}${sslMode}`;
   }
   
@@ -50,10 +71,10 @@ let db: any;
 
 // Try to connect with Neon first
 async function initializeDatabase() {
-  console.log('🔍 Attempting database connection...');
-  
+  logger.info('Attempting database connection...');
+
   const connectionString = getConnectionString();
-  console.log('📝 Connection string:', connectionString.replace(/:[^@]+@/, ':***@')); // Log URL with masked password
+  logger.debug('Connection string:', connectionString.replace(/:[^@]+@/, ':***@')); // Log URL with masked password
   
   // Check if this is a Neon URL
   const isNeonUrl = connectionString.includes('neon.tech');
@@ -64,33 +85,33 @@ async function initializeDatabase() {
     const maxAttempts = 3;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        console.log(`🔄 Neon connection attempt ${attempt}/${maxAttempts}...`);
-        const neonPool = new NeonPool({ 
+        logger.debug(`Neon connection attempt ${attempt}/${maxAttempts}...`);
+        const neonPool = new NeonPool({
           connectionString,
           connectionTimeoutMillis: 10000 * attempt, // Increase timeout with each attempt
           idleTimeoutMillis: 30000,
           max: 20,
         });
-    
+
         // Test Neon connection
         await neonPool.query('SELECT 1');
-        console.log('✅ Connected using Neon driver');
+        logger.info('Connected using Neon driver');
         pool = neonPool;
         db = drizzle({ client: pool, schema });
         isNeonEnabled = true;
-        
+
         // Set up error handler for Neon pool
         neonPool.on('error', (err) => {
-          console.error('Neon pool error:', err.message);
+          logger.error('Neon pool error:', err);
           if (err.message.includes('endpoint has been disabled')) {
-            console.error('⚠️  Switching to standard PostgreSQL driver...');
+            logger.warn('Switching to standard PostgreSQL driver...');
             fallbackToStandardPg();
           }
         });
-        
+
         return true;
       } catch (neonError: any) {
-        console.log(`⚠️  Neon connection attempt ${attempt} failed:`, neonError.message);
+        logger.warn(`Neon connection attempt ${attempt} failed:`, neonError);
         if (attempt < maxAttempts) {
           // Wait before retrying (exponential backoff)
           await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
@@ -106,11 +127,11 @@ async function initializeDatabase() {
 // Fallback to standard PostgreSQL driver
 async function fallbackToStandardPg() {
   try {
-    console.log('🔄 Attempting connection with standard PostgreSQL driver...');
-    
+    logger.info('Attempting connection with standard PostgreSQL driver...');
+
     // Get connection string
     const connectionString = getConnectionString();
-    
+
     const pgPool = new PgPool({
       connectionString,
       ssl: connectionString.includes('sslmode=require') ? {
@@ -120,82 +141,84 @@ async function fallbackToStandardPg() {
       idleTimeoutMillis: 30000,
       max: 20,
     });
-    
+
     // Test standard pg connection
     await pgPool.query('SELECT 1');
-    console.log('✅ Connected using standard PostgreSQL driver');
-    
+    logger.info('Connected using standard PostgreSQL driver');
+
     pool = pgPool;
     db = pgDrizzle(pool, { schema });
     isNeonEnabled = false;
-    
+
     // Set up error handler for pg pool
     pgPool.on('error', (err) => {
-      console.error('PostgreSQL pool error:', err);
+      logger.error('PostgreSQL pool error:', err);
     });
-    
+
     return true;
   } catch (pgError: any) {
-    console.error('❌ Standard PostgreSQL connection also failed:', pgError.message);
-    console.error('⚠️  The application will continue running, but database operations will fail.');
-    console.error('⚠️  Please check your database configuration and ensure the database is accessible.');
+    logger.error('Standard PostgreSQL connection also failed', pgError);
+    logger.error('The application will continue running, but database operations will fail.');
+    logger.error('Please check your database configuration and ensure the database is accessible.');
     return false;
   }
 }
 
 // Initialize database connection
 let connectionEstablished = false;
-let connectionAttempted = false;
+let connectionPromise: Promise<boolean> | null = null;
 
 async function ensureConnection() {
-  if (!connectionAttempted) {
-    connectionAttempted = true;
-    connectionEstablished = await initializeDatabase();
-    if (!connectionEstablished) {
-      console.log('❌ Could not establish database connection');
-    }
+  if (!connectionPromise) {
+    connectionPromise = initializeDatabase().then(result => {
+      connectionEstablished = result;
+      if (!connectionEstablished) {
+        logger.error('Could not establish database connection');
+      }
+      return result;
+    });
   }
-  return connectionEstablished;
+  return await connectionPromise;
 }
 
 // Test database connection and check tables
 async function testConnection() {
   try {
     const connected = await ensureConnection();
-    
+
     if (!connected) {
-      console.error('❌ Could not establish database connection');
+      logger.error('Could not establish database connection');
       return;
     }
-    
-    console.log('✅ Database connection established successfully');
-    console.log(`📊 Using driver: ${isNeonEnabled ? 'Neon' : 'Standard PostgreSQL'}`);
-    
+
+    logger.info('Database connection established successfully');
+    logger.info(`Using driver: ${isNeonEnabled ? 'Neon' : 'Standard PostgreSQL'}`);
+
     // Try to check if tables exist
     try {
       const tablesResult = await (pool as any).query(`
-        SELECT table_name 
-        FROM information_schema.tables 
+        SELECT table_name
+        FROM information_schema.tables
         WHERE table_schema = 'public'
         LIMIT 10
       `);
-      
+
       if (tablesResult.rows.length === 0) {
-        console.log('📋 No tables found. Database migration needed.');
-        console.log('💡 Run: npm run db:push --force');
+        logger.warn('No tables found. Database migration needed.');
+        logger.info('Run: npm run db:push --force');
       } else {
-        console.log('📋 Found tables:', tablesResult.rows.map((r: any) => r.table_name).join(', '));
+        logger.info('Found tables:', { tables: tablesResult.rows.map((r: any) => r.table_name).join(', ') });
       }
     } catch (tableError: any) {
-      console.error('⚠️  Could not query tables:', tableError.message);
+      logger.error('Could not query tables:', tableError);
     }
   } catch (error: any) {
-    console.error('❌ Database connection test failed:', error.message);
+    logger.error('Database connection test failed:', error);
   }
 }
 
 // Test connection on startup but don't block the app
-testConnection().catch(console.error);
+testConnection().catch((err) => logger.error('Test connection failed:', err));
 
 // Export a function to get the database instance
 export async function getDb() {

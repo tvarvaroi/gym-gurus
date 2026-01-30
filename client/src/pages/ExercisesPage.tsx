@@ -207,8 +207,9 @@ const ExercisesPage = memo(() => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Exercise Library
+          <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
+            <span className="text-foreground">Exercise </span>
+            <span className="text-[#c9a855]">Library</span>
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Browse and manage your exercise collection

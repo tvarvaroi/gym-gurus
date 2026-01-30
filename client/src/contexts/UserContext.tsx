@@ -1,0 +1,163 @@
+import { createContext, useContext, ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+// User type with role
+export interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+  role: 'trainer' | 'client';
+  trainerId?: string | null; // For clients - reference to their trainer
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Permission types for role-based access control
+export type Permission =
+  // Client management
+  | 'clients:view'
+  | 'clients:create'
+  | 'clients:edit'
+  | 'clients:delete'
+  // Workout management
+  | 'workouts:view_all'     // Trainers can see all templates
+  | 'workouts:view_assigned' // Clients can see assigned workouts
+  | 'workouts:create'
+  | 'workouts:edit'
+  | 'workouts:delete'
+  | 'workouts:assign'
+  | 'workouts:log'           // Clients can log workout completion
+  // Progress tracking
+  | 'progress:view_all'      // Trainers can view all client progress
+  | 'progress:view_own'      // Clients can view their own progress
+  | 'progress:add'
+  | 'progress:edit'
+  | 'progress:delete'
+  // Exercise library
+  | 'exercises:view'
+  | 'exercises:create'
+  | 'exercises:edit'
+  | 'exercises:delete'
+  // Messaging
+  | 'messages:view'
+  | 'messages:send'
+  // Schedule
+  | 'schedule:view_all'      // Trainers can see all sessions
+  | 'schedule:view_own'      // Clients can see their sessions
+  | 'schedule:create'
+  | 'schedule:edit'
+  | 'schedule:delete'
+  // Dashboard
+  | 'dashboard:trainer'
+  | 'dashboard:client';
+
+// Permission mapping for each role
+const ROLE_PERMISSIONS: Record<'trainer' | 'client', Permission[]> = {
+  trainer: [
+    'clients:view',
+    'clients:create',
+    'clients:edit',
+    'clients:delete',
+    'workouts:view_all',
+    'workouts:create',
+    'workouts:edit',
+    'workouts:delete',
+    'workouts:assign',
+    'progress:view_all',
+    'progress:add',
+    'progress:edit',
+    'progress:delete',
+    'exercises:view',
+    'exercises:create',
+    'exercises:edit',
+    'exercises:delete',
+    'messages:view',
+    'messages:send',
+    'schedule:view_all',
+    'schedule:create',
+    'schedule:edit',
+    'schedule:delete',
+    'dashboard:trainer',
+  ],
+  client: [
+    'workouts:view_assigned',
+    'workouts:log',
+    'progress:view_own',
+    'exercises:view',
+    'messages:view',
+    'messages:send',
+    'schedule:view_own',
+    'dashboard:client',
+  ],
+};
+
+interface UserContextType {
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  isTrainer: boolean;
+  isClient: boolean;
+  hasPermission: (permission: Permission) => boolean;
+  refetchUser: () => void;
+}
+
+const UserContext = createContext<UserContextType | undefined>(undefined);
+
+interface UserProviderProps {
+  children: ReactNode;
+}
+
+export function UserProvider({ children }: UserProviderProps) {
+  // Fetch current user
+  const { data: user, isLoading, refetch } = useQuery<User>({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Helper to check if user has a specific permission
+  const hasPermission = (permission: Permission): boolean => {
+    if (!user) return false;
+    const permissions = ROLE_PERMISSIONS[user.role];
+    return permissions.includes(permission);
+  };
+
+  const value: UserContextType = {
+    user: user || null,
+    isLoading,
+    isAuthenticated: !!user,
+    isTrainer: user?.role === 'trainer',
+    isClient: user?.role === 'client',
+    hasPermission,
+    refetchUser: refetch,
+  };
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+}
+
+// Custom hook to use the UserContext
+export function useUser() {
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
+}
+
+// Convenience hook for checking permissions
+export function usePermission(permission: Permission): boolean {
+  const { hasPermission } = useUser();
+  return hasPermission(permission);
+}
+
+// Convenience hook for role checks
+export function useRole() {
+  const { isTrainer, isClient, user } = useUser();
+  return {
+    isTrainer,
+    isClient,
+    role: user?.role,
+  };
+}

@@ -140,12 +140,12 @@ export function exportClientReport(
   
   // Progress section
   reportData.push(['PROGRESS TRACKING']);
-  reportData.push(['Date', 'Weight', 'Body Fat %', 'Notes']);
+  reportData.push(['Date', 'Type', 'Value', 'Notes']);
   progress.forEach(entry => {
     reportData.push([
-      new Date(entry.date).toLocaleDateString(),
-      entry.weight ? `${entry.weight} lbs` : 'N/A',
-      entry.bodyFat ? `${entry.bodyFat}%` : 'N/A',
+      new Date(entry.recordedAt).toLocaleDateString(),
+      entry.type || 'N/A',
+      entry.value ? `${entry.value} ${entry.unit}` : 'N/A',
       entry.notes || 'N/A'
     ]);
   });

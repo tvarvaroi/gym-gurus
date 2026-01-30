@@ -1,9 +1,63 @@
+// Load .env file before any other imports
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+try {
+  const envPath = join(process.cwd(), '.env');
+  const envFile = readFileSync(envPath, 'utf-8');
+  const envVars = envFile.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+
+  envVars.forEach(line => {
+    const [key, ...valueParts] = line.split('=');
+    const value = valueParts.join('=').trim();
+    if (key && value && !process.env[key.trim()]) {
+      process.env[key.trim()] = value;
+      console.log(`[ENV] Loaded ${key.trim()} from .env file`);
+    }
+  });
+  console.log('[ENV] Successfully loaded .env file');
+} catch (error) {
+  // .env file is optional, only log in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[ENV] No .env file found, using system environment variables');
+  }
+}
+
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { env, isDevelopment, isProduction } from "./env";
+import { initSentry } from "./sentry";
+
+// Initialize Sentry error monitoring (production only)
+initSentry();
 
 const app = express();
+
+// Security headers with Helmet
+app.use(helmet({
+  contentSecurityPolicy: isDevelopment ? false : {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: !isDevelopment,
+  hsts: isProduction ? {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  } : false,
+}));
 
 // Add compression middleware for all responses
 app.use(compression({
@@ -63,9 +117,9 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Serve static files from client/public in development too  
+  // Serve static files from client/public in development too
   // This needs to be before setupVite to avoid catch-all route interference
-  if (app.get("env") === "development") {
+  if (isDevelopment) {
     const path = await import("path");
     app.use(express.static(path.resolve(import.meta.dirname, "..", "client", "public")));
     await setupVite(app, server);
@@ -77,12 +131,18 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
+  const port = env.PORT;
+  const listenOptions: any = {
     port,
     host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  };
+
+  // reusePort is not supported on Windows
+  if (process.platform !== 'win32') {
+    listenOptions.reusePort = true;
+  }
+
+  server.listen(listenOptions, () => {
     log(`serving on port ${port}`);
   });
 })();

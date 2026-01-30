@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clearing Cache...</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+      max-width: 500px;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .spinner {
+      border: 4px solid rgba(201, 168, 85, 0.2);
+      border-top: 4px solid #c9a855;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .message {
+      margin-top: 1rem;
+      font-size: 1.125rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .success {
+      color: #0d9488;
+      font-weight: bold;
+    }
+    button {
+      margin-top: 2rem;
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      background: linear-gradient(135deg, #c9a855 0%, #0d9488 100%);
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>GYM GURUS</h1>
+    <div class="spinner"></div>
+    <div class="message" id="message">Clearing service worker cache...</div>
+    <button id="continueBtn" style="display: none;" onclick="window.location.href='/dashboard'">
+      Continue to Dashboard
+    </button>
+  </div>
+
+  <script>
+    async function clearAllCaches() {
+      const messageEl = document.getElementById('message');
+      const continueBtn = document.getElementById('continueBtn');
+
+      try {
+        // Unregister all service workers
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            await registration.unregister();
+            console.log('Service worker unregistered:', registration);
+          }
+          messageEl.innerHTML = `Unregistered ${registrations.length} service worker(s)...<br>`;
+        }
+
+        // Clear all caches
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(
+            cacheNames.map(cacheName => caches.delete(cacheName))
+          );
+          console.log('Cleared caches:', cacheNames);
+          messageEl.innerHTML += `Cleared ${cacheNames.length} cache(s)...<br>`;
+        }
+
+        // Clear localStorage and sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        messageEl.innerHTML += 'Cleared localStorage and sessionStorage...<br>';
+
+        // Success message
+        setTimeout(() => {
+          messageEl.innerHTML = '<span class="success">✓ Cache cleared successfully!</span><br>You can now see the latest changes.';
+          continueBtn.style.display = 'inline-block';
+        }, 500);
+
+      } catch (error) {
+        console.error('Error clearing cache:', error);
+        messageEl.innerHTML = `<span style="color: #ef4444;">Error: ${error.message}</span><br>Try clearing your browser cache manually.`;
+        continueBtn.style.display = 'inline-block';
+        continueBtn.textContent = 'Continue Anyway';
+      }
+    }
+
+    // Start clearing immediately
+    clearAllCaches();
+  </script>
+</body>
+</html>

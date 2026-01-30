@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(del servercheckWorkouts.ts servertestWeekCalculation.ts)",
+      "Bash(cmd /c \"del server\\checkWorkouts.ts server\\testWeekCalculation.ts\")",
+      "Bash(cmd /c \"del server\\updateClientWorkouts.ts\")",
+      "Bash(cmd /c \"del server\\checkWorkouts.ts server\\testWeekCalculation.ts server\\updateClientWorkouts.ts\")",
+      "Bash(cmd /c \"del server\\checkWorkouts.ts server\\testWeekCalculation.ts server\\updateClientWorkouts.ts 2>nul\")",
+      "Bash(if exist servercheckWorkouts.ts del servercheckWorkouts.ts)",
+      "Bash(if exist servertestWeekCalculation.ts del servertestWeekCalculation.ts)",
+      "Bash(if exist serverupdateClientWorkouts.ts del serverupdateClientWorkouts.ts)",
+      "Bash(npx tsx:*)",
+      "Bash(npx tsc:*)",
+      "Bash(cat:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(npm run check:*)",
+      "Bash(if not exist \"COMPLETE_100_PERCENT.md\" echo.)",
+      "Bash(taskkill:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm install)",
+      "Bash(set NODE_ENV=development)",
+      "Bash(npm install:*)",
+      "Bash(git clone:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx prettier:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

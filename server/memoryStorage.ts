@@ -6,17 +6,13 @@ import {
   type WorkoutExercise, type InsertWorkoutExercise,
   type WorkoutAssignment, type InsertWorkoutAssignment,
   type ProgressEntry, type InsertProgressEntry,
-  type Message, type InsertMessage,
-  type ClientCommunicationPref, type InsertClientCommunicationPref,
-  type MessageTemplate, type InsertMessageTemplate,
-  type TrainingSession, type InsertTrainingSession
+  type TrainingSession, type InsertTrainingSession,
+  type Appointment, type InsertAppointment
 } from "@shared/schema";
 import type { IStorage } from "./storage";
-import { 
-  getMockClients, 
-  getMockMessages, 
-  getMockProgress,
-  getMockMessageTemplates
+import {
+  getMockClients,
+  getMockProgress
 } from "./mockData";
 
 // Helper to generate unique IDs
@@ -31,9 +27,6 @@ export class MemoryStorage implements IStorage {
   private workoutExercises: Map<string, WorkoutExercise[]> = new Map();
   private workoutAssignments: Map<string, WorkoutAssignment> = new Map();
   private progressEntries: Map<string, ProgressEntry[]> = new Map();
-  private messages: Map<string, Message> = new Map();
-  private clientCommunicationPrefs: Map<string, ClientCommunicationPref[]> = new Map();
-  private messageTemplates: Map<string, MessageTemplate> = new Map();
   private trainingSessions: Map<string, TrainingSession> = new Map();
 
   constructor() {
@@ -58,6 +51,14 @@ export class MemoryStorage implements IStorage {
           "Push through heels to return to start"
         ],
         youtubeUrl: "https://youtube.com/watch?v=squat",
+        exerciseType: "weighted_reps",
+        defaultSets: 3,
+        defaultReps: "8-10",
+        defaultDuration: null,
+        defaultRestTime: 90,
+        thumbnailUrl: null,
+        videoUrls: null,
+        alternativeExercises: null,
         createdAt: new Date()
       },
       {
@@ -74,6 +75,14 @@ export class MemoryStorage implements IStorage {
           "Push back up to starting position"
         ],
         youtubeUrl: null,
+        exerciseType: "bodyweight_reps",
+        defaultSets: 3,
+        defaultReps: "12-15",
+        defaultDuration: null,
+        defaultRestTime: 60,
+        thumbnailUrl: null,
+        videoUrls: null,
+        alternativeExercises: null,
         createdAt: new Date()
       },
       {
@@ -91,6 +100,14 @@ export class MemoryStorage implements IStorage {
           "Keep back straight throughout movement"
         ],
         youtubeUrl: null,
+        exerciseType: "weighted_reps",
+        defaultSets: 3,
+        defaultReps: "5-8",
+        defaultDuration: null,
+        defaultRestTime: 120,
+        thumbnailUrl: null,
+        videoUrls: null,
+        alternativeExercises: null,
         createdAt: new Date()
       }
     ];
@@ -103,22 +120,10 @@ export class MemoryStorage implements IStorage {
     const mockClients = getMockClients("demo-trainer-123");
     mockClients.forEach(client => {
       this.clients.set(client.id, client);
-      
+
       // Add mock progress entries for each client
       const progress = getMockProgress(client.id);
       this.progressEntries.set(client.id, progress);
-      
-      // Add mock messages for each client
-      const clientMessages = getMockMessages("demo-trainer-123", client.id);
-      clientMessages.forEach(msg => {
-        this.messages.set(msg.id, msg);
-      });
-    });
-
-    // Initialize with mock message templates
-    const mockTemplates = getMockMessageTemplates("demo-trainer-123");
-    mockTemplates.forEach(template => {
-      this.messageTemplates.set(template.id, template);
     });
   }
 
@@ -136,6 +141,8 @@ export class MemoryStorage implements IStorage {
         firstName: "Demo",
         lastName: "Trainer",
         profileImageUrl: null,
+        role: "trainer",
+        trainerId: null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -154,6 +161,8 @@ export class MemoryStorage implements IStorage {
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
       profileImageUrl: userData.profileImageUrl || null,
+      role: (userData as any).role || "trainer",
+      trainerId: (userData as any).trainerId || null,
       createdAt: userData.createdAt || new Date(),
       updatedAt: new Date()
     };
@@ -176,9 +185,16 @@ export class MemoryStorage implements IStorage {
       trainerId: insertClient.trainerId,
       name: insertClient.name,
       email: insertClient.email,
-      phone: insertClient.phone || null,
       goal: insertClient.goal,
       status: insertClient.status || "active",
+      age: insertClient.age || null,
+      gender: insertClient.gender || null,
+      height: insertClient.height || null,
+      weight: insertClient.weight || null,
+      activityLevel: insertClient.activityLevel || null,
+      neckCircumference: insertClient.neckCircumference || null,
+      waistCircumference: insertClient.waistCircumference || null,
+      hipCircumference: insertClient.hipCircumference || null,
       createdAt: new Date(),
       lastSession: insertClient.lastSession || null,
       nextSession: insertClient.nextSession || null
@@ -206,22 +222,14 @@ export class MemoryStorage implements IStorage {
       this.clients.delete(id);
       // Clean up related data
       this.progressEntries.delete(id);
-      this.clientCommunicationPrefs.delete(id);
-      
+
       // Delete workout assignments for this client
       for (const [assignmentId, assignment] of Array.from(this.workoutAssignments)) {
         if (assignment.clientId === id) {
           this.workoutAssignments.delete(assignmentId);
         }
       }
-      
-      // Delete messages for this client
-      for (const [msgId, msg] of Array.from(this.messages)) {
-        if (msg.clientId === id) {
-          this.messages.delete(msgId);
-        }
-      }
-      
+
       // Delete training sessions for this client
       for (const [sessionId, session] of Array.from(this.trainingSessions)) {
         if (session.clientId === id) {
@@ -252,6 +260,15 @@ export class MemoryStorage implements IStorage {
       equipment: insertExercise.equipment,
       instructions: insertExercise.instructions,
       youtubeUrl: insertExercise.youtubeUrl || null,
+      // New exercise type fields
+      exerciseType: insertExercise.exerciseType || "weighted_reps",
+      defaultSets: insertExercise.defaultSets || null,
+      defaultReps: insertExercise.defaultReps || null,
+      defaultDuration: insertExercise.defaultDuration || null,
+      defaultRestTime: insertExercise.defaultRestTime || null,
+      thumbnailUrl: insertExercise.thumbnailUrl || null,
+      videoUrls: insertExercise.videoUrls || null,
+      alternativeExercises: insertExercise.alternativeExercises || null,
       createdAt: new Date()
     };
     this.exercises.set(exercise.id, exercise);
@@ -320,13 +337,14 @@ export class MemoryStorage implements IStorage {
       reps: insertWorkoutExercise.reps,
       weight: insertWorkoutExercise.weight || null,
       restTime: insertWorkoutExercise.restTime || null,
+      setsConfiguration: (insertWorkoutExercise.setsConfiguration as any) ?? null,
       sortOrder: insertWorkoutExercise.sortOrder
     };
-    
+
     const exercises = this.workoutExercises.get(insertWorkoutExercise.workoutId) || [];
     exercises.push(workoutExercise);
     this.workoutExercises.set(insertWorkoutExercise.workoutId, exercises);
-    
+
     return workoutExercise;
   }
 
@@ -351,13 +369,34 @@ export class MemoryStorage implements IStorage {
       .sort((a, b) => b.assignedAt.getTime() - a.assignedAt.getTime());
   }
 
+  async getClientWorkoutsByWeek(clientId: string, weekStart: string, weekEnd: string): Promise<any[]> {
+    // Stub implementation for in-memory storage
+    // Returns empty array since this is mainly used for testing
+    return [];
+  }
+
   async assignWorkoutToClient(insertAssignment: InsertWorkoutAssignment): Promise<WorkoutAssignment> {
     const assignment: WorkoutAssignment = {
-      ...insertAssignment,
       id: generateId(),
+      workoutId: insertAssignment.workoutId,
+      clientId: insertAssignment.clientId,
       assignedAt: new Date(),
       completedAt: null,
-      notes: insertAssignment.notes || null
+      notes: insertAssignment.notes ?? null,
+      scheduledDate: insertAssignment.scheduledDate ?? null,
+      dayOfWeek: insertAssignment.dayOfWeek ?? null,
+      weekNumber: insertAssignment.weekNumber ?? null,
+      weekYear: insertAssignment.weekYear ?? null,
+      scheduledTime: insertAssignment.scheduledTime ?? null,
+      timezone: insertAssignment.timezone ?? "UTC",
+      durationMinutes: insertAssignment.durationMinutes ?? null,
+      isCustomized: insertAssignment.isCustomized ?? false,
+      customTitle: insertAssignment.customTitle ?? null,
+      customNotes: insertAssignment.customNotes ?? null,
+      status: insertAssignment.status ?? "scheduled",
+      cancelledAt: null,
+      cancellationReason: null,
+      notificationsSent: null,
     };
     this.workoutAssignments.set(assignment.id, assignment);
     return assignment;
@@ -396,167 +435,6 @@ export class MemoryStorage implements IStorage {
     this.progressEntries.set(insertEntry.clientId, entries);
     
     return entry;
-  }
-
-  // Messages & Multi-Platform Communication
-  async getAllMessagesForTrainer(trainerId: string, platform?: string): Promise<Message[]> {
-    const trainerClientIds = new Set(
-      Array.from(this.clients.values())
-        .filter(c => c.trainerId === trainerId)
-        .map(c => c.id)
-    );
-    
-    return Array.from(this.messages.values())
-      .filter(msg => 
-        trainerClientIds.has(msg.clientId) &&
-        (!platform || msg.platform === platform)
-      )
-      .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime());
-  }
-
-  async getClientMessages(clientId: string, platform?: string): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(msg => 
-        msg.clientId === clientId &&
-        (!platform || msg.platform === platform)
-      )
-      .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime());
-  }
-
-  async sendMessage(insertMessage: InsertMessage): Promise<Message> {
-    const message: Message = {
-      id: generateId(),
-      trainerId: insertMessage.trainerId,
-      clientId: insertMessage.clientId,
-      content: insertMessage.content,
-      isFromTrainer: insertMessage.isFromTrainer,
-      platform: insertMessage.platform || "app",
-      externalMessageId: insertMessage.externalMessageId || null,
-      messageType: insertMessage.messageType || "text",
-      attachmentUrl: insertMessage.attachmentUrl || null,
-      sentAt: new Date(),
-      readAt: insertMessage.readAt || null,
-      deliveredAt: insertMessage.deliveredAt || new Date(),
-      deliveryStatus: insertMessage.deliveryStatus || "delivered",
-      errorMessage: insertMessage.errorMessage || null
-    };
-    this.messages.set(message.id, message);
-    return message;
-  }
-
-  async markMessageAsRead(id: string): Promise<Message | undefined> {
-    const message = this.messages.get(id);
-    if (!message) return undefined;
-    
-    message.readAt = new Date();
-    this.messages.set(id, message);
-    return message;
-  }
-
-  async getMessageTemplates(trainerId: string, category?: string): Promise<MessageTemplate[]> {
-    return Array.from(this.messageTemplates.values())
-      .filter(template => 
-        template.trainerId === trainerId &&
-        (!category || template.category === category)
-      )
-      .sort((a, b) => {
-        if (a.category !== b.category) {
-          return a.category.localeCompare(b.category);
-        }
-        return a.title.localeCompare(b.title);
-      });
-  }
-
-  async createMessageTemplate(insertTemplate: InsertMessageTemplate): Promise<MessageTemplate> {
-    const template: MessageTemplate = {
-      id: generateId(),
-      trainerId: insertTemplate.trainerId,
-      title: insertTemplate.title,
-      content: insertTemplate.content,
-      category: insertTemplate.category,
-      platform: insertTemplate.platform || "all",
-      createdAt: new Date()
-    };
-    this.messageTemplates.set(template.id, template);
-    return template;
-  }
-
-  async deleteMessageTemplate(id: string): Promise<boolean> {
-    return this.messageTemplates.delete(id);
-  }
-
-  async getClientCommunicationPrefs(clientId: string): Promise<ClientCommunicationPref[]> {
-    const prefs = this.clientCommunicationPrefs.get(clientId) || [];
-    return prefs.sort((a, b) => {
-      if (a.isPreferred !== b.isPreferred) {
-        return a.isPreferred ? -1 : 1;
-      }
-      return a.platform.localeCompare(b.platform);
-    });
-  }
-
-  async updateClientCommunicationPref(clientId: string, insertPref: InsertClientCommunicationPref): Promise<ClientCommunicationPref> {
-    const prefs = this.clientCommunicationPrefs.get(clientId) || [];
-    const existingIndex = prefs.findIndex(p => p.platform === insertPref.platform);
-    
-    if (existingIndex >= 0) {
-      // Update existing preference
-      prefs[existingIndex] = {
-        id: prefs[existingIndex].id,
-        clientId: prefs[existingIndex].clientId,
-        platform: insertPref.platform,
-        platformUserId: insertPref.platformUserId,
-        isPreferred: insertPref.isPreferred !== undefined ? insertPref.isPreferred : prefs[existingIndex].isPreferred,
-        isActive: insertPref.isActive !== undefined ? insertPref.isActive : prefs[existingIndex].isActive,
-        createdAt: prefs[existingIndex].createdAt
-      };
-    } else {
-      // Create new preference
-      const newPref: ClientCommunicationPref = {
-        id: generateId(),
-        clientId,
-        platform: insertPref.platform,
-        platformUserId: insertPref.platformUserId,
-        isPreferred: insertPref.isPreferred !== undefined ? insertPref.isPreferred : false,
-        isActive: insertPref.isActive !== undefined ? insertPref.isActive : true,
-        createdAt: new Date()
-      };
-      prefs.push(newPref);
-    }
-    
-    this.clientCommunicationPrefs.set(clientId, prefs);
-    return prefs[existingIndex >= 0 ? existingIndex : prefs.length - 1];
-  }
-
-  async sendMultiPlatformMessage(clientId: string, content: string, platforms: string[]): Promise<Message[]> {
-    const client = this.clients.get(clientId);
-    if (!client) throw new Error("Client not found");
-    
-    const messages: Message[] = [];
-    
-    for (const platform of platforms) {
-      const message: Message = {
-        id: generateId(),
-        trainerId: client.trainerId,
-        clientId,
-        content,
-        isFromTrainer: true,
-        platform,
-        externalMessageId: null,
-        messageType: "text",
-        attachmentUrl: null,
-        sentAt: new Date(),
-        readAt: null,
-        deliveredAt: new Date(),
-        deliveryStatus: "delivered",
-        errorMessage: null
-      };
-      
-      this.messages.set(message.id, message);
-      messages.push(message);
-    }
-    
-    return messages;
   }
 
   // Training Sessions
@@ -727,17 +605,13 @@ export class MemoryStorage implements IStorage {
     // Calculate client growth
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const newClientsThisMonth = allClients.filter(c => 
+    const newClientsThisMonth = allClients.filter(c =>
       new Date(c.createdAt) > thirtyDaysAgo
     ).length;
 
-    // Get recent messages for activity tracking
-    const messages = await this.getAllMessagesForTrainer(trainerId);
-    const unreadMessages = messages.filter(m => !m.isFromTrainer && !m.readAt).length;
-
     // Build recent activity list
     const recentActivity: Array<{type: string, description: string, time: Date}> = [];
-    
+
     // Add upcoming sessions to activity
     upcomingSessions.slice(0, 3).forEach(s => {
       recentActivity.push({
@@ -746,16 +620,7 @@ export class MemoryStorage implements IStorage {
         time: s.scheduledAt,
       });
     });
-    
-    // Add messages to activity
-    messages.slice(0, 3).forEach(m => {
-      recentActivity.push({
-        type: 'message',
-        description: m.isFromTrainer ? 'Message sent' : 'Message received',
-        time: m.sentAt,
-      });
-    });
-    
+
     // Sort and limit recent activity
     recentActivity.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
     const finalRecentActivity = recentActivity.slice(0, 5);
@@ -769,7 +634,6 @@ export class MemoryStorage implements IStorage {
       upcomingSessions: upcomingSessions.length,
       completedSessionsThisWeek: completedThisWeek.length,
       newClientsThisMonth,
-      unreadMessages,
       recentActivity: finalRecentActivity,
     };
   }
@@ -791,11 +655,11 @@ export class MemoryStorage implements IStorage {
   async addClientNote(clientId: string, trainerId: string, content: string, category: string): Promise<any> {
     const client = this.clients.get(clientId);
     if (!client) throw new Error('Client not found');
-    
+
     // Update client goal with the new note
     client.goal = `${client.goal}\n\n[${category.toUpperCase()}]: ${content}`;
     this.clients.set(clientId, client);
-    
+
     return {
       id: Date.now().toString(),
       clientId,
@@ -803,5 +667,60 @@ export class MemoryStorage implements IStorage {
       category,
       createdAt: new Date(),
     };
+  }
+
+  async getUserOnboardingProgress(userId: string): Promise<any> {
+    // Memory storage doesn't persist onboarding progress
+    return undefined;
+  }
+
+  async updateUserOnboardingProgress(userId: string, updates: any): Promise<any> {
+    // Memory storage doesn't persist onboarding progress
+    // Return a mock response
+    return {
+      userId,
+      welcomeModalCompleted: false,
+      selectedGoal: null,
+      addedFirstClient: false,
+      createdFirstWorkout: false,
+      assignedFirstWorkout: false,
+      scheduledFirstSession: false,
+      loggedFirstProgress: false,
+      completedProductTour: false,
+      dismissedFeaturePrompts: [],
+      onboardingCompletedAt: null,
+      ...updates,
+    };
+  }
+
+  // Appointments (stub implementations for memory storage)
+  async getAppointmentsByTrainer(trainerId: string): Promise<Appointment[]> {
+    // Memory storage doesn't persist appointments - return empty array
+    return [];
+  }
+
+  async getAppointmentsByClient(clientId: string): Promise<Appointment[]> {
+    // Memory storage doesn't persist appointments - return empty array
+    return [];
+  }
+
+  async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
+    // Memory storage doesn't persist appointments - return mock
+    return {
+      ...appointment,
+      id: generateId(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Appointment;
+  }
+
+  async updateAppointment(id: string, updates: Partial<InsertAppointment>): Promise<Appointment | undefined> {
+    // Memory storage doesn't persist appointments
+    return undefined;
+  }
+
+  async deleteAppointment(id: string): Promise<boolean> {
+    // Memory storage doesn't persist appointments
+    return false;
   }
 }

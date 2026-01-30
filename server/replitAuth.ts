@@ -7,13 +7,15 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
-
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+import { env, isDevelopment, isProduction } from "./env";
 
 // Check if we have proper Replit Auth configuration
-const hasReplitAuth = !!(process.env.ISSUER_URL && process.env.REPL_ID);
+const hasReplitAuth = !!(process.env.ISSUER_URL && process.env.REPL_ID && process.env.REPLIT_DOMAINS);
+
+// Only require REPLIT_DOMAINS if we have other Replit Auth config
+if (hasReplitAuth && !process.env.REPLIT_DOMAINS) {
+  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+}
 
 const getOidcConfig = memoize(
   async () => {
@@ -31,16 +33,12 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  
+
   // In development mode, always use memory store to avoid database dependency issues
-  let sessionStore: any;
-  
-  if (process.env.NODE_ENV === 'development') {
-    // Use default memory store for development
-    console.warn("Using memory session store for development");
-    sessionStore = undefined; // Express-session will use default MemoryStore
-  } else {
-    // Production mode - try to use PostgreSQL store
+  let sessionStore: any = undefined;
+
+  if (!isDevelopment && process.env.DATABASE_URL) {
+    // Production mode with database - try to use PostgreSQL store
     try {
       const pgStore = connectPg(session);
       sessionStore = new pgStore({
@@ -53,16 +51,19 @@ export function getSession() {
       console.warn("Failed to create PostgreSQL session store, using memory store");
       sessionStore = undefined; // Fall back to MemoryStore
     }
+  } else {
+    // Use default memory store for development or when no DATABASE_URL
+    console.warn("Using memory session store for development");
   }
   
   return session({
-    secret: process.env.SESSION_SECRET || 'fitness-trainer-secure-session-key-2024',
+    secret: env.SESSION_SECRET,
     ...(sessionStore && { store: sessionStore }), // Only add store if it exists
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProduction,
       maxAge: sessionTtl,
       sameSite: 'lax'
     },
@@ -81,6 +82,7 @@ function updateUserSession(
 
 async function upsertUser(
   claims: any,
+  role?: 'trainer' | 'client'
 ) {
   try {
     await storage.upsertUser({
@@ -89,6 +91,8 @@ async function upsertUser(
       firstName: claims["first_name"],
       lastName: claims["last_name"],
       profileImageUrl: claims["profile_image_url"],
+      role: role,
+      trainerId: role === 'client' ? 'demo-trainer-123' : null,
     });
   } catch (error) {
     // If database is unavailable (development mode), continue without persisting
@@ -122,7 +126,7 @@ export async function setupAuth(app: Express) {
     if (!claims || !claims.sub) {
       return verified(null, false);
     }
-    
+
     const user: Express.User = {
       id: claims.sub as string,
       email: (claims.email || '') as string,
@@ -133,12 +137,12 @@ export async function setupAuth(app: Express) {
       updatedAt: new Date()
     };
     updateUserSession(user, tokens);
-    await upsertUser(claims);
+    // Note: Role will be saved in the callback handler using upsertUser
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  const domains = process.env.REPLIT_DOMAINS?.split(",") || [];
+  for (const domain of domains) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -155,6 +159,10 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
+    // Store the role in session before starting OAuth flow
+    const role = req.query.role === 'client' ? 'client' : 'trainer';
+    (req.session as any).pendingRole = role;
+
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
@@ -162,9 +170,29 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+    passport.authenticate(`replitauth:${req.hostname}`, async (err, user) => {
+      if (err || !user) {
+        return res.redirect("/api/login");
+      }
+
+      // Get the role from session that was stored in /api/login
+      const role = (req.session as any).pendingRole || 'trainer';
+
+      // Clear the pending role from session
+      delete (req.session as any).pendingRole;
+
+      // Update user with role in database
+      if (user && (user as any).claims) {
+        await upsertUser((user as any).claims, role);
+      }
+
+      // Log in the user
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          return next(loginErr);
+        }
+        return res.redirect("/dashboard");
+      });
     })(req, res, next);
   });
 
@@ -272,35 +300,90 @@ function setupDevAuth(app: Express) {
 
   // Development login route
   app.get("/api/login", async (req: any, res) => {
+    // Get role from query parameter (defaults to trainer)
+    const role = req.query.role === 'client' ? 'client' : 'trainer';
+
+    // Create role-specific demo user
+    const demoUser = role === 'client' ? {
+      id: "mock-client-1", // Use actual client from trainer's list
+      email: "john.smith@example.com",
+      firstName: "John",
+      lastName: "Smith",
+      profileImageUrl: null,
+      claims: {
+        sub: "mock-client-1",
+        email: "john.smith@example.com",
+        first_name: "John",
+        last_name: "Smith"
+      },
+      expires_at: Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
+    } : devUser;
+
     // Skip database upsert in development mode when database is unavailable
     try {
       // Try to upsert user if database is available
       await storage.upsertUser({
-        id: devUser.id,
-        email: devUser.email,
-        firstName: devUser.firstName,
-        lastName: devUser.lastName,
-        profileImageUrl: devUser.profileImageUrl,
+        id: demoUser.id,
+        email: demoUser.email,
+        firstName: demoUser.firstName,
+        lastName: demoUser.lastName,
+        profileImageUrl: demoUser.profileImageUrl,
+        role: role, // Set the user's role (trainer or client)
+        trainerId: role === 'client' ? 'demo-trainer-123' : null, // Assign trainer to clients
       });
+
+      // If logging in as mock-client-1 (John Smith), ensure client record exists
+      if (role === 'client' && demoUser.id === 'mock-client-1') {
+        const existingClient = await storage.getClient(demoUser.id);
+        if (!existingClient) {
+          console.log('Creating client record for John Smith (mock-client-1)...');
+          await storage.createClient({
+            id: 'mock-client-1',
+            trainerId: 'demo-trainer-123',
+            name: 'John Smith',
+            email: 'john.smith@example.com',
+            phone: '+1234567890',
+            goal: 'Build muscle and increase strength',
+            status: 'active',
+            age: 28,
+            gender: 'male',
+            height: '180',
+            weight: '85',
+            activityLevel: 'active',
+            neckCircumference: '38',
+            waistCircumference: '85',
+            hipCircumference: null,
+            lastSession: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+            nextSession: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)  // 2 days from now
+          });
+          console.log('✅ Client record created for John Smith');
+        }
+      }
     } catch (error: any) {
       // Database unavailable - continue without database
       console.warn("Database unavailable in development mode, continuing without user persistence");
     }
 
     // Set up session
-    req.session.passport = { user: devUser };
+    req.session.passport = { user: demoUser };
     req.session.save((err: any) => {
       if (err) {
         return res.status(500).json({ error: "Failed to create session" });
       }
-      res.redirect("/");
+      res.redirect("/dashboard");
     });
   });
 
   // Development logout route
   app.get("/api/logout", (req: any, res) => {
     req.session.destroy((err: any) => {
-      res.redirect("/");
+      if (err) {
+        console.error('Session destruction error:', err);
+        return res.status(500).json({ error: 'Failed to logout' });
+      }
+      // Clear the session cookie
+      res.clearCookie('connect.sid');
+      res.json({ success: true });
     });
   });
 }

@@ -10,6 +10,7 @@ interface SearchInputProps {
   onSearch?: (value: string) => void
   debounceMs?: number
   className?: string
+  focusColor?: 'default' | 'cyan'
 }
 
 const SearchInput = memo(function SearchInput({
@@ -18,7 +19,8 @@ const SearchInput = memo(function SearchInput({
   onChange,
   onSearch,
   debounceMs = 300,
-  className = ""
+  className = "",
+  focusColor = 'default'
 }: SearchInputProps) {
   const [internalValue, setInternalValue] = useState(value)
 
@@ -61,7 +63,7 @@ const SearchInput = memo(function SearchInput({
         value={internalValue}
         onChange={(e) => setInternalValue(e.target.value)}
         onKeyPress={handleKeyPress}
-        className="pl-9 pr-9"
+        className={`pl-9 pr-9 ${focusColor === 'cyan' ? 'focus-visible:ring-cyan-500 focus-visible:border-cyan-500' : ''}`}
         data-testid="input-search"
       />
       {internalValue && (

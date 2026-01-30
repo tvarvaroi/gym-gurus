@@ -1,5 +1,5 @@
 import type {
-  Client, Message, ProgressEntry, MessageTemplate
+  Client, ProgressEntry
 } from "@shared/schema";
 
 // Generate random ID for mock data
@@ -23,6 +23,14 @@ export const getMockClients = (trainerId: string): Client[] => {
       phone: "+1234567890",
       goal: "Build muscle and increase strength",
       status: "active",
+      age: 28,
+      gender: "male",
+      height: "180",
+      weight: "85",
+      activityLevel: "active",
+      neckCircumference: "38",
+      waistCircumference: "85",
+      hipCircumference: null,
       createdAt: generateDate(60),
       lastSession: generateDate(2),
       nextSession: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
@@ -31,10 +39,18 @@ export const getMockClients = (trainerId: string): Client[] => {
       id: "mock-client-2",
       trainerId,
       name: "Sarah Johnson",
-      email: "sarah.j@example.com", 
+      email: "sarah.j@example.com",
       phone: "+1234567891",
       goal: "Weight loss and improved cardio fitness",
       status: "active",
+      age: 32,
+      gender: "female",
+      height: "165",
+      weight: "68",
+      activityLevel: "moderately_active",
+      neckCircumference: "32",
+      waistCircumference: "75",
+      hipCircumference: "95",
       createdAt: generateDate(45),
       lastSession: generateDate(3),
       nextSession: new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -47,88 +63,19 @@ export const getMockClients = (trainerId: string): Client[] => {
       phone: "+1234567892",
       goal: "Improve flexibility and core strength",
       status: "paused",
+      age: 45,
+      gender: "male",
+      height: "175",
+      weight: "92",
+      activityLevel: "lightly_active",
+      neckCircumference: "40",
+      waistCircumference: "98",
+      hipCircumference: null,
       createdAt: generateDate(90),
       lastSession: generateDate(10),
       nextSession: null
     }
   ];
-};
-
-// Mock Messages
-export const getMockMessages = (trainerId: string, clientId?: string): Message[] => {
-  const messages: Message[] = [
-    {
-      id: "mock-msg-1",
-      trainerId,
-      clientId: clientId || "mock-client-1",
-      content: "Great workout today! Keep up the excellent work.",
-      isFromTrainer: true,
-      platform: "app",
-      externalMessageId: null,
-      messageType: "text",
-      attachmentUrl: null,
-      sentAt: generateDate(1),
-      readAt: generateDate(0),
-      deliveredAt: generateDate(1),
-      deliveryStatus: "delivered",
-      errorMessage: null
-    },
-    {
-      id: "mock-msg-2",
-      trainerId,
-      clientId: clientId || "mock-client-1",
-      content: "Thanks! I'm feeling stronger already. When is our next session?",
-      isFromTrainer: false,
-      platform: "app",
-      externalMessageId: null,
-      messageType: "text",
-      attachmentUrl: null,
-      sentAt: generateDate(0),
-      readAt: generateDate(0),
-      deliveredAt: generateDate(0),
-      deliveryStatus: "delivered",
-      errorMessage: null
-    },
-    {
-      id: "mock-msg-3",
-      trainerId,
-      clientId: clientId || "mock-client-2",
-      content: "Remember to complete your cardio routine today!",
-      isFromTrainer: true,
-      platform: "whatsapp",
-      externalMessageId: "wa-123456",
-      messageType: "text",
-      attachmentUrl: null,
-      sentAt: generateDate(2),
-      readAt: null,
-      deliveredAt: generateDate(2),
-      deliveryStatus: "delivered",
-      errorMessage: null
-    },
-    {
-      id: "mock-msg-4",
-      trainerId,
-      clientId: clientId || "mock-client-2",
-      content: "Will do! Already halfway through.",
-      isFromTrainer: false,
-      platform: "whatsapp",
-      externalMessageId: "wa-123457",
-      messageType: "text",
-      attachmentUrl: null,
-      sentAt: generateDate(2),
-      readAt: generateDate(1),
-      deliveredAt: generateDate(2),
-      deliveryStatus: "delivered",
-      errorMessage: null
-    }
-  ];
-
-  // Filter by clientId if provided
-  if (clientId) {
-    return messages.filter(msg => msg.clientId === clientId);
-  }
-  
-  return messages;
 };
 
 // Mock Progress Entries
@@ -339,35 +286,3 @@ export const getMockDashboardStats = (trainerId: string) => {
   };
 };
 
-// Mock Message Templates
-export const getMockMessageTemplates = (trainerId: string): MessageTemplate[] => {
-  return [
-    {
-      id: "template-1",
-      trainerId,
-      title: "Workout Reminder",
-      content: "Hi {name}! Just a friendly reminder about your {workout} session tomorrow at {time}. See you then!",
-      category: "workout_reminder",
-      platform: "all",
-      createdAt: generateDate(30)
-    },
-    {
-      id: "template-2",
-      trainerId,
-      title: "Daily Motivation",
-      content: "Remember, every workout brings you closer to your goals! You've got this! 💪",
-      category: "motivation",
-      platform: "all",
-      createdAt: generateDate(20)
-    },
-    {
-      id: "template-3",
-      trainerId,
-      title: "Check-in Message",
-      content: "Hey {name}, how are you feeling after yesterday's workout? Any soreness or concerns?",
-      category: "check_in",
-      platform: "all",
-      createdAt: generateDate(15)
-    }
-  ];
-};
