@@ -35,6 +35,29 @@ const WorkoutExecution = lazy(() => import("@/pages/WorkoutExecution"));
 const ExercisesPageComponent = lazy(() => import("@/pages/ExercisesPage"));
 const SchedulePageComponent = lazy(() => import("@/pages/SchedulePage"));
 
+// Calculator pages
+const CalculatorsHub = lazy(() => import("@/pages/calculators/CalculatorsHub"));
+const OneRepMaxCalc = lazy(() => import("@/pages/calculators/OneRepMaxCalc"));
+const PlatesCalc = lazy(() => import("@/pages/calculators/PlatesCalc"));
+const TDEECalc = lazy(() => import("@/pages/calculators/TDEECalc"));
+const StrengthStandardsCalc = lazy(() => import("@/pages/calculators/StrengthStandardsCalc"));
+const BMICalc = lazy(() => import("@/pages/calculators/BMICalc"));
+const BodyFatCalc = lazy(() => import("@/pages/calculators/BodyFatCalc"));
+const MacroCalc = lazy(() => import("@/pages/calculators/MacroCalc"));
+const VO2MaxCalc = lazy(() => import("@/pages/calculators/VO2MaxCalc"));
+const HeartRateZonesCalc = lazy(() => import("@/pages/calculators/HeartRateZonesCalc"));
+const CaloriesBurnedCalc = lazy(() => import("@/pages/calculators/CaloriesBurnedCalc"));
+const IdealWeightCalc = lazy(() => import("@/pages/calculators/IdealWeightCalc"));
+const WaterIntakeCalc = lazy(() => import("@/pages/calculators/WaterIntakeCalc"));
+
+// Solo user pages
+const SoloDashboard = lazy(() => import("@/pages/solo/SoloDashboard"));
+const SoloOnboarding = lazy(() => import("@/pages/solo/SoloOnboarding"));
+const AICoach = lazy(() => import("@/pages/solo/AICoach"));
+const Recovery = lazy(() => import("@/pages/solo/Recovery"));
+const SoloAchievements = lazy(() => import("@/pages/solo/Achievements"));
+const WorkoutGenerator = lazy(() => import("@/pages/solo/WorkoutGenerator"));
+
 // Loading fallback component
 const LoadingFallback = memo(() => (
   <motion.div
@@ -69,6 +92,24 @@ const LoadingFallback = memo(() => (
 
 // Pages for different sections of the app
 const HomePage = memo(() => {
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+  });
+
+  const isSolo = user && (user as any).role === 'solo';
+
+  // Solo users see their own dashboard
+  if (isSolo) {
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <PageTransition>
+          <SoloDashboard />
+        </PageTransition>
+      </Suspense>
+    );
+  }
+
   return (
     <PageTransition>
       <Dashboard />
@@ -431,6 +472,182 @@ function Router() {
             <Route path="/exercises" component={ExercisesPage} />
             <Route path="/progress" component={ProgressPage} />
             <Route path="/schedule" component={SchedulePage} />
+
+            {/* Calculator routes */}
+            <Route path="/calculators">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <CalculatorsHub />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/1rm">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <OneRepMaxCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/plates">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <PlatesCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/tdee">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <TDEECalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/strength-standards">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <StrengthStandardsCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/bmi">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <BMICalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/body-fat">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <BodyFatCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/macros">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <MacroCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/vo2max">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <VO2MaxCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/heart-rate-zones">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <HeartRateZonesCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/calories-burned">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <CaloriesBurnedCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/ideal-weight">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <IdealWeightCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/calculators/water-intake">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <WaterIntakeCalc />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+
+            {/* Solo user routes */}
+            <Route path="/solo">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <SoloDashboard />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/solo/onboarding">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <SoloOnboarding />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/solo/coach">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <AICoach />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/solo/recovery">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <Recovery />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/solo/achievements">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <SoloAchievements />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/solo/generate">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <WorkoutGenerator />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+
             <Route component={NotFound} />
           </Switch>
         </Suspense>

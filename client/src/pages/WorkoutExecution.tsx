@@ -24,8 +24,11 @@ import {
   TrendingUp,
   RotateCcw,
   Edit3,
-  X
+  X,
+  Zap
 } from "lucide-react";
+import { ProgressiveOverloadIndicator, PRIndicator } from "@/components/workout/ProgressiveOverloadIndicator";
+import { WorkoutProgressOverview } from "@/components/workout/ExerciseProgressBar";
 
 // Types
 interface SetLog {
@@ -79,6 +82,8 @@ export default function WorkoutExecution() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showCompletion, setShowCompletion] = useState(false);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lbs');
+  const [newPR, setNewPR] = useState<{ type: 'weight' | 'reps' | 'volume'; value: number; previousBest: number } | null>(null);
+  const [showProgressOverview, setShowProgressOverview] = useState(false);
 
 
   // Fetch workout assignment details
@@ -541,6 +546,24 @@ export default function WorkoutExecution() {
                 </motion.div>
               </div>
 
+              {/* Workout Progress Overview */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.55 }}
+                className="w-full mb-6"
+              >
+                <WorkoutProgressOverview
+                  exercises={session.exercises.map(ex => ({
+                    name: ex.exerciseName,
+                    completedSets: ex.sets.filter(s => s.completed).length,
+                    totalSets: ex.sets.length,
+                    status: ex.status === 'completed' ? 'completed' : ex.status === 'in_progress' ? 'active' : 'pending' as const,
+                  }))}
+                  currentExerciseIndex={session.exercises.findIndex(ex => ex.status === 'in_progress')}
+                />
+              </motion.div>
+
               <motion.button
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -798,6 +821,40 @@ export default function WorkoutExecution() {
               </div>
             </div>
           </motion.div>
+
+          {/* Progressive Overload Indicator */}
+          <ProgressiveOverloadIndicator
+            exerciseName={currentExercise.exerciseName}
+            currentWeight={currentSet?.weight || 0}
+            currentReps={currentSet?.reps || 0}
+            targetReps={parseInt(currentExercise.targetReps) || 10}
+            history={currentExercise.sets
+              .filter(s => s.completed)
+              .map(s => ({
+                date: s.completedAt?.toISOString() || new Date().toISOString(),
+                weight: s.weight,
+                reps: s.reps,
+              }))}
+            showRecommendation={completedSets >= 2}
+          />
+
+          {/* PR Notification */}
+          <AnimatePresence>
+            {newPR && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -20 }}
+              >
+                <PRIndicator
+                  type={newPR.type}
+                  value={newPR.value}
+                  previousBest={newPR.previousBest}
+                  unit={weightUnit}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Completed Sets - Compact */}
           {completedSets > 0 && (

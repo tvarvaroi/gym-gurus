@@ -1,4 +1,4 @@
-import { Calendar, Dumbbell, Home, Users, TrendingUp, BookOpen } from "lucide-react"
+import { Calendar, Dumbbell, Home, Users, TrendingUp, BookOpen, Calculator, Sparkles, Trophy, Heart, Wand2 } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -46,6 +46,11 @@ const trainerMenuItems = [
     icon: BookOpen,
   },
   {
+    title: "Calculators",
+    url: "/calculators",
+    icon: Calculator,
+  },
+  {
     title: "Schedule",
     url: "/schedule",
     icon: Calendar,
@@ -70,6 +75,60 @@ const clientMenuItems = [
     icon: TrendingUp,
   },
   {
+    title: "Calculators",
+    url: "/calculators",
+    icon: Calculator,
+  },
+  {
+    title: "Schedule",
+    url: "/schedule",
+    icon: Calendar,
+  },
+]
+
+// Solo user menu items - Independent training with AI features
+const soloMenuItems = [
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: Home,
+  },
+  {
+    title: "AI Coach",
+    url: "/solo/coach",
+    icon: Sparkles,
+  },
+  {
+    title: "Generate Workout",
+    url: "/solo/generate",
+    icon: Wand2,
+  },
+  {
+    title: "My Workouts",
+    url: "/workouts",
+    icon: Dumbbell,
+  },
+  {
+    title: "My Progress",
+    url: "/progress",
+    icon: TrendingUp,
+  },
+  {
+    title: "Recovery",
+    url: "/solo/recovery",
+    icon: Heart,
+  },
+  {
+    title: "Achievements",
+    url: "/solo/achievements",
+    icon: Trophy,
+  },
+  {
+    title: "Calculators",
+    url: "/calculators",
+    icon: Calculator,
+  },
+  {
     title: "Schedule",
     url: "/schedule",
     icon: Calendar,
@@ -79,11 +138,11 @@ const clientMenuItems = [
 const AppSidebar = memo(() => {
   const [location] = useLocation()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
-  const { isTrainer, isClient } = useUser()
+  const { isTrainer, isClient, isSolo } = useUser()
   const { state } = useSidebar()
 
   // Select menu items based on user role
-  const menuItems = isTrainer ? trainerMenuItems : clientMenuItems
+  const menuItems = isTrainer ? trainerMenuItems : isSolo ? soloMenuItems : clientMenuItems
   const isCollapsed = state === "collapsed"
 
   // Premium animation variants
@@ -318,9 +377,11 @@ const AppSidebar = memo(() => {
                               }}
                               style={{
                                 transformOrigin: "center",
-                                background: isClient
-                                  ? 'linear-gradient(180deg, #06b6d4 0%, #14b8a6 100%)'
-                                  : 'linear-gradient(180deg, #c9a855 0%, #0d9488 100%)',
+                                background: isSolo
+                                  ? 'linear-gradient(180deg, #a855f7 0%, #6366f1 100%)'  // Purple/Indigo for solo
+                                  : isClient
+                                    ? 'linear-gradient(180deg, #06b6d4 0%, #14b8a6 100%)'
+                                    : 'linear-gradient(180deg, #c9a855 0%, #0d9488 100%)',
                               }}
                             />
                           )}
@@ -329,9 +390,11 @@ const AppSidebar = memo(() => {
                             asChild
                             className={`h-11 ${isCollapsed ? 'w-full !px-0' : 'px-4'} font-light rounded-xl transition-all duration-200 border-0 ${
                               active
-                                ? isClient
-                                  ? 'bg-cyan-500/10 text-cyan-600'
-                                  : 'bg-primary/10 text-primary'
+                                ? isSolo
+                                  ? 'bg-purple-500/10 text-purple-500'
+                                  : isClient
+                                    ? 'bg-cyan-500/10 text-cyan-600'
+                                    : 'bg-primary/10 text-primary'
                                 : 'hover:bg-transparent'
                             }`}
                           >
@@ -348,9 +411,11 @@ const AppSidebar = memo(() => {
                                 <motion.span
                                   className={`text-base transition-colors duration-200 ${
                                     active
-                                      ? isClient
-                                        ? 'font-medium text-cyan-600'
-                                        : 'font-medium text-primary'
+                                      ? isSolo
+                                        ? 'font-medium text-purple-500'
+                                        : isClient
+                                          ? 'font-medium text-cyan-600'
+                                          : 'font-medium text-primary'
                                       : 'font-light text-foreground'
                                   }`}
                                   animate={{

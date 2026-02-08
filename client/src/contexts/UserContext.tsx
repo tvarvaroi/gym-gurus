@@ -8,8 +8,11 @@ export interface User {
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
-  role: 'trainer' | 'client';
+  role: 'trainer' | 'client' | 'solo';
   trainerId?: string | null; // For clients - reference to their trainer
+  isIndependent?: boolean; // For solo users
+  onboardingCompleted?: boolean; // For solo users
+  onboardingStep?: number; // For solo users
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,10 +54,16 @@ export type Permission =
   | 'schedule:delete'
   // Dashboard
   | 'dashboard:trainer'
-  | 'dashboard:client';
+  | 'dashboard:client'
+  | 'dashboard:solo'
+  // Solo user specific
+  | 'ai:coach'
+  | 'workouts:generate'
+  | 'recovery:track'
+  | 'gamification:view';
 
 // Permission mapping for each role
-const ROLE_PERMISSIONS: Record<'trainer' | 'client', Permission[]> = {
+const ROLE_PERMISSIONS: Record<'trainer' | 'client' | 'solo', Permission[]> = {
   trainer: [
     'clients:view',
     'clients:create',
@@ -91,6 +100,26 @@ const ROLE_PERMISSIONS: Record<'trainer' | 'client', Permission[]> = {
     'schedule:view_own',
     'dashboard:client',
   ],
+  solo: [
+    // Solo users have independent access to most features
+    'workouts:view_all',
+    'workouts:create',
+    'workouts:edit',
+    'workouts:delete',
+    'workouts:log',
+    'workouts:generate', // AI-generated workouts
+    'progress:view_own',
+    'progress:add',
+    'progress:edit',
+    'exercises:view',
+    'schedule:view_own',
+    'schedule:create',
+    'schedule:edit',
+    'dashboard:solo',
+    'ai:coach',
+    'recovery:track',
+    'gamification:view',
+  ],
 };
 
 interface UserContextType {
@@ -99,6 +128,7 @@ interface UserContextType {
   isAuthenticated: boolean;
   isTrainer: boolean;
   isClient: boolean;
+  isSolo: boolean;
   hasPermission: (permission: Permission) => boolean;
   refetchUser: () => void;
 }
@@ -130,6 +160,7 @@ export function UserProvider({ children }: UserProviderProps) {
     isAuthenticated: !!user,
     isTrainer: user?.role === 'trainer',
     isClient: user?.role === 'client',
+    isSolo: user?.role === 'solo',
     hasPermission,
     refetchUser: refetch,
   };
@@ -154,10 +185,11 @@ export function usePermission(permission: Permission): boolean {
 
 // Convenience hook for role checks
 export function useRole() {
-  const { isTrainer, isClient, user } = useUser();
+  const { isTrainer, isClient, isSolo, user } = useUser();
   return {
     isTrainer,
     isClient,
+    isSolo,
     role: user?.role,
   };
 }

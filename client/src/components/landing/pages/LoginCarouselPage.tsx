@@ -1,10 +1,10 @@
 import { useState, useRef, memo } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { User, Dumbbell, ArrowRight, CheckCircle, Shield, Crown, Trophy } from 'lucide-react';
+import { User, Dumbbell, ArrowRight, CheckCircle, Shield, Crown, Trophy, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logoImage from '@assets/Sophisticated Logo with Japanese Influences (3)_1757605872884.png';
 
-type UserRole = 'trainer' | 'client';
+type UserRole = 'trainer' | 'client' | 'solo';
 
 // Luxury shimmer particle component
 const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?: 'gold' | 'teal' }) => (
@@ -373,8 +373,8 @@ const LoginCarouselPage = memo(() => {
               </p>
             </div>
 
-            {/* Bento Grid Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Bento Grid Layout - 3 Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
 
               {/* TRAINER CARD - Luxury Gold/Bronze */}
               <ParallaxCard
@@ -383,7 +383,7 @@ const LoginCarouselPage = memo(() => {
                 onClick={() => setSelectedRole('trainer')}
               >
                 <motion.div
-                  className="relative h-[440px] rounded-3xl overflow-hidden group"
+                  className="relative h-[380px] rounded-3xl overflow-hidden group"
                   style={{
                     background: selectedRole === 'trainer'
                       ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.10), rgba(184, 147, 94, 0.08))'
@@ -509,7 +509,7 @@ const LoginCarouselPage = memo(() => {
                 onClick={() => setSelectedRole('client')}
               >
                 <motion.div
-                  className="relative h-[440px] rounded-3xl overflow-hidden group"
+                  className="relative h-[380px] rounded-3xl overflow-hidden group"
                   style={{
                     background: selectedRole === 'client'
                       ? 'linear-gradient(135deg, rgba(13, 148, 136, 0.10), rgba(20, 184, 166, 0.08))'
@@ -627,6 +627,132 @@ const LoginCarouselPage = memo(() => {
                   />
                 </motion.div>
               </ParallaxCard>
+
+              {/* SOLO CARD - Purple/Indigo */}
+              <ParallaxCard
+                role="solo"
+                isSelected={selectedRole === 'solo'}
+                onClick={() => setSelectedRole('solo')}
+              >
+                <motion.div
+                  className="relative h-[380px] rounded-3xl overflow-hidden group"
+                  style={{
+                    background: selectedRole === 'solo'
+                      ? 'linear-gradient(135deg, rgba(168, 85, 247, 0.10), rgba(99, 102, 241, 0.08))'
+                      : 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
+                    backdropFilter: 'blur(30px)',
+                    border: selectedRole === 'solo'
+                      ? '1px solid rgba(168, 85, 247, 0.35)'
+                      : '1px solid rgba(255, 255, 255, 0.08)',
+                    boxShadow: selectedRole === 'solo'
+                      ? '0 25px 50px -12px rgba(168, 85, 247, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                      : '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
+                  }}
+                  whileHover={{
+                    boxShadow: selectedRole === 'solo'
+                      ? '0 30px 60px -15px rgba(168, 85, 247, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                      : '0 30px 60px -15px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+                  }}
+                >
+                  {/* Sophisticated glass overlay */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
+                    }}
+                  />
+
+                  {/* Selection indicator */}
+                  {selectedRole === 'solo' && (
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      className="absolute top-6 right-6 z-20"
+                    >
+                      <div
+                        className="w-11 h-11 rounded-full flex items-center justify-center"
+                        style={{
+                          background: 'linear-gradient(135deg, #a855f7, #6366f1)',
+                          boxShadow: '0 10px 20px rgba(168, 85, 247, 0.4)',
+                        }}
+                      >
+                        <CheckCircle className="w-6 h-6 text-white" strokeWidth={3} />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Icon Circle - Top Left */}
+                  <motion.div
+                    className="absolute top-6 left-6 w-16 h-16 rounded-full flex items-center justify-center z-10"
+                    style={{
+                      background: 'linear-gradient(135deg, #a855f7, #6366f1)',
+                      boxShadow: '0 12px 30px rgba(168, 85, 247, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+                    }}
+                    whileHover={{ rotate: 360, scale: 1.15 }}
+                    transition={{ duration: 0.7 }}
+                  >
+                    {/* Icon shine */}
+                    <div
+                      className="absolute inset-0 rounded-full"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, transparent 60%)',
+                      }}
+                    />
+                    <Sparkles className="w-7 h-7 text-white relative z-10" strokeWidth={2.5} />
+                  </motion.div>
+
+                  <div className="relative h-full p-9 flex flex-col justify-between" style={{ transform: 'translateZ(50px)' }}>
+                    {/* Content */}
+                    <div className="mt-16">
+                      <h4
+                        className="text-4xl font-light mb-3"
+                        style={{
+                          fontFamily: "'Playfair Display', serif",
+                          background: 'linear-gradient(135deg, #ffffff, #a855f7)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }}
+                      >
+                        Solo
+                      </h4>
+                      <p className="text-sm leading-relaxed mb-6 font-light" style={{ color: '#b3b3b3', letterSpacing: '0.01em' }}>
+                        Train independently with AI coaching
+                      </p>
+                    </div>
+
+                    {/* Features */}
+                    <div className="space-y-4">
+                      {['AI-powered coach', 'Smart workouts', 'Gamification', 'Recovery tracking'].map((feature, i) => (
+                        <motion.div
+                          key={feature}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.6 + i * 0.1 }}
+                          className="flex items-center gap-3 text-sm"
+                          style={{ color: '#d4d4d4' }}
+                        >
+                          <div
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              background: 'linear-gradient(135deg, #a855f7, #6366f1)',
+                              boxShadow: '0 0 8px rgba(168, 85, 247, 0.5)',
+                            }}
+                          />
+                          <span className="font-light tracking-wide">{feature}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Refined hover glow */}
+                  <motion.div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{
+                      background: 'radial-gradient(circle at center, rgba(168, 85, 247, 0.06), transparent 70%)',
+                    }}
+                  />
+                </motion.div>
+              </ParallaxCard>
             </div>
 
             {/* Sign In Button - Dynamic Role Colors */}
@@ -647,9 +773,15 @@ const LoginCarouselPage = memo(() => {
                           boxShadow: '0 20px 40px rgba(201, 168, 85, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                           color: '#000000',
                         }
-                      : {
+                      : selectedRole === 'client'
+                      ? {
                           background: 'linear-gradient(135deg, #0d9488, #14b8a6, #0f766e)',
                           boxShadow: '0 20px 40px rgba(13, 148, 136, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                          color: '#ffffff',
+                        }
+                      : {
+                          background: 'linear-gradient(135deg, #a855f7, #6366f1, #8b5cf6)',
+                          boxShadow: '0 20px 40px rgba(168, 85, 247, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                           color: '#ffffff',
                         }
                     : {

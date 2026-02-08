@@ -39,13 +39,31 @@ import {
   getMockDashboardStats
 } from "./mockData";
 
+// New feature route imports
+import gamificationRoutes from "./routes/gamification";
+import calculatorRoutes from "./routes/calculators";
+import strengthRoutes from "./routes/strength";
+import recoveryRoutes from "./routes/recovery";
+import aiRoutes from "./routes/ai";
+import shoppingRoutes from "./routes/shopping";
+import leaderboardRoutes from "./routes/leaderboards";
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup secure Replit Auth
   await setupAuth(app);
 
   // Apply general rate limiting to all API routes
   app.use('/api', generalRateLimit);
-  
+
+  // Register new feature routes
+  app.use('/api/gamification', gamificationRoutes);
+  app.use('/api/calculators', calculatorRoutes);
+  app.use('/api/strength', strengthRoutes);
+  app.use('/api/recovery', recoveryRoutes);
+  app.use('/api/ai', aiRoutes);
+  app.use('/api/shopping', shoppingRoutes);
+  app.use('/api/leaderboards', leaderboardRoutes);
+
   // Auth routes
   // Note: No rate limiting on auth check as it's frequently called to verify session
   app.get('/api/auth/user', async (req: Request, res: Response) => {
