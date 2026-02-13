@@ -76,44 +76,40 @@ export default function AICoach() {
     setInput('');
     setIsTyping(true);
 
-    // Simulate AI response (replace with actual API call when Anthropic integration is ready)
-    setTimeout(() => {
-      const responses = getAIResponse(content);
+    // Call real AI API endpoint
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: content.trim(),
+          conversationId: messages.length > 1 ? 'solo-chat' : undefined,
+          context: {
+            goals: 'general fitness',
+            experience: 'intermediate',
+          },
+        }),
+      });
+
+      const data = await response.json();
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: responses,
+        content: data.message || 'Sorry, I had trouble generating a response. Please try again.',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMessage]);
+    } catch {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "I'm having trouble connecting right now. Please try again in a moment.",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
-  };
-
-  const getAIResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-
-    if (input.includes('workout') || input.includes('exercise') || input.includes('training')) {
-      return "Great question about workouts! Here are some key tips:\n\n• **Progressive Overload**: Gradually increase weight, reps, or sets over time\n• **Proper Form**: Quality over quantity - focus on technique first\n• **Rest Between Sets**: 60-90 seconds for hypertrophy, 2-3 minutes for strength\n• **Compound Movements**: Prioritize exercises like squats, deadlifts, and bench press\n\nWould you like me to create a personalized workout plan for you?";
     }
-
-    if (input.includes('nutrition') || input.includes('eat') || input.includes('diet') || input.includes('food')) {
-      return "Nutrition is crucial for your fitness goals! Here's what I recommend:\n\n• **Pre-workout** (1-2 hours before): Complex carbs + moderate protein (oatmeal with banana, toast with eggs)\n• **Post-workout** (within 30-60 mins): Protein + simple carbs (protein shake with fruit, chicken with rice)\n• **Daily Protein**: Aim for 0.7-1g per pound of bodyweight\n• **Stay Hydrated**: At least 8 glasses of water daily, more on training days\n\nWhat are your specific nutrition goals?";
-    }
-
-    if (input.includes('recovery') || input.includes('rest') || input.includes('sleep') || input.includes('sore')) {
-      return "Recovery is when the magic happens! Here's how to optimize it:\n\n• **Sleep**: Aim for 7-9 hours of quality sleep per night\n• **Active Recovery**: Light walks, stretching, or yoga on rest days\n• **Nutrition**: Protein intake is crucial for muscle repair\n• **Hydration**: Dehydration slows recovery significantly\n• **Manage Stress**: High cortisol levels impair recovery\n\nRemember: Muscles grow during rest, not during the workout itself!";
-    }
-
-    if (input.includes('goal') || input.includes('plan') || input.includes('target')) {
-      return "Let's set some SMART goals for you! Here's a framework:\n\n• **Specific**: 'Increase bench press by 20 lbs' rather than 'get stronger'\n• **Measurable**: Track progress weekly\n• **Achievable**: Challenging but realistic\n• **Relevant**: Aligned with your overall fitness vision\n• **Time-bound**: Set a deadline (e.g., 8-12 weeks)\n\nBased on your profile, I'd suggest focusing on consistency first. What's your main priority right now - strength, muscle gain, or fat loss?";
-    }
-
-    if (input.includes('motivation') || input.includes('stuck') || input.includes('plateau')) {
-      return "We all hit walls sometimes - that's totally normal! Here's how to push through:\n\n• **Remember Your Why**: What got you started in the first place?\n• **Track Progress**: Sometimes gains are happening even when you don't notice\n• **Switch It Up**: Try new exercises or training styles\n• **Find Your Community**: Training partners or online communities help\n• **Celebrate Small Wins**: Every rep, every day counts\n\nYou've got this! What specific challenge are you facing right now?";
-    }
-
-    return "That's a great question! I'm here to help with:\n\n• **Workout programming** - Custom routines for your goals\n• **Nutrition guidance** - What to eat and when\n• **Recovery optimization** - Maximize your rest days\n• **Goal setting** - Create achievable milestones\n• **Form tips** - Improve your exercise technique\n\nWhat would you like to focus on today?";
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

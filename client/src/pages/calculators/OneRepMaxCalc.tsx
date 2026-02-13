@@ -61,7 +61,7 @@ export function OneRepMaxCalculator() {
                 value={weight}
                 onChange={handleWeightChange}
                 className="flex-1 p-3 text-xl font-bold border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                min={0}
+                min={1}
                 step={unit === 'kg' ? 2.5 : 5}
               />
               <select

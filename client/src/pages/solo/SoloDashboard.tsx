@@ -142,17 +142,21 @@ function TodaysWorkoutCard() {
 
 // Gamification Summary Card
 function GamificationCard() {
-  // This would fetch from useGamification hook in production
+  const { data: gamification } = useQuery<any>({
+    queryKey: ['/api/gamification/profile'],
+    retry: false,
+  });
+
   const stats = {
-    level: 12,
-    xp: 2450,
-    xpToNext: 3000,
-    streak: 7,
-    rank: 'Fire',
-    rankEmoji: '🔥',
+    level: gamification?.currentLevel || 1,
+    xp: gamification?.totalXp || 0,
+    xpToNext: gamification?.xpToNextLevel ? (gamification.totalXp + gamification.xpToNextLevel) : 50,
+    streak: gamification?.currentStreakDays || 0,
+    rank: gamification?.rankGenZ || 'NPC',
+    rankEmoji: gamification?.rankGenZ === 'GOATED' ? '🐐' : gamification?.rankGenZ === 'No Cap' ? '🧢' : gamification?.rankGenZ === 'Bussin' ? '💯' : gamification?.rankGenZ === 'Fire' ? '🔥' : gamification?.rankGenZ === 'Slay' ? '💅' : gamification?.rankGenZ === 'Valid' ? '✓' : gamification?.rankGenZ === 'Mid' ? '😐' : '🤖',
   };
 
-  const xpProgress = (stats.xp / stats.xpToNext) * 100;
+  const xpProgress = stats.xpToNext > 0 ? (stats.xp / stats.xpToNext) * 100 : 0;
 
   return (
     <motion.div

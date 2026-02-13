@@ -61,30 +61,19 @@ const equipmentOptions = [
   { value: 'resistance_bands', label: 'Resistance Bands' },
 ];
 
-// Sample generated workout (simulated AI response)
-const sampleWorkout = {
-  name: 'Power Push Day',
-  duration: 45,
-  exercises: [
-    { name: 'Barbell Bench Press', sets: 4, reps: '6-8', rest: 90, muscleGroup: 'Chest' },
-    { name: 'Incline Dumbbell Press', sets: 3, reps: '8-10', rest: 75, muscleGroup: 'Upper Chest' },
-    { name: 'Overhead Press', sets: 4, reps: '6-8', rest: 90, muscleGroup: 'Shoulders' },
-    { name: 'Lateral Raises', sets: 3, reps: '12-15', rest: 60, muscleGroup: 'Side Delts' },
-    { name: 'Tricep Dips', sets: 3, reps: '8-12', rest: 60, muscleGroup: 'Triceps' },
-    { name: 'Overhead Tricep Extension', sets: 3, reps: '10-12', rest: 60, muscleGroup: 'Triceps' },
-  ],
-  warmup: ['5 min light cardio', 'Arm circles', 'Band pull-aparts'],
-  cooldown: ['Chest stretch', 'Shoulder stretch', 'Tricep stretch'],
-  tips: [
-    'Focus on controlled negatives for maximum muscle engagement',
-    'Keep your core tight during overhead movements',
-    'Progressive overload: Aim to increase weight or reps each week',
-  ],
-};
+interface GeneratedWorkout {
+  name: string;
+  duration: number;
+  exercises: { name: string; sets: number; reps: string; rest: number; muscleGroup: string }[];
+  warmup: string[];
+  cooldown: string[];
+  tips: string[];
+}
 
 export default function WorkoutGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedWorkout, setGeneratedWorkout] = useState<typeof sampleWorkout | null>(null);
+  const [generatedWorkout, setGeneratedWorkout] = useState<GeneratedWorkout | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   // Form state
   const [workoutFocus, setWorkoutFocus] = useState('push');
@@ -97,14 +86,57 @@ export default function WorkoutGenerator() {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setGenerateError(null);
 
-    // Simulate AI generation delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Map equipment UI value to API format
+      const equipmentMap: Record<string, string[]> = {
+        full_gym: ['barbell', 'dumbbells', 'machines', 'cables', 'pull-up bar'],
+        dumbbells: ['dumbbells'],
+        barbell: ['barbell'],
+        bodyweight: ['bodyweight'],
+        home_gym: ['dumbbells', 'pull-up bar', 'resistance bands'],
+        resistance_bands: ['resistance bands'],
+      };
 
-    // In a real implementation, this would call the AI API
-    // For now, we use the sample workout
-    setGeneratedWorkout(sampleWorkout);
-    setIsGenerating(false);
+      const response = await fetch('/api/ai/generate-workout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          goal: goal === 'muscle' ? 'hypertrophy' : goal,
+          experienceLevel: difficulty,
+          availableEquipment: equipmentMap[equipment] || ['barbell', 'dumbbells'],
+          duration: duration[0],
+          focusMuscles: workoutFocus === 'full_body' ? undefined : [workoutFocus],
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate workout');
+      }
+
+      const workout = data.workout;
+      setGeneratedWorkout({
+        name: workout.name || `${workoutFocusOptions.find(o => o.value === workoutFocus)?.label || 'Custom'} Workout`,
+        duration: workout.estimatedDuration || duration[0],
+        exercises: (workout.exercises || []).map((ex: any) => ({
+          name: ex.name,
+          sets: ex.sets || 3,
+          reps: ex.reps || '8-12',
+          rest: ex.restSeconds || 60,
+          muscleGroup: ex.targetMuscle || ex.muscleGroup || '',
+        })),
+        warmup: includeWarmup ? (workout.warmup || ['5 min light cardio', 'Dynamic stretching']) : [],
+        cooldown: includeCooldown ? (workout.cooldown || ['Static stretching', 'Deep breathing']) : [],
+        tips: workout.tips || workout.notes || ['Focus on proper form', 'Stay hydrated'],
+      });
+    } catch (err: any) {
+      setGenerateError(err.message || 'Failed to generate workout');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleRegenerate = () => {
@@ -290,6 +322,10 @@ export default function WorkoutGenerator() {
                   </>
                 )}
               </Button>
+
+              {generateError && (
+                <p className="text-sm text-red-400 text-center">{generateError}</p>
+              )}
             </CardContent>
           </Card>
         </motion.div>
