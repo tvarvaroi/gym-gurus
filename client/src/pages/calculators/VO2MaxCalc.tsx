@@ -206,6 +206,8 @@ export function VO2MaxCalculator() {
                 value={age}
                 onChange={(e) => setAge(Number(e.target.value))}
                 className="w-full p-3 border rounded-lg bg-background"
+                min={1}
+                max={120}
               />
             </div>
             <div>
@@ -215,6 +217,7 @@ export function VO2MaxCalculator() {
                 value={weight}
                 onChange={(e) => setWeight(Number(e.target.value))}
                 className="w-full p-3 border rounded-lg bg-background"
+                min={1}
               />
             </div>
           </div>
@@ -262,6 +265,7 @@ export function VO2MaxCalculator() {
               onChange={(e) => setCooperDistance(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
               step={10}
+              min={1}
             />
             <p className="text-xs text-muted-foreground mt-2">
               Run/jog as far as you can in 12 minutes on a flat track
@@ -281,6 +285,7 @@ export function VO2MaxCalculator() {
                 onChange={(e) => setRockportTime(Number(e.target.value))}
                 className="w-full p-3 border rounded-lg bg-background"
                 step={0.5}
+                min={1}
               />
             </div>
             <div>
@@ -292,6 +297,8 @@ export function VO2MaxCalculator() {
                 value={rockportHR}
                 onChange={(e) => setRockportHR(Number(e.target.value))}
                 className="w-full p-3 border rounded-lg bg-background"
+                min={30}
+                max={220}
               />
             </div>
             <p className="text-xs text-muted-foreground">
@@ -343,6 +350,7 @@ export function VO2MaxCalculator() {
               onChange={(e) => setManualVO2(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
               step={0.1}
+              min={1}
             />
             <p className="text-xs text-muted-foreground mt-2">
               Enter your VO2 max if you've had a lab test

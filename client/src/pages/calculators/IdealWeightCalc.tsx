@@ -230,6 +230,7 @@ export function IdealWeightCalculator() {
               onChange={(e) => setCurrentWeight(e.target.value ? Number(e.target.value) : undefined)}
               className="flex-1 p-3 border rounded-lg bg-background"
               placeholder="Enter current weight"
+              min={1}
             />
             <select
               value={weightUnit}

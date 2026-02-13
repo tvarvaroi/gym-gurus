@@ -160,6 +160,7 @@ export function BodyFatCalculator() {
               value={height}
               onChange={(e) => setHeight(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
+              min={1}
             />
           </div>
           <div>
@@ -171,6 +172,7 @@ export function BodyFatCalculator() {
               value={weight}
               onChange={(e) => setWeight(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
+              min={1}
             />
           </div>
           <div>
@@ -183,6 +185,7 @@ export function BodyFatCalculator() {
               onChange={(e) => setNeck(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
               step={0.5}
+              min={1}
             />
             <p className="text-xs text-muted-foreground mt-1">Measure at narrowest point</p>
           </div>
@@ -196,6 +199,7 @@ export function BodyFatCalculator() {
               onChange={(e) => setWaist(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
               step={0.5}
+              min={1}
             />
             <p className="text-xs text-muted-foreground mt-1">Measure at navel level</p>
           </div>
@@ -210,6 +214,7 @@ export function BodyFatCalculator() {
                 onChange={(e) => setHips(Number(e.target.value))}
                 className="w-full p-3 border rounded-lg bg-background"
                 step={0.5}
+                min={1}
               />
               <p className="text-xs text-muted-foreground mt-1">Measure at widest point</p>
             </div>

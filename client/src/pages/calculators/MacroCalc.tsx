@@ -176,6 +176,7 @@ export function MacroCalculator() {
               value={weight}
               onChange={(e) => setWeight(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
+              min={1}
             />
           </div>
           <div>
@@ -187,6 +188,7 @@ export function MacroCalculator() {
               value={height}
               onChange={(e) => setHeight(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
+              min={1}
             />
           </div>
         </div>

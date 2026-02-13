@@ -183,6 +183,8 @@ export function HeartRateZonesCalculator() {
               value={age}
               onChange={(e) => setAge(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
+              min={1}
+              max={120}
             />
           </div>
         )}
@@ -197,6 +199,8 @@ export function HeartRateZonesCalculator() {
               value={restingHR}
               onChange={(e) => setRestingHR(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
+              min={30}
+              max={200}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Measure first thing in the morning before getting out of bed
@@ -214,6 +218,8 @@ export function HeartRateZonesCalculator() {
               value={manualMaxHR}
               onChange={(e) => setManualMaxHR(Number(e.target.value))}
               className="w-full p-3 border rounded-lg bg-background"
+              min={100}
+              max={220}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Best determined through a maximal exercise test

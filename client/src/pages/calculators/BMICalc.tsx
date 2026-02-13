@@ -126,6 +126,7 @@ export function BMICalculator() {
               value={weight}
               onChange={(e) => setWeight(Number(e.target.value))}
               className="w-20 p-2 text-center border rounded-lg bg-background font-bold"
+              min={unit === 'metric' ? 30 : 66}
             />
           </div>
         </div>
@@ -150,6 +151,7 @@ export function BMICalculator() {
               value={height}
               onChange={(e) => setHeight(Number(e.target.value))}
               className="w-20 p-2 text-center border rounded-lg bg-background font-bold"
+              min={unit === 'metric' ? 100 : 40}
             />
           </div>
         </div>

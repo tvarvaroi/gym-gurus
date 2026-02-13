@@ -1,28 +1,37 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Trophy,
-  Medal,
   Star,
   Flame,
   Zap,
-  Target,
   Dumbbell,
   TrendingUp,
-  Calendar,
   Lock,
   Crown,
-  Award,
   Sparkles,
   CheckCircle2,
-  Clock,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
+
+interface Achievement {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  xpReward: number | null;
+  rarity: string | null;
+  requirementType: string | null;
+  requirementValue: string | null;
+  earned: boolean;
+  earnedAt: string | null;
+  progress: number;
+}
 
 // Achievement categories
 const categories = [
@@ -33,178 +42,25 @@ const categories = [
   { id: 'social', label: 'Social', icon: Users },
 ];
 
-// Achievement data (simulated)
-const achievements = [
-  // Workout achievements
-  {
-    id: 'first_workout',
-    title: 'First Steps',
-    description: 'Complete your first workout',
-    category: 'workout',
-    xp: 100,
-    icon: Dumbbell,
-    unlocked: true,
-    unlockedAt: '2024-01-15',
-    rarity: 'common',
-  },
-  {
-    id: 'workout_10',
-    title: 'Getting Started',
-    description: 'Complete 10 workouts',
-    category: 'workout',
-    xp: 250,
-    icon: Dumbbell,
-    unlocked: true,
-    unlockedAt: '2024-01-28',
-    rarity: 'common',
-  },
-  {
-    id: 'workout_50',
-    title: 'Dedicated',
-    description: 'Complete 50 workouts',
-    category: 'workout',
-    xp: 500,
-    icon: Dumbbell,
-    unlocked: true,
-    unlockedAt: '2024-03-10',
-    rarity: 'uncommon',
-  },
-  {
-    id: 'workout_100',
-    title: 'Century Club',
-    description: 'Complete 100 workouts',
-    category: 'workout',
-    xp: 1000,
-    icon: Trophy,
-    unlocked: false,
-    progress: 78,
-    rarity: 'rare',
-  },
-  {
-    id: 'workout_500',
-    title: 'Iron Will',
-    description: 'Complete 500 workouts',
-    category: 'workout',
-    xp: 5000,
-    icon: Crown,
-    unlocked: false,
-    progress: 15,
-    rarity: 'legendary',
-  },
-  // Strength achievements
-  {
-    id: 'first_pr',
-    title: 'Personal Best',
-    description: 'Set your first personal record',
-    category: 'strength',
-    xp: 150,
-    icon: TrendingUp,
-    unlocked: true,
-    unlockedAt: '2024-01-20',
-    rarity: 'common',
-  },
-  {
-    id: 'pr_10',
-    title: 'Record Breaker',
-    description: 'Set 10 personal records',
-    category: 'strength',
-    xp: 500,
-    icon: Medal,
-    unlocked: true,
-    unlockedAt: '2024-02-15',
-    rarity: 'uncommon',
-  },
-  {
-    id: 'bodyweight_bench',
-    title: 'Bodyweight Bench',
-    description: 'Bench press your bodyweight',
-    category: 'strength',
-    xp: 750,
-    icon: Award,
-    unlocked: false,
-    progress: 85,
-    rarity: 'rare',
-  },
-  {
-    id: 'double_bodyweight_squat',
-    title: 'Leg Day Legend',
-    description: 'Squat double your bodyweight',
-    category: 'strength',
-    xp: 1500,
-    icon: Crown,
-    unlocked: false,
-    progress: 62,
-    rarity: 'epic',
-  },
-  // Consistency achievements
-  {
-    id: 'streak_7',
-    title: 'Week Warrior',
-    description: 'Maintain a 7-day workout streak',
-    category: 'consistency',
-    xp: 200,
-    icon: Flame,
-    unlocked: true,
-    unlockedAt: '2024-01-22',
-    rarity: 'common',
-  },
-  {
-    id: 'streak_30',
-    title: 'Monthly Master',
-    description: 'Maintain a 30-day workout streak',
-    category: 'consistency',
-    xp: 1000,
-    icon: Flame,
-    unlocked: true,
-    unlockedAt: '2024-02-22',
-    rarity: 'rare',
-  },
-  {
-    id: 'streak_100',
-    title: 'Unstoppable',
-    description: 'Maintain a 100-day workout streak',
-    category: 'consistency',
-    xp: 3000,
-    icon: Sparkles,
-    unlocked: false,
-    progress: 45,
-    rarity: 'epic',
-  },
-  {
-    id: 'streak_365',
-    title: 'Year of Iron',
-    description: 'Maintain a 365-day workout streak',
-    category: 'consistency',
-    xp: 10000,
-    icon: Crown,
-    unlocked: false,
-    progress: 12,
-    rarity: 'legendary',
-  },
-  // Social achievements
-  {
-    id: 'share_first',
-    title: 'Show Off',
-    description: 'Share your first workout',
-    category: 'social',
-    xp: 50,
-    icon: Users,
-    unlocked: true,
-    unlockedAt: '2024-01-18',
-    rarity: 'common',
-  },
-  {
-    id: 'leaderboard_top10',
-    title: 'Top 10',
-    description: 'Reach top 10 on any leaderboard',
-    category: 'social',
-    xp: 500,
-    icon: Trophy,
-    unlocked: false,
-    progress: 0,
-    rarity: 'rare',
-  },
-];
+function getCategoryFromType(type: string | null): string {
+  if (!type) return 'workout';
+  if (type.includes('streak')) return 'consistency';
+  if (type.includes('strength') || type.includes('1rm') || type.includes('pr')) return 'strength';
+  if (type.includes('social') || type.includes('share') || type.includes('leaderboard')) return 'social';
+  return 'workout';
+}
+
+function getAchievementIcon(category: string, rarity: string | null) {
+  if (rarity === 'legendary') return Crown;
+  if (rarity === 'epic') return Sparkles;
+  switch (category) {
+    case 'workout': return Dumbbell;
+    case 'strength': return TrendingUp;
+    case 'consistency': return Flame;
+    case 'social': return Users;
+    default: return Trophy;
+  }
+}
 
 // Rarity colors
 const rarityColors: Record<string, { bg: string; border: string; text: string; glow: string }> = {
@@ -219,12 +75,33 @@ export default function Achievements() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
 
-  const filteredAchievements = selectedCategory === 'all'
-    ? achievements
-    : achievements.filter(a => a.category === selectedCategory);
+  const { data: achievements = [], isLoading } = useQuery<Achievement[]>({
+    queryKey: ['/api/gamification/achievements'],
+  });
 
-  const unlockedCount = achievements.filter(a => a.unlocked).length;
-  const totalXP = achievements.filter(a => a.unlocked).reduce((sum, a) => sum + a.xp, 0);
+  // Map achievements with computed categories
+  const mappedAchievements = achievements.map(a => ({
+    ...a,
+    category: a.category || getCategoryFromType(a.requirementType),
+  }));
+
+  const filteredAchievements = selectedCategory === 'all'
+    ? mappedAchievements
+    : mappedAchievements.filter(a => a.category === selectedCategory);
+
+  const earnedCount = mappedAchievements.filter(a => a.earned).length;
+  const totalXP = mappedAchievements.filter(a => a.earned).reduce((sum, a) => sum + (a.xpReward || 0), 0);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-amber-400 mx-auto" />
+          <p className="text-muted-foreground font-light">Loading achievements...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -247,7 +124,7 @@ export default function Achievements() {
         {/* Stats */}
         <div className="flex gap-4">
           <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
-            <p className="text-2xl font-light text-amber-400">{unlockedCount}/{achievements.length}</p>
+            <p className="text-2xl font-light text-amber-400">{earnedCount}/{mappedAchievements.length}</p>
             <p className="text-xs text-muted-foreground">Unlocked</p>
           </div>
           <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
@@ -291,7 +168,9 @@ export default function Achievements() {
       >
         <AnimatePresence mode="popLayout">
           {filteredAchievements.map((achievement, index) => {
-            const rarity = rarityColors[achievement.rarity];
+            const rarityKey = achievement.rarity || 'common';
+            const rarity = rarityColors[rarityKey] || rarityColors.common;
+            const AchIcon = getAchievementIcon(achievement.category, achievement.rarity);
             return (
               <motion.div
                 key={achievement.id}
@@ -303,7 +182,7 @@ export default function Achievements() {
               >
                 <Card
                   className={`relative overflow-hidden cursor-pointer transition-all duration-300 ${
-                    achievement.unlocked
+                    achievement.earned
                       ? `${rarity.bg} ${rarity.border} hover:shadow-lg ${rarity.glow}`
                       : 'bg-card/30 border-border/30 opacity-60 hover:opacity-80'
                   }`}
@@ -312,9 +191,9 @@ export default function Achievements() {
                   )}
                 >
                   {/* Rarity indicator */}
-                  {achievement.unlocked && (
+                  {achievement.earned && (
                     <div className={`absolute top-0 right-0 px-2 py-1 text-xs font-medium capitalize ${rarity.bg} ${rarity.text} rounded-bl-lg`}>
-                      {achievement.rarity}
+                      {rarityKey}
                     </div>
                   )}
 
@@ -322,14 +201,14 @@ export default function Achievements() {
                     <div className="flex items-start gap-4">
                       {/* Icon */}
                       <div className={`relative p-3 rounded-xl ${
-                        achievement.unlocked ? rarity.bg : 'bg-muted/30'
+                        achievement.earned ? rarity.bg : 'bg-muted/30'
                       }`}>
-                        {achievement.unlocked ? (
-                          <achievement.icon className={`h-6 w-6 ${rarity.text}`} />
+                        {achievement.earned ? (
+                          <AchIcon className={`h-6 w-6 ${rarity.text}`} />
                         ) : (
                           <Lock className="h-6 w-6 text-muted-foreground" />
                         )}
-                        {achievement.unlocked && (
+                        {achievement.earned && (
                           <motion.div
                             className="absolute inset-0 rounded-xl"
                             initial={{ opacity: 0 }}
@@ -337,10 +216,10 @@ export default function Achievements() {
                             transition={{ duration: 2, repeat: Infinity }}
                             style={{
                               background: `radial-gradient(circle, ${
-                                achievement.rarity === 'legendary' ? 'rgba(251, 191, 36, 0.3)' :
-                                achievement.rarity === 'epic' ? 'rgba(168, 85, 247, 0.3)' :
-                                achievement.rarity === 'rare' ? 'rgba(59, 130, 246, 0.3)' :
-                                achievement.rarity === 'uncommon' ? 'rgba(34, 197, 94, 0.3)' :
+                                rarityKey === 'legendary' ? 'rgba(251, 191, 36, 0.3)' :
+                                rarityKey === 'epic' ? 'rgba(168, 85, 247, 0.3)' :
+                                rarityKey === 'rare' ? 'rgba(59, 130, 246, 0.3)' :
+                                rarityKey === 'uncommon' ? 'rgba(34, 197, 94, 0.3)' :
                                 'rgba(148, 163, 184, 0.3)'
                               }, transparent 70%)`
                             }}
@@ -351,20 +230,20 @@ export default function Achievements() {
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <h3 className={`font-medium truncate ${
-                          achievement.unlocked ? 'text-foreground' : 'text-muted-foreground'
+                          achievement.earned ? 'text-foreground' : 'text-muted-foreground'
                         }`}>
-                          {achievement.title}
+                          {achievement.name}
                         </h3>
                         <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
                           {achievement.description}
                         </p>
 
                         {/* Progress or Date */}
-                        {achievement.unlocked ? (
+                        {achievement.earned ? (
                           <div className="flex items-center gap-2 mt-2 text-xs">
                             <CheckCircle2 className={`h-3 w-3 ${rarity.text}`} />
                             <span className="text-muted-foreground">
-                              Unlocked {new Date(achievement.unlockedAt!).toLocaleDateString()}
+                              Unlocked {achievement.earnedAt ? new Date(achievement.earnedAt).toLocaleDateString() : ''}
                             </span>
                           </div>
                         ) : (
@@ -379,11 +258,11 @@ export default function Achievements() {
 
                         {/* XP Reward */}
                         <div className="flex items-center gap-1 mt-2">
-                          <Zap className={`h-3 w-3 ${achievement.unlocked ? 'text-amber-400' : 'text-muted-foreground'}`} />
+                          <Zap className={`h-3 w-3 ${achievement.earned ? 'text-amber-400' : 'text-muted-foreground'}`} />
                           <span className={`text-xs font-medium ${
-                            achievement.unlocked ? 'text-amber-400' : 'text-muted-foreground'
+                            achievement.earned ? 'text-amber-400' : 'text-muted-foreground'
                           }`}>
-                            {achievement.xp.toLocaleString()} XP
+                            {(achievement.xpReward || 0).toLocaleString()} XP
                           </span>
                         </div>
                       </div>
@@ -407,10 +286,10 @@ export default function Achievements() {
                               </p>
                               <p>
                                 <strong>Rarity:</strong> <span className={`capitalize ${rarity.text}`}>
-                                  {achievement.rarity}
+                                  {rarityKey}
                                 </span>
                               </p>
-                              {!achievement.unlocked && (
+                              {!achievement.earned && (
                                 <p className="text-amber-400">
                                   Keep going! You're {achievement.progress}% there.
                                 </p>
