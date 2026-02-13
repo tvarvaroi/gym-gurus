@@ -273,24 +273,20 @@ const ResourcesPage = memo(() => {
                     </ul>
 
                     {/* CTA Button */}
-                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-                      <button
-                        onClick={() => alert('Coming soon! Stay tuned for updates.')}
-                        className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-light transition-all text-sm cursor-pointer"
-                        style={{
-                          fontFamily: "'Playfair Display', serif",
-                          background: 'transparent',
-                          border: resource.variant === 'gold'
-                            ? '1px solid rgba(201, 168, 85, 0.3)'
-                            : '1px solid rgba(13, 148, 136, 0.3)',
-                          color: '#ffffff',
-                          letterSpacing: '0.05em',
-                        }}
-                      >
-                        {resource.cta}
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </motion.div>
+                    <div
+                      className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-light text-sm opacity-60 cursor-default"
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        background: 'transparent',
+                        border: resource.variant === 'gold'
+                          ? '1px solid rgba(201, 168, 85, 0.2)'
+                          : '1px solid rgba(13, 148, 136, 0.2)',
+                        color: '#ffffff',
+                        letterSpacing: '0.05em',
+                      }}
+                    >
+                      Coming Soon
+                    </div>
                   </div>
                 </div>
               </motion.div>

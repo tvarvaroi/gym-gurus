@@ -477,7 +477,7 @@ const ExercisesPage = memo(() => {
           {filteredExercises.map((exercise, index) => (
             <StaggerItem key={exercise.id} index={index}>
               <Card className="hover-elevate h-full overflow-hidden" data-testid={`card-exercise-${exercise.id}`}>
-                {exercise.imageUrl && (
+                {exercise.imageUrl ? (
                   <div className="relative h-48 bg-muted">
                     <LazyImage
                       src={exercise.imageUrl}
@@ -485,6 +485,10 @@ const ExercisesPage = memo(() => {
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />
+                  </div>
+                ) : (
+                  <div className="relative h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                    <Dumbbell className="h-12 w-12 text-primary/30" />
                   </div>
                 )}
                 <CardHeader>

@@ -211,32 +211,32 @@ export function WaterIntakeCalculator() {
 
       {/* Results */}
       <motion.div
-        className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl p-6 text-white mb-6"
+        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         key={results.totalMl}
       >
         <div className="text-center mb-6">
-          <p className="text-sm opacity-80 mb-1">Daily Water Intake</p>
-          <p className="text-5xl font-bold mb-2">{results.totalLiters}L</p>
-          <p className="text-lg opacity-90">{results.totalMl} ml / {results.totalOunces} oz</p>
+          <p className="text-sm text-muted-foreground mb-1">Daily Water Intake</p>
+          <p className="text-5xl font-bold text-primary mb-2">{results.totalLiters}L</p>
+          <p className="text-lg text-muted-foreground">{results.totalMl} ml / {results.totalOunces} oz</p>
         </div>
 
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="p-3 bg-white/10 rounded-lg">
-            <Droplets className="w-6 h-6 mx-auto mb-1 opacity-80" />
+          <div className="p-3 bg-background/50 rounded-lg">
+            <Droplets className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
             <p className="text-2xl font-bold">{results.glasses}</p>
-            <p className="text-xs opacity-80">glasses (250ml)</p>
+            <p className="text-xs text-muted-foreground">glasses (250ml)</p>
           </div>
-          <div className="p-3 bg-white/10 rounded-lg">
-            <Sun className="w-6 h-6 mx-auto mb-1 opacity-80" />
+          <div className="p-3 bg-background/50 rounded-lg">
+            <Sun className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
             <p className="text-2xl font-bold">{hourlyIntake}</p>
-            <p className="text-xs opacity-80">ml per hour</p>
+            <p className="text-xs text-muted-foreground">ml per hour</p>
           </div>
-          <div className="p-3 bg-white/10 rounded-lg">
-            <Activity className="w-6 h-6 mx-auto mb-1 opacity-80" />
+          <div className="p-3 bg-background/50 rounded-lg">
+            <Activity className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
             <p className="text-2xl font-bold">{results.totalCups}</p>
-            <p className="text-xs opacity-80">cups (8oz)</p>
+            <p className="text-xs text-muted-foreground">cups (8oz)</p>
           </div>
         </div>
       </motion.div>

@@ -229,22 +229,22 @@ export function CaloriesBurnedCalculator() {
 
       {/* Results */}
       <motion.div
-        className="bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-6 text-white mb-6"
+        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         key={`${caloriesBurned}-${selectedExercise.name}`}
       >
         <div className="text-center">
-          <p className="text-sm opacity-80 mb-1">Estimated Calories Burned</p>
-          <p className="text-5xl font-bold mb-2">{caloriesBurned}</p>
-          <p className="text-lg opacity-90">calories</p>
+          <p className="text-sm text-muted-foreground mb-1">Estimated Calories Burned</p>
+          <p className="text-5xl font-bold text-primary mb-2">{caloriesBurned}</p>
+          <p className="text-lg text-muted-foreground">calories</p>
           <div className="mt-4 flex justify-center gap-6 text-sm">
             <div>
-              <p className="opacity-70">Per Minute</p>
+              <p className="text-muted-foreground">Per Minute</p>
               <p className="font-bold">{caloriesPerMinute.toFixed(1)} cal</p>
             </div>
             <div>
-              <p className="opacity-70">MET Value</p>
+              <p className="text-muted-foreground">MET Value</p>
               <p className="font-bold">{selectedExercise.met}</p>
             </div>
           </div>

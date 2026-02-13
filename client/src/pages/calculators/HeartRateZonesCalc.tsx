@@ -254,22 +254,22 @@ export function HeartRateZonesCalculator() {
 
       {/* Max HR Display */}
       <motion.div
-        className="bg-gradient-to-r from-red-500 to-pink-500 rounded-xl p-6 mb-6 text-white"
+        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         key={maxHR}
       >
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-white/80 text-sm">Estimated Maximum Heart Rate</p>
-            <p className="text-5xl font-bold">{maxHR} <span className="text-2xl font-normal">bpm</span></p>
+            <p className="text-muted-foreground text-sm">Estimated Maximum Heart Rate</p>
+            <p className="text-5xl font-bold text-primary">{maxHR} <span className="text-2xl font-normal">bpm</span></p>
           </div>
-          <Heart className="w-16 h-16 text-white/30" />
+          <Heart className="w-16 h-16 text-primary/20" />
         </div>
         {method === 'karvonen' && (
-          <div className="mt-4 pt-4 border-t border-white/20">
+          <div className="mt-4 pt-4 border-t border-border/50">
             <div className="flex justify-between text-sm">
-              <span className="text-white/80">Heart Rate Reserve</span>
+              <span className="text-muted-foreground">Heart Rate Reserve</span>
               <span className="font-bold">{maxHR - restingHR} bpm</span>
             </div>
           </div>

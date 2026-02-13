@@ -248,22 +248,22 @@ export function IdealWeightCalculator() {
         <>
           {/* Average Result */}
           <motion.div
-            className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white mb-6"
+            className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             key={`${heightCm}-${gender}`}
           >
             <div className="text-center">
-              <p className="text-sm opacity-80 mb-1">Average Ideal Weight</p>
-              <p className="text-4xl font-bold mb-1">{displayWeight(results.averageIdeal.kg)}</p>
-              <p className="text-sm opacity-80">
+              <p className="text-sm text-muted-foreground mb-1">Average Ideal Weight</p>
+              <p className="text-4xl font-bold text-primary mb-1">{displayWeight(results.averageIdeal.kg)}</p>
+              <p className="text-sm text-muted-foreground">
                 Healthy BMI Range: {displayWeight(results.bmiRange.minKg)} - {displayWeight(results.bmiRange.maxKg)}
               </p>
             </div>
 
             {/* Difference from current */}
             {difference && (
-              <div className={`mt-4 p-3 rounded-lg ${Math.abs(difference.percentage) < 5 ? 'bg-green-500/30' : 'bg-white/20'}`}>
+              <div className={`mt-4 p-3 rounded-lg ${Math.abs(difference.percentage) < 5 ? 'bg-green-500/20' : 'bg-background/50'}`}>
                 <div className="flex items-center justify-center gap-2">
                   <TrendingUp className={`w-5 h-5 ${difference.kg > 0 ? '' : 'rotate-180'}`} />
                   <span className="font-medium">
