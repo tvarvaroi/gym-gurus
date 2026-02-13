@@ -48,6 +48,9 @@ import recoveryRoutes from "./routes/recovery";
 import aiRoutes from "./routes/ai";
 import shoppingRoutes from "./routes/shopping";
 import leaderboardRoutes from "./routes/leaderboards";
+import notificationRoutes from "./routes/notifications";
+import intakeRoutes from "./routes/intake";
+import paymentRoutes from "./routes/payments";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup secure Replit Auth
@@ -64,6 +67,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/ai', secureAuth, aiRoutes);
   app.use('/api/shopping', secureAuth, shoppingRoutes);
   app.use('/api/leaderboards', secureAuth, leaderboardRoutes);
+  app.use('/api/notifications', secureAuth, notificationRoutes);
+  app.use('/api/intake', secureAuth, intakeRoutes);
+  app.use('/api/payments', secureAuth, paymentRoutes);
 
   // Auth routes
   // Note: No rate limiting on auth check as it's frequently called to verify session
@@ -859,6 +865,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateUserOnboardingProgress(client.trainerId, {
             assignedFirstWorkout: true,
           });
+
+          // Send notification to client (if they have a user account)
+          try {
+            const { notifyWorkoutAssigned } = await import('./services/notificationService');
+            const workout = await storage.getWorkout(validatedData.workoutId);
+            const user = (req as any).user;
+            const trainerName = user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Your trainer';
+            if (client.email) {
+              // Find client's user account by email to send notification
+              const database = await getDb();
+              const { users: usersTable } = await import('@shared/schema');
+              const clientUser = await database.select().from(usersTable).where(eq(usersTable.email, client.email)).limit(1);
+              if (clientUser.length > 0) {
+                await notifyWorkoutAssigned(clientUser[0].id, trainerName, workout?.title || 'New Workout', assignment.id);
+              }
+            }
+          } catch (notifError) {
+            // Non-critical: don't fail assignment if notification fails
+          }
         }
       } catch (onboardingError) {
         // Don't fail assignment if onboarding update fails
@@ -1053,8 +1078,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           leveledUp: xpResult.leveledUp,
           streak: streakResult,
         };
+
+        // Send level-up notification if applicable
+        if (xpResult.leveledUp) {
+          const { notifyLevelUp } = await import('./services/notificationService');
+          const { getGenZRank } = await import('./services/gamification/xpService');
+          await notifyLevelUp(userId, xpResult.newLevel, getGenZRank(xpResult.newLevel));
+        }
+
+        // Send streak milestone notification if applicable
+        if (streakResult.milestone) {
+          const { notifyStreakMilestone } = await import('./services/notificationService');
+          await notifyStreakMilestone(userId, streakResult.milestone, streakResult.streakXpAwarded);
+        }
       } catch (gamificationError) {
         console.warn('Gamification update failed (non-critical):', gamificationError);
+      }
+
+      // Notify trainer that client completed workout
+      try {
+        const { notifyWorkoutCompleted } = await import('./services/notificationService');
+        const workout = await storage.getWorkout(assignment.workoutId);
+        await notifyWorkoutCompleted(client!.trainerId, client!.name, workout?.title || 'Workout', id);
+      } catch (notifError) {
+        // Non-critical
       }
 
       res.json({ ...completedAssignment, gamification: gamificationResult });
@@ -1210,32 +1257,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Analytics Routes
   
-  // GET /api/analytics - Get analytics data
-  app.get("/api/analytics", async (req: Request, res: Response) => {
+  // GET /api/analytics - Get analytics data (real data)
+  app.get("/api/analytics", secureAuth, async (req: Request, res: Response) => {
     try {
-      // In production, this would fetch real analytics from database
-      // For now, return mock analytics data
-      const trainerId = req.query.trainerId as string;
-      const analytics = getMockAnalytics(trainerId);
+      const trainerId = req.query.trainerId as string || (req as any).user?.id;
+      if (!trainerId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      const analytics = await storage.getTrainerAnalytics(trainerId);
       res.json(analytics);
     } catch (error) {
-      // Return mock data even on error
-      console.warn("Returning mock analytics:", error);
+      console.error("Error fetching analytics:", error);
       const analytics = getMockAnalytics();
       res.json(analytics);
     }
   });
 
   // GET /api/analytics/:trainerId - Get analytics for specific trainer
-  app.get("/api/analytics/:trainerId", async (req: Request, res: Response) => {
+  app.get("/api/analytics/:trainerId", secureAuth, async (req: Request, res: Response) => {
     try {
       const { trainerId } = req.params;
-      // In production, this would fetch real analytics from database
-      const analytics = getMockAnalytics(trainerId);
+      const analytics = await storage.getTrainerAnalytics(trainerId);
       res.json(analytics);
     } catch (error) {
-      // Return mock data even on error
-      console.warn("Returning mock analytics for trainer:", error);
+      console.error("Error fetching trainer analytics:", error);
       const analytics = getMockAnalytics(req.params.trainerId);
       res.json(analytics);
     }

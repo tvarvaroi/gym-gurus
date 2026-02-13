@@ -1007,6 +1007,100 @@ export const aiGeneratedWorkouts = pgTable("ai_generated_workouts", {
   index("idx_ai_workouts_created_at").on(table.createdAt),
 ]);
 
+// In-App Notifications
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // 'workout_assigned', 'workout_completed', 'session_reminder', 'achievement_unlocked', 'streak_milestone', 'level_up', 'payment_received', 'client_joined', 'message'
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  data: jsonb("data").$type<Record<string, any>>(), // Additional context (clientId, workoutId, etc.)
+  read: boolean("read").default(false).notNull(),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_notifications_user_id").on(table.userId),
+  index("idx_notifications_read").on(table.read),
+  index("idx_notifications_created_at").on(table.createdAt),
+]);
+
+// Payment Plans / Packages
+export const paymentPlans = pgTable("payment_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  priceInCents: integer("price_in_cents").notNull(),
+  currency: text("currency").notNull().default("usd"),
+  billingInterval: text("billing_interval").notNull().default("monthly"), // 'monthly', 'weekly', 'one_time'
+  sessionCount: integer("session_count"), // null = unlimited
+  isActive: boolean("is_active").default(true).notNull(),
+  stripePriceId: text("stripe_price_id"), // Stripe Price ID once created
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_payment_plans_trainer_id").on(table.trainerId),
+]);
+
+// Payment Transactions
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  planId: varchar("plan_id").references(() => paymentPlans.id),
+  amountInCents: integer("amount_in_cents").notNull(),
+  currency: text("currency").notNull().default("usd"),
+  status: text("status").notNull().default("pending"), // 'pending', 'completed', 'failed', 'refunded'
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  stripeInvoiceId: text("stripe_invoice_id"),
+  description: text("description"),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_payments_trainer_id").on(table.trainerId),
+  index("idx_payments_client_id").on(table.clientId),
+  index("idx_payments_status").on(table.status),
+]);
+
+// Client Intake / PAR-Q Health Screening
+export const clientIntake = pgTable("client_intake", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  trainerId: varchar("trainer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  // PAR-Q Questions (Physical Activity Readiness Questionnaire)
+  parqHeartCondition: boolean("parq_heart_condition"),
+  parqChestPainActivity: boolean("parq_chest_pain_activity"),
+  parqChestPainRest: boolean("parq_chest_pain_rest"),
+  parqDizziness: boolean("parq_dizziness"),
+  parqBoneJoint: boolean("parq_bone_joint"),
+  parqBloodPressureMeds: boolean("parq_blood_pressure_meds"),
+  parqOtherReason: boolean("parq_other_reason"),
+  parqOtherDetails: text("parq_other_details"),
+  // Fitness Background
+  fitnessExperience: text("fitness_experience"), // 'none', 'beginner', '1-2years', '3-5years', '5plus'
+  currentActivityLevel: text("current_activity_level"),
+  previousInjuries: text("previous_injuries"),
+  medicalConditions: text("medical_conditions"),
+  medications: text("medications"),
+  // Goals & Preferences
+  primaryGoal: text("primary_goal"),
+  secondaryGoals: jsonb("secondary_goals").$type<string[]>(),
+  preferredTrainingDays: jsonb("preferred_training_days").$type<string[]>(),
+  preferredSessionDuration: integer("preferred_session_duration"), // minutes
+  dietaryRestrictions: text("dietary_restrictions"),
+  // Emergency Contact
+  emergencyContactName: text("emergency_contact_name"),
+  emergencyContactPhone: text("emergency_contact_phone"),
+  emergencyContactRelation: text("emergency_contact_relation"),
+  // Consent
+  consentSigned: boolean("consent_signed").default(false),
+  consentSignedAt: timestamp("consent_signed_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_client_intake_client_id").on(table.clientId),
+  index("idx_client_intake_trainer_id").on(table.trainerId),
+]);
+
 // -------------------- NEW RELATIONS --------------------
 
 export const userFitnessProfileRelations = relations(userFitnessProfile, ({ one }) => ({
@@ -1128,6 +1222,26 @@ export const workoutSetLogsRelations = relations(workoutSetLogs, ({ one }) => ({
 
 export const aiGeneratedWorkoutsRelations = relations(aiGeneratedWorkouts, ({ one }) => ({
   user: one(users, { fields: [aiGeneratedWorkouts.userId], references: [users.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));
+
+export const paymentPlansRelations = relations(paymentPlans, ({ one, many }) => ({
+  trainer: one(users, { fields: [paymentPlans.trainerId], references: [users.id] }),
+  payments: many(payments),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  trainer: one(users, { fields: [payments.trainerId], references: [users.id] }),
+  client: one(clients, { fields: [payments.clientId], references: [clients.id] }),
+  plan: one(paymentPlans, { fields: [payments.planId], references: [paymentPlans.id] }),
+}));
+
+export const clientIntakeRelations = relations(clientIntake, ({ one }) => ({
+  client: one(clients, { fields: [clientIntake.clientId], references: [clients.id] }),
+  trainer: one(users, { fields: [clientIntake.trainerId], references: [users.id] }),
 }));
 
 // -------------------- INSERT SCHEMAS FOR NEW TABLES --------------------
@@ -1338,3 +1452,35 @@ export type WorkoutSetLog = typeof workoutSetLogs.$inferSelect;
 
 export type InsertAiGeneratedWorkout = z.infer<typeof insertAiGeneratedWorkoutSchema>;
 export type AiGeneratedWorkout = typeof aiGeneratedWorkouts.$inferSelect;
+
+// Notification schemas and types
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
+
+// Payment Plan schemas and types
+export const insertPaymentPlanSchema = createInsertSchema(paymentPlans).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertPaymentPlan = z.infer<typeof insertPaymentPlanSchema>;
+export type PaymentPlan = typeof paymentPlans.$inferSelect;
+
+// Payment schemas and types
+export const insertPaymentSchema = createInsertSchema(payments).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;
+
+// Client Intake schemas and types
+export const insertClientIntakeSchema = createInsertSchema(clientIntake).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertClientIntake = z.infer<typeof insertClientIntakeSchema>;
+export type ClientIntake = typeof clientIntake.$inferSelect;

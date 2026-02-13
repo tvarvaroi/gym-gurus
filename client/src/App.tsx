@@ -26,6 +26,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { NewClientButton } from "@/components/ClientFormModal";
 import { LoginPage } from "@/components/LoginPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import NotificationCenter from "@/components/NotificationCenter";
 
 // Lazy load only secondary pages for code splitting
 const LandingPage = lazy(() => import("@/pages/LandingPage"));
@@ -34,6 +35,7 @@ const WorkoutBuilder = lazy(() => import("@/pages/WorkoutBuilder"));
 const WorkoutExecution = lazy(() => import("@/pages/WorkoutExecution"));
 const ExercisesPageComponent = lazy(() => import("@/pages/ExercisesPage"));
 const SchedulePageComponent = lazy(() => import("@/pages/SchedulePage"));
+const PaymentsPageComponent = lazy(() => import("@/pages/PaymentsPage"));
 
 // Calculator pages
 const CalculatorsHub = lazy(() => import("@/pages/calculators/CalculatorsHub"));
@@ -415,6 +417,18 @@ const SchedulePage = memo(() => {
   );
 });
 
+const PaymentsPage = memo(() => {
+  return (
+    <ProtectedRoute requiredRole="trainer">
+      <Suspense fallback={<LoadingFallback />}>
+        <PageTransition>
+          <PaymentsPageComponent />
+        </PageTransition>
+      </Suspense>
+    </ProtectedRoute>
+  );
+});
+
 const ProgressPageComponent = lazy(() => import("@/pages/ProgressPage"));
 
 const ProgressPage = memo(() => {
@@ -472,6 +486,7 @@ function Router() {
             <Route path="/exercises" component={ExercisesPage} />
             <Route path="/progress" component={ProgressPage} />
             <Route path="/schedule" component={SchedulePage} />
+            <Route path="/payments" component={PaymentsPage} />
 
             {/* Calculator routes */}
             <Route path="/calculators">
@@ -765,11 +780,12 @@ function AppHeader() {
 
         {/* Right section */}
         <motion.div
-          className="flex items-center gap-3 justify-end"
+          className="flex items-center gap-2 sm:gap-3 justify-end"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
+          <NotificationCenter />
           <UserMenu />
         </motion.div>
       </div>

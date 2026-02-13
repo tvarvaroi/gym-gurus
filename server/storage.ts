@@ -135,6 +135,14 @@ export interface IStorage {
     performanceInsight: { metric: string; value: number; label: string };
   }>;
 
+  // Real Analytics
+  getTrainerAnalytics(trainerId: string): Promise<{
+    overview: { totalClients: number; activeClients: number; inactiveClients: number; totalSessions: number; completedThisMonth: number; completionRate: number };
+    clientMetrics: { newClientsThisMonth: number; clientRetentionRate: number; averageSessionsPerClient: number; topPerformers: { name: string; sessionsCompleted: number }[] };
+    workoutMetrics: { totalWorkoutPlans: number; averageWorkoutDuration: number; completionRate: number };
+    timeAnalytics: { totalHoursThisMonth: number };
+  }>;
+
   // User Onboarding Progress
   getUserOnboardingProgress(userId: string): Promise<UserOnboardingProgress | undefined>;
   updateUserOnboardingProgress(userId: string, updates: Partial<InsertUserOnboardingProgress>): Promise<UserOnboardingProgress>;
@@ -1109,6 +1117,109 @@ export class DatabaseStorage implements IStorage {
         completionRate: 0,
         clientComplianceRates: [],
         performanceInsight: { metric: 'session_completion', value: 0, label: 'No data yet' },
+      };
+    }
+  }
+
+  async getTrainerAnalytics(trainerId: string) {
+    try {
+      const db = await getDb();
+
+      // Get all clients for this trainer
+      const allClients = await db.select().from(clients).where(eq(clients.trainerId, trainerId));
+      const activeClients = allClients.filter(c => c.status === 'active');
+      const inactiveClients = allClients.filter(c => c.status !== 'active');
+
+      // New clients this month
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const newClientsThisMonth = allClients.filter(c => new Date(c.createdAt) >= startOfMonth).length;
+
+      // Get all workout assignments for this trainer's clients
+      const clientIds = allClients.map(c => c.id);
+      let allAssignments: any[] = [];
+      for (const cid of clientIds) {
+        const assigns = await this.getClientWorkouts(cid);
+        allAssignments.push(...assigns);
+      }
+
+      const completedAssignments = allAssignments.filter(a => a.completedAt != null || a.status === 'completed');
+      const thisMonthAssignments = allAssignments.filter(a => new Date(a.assignedAt) >= startOfMonth);
+      const thisMonthCompleted = thisMonthAssignments.filter(a => a.completedAt != null || a.status === 'completed');
+
+      // Training sessions
+      const trainerSessions = await db.select().from(trainingSessions).where(eq(trainingSessions.trainerId, trainerId));
+      const completedSessions = trainerSessions.filter(s => s.status === 'completed');
+
+      // Workout metrics
+      const trainerWorkouts = await db.select().from(workouts).where(eq(workouts.trainerId, trainerId));
+      const avgDuration = trainerWorkouts.length > 0
+        ? Math.round(trainerWorkouts.reduce((sum, w) => sum + w.duration, 0) / trainerWorkouts.length)
+        : 0;
+
+      // Top performers (clients with most completed workouts)
+      const clientCompletionCounts = new Map<string, number>();
+      for (const a of completedAssignments) {
+        const count = clientCompletionCounts.get(a.clientId) || 0;
+        clientCompletionCounts.set(a.clientId, count + 1);
+      }
+      const topPerformers = Array.from(clientCompletionCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([cid, count]) => {
+          const client = allClients.find(c => c.id === cid);
+          return { name: client?.name || 'Unknown', sessionsCompleted: count };
+        });
+
+      // Retention rate (active / total * 100)
+      const retentionRate = allClients.length > 0 ? Math.round((activeClients.length / allClients.length) * 100) : 0;
+
+      // Average sessions per client
+      const avgSessionsPerClient = activeClients.length > 0
+        ? Math.round((completedAssignments.length / activeClients.length) * 10) / 10
+        : 0;
+
+      // Completion rate
+      const completionRate = allAssignments.length > 0
+        ? Math.round((completedAssignments.length / allAssignments.length) * 100)
+        : 0;
+
+      // Total hours this month (from completed sessions with known duration)
+      const thisMonthSessions = completedSessions.filter(s => new Date(s.scheduledDate) >= startOfMonth);
+      const totalHoursThisMonth = Math.round(thisMonthSessions.length * (avgDuration || 60) / 60);
+
+      return {
+        overview: {
+          totalClients: allClients.length,
+          activeClients: activeClients.length,
+          inactiveClients: inactiveClients.length,
+          totalSessions: trainerSessions.length,
+          completedThisMonth: thisMonthCompleted.length,
+          completionRate,
+        },
+        clientMetrics: {
+          newClientsThisMonth,
+          clientRetentionRate: retentionRate,
+          averageSessionsPerClient: avgSessionsPerClient,
+          topPerformers,
+        },
+        workoutMetrics: {
+          totalWorkoutPlans: trainerWorkouts.length,
+          averageWorkoutDuration: avgDuration,
+          completionRate,
+        },
+        timeAnalytics: {
+          totalHoursThisMonth,
+        },
+      };
+    } catch (error) {
+      console.error('Error in getTrainerAnalytics:', error);
+      return {
+        overview: { totalClients: 0, activeClients: 0, inactiveClients: 0, totalSessions: 0, completedThisMonth: 0, completionRate: 0 },
+        clientMetrics: { newClientsThisMonth: 0, clientRetentionRate: 0, averageSessionsPerClient: 0, topPerformers: [] },
+        workoutMetrics: { totalWorkoutPlans: 0, averageWorkoutDuration: 0, completionRate: 0 },
+        timeAnalytics: { totalHoursThisMonth: 0 },
       };
     }
   }

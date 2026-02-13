@@ -1,4 +1,4 @@
-import { Calendar, Dumbbell, Home, Users, TrendingUp, BookOpen, Calculator, Sparkles, Trophy, Heart, Wand2 } from "lucide-react"
+import { Calendar, Dumbbell, Home, Users, TrendingUp, BookOpen, Calculator, Sparkles, Trophy, Heart, Wand2, CreditCard } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -54,6 +54,11 @@ const trainerMenuItems = [
     title: "Schedule",
     url: "/schedule",
     icon: Calendar,
+  },
+  {
+    title: "Payments",
+    url: "/payments",
+    icon: CreditCard,
   },
 ]
 

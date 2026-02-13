@@ -6,7 +6,7 @@ import {
   ArrowLeft, Mail, Target, Calendar, TrendingUp,
   Dumbbell, Plus, Edit2, UserCircle,
   Activity, Weight, CheckCircle2, Clock, Send, CalendarPlus,
-  X, TrendingDown, Percent, BarChart3, Flame, Heart, Apple, Beef
+  X, TrendingDown, Percent, BarChart3, Flame, Heart, Apple, Beef, ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,7 @@ import {
   type ClientBiometrics
 } from "@/lib/biometricCalculations";
 import type { Client as ClientSchema } from "@shared/schema";
+import ClientIntakeForm from "@/components/ClientIntakeForm";
 
 // API response type - dates are serialized as strings
 interface ClientAPI {
@@ -857,6 +858,7 @@ export default function ClientDetailsPage() {
           <TabsTrigger value="workouts">Workouts</TabsTrigger>
           <TabsTrigger value="progress">Progress</TabsTrigger>
           <TabsTrigger value="sessions">Sessions</TabsTrigger>
+          <TabsTrigger value="intake">Intake</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -1181,6 +1183,11 @@ export default function ClientDetailsPage() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Intake Tab */}
+        <TabsContent value="intake" className="space-y-6">
+          {clientId && <ClientIntakeForm clientId={clientId} />}
         </TabsContent>
       </Tabs>
 

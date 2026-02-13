@@ -781,6 +781,65 @@ export class MemoryStorage implements IStorage {
     };
   }
 
+  async getTrainerAnalytics(trainerId: string) {
+    const allClients = Array.from(this.clients.values()).filter(c => c.trainerId === trainerId);
+    const activeClients = allClients.filter(c => c.status === 'active');
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const newClientsThisMonth = allClients.filter(c => new Date(c.createdAt) >= startOfMonth).length;
+
+    const clientIds = allClients.map(c => c.id);
+    let allAssignments: any[] = [];
+    for (const cid of clientIds) {
+      const assigns = await this.getClientWorkouts(cid);
+      allAssignments.push(...assigns);
+    }
+
+    const completedAssignments = allAssignments.filter(a => a.completedAt != null || a.status === 'completed');
+    const thisMonthCompleted = allAssignments.filter(a => new Date(a.assignedAt) >= startOfMonth && (a.completedAt != null || a.status === 'completed'));
+
+    const trainerWorkouts = Array.from(this.workouts.values()).filter(w => w.trainerId === trainerId);
+    const avgDuration = trainerWorkouts.length > 0
+      ? Math.round(trainerWorkouts.reduce((sum, w) => sum + w.duration, 0) / trainerWorkouts.length)
+      : 0;
+
+    const completionRate = allAssignments.length > 0
+      ? Math.round((completedAssignments.length / allAssignments.length) * 100)
+      : 0;
+
+    const retentionRate = allClients.length > 0 ? Math.round((activeClients.length / allClients.length) * 100) : 0;
+    const avgSessionsPerClient = activeClients.length > 0
+      ? Math.round((completedAssignments.length / activeClients.length) * 10) / 10
+      : 0;
+
+    return {
+      overview: {
+        totalClients: allClients.length,
+        activeClients: activeClients.length,
+        inactiveClients: allClients.length - activeClients.length,
+        totalSessions: allAssignments.length,
+        completedThisMonth: thisMonthCompleted.length,
+        completionRate,
+      },
+      clientMetrics: {
+        newClientsThisMonth,
+        clientRetentionRate: retentionRate,
+        averageSessionsPerClient: avgSessionsPerClient,
+        topPerformers: [],
+      },
+      workoutMetrics: {
+        totalWorkoutPlans: trainerWorkouts.length,
+        averageWorkoutDuration: avgDuration,
+        completionRate,
+      },
+      timeAnalytics: {
+        totalHoursThisMonth: 0,
+      },
+    };
+  }
+
   async getClientNotes(clientId: string): Promise<any[]> {
     const client = this.clients.get(clientId);
     if (!client) return [];
