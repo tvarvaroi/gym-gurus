@@ -24,9 +24,10 @@ import {
   requireTrainerOwnership,
   rateLimitWebSocket
 } from "./middleware/auth";
-import { 
-  apiRateLimit, 
-  generalRateLimit, 
+import {
+  apiRateLimit,
+  generalRateLimit,
+  strictRateLimit,
   authRateLimit,
   exportRateLimit
 } from "./middleware/rateLimiter";
@@ -55,14 +56,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply general rate limiting to all API routes
   app.use('/api', generalRateLimit);
 
-  // Register new feature routes
-  app.use('/api/gamification', gamificationRoutes);
-  app.use('/api/calculators', calculatorRoutes);
-  app.use('/api/strength', strengthRoutes);
-  app.use('/api/recovery', recoveryRoutes);
-  app.use('/api/ai', aiRoutes);
-  app.use('/api/shopping', shoppingRoutes);
-  app.use('/api/leaderboards', leaderboardRoutes);
+  // Register new feature routes (with authentication middleware)
+  app.use('/api/gamification', secureAuth, gamificationRoutes);
+  app.use('/api/calculators', calculatorRoutes); // Calculators are public (SEO traffic)
+  app.use('/api/strength', secureAuth, strengthRoutes);
+  app.use('/api/recovery', secureAuth, recoveryRoutes);
+  app.use('/api/ai', secureAuth, aiRoutes);
+  app.use('/api/shopping', secureAuth, shoppingRoutes);
+  app.use('/api/leaderboards', secureAuth, leaderboardRoutes);
 
   // Auth routes
   // Note: No rate limiting on auth check as it's frequently called to verify session
@@ -105,14 +106,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return session user data if database unavailable
-      // Detect role from user ID (mock-client-* = client, otherwise trainer)
-      const role = userId.startsWith('mock-client-') ? 'client' : 'trainer';
+      // Detect role from user ID (mock-client-* = client, mock-solo-* = solo, otherwise trainer)
+      const role = userId.startsWith('mock-client-') ? 'client' : userId.startsWith('mock-solo-') ? 'solo' : 'trainer';
 
       res.json({
         id: userId,
-        email: jwtUser?.claims?.email || jwtUser?.email || (role === 'client' ? 'client@example.com' : 'trainer@example.com'),
+        email: jwtUser?.claims?.email || jwtUser?.email || (role === 'client' ? 'client@example.com' : role === 'solo' ? 'solo@example.com' : 'trainer@example.com'),
         firstName: jwtUser?.claims?.first_name || jwtUser?.firstName || "Demo",
-        lastName: jwtUser?.claims?.last_name || jwtUser?.lastName || (role === 'client' ? 'Client' : 'Trainer'),
+        lastName: jwtUser?.claims?.last_name || jwtUser?.lastName || (role === 'client' ? 'Client' : role === 'solo' ? 'User' : 'Trainer'),
         profileImageUrl: jwtUser?.claims?.profile_image_url || jwtUser?.profileImageUrl || null,
         role: role, // Detect role from user ID
         trainerId: role === 'client' ? 'demo-trainer-123' : null,
@@ -302,7 +303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/clients - Create new client
-  app.post("/api/clients", secureAuth, async (req: Request, res: Response) => {
+  app.post("/api/clients", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
       const validatedData = insertClientSchema.parse({ ...req.body, trainerId });
@@ -329,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/clients/:clientId - Update client
-  app.put("/api/clients/:clientId", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
+  app.put("/api/clients/:clientId", secureAuth, strictRateLimit, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       // Prevent trainerId changes by omitting it from the validation schema
@@ -350,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/clients/:clientId - Delete client
-  app.delete("/api/clients/:clientId", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
+  app.delete("/api/clients/:clientId", secureAuth, strictRateLimit, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const success = await storage.deleteClient(clientId);
@@ -376,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/clients/:clientId/notes - Add a note to a client
-  app.post("/api/clients/:clientId/notes", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
+  app.post("/api/clients/:clientId/notes", secureAuth, strictRateLimit, requireClientOwnership, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const trainerId = (req.user as any).id as string;
@@ -414,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/exercises - Create new exercise
-  app.post("/api/exercises", secureAuth, async (req: Request, res: Response) => {
+  app.post("/api/exercises", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const validatedData = insertExerciseSchema.parse(req.body);
       const exercise = await storage.createExercise(validatedData);
@@ -501,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/workouts - Create new workout
-  app.post("/api/workouts", secureAuth, async (req: Request, res: Response) => {
+  app.post("/api/workouts", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
       console.log('🏋️ Creating workout for trainer:', trainerId);
@@ -536,7 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/workouts/:id - Update workout
-  app.put("/api/workouts/:id", secureAuth, async (req: Request, res: Response) => {
+  app.put("/api/workouts/:id", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -564,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/workouts/:id - Delete workout
-  app.delete("/api/workouts/:id", secureAuth, async (req: Request, res: Response) => {
+  app.delete("/api/workouts/:id", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -586,7 +587,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/workouts/:id/duplicate - Duplicate a workout
-  app.post("/api/workouts/:id/duplicate", secureAuth, async (req: Request, res: Response) => {
+  app.post("/api/workouts/:id/duplicate", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const trainerId = (req.user as any).id as string;
@@ -622,7 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Workout Exercise Routes
   
   // POST /api/workouts/:workoutId/exercises - Add exercise to workout
-  app.post("/api/workouts/:workoutId/exercises", secureAuth, async (req: Request, res: Response) => {
+  app.post("/api/workouts/:workoutId/exercises", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { workoutId } = req.params;
       
@@ -648,7 +649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/workouts/:workoutId/exercises/:exerciseId - Remove exercise from workout
-  app.delete("/api/workouts/:workoutId/exercises/:exerciseId", secureAuth, async (req: Request, res: Response) => {
+  app.delete("/api/workouts/:workoutId/exercises/:exerciseId", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { workoutId, exerciseId } = req.params;
       
@@ -800,7 +801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // POST /api/workout-assignments - Assign workout to client
   // Supports enhanced scheduling: date, time, timezone, status, customization
-  app.post("/api/workout-assignments", async (req: Request, res: Response) => {
+  app.post("/api/workout-assignments", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const validatedData = insertWorkoutAssignmentSchema.parse(req.body);
 
@@ -941,7 +942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/workout-assignments/:id - Update workout assignment (status, completion, cancellation)
-  app.patch("/api/workout-assignments/:id", secureAuth, async (req: Request, res: Response) => {
+  app.patch("/api/workout-assignments/:id", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const updates = req.body;
@@ -996,7 +997,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/workout-assignments/:id/complete - Mark workout assignment as completed
-  app.put("/api/workout-assignments/:id/complete", secureAuth, async (req: Request, res: Response) => {
+  app.put("/api/workout-assignments/:id/complete", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const { notes } = req.body;
@@ -1051,7 +1052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/progress-entries - Add progress entry
-  app.post("/api/progress-entries", secureAuth, async (req: Request, res: Response) => {
+  app.post("/api/progress-entries", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const validatedData = insertProgressEntrySchema.parse(req.body);
       
@@ -1087,7 +1088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/training-sessions - Create new training session
-  app.post("/api/training-sessions", secureAuth, async (req: Request, res: Response) => {
+  app.post("/api/training-sessions", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
       const validatedData = insertTrainingSessionSchema.parse({ ...req.body, trainerId });
@@ -1196,7 +1197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/appointments - Create a new appointment
-  app.post("/api/appointments", secureAuth, async (req: Request, res: Response) => {
+  app.post("/api/appointments", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
 
@@ -1242,7 +1243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUT /api/appointments/:id - Update an appointment
-  app.put("/api/appointments/:id", secureAuth, async (req: Request, res: Response) => {
+  app.put("/api/appointments/:id", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const validatedUpdates = insertAppointmentSchema.partial().parse(req.body);
@@ -1263,7 +1264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DELETE /api/appointments/:id - Delete an appointment
-  app.delete("/api/appointments/:id", secureAuth, async (req: Request, res: Response) => {
+  app.delete("/api/appointments/:id", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteAppointment(id);

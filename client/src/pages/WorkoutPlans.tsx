@@ -358,14 +358,40 @@ const WorkoutPlans = memo(() => {
     }
   }, [workouts, toast]);
 
+  // Create workout from template mutation
+  const createFromTemplateMutation = useMutation({
+    mutationFn: async (template: any) => {
+      const trainerId = user?.id || "demo-trainer-123";
+      const response = await apiRequest('POST', '/api/workouts', {
+        trainerId,
+        title: template.title,
+        description: template.description,
+        duration: template.duration,
+        difficulty: template.difficulty,
+        category: template.category,
+      });
+      return response.json();
+    },
+    onSuccess: (newWorkout: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workouts', user?.id] });
+      toast({
+        title: "Workout Created",
+        description: `"${newWorkout.title}" created from template. Add exercises now!`,
+      });
+      window.location.href = `/workout-builder/${newWorkout.id}`;
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create workout from template",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleUseTemplate = useCallback((template: any) => {
-    // Create workout from template
-    toast({
-      title: "Template Selected",
-      description: `Creating workout from "${template.title}" template`,
-    });
-    // In a real app, you would create a workout based on the template
-  }, [toast]);
+    createFromTemplateMutation.mutate(template);
+  }, [createFromTemplateMutation]);
 
   const handleStartWorkout = useCallback((workoutId: string) => {
     // Navigate to workout logger for clients
@@ -589,42 +615,7 @@ const WorkoutPlans = memo(() => {
         {/* Client: Weekly Workout View | Trainer: Workout Cards Grid */}
         {isClient ? (
           <WeeklyWorkoutView />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {filteredWorkouts.length === 0 ? (
-              <div className="col-span-full text-center py-16">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <p className="text-lg font-light text-muted-foreground/80">
-                    {searchQuery
-                      ? "No workouts found matching your search"
-                      : "No workout plans yet. Create your first workout!"
-                    }
-                  </p>
-                </motion.div>
-              </div>
-            ) : (
-              filteredWorkouts.map((workout: any, index: number) => (
-                <TrainerWorkoutCard
-                  key={workout.id}
-                  workout={workout}
-                  index={index}
-                  onDuplicate={handleDuplicate}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
-                  isPendingDuplicate={duplicateWorkoutMutation.isPending}
-                  isPendingDelete={deleteWorkoutMutation.isPending}
-                />
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {workouts?.length === 0 && (
+        ) : filteredWorkouts.length === 0 ? (
           <motion.div
             className="flex flex-col items-center justify-center py-20 space-y-8"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -642,26 +633,46 @@ const WorkoutPlans = memo(() => {
               </div>
             </motion.div>
             <div className="text-center space-y-3">
-              <h3 className="text-2xl font-extralight tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                No workout plans yet
+              <h3 className="text-2xl font-light tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                {searchQuery ? "No matching workouts" : "No workout plans yet"}
               </h3>
               <p className="text-muted-foreground/80 font-light max-w-md leading-relaxed">
-                Create your first workout plan to start building personalized routines for your clients
+                {searchQuery
+                  ? "No workouts found matching your search. Try a different term."
+                  : "Create your first workout plan to start building personalized routines for your clients"
+                }
               </p>
             </div>
-            <WorkoutFormModal
-              mode="create"
-              trainerId={user?.id}
-              trigger={
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/20 font-light transition-all duration-300">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Workout Plan
-                  </Button>
-                </motion.div>
-              }
-            />
+            {!searchQuery && (
+              <WorkoutFormModal
+                mode="create"
+                trainerId={user?.id}
+                trigger={
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/20 font-light transition-all duration-300">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Workout Plan
+                    </Button>
+                  </motion.div>
+                }
+              />
+            )}
           </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {filteredWorkouts.map((workout: any, index: number) => (
+              <TrainerWorkoutCard
+                key={workout.id}
+                workout={workout}
+                index={index}
+                onDuplicate={handleDuplicate}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                isPendingDuplicate={duplicateWorkoutMutation.isPending}
+                isPendingDelete={deleteWorkoutMutation.isPending}
+              />
+            ))}
+          </div>
         )}
 
         {/* Edit Modal */}

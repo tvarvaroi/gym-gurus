@@ -194,8 +194,9 @@ const HeroPage = memo(() => {
               </motion.div>
 
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                <button
-                  className="px-8 py-4 rounded-2xl font-light transition-all"
+                <a
+                  href="/api/login?role=trainer"
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-light transition-all"
                   style={{
                     fontFamily: "'Playfair Display', serif",
                     background: 'transparent',
@@ -204,8 +205,8 @@ const HeroPage = memo(() => {
                     letterSpacing: '0.05em',
                   }}
                 >
-                  Watch Demo
-                </button>
+                  Try It Free
+                </a>
               </motion.div>
             </div>
 
@@ -228,7 +229,7 @@ const HeroPage = memo(() => {
         </div>
 
         {/* RIGHT SIDE - 40% width on desktop - Floating Stats & Cards */}
-        <div className="w-full lg:w-[40%] px-6 md:px-8 lg:px-10 py-12 lg:py-20 space-y-6">
+        <div className="hidden sm:block w-full lg:w-[40%] px-6 md:px-8 lg:px-10 py-12 lg:py-20 space-y-6">
 
           {/* Statistics - Vertical Stack */}
           <motion.div
@@ -324,7 +325,7 @@ const HeroPage = memo(() => {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute bottom-20 left-0 right-0 z-20 flex justify-center"
+        className="absolute bottom-20 left-0 right-0 z-20 hidden md:flex justify-center"
       >
         <div className="flex flex-wrap gap-4 justify-center max-w-4xl px-6">
           {[

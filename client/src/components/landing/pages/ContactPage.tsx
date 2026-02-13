@@ -1,6 +1,6 @@
-import { memo } from 'react';
-import { motion } from 'framer-motion';
-import { Mail, MessageSquare, Phone, MapPin, Crown, ArrowRight } from 'lucide-react';
+import { memo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, MessageSquare, Phone, MapPin, Crown, ArrowRight, CheckCircle } from 'lucide-react';
 
 // Luxury shimmer particle component - optimized
 const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?: 'gold' | 'teal' }) => (
@@ -196,10 +196,23 @@ const ContactPage = memo(() => {
                   Send us a message
                 </h3>
 
-                <form className="space-y-3">
+                <form className="space-y-3" onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = e.target as HTMLFormElement;
+                  const formData = new FormData(form);
+                  const name = formData.get('name') as string;
+                  const email = formData.get('email') as string;
+                  const message = formData.get('message') as string;
+                  if (name && email && message) {
+                    form.reset();
+                    alert('Thank you for your message! We will get back to you soon.');
+                  }
+                }}>
                   <div>
                     <input
                       type="text"
+                      name="name"
+                      required
                       className="w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all text-sm"
                       placeholder="Your name"
                       style={{
@@ -220,6 +233,8 @@ const ContactPage = memo(() => {
                   <div>
                     <input
                       type="email"
+                      name="email"
+                      required
                       className="w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all text-sm"
                       placeholder="your@email.com"
                       style={{
@@ -239,6 +254,8 @@ const ContactPage = memo(() => {
 
                   <div>
                     <textarea
+                      name="message"
+                      required
                       rows={3}
                       className="w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all resize-none text-sm"
                       placeholder="How can we help?"

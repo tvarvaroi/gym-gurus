@@ -165,7 +165,7 @@ const ClientsPageContent = memo(() => {
       ...client, // Spread all client properties first (includes biometric data)
       client: client, // Pass full client object
       trainerId: trainerId, // Pass trainerId for edit functionality
-      progress: Math.floor(Math.random() * 100), // Temporary - will implement real progress tracking
+      progress: client.status === 'active' ? 75 : client.status === 'paused' ? 40 : 10, // Deterministic progress based on status
       lastSession: formatSessionTime(client.lastSession),
       nextSession: client.nextSession ? new Date(client.nextSession).toLocaleDateString() : undefined
     }));
@@ -908,7 +908,7 @@ function HeaderCenterText() {
               ease: "linear",
             }}
           >
-            The Best Training The Future Best
+            GYM GURUS — Elite Fitness Platform
           </motion.span>
 
           {/* Right ornamental dot */}

@@ -1,4 +1,4 @@
-import { memo, Suspense, lazy, useState } from 'react';
+import { memo, Suspense, lazy } from 'react';
 import PageCarousel from '@/components/landing/PageCarousel';
 
 // Lazy load pages for better performance
@@ -21,8 +21,6 @@ const PageLoader = () => (
 );
 
 const LandingPage = memo(() => {
-  const [videoLoaded, setVideoLoaded] = useState(false);
-
   const pages = [
     <Suspense key="hero" fallback={<PageLoader />}>
       <HeroPage />
@@ -49,40 +47,39 @@ const LandingPage = memo(() => {
 
   return (
     <div className="relative w-full min-h-screen overflow-hidden bg-black">
-      {/* Premium Gym Video Background */}
+      {/* Premium gradient background */}
       <div className="absolute inset-0 z-0">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          onLoadedData={() => setVideoLoaded(true)}
-          className="absolute inset-0 w-full h-full object-cover"
+        <div
+          className="absolute inset-0"
           style={{
-            filter: 'brightness(0.4) contrast(1.2) saturate(0.9)',
-            opacity: videoLoaded ? 1 : 0,
-            transition: 'opacity 0.5s ease-in',
+            background: 'linear-gradient(135deg, #000000 0%, #0a0a0a 30%, #111111 50%, #0a0a0a 70%, #000000 100%)',
           }}
-        >
-          <source src="/videos/gym-background.mp4" type="video/mp4" />
-        </video>
-
-        {/* Loading indicator */}
-        {!videoLoaded && (
-          <div className="absolute inset-0 flex items-center justify-center z-5">
-            <div className="text-white/30 text-sm">Loading video...</div>
-          </div>
-        )}
-
-        {/* Fallback gradient background */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-black via-gray-900 to-black" />
-
-        {/* Dark overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/30 z-10" />
+        />
+        {/* Subtle gold accent glow */}
+        <div
+          className="absolute w-[800px] h-[800px] rounded-full pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(201, 168, 85, 0.04) 0%, transparent 70%)',
+            top: '-20%',
+            right: '-10%',
+            filter: 'blur(100px)',
+          }}
+        />
+        {/* Subtle teal accent glow */}
+        <div
+          className="absolute w-[600px] h-[600px] rounded-full pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(13, 148, 136, 0.04) 0%, transparent 70%)',
+            bottom: '-10%',
+            left: '-5%',
+            filter: 'blur(100px)',
+          }}
+        />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-black/20 z-10" />
       </div>
 
-      {/* Page Carousel - positioned above video */}
+      {/* Page Carousel - positioned above background */}
       <div className="relative z-20">
         <PageCarousel pages={pages} />
       </div>

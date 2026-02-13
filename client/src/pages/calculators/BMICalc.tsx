@@ -22,7 +22,7 @@ const BMI_CATEGORIES: Record<BMICategory, { label: string; color: string; bgColo
 
 function calculateBMI(weightKg: number, heightCm: number): BMIResult {
   const heightM = heightCm / 100;
-  const bmi = weightKg / (heightM * heightM);
+  const bmi = heightM > 0 && weightKg > 0 ? weightKg / (heightM * heightM) : 0;
 
   let category: BMICategory;
   let healthRisk: string;

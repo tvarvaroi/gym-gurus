@@ -24,7 +24,7 @@ export function StrengthStandardsCalculator() {
   const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
   const [lifts, setLifts] = useState<LiftInput[]>([
     { name: 'Squat', key: 'squat', value: 100, icon: '🦵' },
-    { name: 'Bench Press', key: 'bench', value: 80, icon: '🏋️' },
+    { name: 'Bench Press', key: 'bench_press', value: 80, icon: '🏋️' },
     { name: 'Deadlift', key: 'deadlift', value: 120, icon: '💪' },
     { name: 'Overhead Press', key: 'overhead_press', value: 50, icon: '🙆' },
   ]);

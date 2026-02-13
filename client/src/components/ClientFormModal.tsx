@@ -15,8 +15,9 @@ import { apiRequest } from "@/lib/queryClient"
 import { Loader2, Plus, Edit, Trash2, Info, Activity } from "lucide-react"
 import { z } from "zod"
 
-// Form schema - extend insertClientSchema
+// Form schema - extend insertClientSchema with validation
 const clientFormSchema = insertClientSchema.extend({
+  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name is too long"),
   goal: z.string().min(1, "Goal is required"),
   email: z.string().email("Please enter a valid email address"),
 })

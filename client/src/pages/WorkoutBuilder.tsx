@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { motion } from "framer-motion";
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2 } from "lucide-react";
+import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2, Search, Dumbbell } from "lucide-react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 export default function WorkoutBuilder() {
@@ -18,6 +18,8 @@ export default function WorkoutBuilder() {
   const workoutId = params.id as string;
   const [, setLocation] = useLocation();
   const [selectedExercise, setSelectedExercise] = useState<string>("");
+  const [exerciseSearch, setExerciseSearch] = useState("");
+  const [exerciseCategoryFilter, setExerciseCategoryFilter] = useState("all");
   const [exerciseData, setExerciseData] = useState({
     sets: 3,
     reps: "10-12",
@@ -119,6 +121,24 @@ export default function WorkoutBuilder() {
       });
     },
   });
+
+  // Filtered exercises for the picker
+  const filteredExercises = useMemo(() => {
+    if (!exercises || !Array.isArray(exercises)) return [];
+    return exercises.filter((e: any) => {
+      const matchesSearch = !exerciseSearch ||
+        e.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
+        e.muscleGroups?.some((mg: string) => mg.toLowerCase().includes(exerciseSearch.toLowerCase()));
+      const matchesCategory = exerciseCategoryFilter === "all" || e.category === exerciseCategoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [exercises, exerciseSearch, exerciseCategoryFilter]);
+
+  // Unique categories from exercises
+  const exerciseCategories = useMemo(() => {
+    if (!exercises || !Array.isArray(exercises)) return [];
+    return Array.from(new Set(exercises.map((e: any) => e.category)));
+  }, [exercises]);
 
   const handleAddExercise = () => {
     if (!selectedExercise) return;
@@ -325,75 +345,142 @@ export default function WorkoutBuilder() {
                   <span className="relative z-10">Add Exercise</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px] glass-strong border-border/50">
+              <DialogContent className="sm:max-w-[600px] max-h-[85vh] glass-strong border-border/50">
                 <DialogHeader>
                   <DialogTitle className="font-light text-2xl">Add Exercise to Workout</DialogTitle>
                   <DialogDescription className="font-light text-muted-foreground/70">
-                    Select an exercise and configure the sets, reps, and rest time.
+                    Search and select an exercise, then configure sets, reps, and rest time.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-light text-muted-foreground">Exercise</label>
-                    <Select value={selectedExercise} onValueChange={setSelectedExercise}>
-                      <SelectTrigger data-testid="select-exercise" className="glass border-border/50">
-                        <SelectValue placeholder="Select an exercise" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {exercises && Array.isArray(exercises) ? exercises.map((exercise: any) => (
-                          <SelectItem key={exercise.id} value={exercise.id}>
-                            {exercise.name}
-                          </SelectItem>
-                        )) : (
-                          <SelectItem value="no-exercises" disabled>No exercises available</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-light text-muted-foreground">Sets</label>
+                  {/* Exercise Search & Filter */}
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
                       <Input
-                        type="number"
-                        value={exerciseData.sets}
-                        onChange={(e) => setExerciseData(prev => ({ ...prev, sets: parseInt(e.target.value) || 0 }))}
-                        data-testid="input-sets"
-                        className="glass border-border/50"
+                        value={exerciseSearch}
+                        onChange={(e) => setExerciseSearch(e.target.value)}
+                        placeholder="Search exercises by name or muscle group..."
+                        className="pl-10 glass border-border/50"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-light text-muted-foreground">Reps</label>
-                      <Input
-                        value={exerciseData.reps}
-                        onChange={(e) => setExerciseData(prev => ({ ...prev, reps: e.target.value }))}
-                        placeholder="e.g., 10-12 or 45 sec"
-                        data-testid="input-reps"
-                        className="glass border-border/50"
-                      />
+                    <div className="flex flex-wrap gap-2">
+                      <Badge
+                        variant={exerciseCategoryFilter === "all" ? "default" : "outline"}
+                        className="cursor-pointer text-xs"
+                        onClick={() => setExerciseCategoryFilter("all")}
+                      >
+                        All
+                      </Badge>
+                      {exerciseCategories.map((cat: string) => (
+                        <Badge
+                          key={cat}
+                          variant={exerciseCategoryFilter === cat ? "default" : "outline"}
+                          className="cursor-pointer text-xs capitalize"
+                          onClick={() => setExerciseCategoryFilter(cat)}
+                        >
+                          {cat}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-light text-muted-foreground">Weight (optional)</label>
-                      <Input
-                        value={exerciseData.weight}
-                        onChange={(e) => setExerciseData(prev => ({ ...prev, weight: e.target.value }))}
-                        placeholder="e.g., 135 lbs"
-                        data-testid="input-weight"
-                        className="glass border-border/50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-light text-muted-foreground">Rest Time (sec)</label>
-                      <Input
-                        type="number"
-                        value={exerciseData.restTime}
-                        onChange={(e) => setExerciseData(prev => ({ ...prev, restTime: parseInt(e.target.value) || 0 }))}
-                        data-testid="input-rest-time"
-                        className="glass border-border/50"
-                      />
-                    </div>
+
+                  {/* Exercise List */}
+                  <div className="max-h-[200px] overflow-y-auto space-y-1 rounded-lg border border-border/30 p-2">
+                    {filteredExercises.length === 0 ? (
+                      <p className="text-sm text-muted-foreground/70 text-center py-4">No exercises found</p>
+                    ) : (
+                      filteredExercises.map((exercise: any) => (
+                        <div
+                          key={exercise.id}
+                          onClick={() => {
+                            setSelectedExercise(exercise.id);
+                            setExerciseData(prev => ({
+                              ...prev,
+                              sets: exercise.defaultSets || 3,
+                              reps: exercise.defaultReps || "10-12",
+                              restTime: exercise.defaultRestTime || 60,
+                            }));
+                          }}
+                          className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all ${
+                            selectedExercise === exercise.id
+                              ? 'bg-primary/15 border border-primary/30'
+                              : 'hover:bg-primary/5 border border-transparent'
+                          }`}
+                          data-testid={`exercise-option-${exercise.id}`}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Dumbbell className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{exercise.name}</p>
+                            <p className="text-xs text-muted-foreground/60 truncate">
+                              {exercise.muscleGroups?.join(', ')}
+                            </p>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0">
+                            <Badge variant="outline" className="text-[10px] capitalize">{exercise.difficulty}</Badge>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
+
+                  {/* Configuration */}
+                  {selectedExercise && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="space-y-3 pt-2 border-t border-border/30"
+                    >
+                      <p className="text-sm font-medium text-primary">
+                        Configure: {exercises?.find((e: any) => e.id === selectedExercise)?.name}
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-light text-muted-foreground">Sets</label>
+                          <Input
+                            type="number"
+                            value={exerciseData.sets}
+                            onChange={(e) => setExerciseData(prev => ({ ...prev, sets: parseInt(e.target.value) || 0 }))}
+                            data-testid="input-sets"
+                            className="glass border-border/50 h-9"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-light text-muted-foreground">Reps</label>
+                          <Input
+                            value={exerciseData.reps}
+                            onChange={(e) => setExerciseData(prev => ({ ...prev, reps: e.target.value }))}
+                            placeholder="e.g., 10-12"
+                            data-testid="input-reps"
+                            className="glass border-border/50 h-9"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-light text-muted-foreground">Weight (optional)</label>
+                          <Input
+                            value={exerciseData.weight}
+                            onChange={(e) => setExerciseData(prev => ({ ...prev, weight: e.target.value }))}
+                            placeholder="e.g., 135 lbs"
+                            data-testid="input-weight"
+                            className="glass border-border/50 h-9"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-light text-muted-foreground">Rest (sec)</label>
+                          <Input
+                            type="number"
+                            value={exerciseData.restTime}
+                            onChange={(e) => setExerciseData(prev => ({ ...prev, restTime: parseInt(e.target.value) || 0 }))}
+                            data-testid="input-rest-time"
+                            className="glass border-border/50 h-9"
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
                   <Button
                     onClick={handleAddExercise}
                     disabled={!selectedExercise || addExerciseMutation.isPending}
@@ -401,7 +488,9 @@ export default function WorkoutBuilder() {
                     data-testid="button-confirm-add-exercise"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                    <span className="relative z-10">Add to Workout</span>
+                    <span className="relative z-10">
+                      {addExerciseMutation.isPending ? "Adding..." : "Add to Workout"}
+                    </span>
                   </Button>
                 </div>
               </DialogContent>

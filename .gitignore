@@ -8,3 +8,5 @@ vite.config.ts.*
 .env.*
 gym-gurus/
 .local/
+cookies.txt
+nul

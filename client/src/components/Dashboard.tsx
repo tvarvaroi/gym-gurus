@@ -789,12 +789,18 @@ const Dashboard = memo(() => {
     },
   });
 
-  // Handle welcome modal completion
+  // Handle welcome modal completion - close immediately, persist in background
   const handleWelcomeComplete = async (selectedGoal: string) => {
-    await updateOnboardingMutation.mutateAsync({
-      welcomeModalCompleted: true,
-      selectedGoal,
-    });
+    // Persist to localStorage immediately so modal doesn't reappear on page reload
+    localStorage.setItem('gymgurus_welcome_completed', 'true');
+    try {
+      await updateOnboardingMutation.mutateAsync({
+        welcomeModalCompleted: true,
+        selectedGoal,
+      });
+    } catch {
+      // Modal is already dismissed via localStorage even if API fails
+    }
   };
 
   // Handle checklist dismissal
@@ -890,7 +896,7 @@ const Dashboard = memo(() => {
       value: loadingStats ? "--" : (dashboardStats?.activeClients || 0).toString(),
       icon: Users,
       trend: `${dashboardStats?.totalClients || 0} total clients`,
-      change: "+12%",
+      change: "",
       changeType: "increase",
       color: "text-emerald-600",
       bgGlow: "from-emerald-500/20 to-emerald-500/5"
@@ -900,7 +906,7 @@ const Dashboard = memo(() => {
       value: loadingStats ? "--" : (dashboardStats?.completedSessionsThisWeek || 0).toString(),
       icon: Calendar,
       trend: `${dashboardStats?.upcomingSessions || 0} upcoming`,
-      change: "+8%",
+      change: "",
       changeType: "increase",
       color: "text-blue-600",
       bgGlow: "from-blue-500/20 to-blue-500/5"
@@ -910,7 +916,7 @@ const Dashboard = memo(() => {
       value: loadingStats ? "--" : (dashboardStats?.totalWorkouts || workouts?.length || 0).toString(),
       icon: Dumbbell,
       trend: "Active plans",
-      change: "+15%",
+      change: "",
       changeType: "increase",
       color: "text-purple-600",
       bgGlow: "from-purple-500/20 to-purple-500/5"
@@ -1043,8 +1049,9 @@ const Dashboard = memo(() => {
     },
   ], [onboardingProgress, navigate]);
 
-  // Show welcome modal if not completed
-  const showWelcomeModal = onboardingProgress && !onboardingProgress.welcomeModalCompleted;
+  // Show welcome modal if not completed (check both API and localStorage)
+  const welcomeDismissedLocally = localStorage.getItem('gymgurus_welcome_completed') === 'true';
+  const showWelcomeModal = onboardingProgress && !onboardingProgress.welcomeModalCompleted && !welcomeDismissedLocally;
 
   // Show checklist if welcome modal completed but onboarding not finished
   const showChecklist = onboardingProgress?.welcomeModalCompleted &&
@@ -1289,7 +1296,7 @@ const Dashboard = memo(() => {
             </span>
           </motion.div>
 
-          {/* Real-time indicator - Premium redesign */}
+          {/* Real-time connection status */}
           <motion.div
             className="absolute top-6 right-6 flex items-center gap-2 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20"
             initial={{ opacity: 0, x: 20 }}
@@ -1298,12 +1305,13 @@ const Dashboard = memo(() => {
             style={{
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             }}
+            title={isConnected ? 'Real-time sync active' : 'Reconnecting to server...'}
           >
             <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} style={{
               boxShadow: isConnected ? '0 0 8px rgba(52, 211, 153, 0.6)' : 'none',
             }} />
             <span className="text-xs font-medium text-white/90 tracking-wider uppercase" style={{ letterSpacing: '0.1em' }}>
-              {isConnected ? 'Live' : 'Offline'}
+              {isConnected ? 'Synced' : 'Reconnecting'}
             </span>
           </motion.div>
 

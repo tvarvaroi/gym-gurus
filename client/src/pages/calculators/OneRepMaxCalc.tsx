@@ -22,7 +22,7 @@ export function OneRepMaxCalculator() {
 
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
-    if (!isNaN(value) && value >= 0) {
+    if (!isNaN(value) && value >= 1) {
       setWeight(value);
     }
   };

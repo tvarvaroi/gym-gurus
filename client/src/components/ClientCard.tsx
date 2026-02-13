@@ -154,7 +154,7 @@ const ClientCard = memo(function ClientCard({
 
               {/* Name and email - Enhanced */}
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold truncate mb-0.5 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent group-hover:from-primary group-hover:via-foreground group-hover:to-foreground transition-all duration-500" data-testid={`text-client-name-${name.toLowerCase().replace(' ', '-')}`}>
+                <h3 className="text-lg font-semibold mb-0.5 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent group-hover:from-primary group-hover:via-foreground group-hover:to-foreground transition-all duration-500" data-testid={`text-client-name-${name.toLowerCase().replace(' ', '-')}`}>
                   {name}
                 </h3>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

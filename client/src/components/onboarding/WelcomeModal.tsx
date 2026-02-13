@@ -347,26 +347,12 @@ export function WelcomeModal({ open, onComplete, userName }: WelcomeModalProps) 
           )}
         </AnimatePresence>
 
-        {/* Custom Close Button - Rendered last to ensure it's on top */}
+        {/* Close Button */}
         <div
-          style={{
-            position: 'fixed',
-            right: '20px',
-            top: '20px',
-            width: '60px',
-            height: '60px',
-            backgroundColor: 'red',
-            borderRadius: '50%',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            border: '3px solid white',
-          }}
+          className="absolute right-4 top-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center cursor-pointer transition-colors z-50"
           onClick={() => onComplete("skip")}
         >
-          <X style={{ width: '30px', height: '30px', color: 'white', strokeWidth: 3 }} />
+          <X className="w-4 h-4 text-white/70" />
         </div>
       </DialogContent>
     </Dialog>

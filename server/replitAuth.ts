@@ -82,7 +82,7 @@ function updateUserSession(
 
 async function upsertUser(
   claims: any,
-  role?: 'trainer' | 'client'
+  role?: 'trainer' | 'client' | 'solo'
 ) {
   try {
     await storage.upsertUser({
@@ -160,7 +160,7 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/login", (req, res, next) => {
     // Store the role in session before starting OAuth flow
-    const role = req.query.role === 'client' ? 'client' : 'trainer';
+    const role = req.query.role === 'client' ? 'client' : req.query.role === 'solo' ? 'solo' : 'trainer';
     (req.session as any).pendingRole = role;
 
     passport.authenticate(`replitauth:${req.hostname}`, {
@@ -301,7 +301,7 @@ function setupDevAuth(app: Express) {
   // Development login route
   app.get("/api/login", async (req: any, res) => {
     // Get role from query parameter (defaults to trainer)
-    const role = req.query.role === 'client' ? 'client' : 'trainer';
+    const role = req.query.role === 'client' ? 'client' : req.query.role === 'solo' ? 'solo' : 'trainer';
 
     // Create role-specific demo user
     const demoUser = role === 'client' ? {
@@ -317,6 +317,19 @@ function setupDevAuth(app: Express) {
         last_name: "Smith"
       },
       expires_at: Math.floor(Date.now() / 1000) + 86400 // 24 hours from now
+    } : role === 'solo' ? {
+      id: "mock-solo-1",
+      email: "solo@example.com",
+      firstName: "Solo",
+      lastName: "User",
+      profileImageUrl: null,
+      claims: {
+        sub: "mock-solo-1",
+        email: "solo@example.com",
+        first_name: "Solo",
+        last_name: "User"
+      },
+      expires_at: Math.floor(Date.now() / 1000) + 86400
     } : devUser;
 
     // Skip database upsert in development mode when database is unavailable
@@ -328,8 +341,8 @@ function setupDevAuth(app: Express) {
         firstName: demoUser.firstName,
         lastName: demoUser.lastName,
         profileImageUrl: demoUser.profileImageUrl,
-        role: role, // Set the user's role (trainer or client)
-        trainerId: role === 'client' ? 'demo-trainer-123' : null, // Assign trainer to clients
+        role: role, // Set the user's role (trainer, client, or solo)
+        trainerId: role === 'client' ? 'demo-trainer-123' : null, // Assign trainer to clients only
       });
 
       // If logging in as mock-client-1 (John Smith), ensure client record exists
