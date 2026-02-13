@@ -209,7 +209,7 @@ const AppSidebar = memo(() => {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar/95 backdrop-blur-xl">
+      <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar/95 backdrop-blur-xl" aria-label="Main navigation">
         <SidebarContent className="pt-8">
           <SidebarGroup>
           {/* Logo section - conditional rendering based on collapse state */}

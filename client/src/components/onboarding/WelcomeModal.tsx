@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Target, Users, Clock, TrendingUp, CheckCircle2, Sparkles, X } from "lucide-react";
-import Confetti from "react-confetti";
+const Confetti = lazy(() => import("react-confetti"));
 import { useWindowSize } from "@/hooks/use-window-size";
 
 interface WelcomeModalProps {
@@ -84,7 +84,11 @@ export function WelcomeModal({ open, onComplete, userName }: WelcomeModalProps) 
           {step === "completion" && "You're all set! Start building your fitness training empire"}
         </DialogDescription>
 
-        {showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} />}
+        {showConfetti && (
+          <Suspense fallback={null}>
+            <Confetti width={width} height={height} recycle={false} numberOfPieces={500} />
+          </Suspense>
+        )}
 
         {/* Progress Bar */}
         <div className="space-y-2 mb-6">

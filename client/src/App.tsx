@@ -67,6 +67,8 @@ const LoadingFallback = memo(() => (
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     transition={{ duration: 0.3 }}
+    role="status"
+    aria-label="Loading page content"
   >
     <div className="space-y-6 text-center">
       <motion.div
@@ -85,6 +87,7 @@ const LoadingFallback = memo(() => (
         className="text-base font-light text-muted-foreground/80"
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        aria-live="polite"
       >
         Loading...
       </motion.p>
@@ -685,7 +688,7 @@ function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 h-16 md:h-20 shrink-0 border-b relative overflow-hidden"
+    <header className="sticky top-0 z-40 h-16 md:h-20 shrink-0 border-b relative overflow-hidden" role="banner" aria-label="App header"
             style={{
               borderColor: `${colors.primary.rgb}, 0.3)`,
               backdropFilter: 'blur(24px)',
@@ -762,6 +765,7 @@ function AppHeader() {
           >
             <SidebarTrigger
               data-testid="button-sidebar-toggle"
+              aria-label="Toggle sidebar navigation"
               className="hover-elevate transition-all duration-300 rounded-xl border h-10 w-10 md:h-12 md:w-12"
               style={{
                 background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.12), ${colors.secondary.rgb}, 0.12))`,
@@ -1043,6 +1047,7 @@ function UserMenu() {
           whileHover={{ scale: 1.08, y: -2 }}
           whileTap={{ scale: 0.95 }}
           data-testid="button-user-menu"
+          aria-label="User menu"
         >
           {/* Premium glow effect on hover */}
           <motion.div
@@ -1425,11 +1430,14 @@ function AppLayout() {
         // Authenticated app with sidebar/header
         <AuthWrapper>
           <SidebarProvider defaultOpen={defaultOpen} style={style as React.CSSProperties}>
+          <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm">
+            Skip to main content
+          </a>
           <div className="flex h-screen w-full overflow-hidden">
             <AppSidebar />
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden transition-all duration-200 ease-linear">
               <AppHeader />
-              <main className="flex-1 overflow-y-auto overflow-x-hidden">
+              <main id="main-content" className="flex-1 overflow-y-auto overflow-x-hidden" role="main">
                 <div className="p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20 min-h-full">
                   <div className="mx-auto">
                     <ErrorBoundary>
