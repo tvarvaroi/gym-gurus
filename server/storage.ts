@@ -124,6 +124,17 @@ export interface IStorage {
   getClientNotes(clientId: string): Promise<any[]>;
   addClientNote(clientId: string, trainerId: string, content: string, category: string): Promise<any>;
 
+  // Dashboard Charts & Analytics
+  getDashboardCharts(trainerId: string): Promise<{
+    weightProgressData: { date: string; weight: number }[];
+    sessionsData: { week: string; sessions: number; completed: number }[];
+    clientGrowthData: { month: string; clients: number }[];
+    trainerStreak: number;
+    completionRate: number;
+    clientComplianceRates: { clientId: string; clientName: string; rate7d: number; rate30d: number; rate90d: number }[];
+    performanceInsight: { metric: string; value: number; label: string };
+  }>;
+
   // User Onboarding Progress
   getUserOnboardingProgress(userId: string): Promise<UserOnboardingProgress | undefined>;
   updateUserOnboardingProgress(userId: string, updates: Partial<InsertUserOnboardingProgress>): Promise<UserOnboardingProgress>;
@@ -926,6 +937,178 @@ export class DatabaseStorage implements IStorage {
         completedSessionsThisWeek: 0,
         newClientsThisMonth: 0,
         recentActivity: [],
+      };
+    }
+  }
+
+  async getDashboardCharts(trainerId: string) {
+    try {
+      const allClients = await this.getClientsByTrainer(trainerId);
+      const sessions = await this.getTrainerSessions(trainerId);
+      const allWorkouts = await this.getWorkoutsByTrainer(trainerId);
+
+      // --- Weight Progress Data ---
+      // Aggregate average weight from progress entries of all clients over last 5 weeks
+      const weightProgressData: { date: string; weight: number }[] = [];
+      const now = new Date();
+      for (let i = 4; i >= 0; i--) {
+        const weekStart = new Date(now);
+        weekStart.setDate(weekStart.getDate() - (i * 7));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+
+        let totalWeight = 0;
+        let weightCount = 0;
+        for (const client of allClients) {
+          const progress = await this.getClientProgress(client.id);
+          const weightEntries = progress.filter(p =>
+            p.type === 'weight' &&
+            new Date(p.recordedAt) >= weekStart &&
+            new Date(p.recordedAt) < weekEnd
+          );
+          if (weightEntries.length > 0) {
+            totalWeight += weightEntries.reduce((sum, e) => sum + parseFloat(String(e.value)), 0) / weightEntries.length;
+            weightCount++;
+          }
+        }
+
+        const label = i === 0 ? 'This Week' : i === 1 ? 'Last Week' : `${i} weeks ago`;
+        if (weightCount > 0) {
+          weightProgressData.push({ date: label, weight: Math.round(totalWeight / weightCount) });
+        }
+      }
+
+      // --- Sessions Data (last 4 weeks) ---
+      const sessionsData: { week: string; sessions: number; completed: number }[] = [];
+      for (let i = 3; i >= 0; i--) {
+        const weekStart = new Date(now);
+        weekStart.setDate(weekStart.getDate() - (i * 7) - now.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+
+        const weekSessions = sessions.filter(s => {
+          const d = new Date(s.scheduledAt);
+          return d >= weekStart && d < weekEnd;
+        });
+
+        sessionsData.push({
+          week: `Week ${4 - i}`,
+          sessions: weekSessions.length,
+          completed: weekSessions.filter(s => s.status === 'completed').length,
+        });
+      }
+
+      // --- Client Growth Data (last 5 months) ---
+      const clientGrowthData: { month: string; clients: number }[] = [];
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      for (let i = 4; i >= 0; i--) {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+        const clientsUpToMonth = allClients.filter(c => new Date(c.createdAt) <= monthEnd);
+        clientGrowthData.push({
+          month: monthNames[monthDate.getMonth()],
+          clients: clientsUpToMonth.length,
+        });
+      }
+
+      // --- Trainer Streak ---
+      // Count consecutive days (going back from today) where at least one session was completed
+      let trainerStreak = 0;
+      const completedSessions = sessions
+        .filter(s => s.status === 'completed')
+        .map(s => new Date(s.scheduledAt).toDateString())
+        .filter((v, i, a) => a.indexOf(v) === i); // unique dates
+      const today = new Date();
+      for (let i = 0; i < 365; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        if (completedSessions.includes(checkDate.toDateString())) {
+          trainerStreak++;
+        } else if (i > 0) {
+          break; // streak broken
+        }
+        // Skip today if no session yet (don't break streak)
+      }
+
+      // --- Completion Rate ---
+      const totalSessions = sessions.length;
+      const completedCount = sessions.filter(s => s.status === 'completed').length;
+      const completionRate = totalSessions > 0 ? Math.round((completedCount / totalSessions) * 100) : 0;
+
+      // --- Client Compliance Rates (7/30/90 day windows) ---
+      const clientComplianceRates = [];
+      for (const client of allClients.filter(c => c.status === 'active')) {
+        const clientWorkouts = await this.getClientWorkouts(client.id);
+        const calcRate = (days: number) => {
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - days);
+          const assigned = clientWorkouts.filter(w => new Date(w.assignedAt) >= cutoff);
+          if (assigned.length === 0) return 0;
+          const completed = assigned.filter(w => w.completedAt != null || w.status === 'completed');
+          return Math.round((completed.length / assigned.length) * 100);
+        };
+        clientComplianceRates.push({
+          clientId: client.id,
+          clientName: client.name,
+          rate7d: calcRate(7),
+          rate30d: calcRate(30),
+          rate90d: calcRate(90),
+        });
+      }
+
+      // --- Performance Insight ---
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const lastMonthCompleted = sessions.filter(s =>
+        s.status === 'completed' &&
+        new Date(s.scheduledAt) >= lastMonthStart &&
+        new Date(s.scheduledAt) <= lastMonthEnd
+      ).length;
+
+      const thisMonthCompleted = sessions.filter(s =>
+        s.status === 'completed' &&
+        new Date(s.scheduledAt) >= thisMonthStart &&
+        new Date(s.scheduledAt) <= now
+      ).length;
+
+      // Adjust for partial month by projecting
+      const dayOfMonth = now.getDate();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const projectedThisMonth = dayOfMonth > 0 ? Math.round((thisMonthCompleted / dayOfMonth) * daysInMonth) : 0;
+
+      let changePercent = 0;
+      if (lastMonthCompleted > 0) {
+        changePercent = Math.round(((projectedThisMonth - lastMonthCompleted) / lastMonthCompleted) * 100);
+      }
+
+      return {
+        weightProgressData,
+        sessionsData,
+        clientGrowthData,
+        trainerStreak,
+        completionRate,
+        clientComplianceRates,
+        performanceInsight: {
+          metric: 'session_completion',
+          value: changePercent,
+          label: changePercent >= 0
+            ? `+${changePercent}% session completion vs last month`
+            : `${changePercent}% session completion vs last month`,
+        },
+      };
+    } catch (error) {
+      console.error('Error in getDashboardCharts:', error);
+      return {
+        weightProgressData: [],
+        sessionsData: [],
+        clientGrowthData: [],
+        trainerStreak: 0,
+        completionRate: 0,
+        clientComplianceRates: [],
+        performanceInsight: { metric: 'session_completion', value: 0, label: 'No data yet' },
       };
     }
   }

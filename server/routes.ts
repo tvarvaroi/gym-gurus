@@ -216,6 +216,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/dashboard/charts - Get chart data for trainer dashboard
+  app.get("/api/dashboard/charts/:trainerId", async (req: Request, res: Response) => {
+    try {
+      const { trainerId } = req.params;
+      const charts = await storage.getDashboardCharts(trainerId);
+      res.json(charts);
+    } catch (error) {
+      console.warn("Error fetching dashboard charts:", error);
+      res.json({
+        weightProgressData: [],
+        sessionsData: [],
+        clientGrowthData: [],
+        trainerStreak: 0,
+        completionRate: 0,
+        clientComplianceRates: [],
+        performanceInsight: { metric: 'session_completion', value: 0, label: 'No data yet' },
+      });
+    }
+  });
+
   // GET /api/clients/:trainerId - Get all clients for specific trainer (for development)
   app.get("/api/clients/:trainerId", async (req: Request, res: Response) => {
     try {
@@ -1000,26 +1020,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/workout-assignments/:id/complete", secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { notes } = req.body;
-      
+      const { notes, durationMinutes, volumeKg, totalReps, totalSets, hadPersonalRecord } = req.body;
+
       // First get the assignment to verify ownership
       const assignments = await storage.getClientWorkouts(""); // We'll verify ownership differently
       const assignment = assignments.find(a => a.id === id);
       if (!assignment) {
         return res.status(404).json({ error: "Assignment not found" });
       }
-      
+
       // Verify the client belongs to authenticated trainer
       const client = await storage.getClient(assignment.clientId);
       if (!client || client.trainerId !== (req.user as any).id) {
         return res.status(403).json({ error: "Access denied to this assignment" });
       }
-      
+
       const completedAssignment = await storage.completeWorkoutAssignment(id, notes);
-      res.json(completedAssignment);
+
+      // Award XP and update gamification for the user completing the workout
+      const userId = (req.user as any).id;
+      let gamificationResult = null;
+      try {
+        const { awardWorkoutCompletionXp, updateStreak, updateWorkoutStats } = await import('./services/gamification/xpService');
+
+        const xpResult = await awardWorkoutCompletionXp(userId, durationMinutes || 30, hadPersonalRecord || false);
+        const streakResult = await updateStreak(userId);
+        await updateWorkoutStats(userId, volumeKg || 0, totalReps || 0, totalSets || 0, durationMinutes || 30);
+
+        gamificationResult = {
+          xpAwarded: xpResult.xpAwarded,
+          newLevel: xpResult.newLevel,
+          leveledUp: xpResult.leveledUp,
+          streak: streakResult,
+        };
+      } catch (gamificationError) {
+        console.warn('Gamification update failed (non-critical):', gamificationError);
+      }
+
+      res.json({ ...completedAssignment, gamification: gamificationResult });
     } catch (error) {
       // Error logged internally
       res.status(500).json({ error: "Failed to complete workout assignment" });
+    }
+  });
+
+  // GET /api/clients/:clientId/compliance - Get client workout compliance rates
+  app.get("/api/clients/:clientId/compliance", secureAuth, requireClientOwnership, async (req: Request, res: Response) => {
+    try {
+      const { clientId } = req.params;
+      const clientWorkouts = await storage.getClientWorkouts(clientId);
+
+      const calcRate = (days: number) => {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const assigned = clientWorkouts.filter(w => new Date(w.assignedAt) >= cutoff);
+        if (assigned.length === 0) return { rate: 0, completed: 0, total: 0 };
+        const completed = assigned.filter(w => w.completedAt != null || w.status === 'completed');
+        return {
+          rate: Math.round((completed.length / assigned.length) * 100),
+          completed: completed.length,
+          total: assigned.length,
+        };
+      };
+
+      res.json({
+        rate7d: calcRate(7),
+        rate30d: calcRate(30),
+        rate90d: calcRate(90),
+        allTime: calcRate(365 * 10),
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate compliance rates" });
     }
   });
 

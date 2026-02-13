@@ -25,29 +25,6 @@ import { calculateAchievements, getNextAchievement, type BadgeCalculationData } 
 import { AchievementGrid } from "./AchievementBadge"
 import { CelebrationOverlay, useCelebration } from "./CelebrationOverlay"
 
-// Mock chart data for demo purposes
-const mockWeightProgressData = [
-  { date: '4 weeks ago', weight: 195 },
-  { date: '3 weeks ago', weight: 192 },
-  { date: '2 weeks ago', weight: 190 },
-  { date: '1 week ago', weight: 188 },
-  { date: 'Today', weight: 185 },
-];
-
-const mockSessionsData = [
-  { week: 'Week 1', sessions: 8, completed: 7 },
-  { week: 'Week 2', sessions: 10, completed: 9 },
-  { week: 'Week 3', sessions: 12, completed: 11 },
-  { week: 'Week 4', sessions: 15, completed: 14 },
-];
-
-const mockClientGrowthData = [
-  { month: 'Jan', clients: 5 },
-  { month: 'Feb', clients: 7 },
-  { month: 'Mar', clients: 9 },
-  { month: 'Apr', clients: 12 },
-  { month: 'May', clients: 12 },
-];
 
 // Shimmer loading component
 const ShimmerCard = () => (
@@ -831,17 +808,20 @@ const Dashboard = memo(() => {
         case 'client_deleted':
           queryClient.invalidateQueries({ queryKey: ['/api/clients', user?.id] });
           queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats', user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts', user?.id] });
           break;
         case 'workout_updated':
         case 'workout_created':
         case 'workout_deleted':
           queryClient.invalidateQueries({ queryKey: ['/api/workouts', user?.id] });
           queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats', user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts', user?.id] });
           break;
         case 'session_updated':
         case 'session_created':
         case 'session_completed':
           queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats', user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts', user?.id] });
           break;
       }
     }, [queryClient, user?.id, toast]),
@@ -877,18 +857,33 @@ const Dashboard = memo(() => {
     enabled: !!user?.id,
   });
 
-  // Calculate streak (mock data for now - would come from backend)
-  const currentStreak = 5; // Days
+  // Fetch real chart data from backend
+  const { data: chartData } = useQuery({
+    queryKey: ['/api/dashboard/charts', user?.id],
+    queryFn: () => fetch(`/api/dashboard/charts/${user?.id}`).then(res => res.json()),
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
+    enabled: !!user?.id,
+  });
+
+  // Real streak from chart data
+  const currentStreak = chartData?.trainerStreak || 0;
   const weeklyGoal = 10; // Sessions
   const weeklyProgress = ((dashboardStats?.completedSessionsThisWeek || 0) / weeklyGoal) * 100;
 
-  // Achievements (mock - would come from backend)
-  const achievements = [
-    { icon: Flame, title: "5-Day Streak", description: "Train 5 days in a row", unlocked: currentStreak >= 5, glow: currentStreak >= 5 },
+  // Trainer achievements - computed from real data
+  const totalSessionsCompleted = useMemo(() => {
+    const sessionsData = chartData?.sessionsData || [];
+    return sessionsData.reduce((sum: number, w: any) => sum + (w.completed || 0), 0);
+  }, [chartData?.sessionsData]);
+
+  const trainerAchievements = useMemo(() => [
+    { icon: Flame, title: `${currentStreak}-Day Streak`, description: "Consecutive active days", unlocked: currentStreak >= 3, glow: currentStreak >= 7 },
     { icon: Star, title: "10 Clients", description: "Reach 10 active clients", unlocked: (dashboardStats?.activeClients || 0) >= 10 },
-    { icon: Target, title: "50 Sessions", description: "Complete 50 sessions", unlocked: false },
-    { icon: Award, title: "100 Workouts", description: "Create 100 workout plans", unlocked: false },
-  ];
+    { icon: Target, title: "50 Sessions", description: "Complete 50 sessions", unlocked: totalSessionsCompleted >= 50 },
+    { icon: Award, title: "100 Workouts", description: "Create 100 workout plans", unlocked: (dashboardStats?.totalWorkouts || 0) >= 100 },
+  ], [currentStreak, dashboardStats?.activeClients, dashboardStats?.totalWorkouts, totalSessionsCompleted]);
 
   const stats = [
     {
@@ -1603,13 +1598,13 @@ const Dashboard = memo(() => {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-light">Achievements</CardTitle>
                 <Badge variant="outline" className="font-light text-xs">
-                  {achievements.filter(a => a.unlocked).length} / {achievements.length}
+                  {trainerAchievements.filter(a => a.unlocked).length} / {trainerAchievements.length}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {achievements.map((achievement, index) => (
+                {trainerAchievements.map((achievement, index) => (
                   <AchievementBadge key={index} {...achievement} />
                 ))}
               </div>
@@ -1663,7 +1658,8 @@ const Dashboard = memo(() => {
                 <h3 className="text-sm font-semibold text-emerald-600">Performance Insight</h3>
               </div>
               <p className="text-xs leading-relaxed">
-                +15% client engagement this month. Your personalized approach is working!
+                {chartData?.performanceInsight?.label || 'Start completing sessions to see performance insights.'}
+                {(chartData?.performanceInsight?.value || 0) > 0 && ' Your personalized approach is working!'}
               </p>
             </CardContent>
           </Card>
@@ -1676,55 +1672,48 @@ const Dashboard = memo(() => {
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-light">Client Progress</CardTitle>
-            <CardDescription className="text-xs">Average weight loss trend</CardDescription>
+            <CardDescription className="text-xs">Average weight trend</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={mockWeightProgressData}>
-                <defs>
-                  <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis
-                  dataKey="date"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  domain={[180, 200]}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    fontSize: '12px'
-                  }}
-                  formatter={(value: any) => [`${value} lbs`, 'Weight']}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="weight"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  fill="url(#colorWeight)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Total Progress</span>
-              <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none">
-                <TrendingDown className="h-3 w-3 mr-1" />
-                -10 lbs
-              </Badge>
-            </div>
+            {(chartData?.weightProgressData?.length || 0) > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart data={chartData.weightProgressData}>
+                    <defs>
+                      <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} domain={['dataMin - 5', 'dataMax + 5']} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
+                      formatter={(value: any) => [`${value} lbs`, 'Weight']}
+                    />
+                    <Area type="monotone" dataKey="weight" stroke="#10b981" strokeWidth={2} fill="url(#colorWeight)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Total Progress</span>
+                  {(() => {
+                    const data = chartData.weightProgressData;
+                    const diff = data.length >= 2 ? data[data.length - 1].weight - data[0].weight : 0;
+                    return (
+                      <Badge variant="secondary" className={`${diff <= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-orange-500/10 text-orange-600'} border-none`}>
+                        {diff <= 0 ? <TrendingDown className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
+                        {diff <= 0 ? '' : '+'}{diff} lbs
+                      </Badge>
+                    );
+                  })()}
+                </div>
+              </>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
+                Log client weight progress to see trends
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1735,42 +1724,31 @@ const Dashboard = memo(() => {
             <CardDescription className="text-xs">Scheduled vs completed</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={mockSessionsData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis
-                  dataKey="week"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    fontSize: '12px'
-                  }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: '12px' }}
-                  formatter={(value) => value === 'sessions' ? 'Scheduled' : 'Completed'}
-                />
-                <Bar dataKey="sessions" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Completion Rate</span>
-              <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none">
-                93%
-              </Badge>
-            </div>
+            {(chartData?.sessionsData?.length || 0) > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={chartData.sessionsData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis dataKey="week" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
+                    <Legend wrapperStyle={{ fontSize: '12px' }} formatter={(value) => value === 'sessions' ? 'Scheduled' : 'Completed'} />
+                    <Bar dataKey="sessions" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Completion Rate</span>
+                  <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none">
+                    {chartData?.completionRate || 0}%
+                  </Badge>
+                </div>
+              </>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
+                Schedule sessions to see weekly trends
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1778,50 +1756,44 @@ const Dashboard = memo(() => {
         <Card className="bg-card/50 backdrop-blur-sm border-border/50 lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-light">Client Growth</CardTitle>
-            <CardDescription className="text-xs">Monthly new clients</CardDescription>
+            <CardDescription className="text-xs">Cumulative clients by month</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={mockClientGrowthData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis
-                  dataKey="month"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  domain={[0, 15]}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    fontSize: '12px'
-                  }}
-                  formatter={(value: any) => [`${value}`, 'Clients']}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="clients"
-                  stroke="#a855f7"
-                  strokeWidth={3}
-                  dot={{ fill: '#a855f7', r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Growth Rate</span>
-              <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-none">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                +140%
-              </Badge>
-            </div>
+            {(chartData?.clientGrowthData?.length || 0) > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={chartData.clientGrowthData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} domain={[0, 'dataMax + 2']} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
+                      formatter={(value: any) => [`${value}`, 'Clients']}
+                    />
+                    <Line type="monotone" dataKey="clients" stroke="#a855f7" strokeWidth={3} dot={{ fill: '#a855f7', r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Growth Rate</span>
+                  {(() => {
+                    const data = chartData.clientGrowthData;
+                    const first = data.length >= 2 ? data[0].clients : 0;
+                    const last = data.length >= 2 ? data[data.length - 1].clients : 0;
+                    const growthRate = first > 0 ? Math.round(((last - first) / first) * 100) : (last > 0 ? 100 : 0);
+                    return (
+                      <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-none">
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                        {growthRate >= 0 ? '+' : ''}{growthRate}%
+                      </Badge>
+                    );
+                  })()}
+                </div>
+              </>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
+                Add clients to see growth trends
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

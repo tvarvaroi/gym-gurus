@@ -144,6 +144,17 @@ export default function ClientDetailsPage() {
     enabled: !!clientId
   });
 
+  // Fetch client's compliance rates
+  const { data: complianceData } = useQuery<{
+    rate7d: { rate: number; completed: number; total: number };
+    rate30d: { rate: number; completed: number; total: number };
+    rate90d: { rate: number; completed: number; total: number };
+    allTime: { rate: number; completed: number; total: number };
+  }>({
+    queryKey: [`/api/clients/${clientId}/compliance`],
+    enabled: !!clientId,
+  });
+
   // Fetch available workouts for assignment
   const { data: workouts = [] } = useQuery({
     queryKey: ['/api/workouts'],
@@ -850,6 +861,44 @@ export default function ClientDetailsPage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
+          {/* Workout Compliance Rates */}
+          {complianceData && (
+            <Card className="glass-strong border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Workout Compliance
+                </CardTitle>
+                <CardDescription>Workout completion rates over different time periods</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: '7 Days', data: complianceData.rate7d },
+                    { label: '30 Days', data: complianceData.rate30d },
+                    { label: '90 Days', data: complianceData.rate90d },
+                    { label: 'All Time', data: complianceData.allTime },
+                  ].map(({ label, data }) => (
+                    <div key={label} className="text-center p-3 rounded-lg bg-muted/30">
+                      <div className={`text-2xl font-bold ${
+                        data.rate >= 80 ? 'text-emerald-500' :
+                        data.rate >= 50 ? 'text-yellow-500' :
+                        data.rate > 0 ? 'text-red-500' :
+                        'text-muted-foreground'
+                      }`}>
+                        {data.total > 0 ? `${data.rate}%` : '--'}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">{label}</div>
+                      {data.total > 0 && (
+                        <div className="text-xs text-muted-foreground">{data.completed}/{data.total} done</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Progress Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Weight Chart */}
