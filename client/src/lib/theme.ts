@@ -3,11 +3,14 @@
  * Inspired by the luxury login page aesthetic
  */
 
+import type { InternalRole, RoleThemeKey } from './roles';
+import { getRoleThemeKey } from './roles';
+
 export const theme = {
   // Color Palette
   colors: {
-    // Trainer Theme - Gold/Bronze
-    trainer: {
+    // Guru (Trainer) Theme - Gold/Bronze
+    guru: {
       primary: '#c9a855',
       secondary: '#d4af37',
       tertiary: '#b8935e',
@@ -16,14 +19,24 @@ export const theme = {
       glowStrong: 'rgba(201, 168, 85, 0.25)',
     },
 
-    // Client Theme - Teal/Cyan
-    client: {
+    // Disciple (Client) Theme - Teal/Cyan
+    disciple: {
       primary: '#0d9488',
       secondary: '#14b8a6',
       tertiary: '#0f766e',
       gradient: 'linear-gradient(135deg, #0d9488, #14b8a6, #0f766e)',
       glow: 'rgba(13, 148, 136, 0.08)',
       glowStrong: 'rgba(13, 148, 136, 0.25)',
+    },
+
+    // Ronin (Solo) Theme - Purple/Indigo
+    ronin: {
+      primary: '#a855f7',
+      secondary: '#6366f1',
+      tertiary: '#8b5cf6',
+      gradient: 'linear-gradient(135deg, #a855f7, #8b5cf6, #6366f1)',
+      glow: 'rgba(168, 85, 247, 0.08)',
+      glowStrong: 'rgba(168, 85, 247, 0.25)',
     },
 
     // Neutral Colors
@@ -62,18 +75,18 @@ export const theme = {
     },
 
     sizes: {
-      xs: '0.75rem',    // 12px
-      sm: '0.875rem',   // 14px
-      base: '1rem',     // 16px
-      lg: '1.125rem',   // 18px
-      xl: '1.25rem',    // 20px
-      '2xl': '1.5rem',  // 24px
+      xs: '0.75rem', // 12px
+      sm: '0.875rem', // 14px
+      base: '1rem', // 16px
+      lg: '1.125rem', // 18px
+      xl: '1.25rem', // 20px
+      '2xl': '1.5rem', // 24px
       '3xl': '1.875rem', // 30px
       '4xl': '2.25rem', // 36px
-      '5xl': '3rem',    // 48px
+      '5xl': '3rem', // 48px
       '6xl': '3.75rem', // 60px
-      '7xl': '4.5rem',  // 72px
-      '8xl': '6rem',    // 96px
+      '7xl': '4.5rem', // 72px
+      '8xl': '6rem', // 96px
     },
 
     letterSpacing: {
@@ -105,8 +118,9 @@ export const theme = {
       '2xl': '0 30px 80px rgba(0, 0, 0, 0.7)',
 
       // Role-specific shadows
-      trainer: '0 12px 30px rgba(201, 168, 85, 0.4)',
-      client: '0 12px 30px rgba(13, 148, 136, 0.4)',
+      guru: '0 12px 30px rgba(201, 168, 85, 0.4)',
+      disciple: '0 12px 30px rgba(13, 148, 136, 0.4)',
+      ronin: '0 12px 30px rgba(168, 85, 247, 0.4)',
     },
 
     // Borders
@@ -114,8 +128,9 @@ export const theme = {
       subtle: '1px solid rgba(255, 255, 255, 0.06)',
       light: '1px solid rgba(255, 255, 255, 0.08)',
       medium: '1px solid rgba(255, 255, 255, 0.12)',
-      trainer: '1px solid rgba(201, 168, 85, 0.35)',
-      client: '1px solid rgba(13, 148, 136, 0.35)',
+      guru: '1px solid rgba(201, 168, 85, 0.35)',
+      disciple: '1px solid rgba(13, 148, 136, 0.35)',
+      ronin: '1px solid rgba(168, 85, 247, 0.35)',
     },
 
     // Shine/Highlight overlays
@@ -131,25 +146,25 @@ export const theme = {
 
   // Spacing
   spacing: {
-    xs: '0.25rem',   // 4px
-    sm: '0.5rem',    // 8px
-    md: '1rem',      // 16px
-    lg: '1.5rem',    // 24px
-    xl: '2rem',      // 32px
-    '2xl': '3rem',   // 48px
-    '3xl': '4rem',   // 64px
-    '4xl': '6rem',   // 96px
-    '5xl': '8rem',   // 128px
+    xs: '0.25rem', // 4px
+    sm: '0.5rem', // 8px
+    md: '1rem', // 16px
+    lg: '1.5rem', // 24px
+    xl: '2rem', // 32px
+    '2xl': '3rem', // 48px
+    '3xl': '4rem', // 64px
+    '4xl': '6rem', // 96px
+    '5xl': '8rem', // 128px
   },
 
   // Border Radius
   radius: {
-    sm: '0.5rem',    // 8px
-    md: '0.75rem',   // 12px
-    lg: '1rem',      // 16px
-    xl: '1.25rem',   // 20px
+    sm: '0.5rem', // 8px
+    md: '0.75rem', // 12px
+    lg: '1rem', // 16px
+    xl: '1.25rem', // 20px
     '2xl': '1.5rem', // 24px
-    '3xl': '2rem',   // 32px
+    '3xl': '2rem', // 32px
     full: '9999px',
   },
 
@@ -174,21 +189,26 @@ export const theme = {
   },
 } as const;
 
-// Helper function to get role-specific colors
-export const getRoleTheme = (role: 'trainer' | 'client') => {
-  return theme.colors[role];
+// Helper function to get role-specific colors by theme key
+export const getRoleTheme = (themeKey: RoleThemeKey) => {
+  return theme.colors[themeKey];
+};
+
+// Helper function to get role-specific colors by internal role
+export const getRoleThemeByRole = (role: InternalRole) => {
+  return theme.colors[getRoleThemeKey(role)];
 };
 
 // Helper for gradient text
-export const gradientText = (role: 'trainer' | 'client') => ({
-  background: theme.colors[role].gradient,
+export const gradientText = (themeKey: RoleThemeKey) => ({
+  background: theme.colors[themeKey].gradient,
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   backgroundClip: 'text',
 });
 
 // Helper for glassmorphism card
-export const glassCard = (role?: 'trainer' | 'client') => {
+export const glassCard = (themeKey?: RoleThemeKey) => {
   const baseStyle = {
     backdropFilter: 'blur(30px)',
     background: 'rgba(15, 15, 15, 0.7)',
@@ -196,21 +216,33 @@ export const glassCard = (role?: 'trainer' | 'client') => {
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
   };
 
-  if (role === 'trainer') {
+  if (themeKey === 'guru') {
     return {
       ...baseStyle,
       background: 'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(184, 147, 94, 0.06))',
       border: '1px solid rgba(201, 168, 85, 0.25)',
-      boxShadow: '0 25px 50px -12px rgba(201, 168, 85, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+      boxShadow:
+        '0 25px 50px -12px rgba(201, 168, 85, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
     };
   }
 
-  if (role === 'client') {
+  if (themeKey === 'disciple') {
     return {
       ...baseStyle,
       background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.08), rgba(20, 184, 166, 0.06))',
       border: '1px solid rgba(13, 148, 136, 0.25)',
-      boxShadow: '0 25px 50px -12px rgba(13, 148, 136, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+      boxShadow:
+        '0 25px 50px -12px rgba(13, 148, 136, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+    };
+  }
+
+  if (themeKey === 'ronin') {
+    return {
+      ...baseStyle,
+      background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(99, 102, 241, 0.06))',
+      border: '1px solid rgba(168, 85, 247, 0.25)',
+      boxShadow:
+        '0 25px 50px -12px rgba(168, 85, 247, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
     };
   }
 

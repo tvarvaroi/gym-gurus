@@ -1,27 +1,47 @@
-import { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
-import { LogOut } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useUser } from "@/contexts/UserContext";
-import NotificationCenter from "@/components/NotificationCenter";
+import { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
+import { LogOut } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useUser } from '@/contexts/UserContext';
+import NotificationCenter from '@/components/NotificationCenter';
+import { getRoleThemeByRole } from '@/lib/theme';
+import type { InternalRole } from '@/lib/roles';
+
+// Get role-specific color config for header styling
+function useRoleColors() {
+  const { user } = useUser();
+  const role = (user?.role || 'trainer') as InternalRole;
+  const roleTheme = getRoleThemeByRole(role);
+
+  // Extract RGB components for rgba() usage
+  const hexToRgbPrefix = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}`;
+  };
+
+  return {
+    primary: { rgb: hexToRgbPrefix(roleTheme.primary), hex: roleTheme.primary },
+    secondary: { rgb: hexToRgbPrefix(roleTheme.secondary), hex: roleTheme.secondary },
+  };
+}
 
 // Premium header center text with mouse tracking gradient
 function HeaderCenterText() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const textRef = useRef<HTMLDivElement>(null);
-  const { isTrainer } = useUser();
 
-  const colors = isTrainer ? {
-    primary: { rgb: 'rgba(201, 168, 85', hex: '#C9A855' },
-    secondary: { rgb: 'rgba(13, 148, 136', hex: '#0D9488' },
-  } : {
-    primary: { rgb: 'rgba(6, 182, 212', hex: '#06b6d4' },
-    secondary: { rgb: 'rgba(13, 148, 136', hex: '#14b8a6' },
-  };
+  const colors = useRoleColors();
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!textRef.current) return;
@@ -44,18 +64,22 @@ function HeaderCenterText() {
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      <div className="relative px-6 md:px-10 py-3 md:py-3.5 rounded-2xl backdrop-blur-xl border overflow-visible group"
-           style={{
-             background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.15), ${colors.secondary.rgb}, 0.15))`,
-             borderColor: `${colors.primary.rgb}, 0.3)`,
-             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-           }}>
-
+      <div
+        className="relative px-6 md:px-10 py-3 md:py-3.5 rounded-2xl backdrop-blur-xl border overflow-visible group"
+        style={{
+          background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.15), ${colors.secondary.rgb}, 0.15))`,
+          borderColor: `${colors.primary.rgb}, 0.3)`,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        }}
+      >
         {/* Premium noise texture overlay */}
-        <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay rounded-2xl"
-             style={{
-               backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")',
-             }} />
+        <div
+          className="absolute inset-0 opacity-[0.015] mix-blend-overlay rounded-2xl"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
+          }}
+        />
 
         {/* Mouse tracking gradient */}
         <motion.div
@@ -78,14 +102,22 @@ function HeaderCenterText() {
         />
 
         {/* Decorative corner accents */}
-        <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 rounded-tl-2xl opacity-40"
-             style={{ borderColor: `${colors.primary.rgb}, 0.6)` }} />
-        <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 rounded-tr-2xl opacity-40"
-             style={{ borderColor: `${colors.secondary.rgb}, 0.6)` }} />
-        <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 rounded-bl-2xl opacity-40"
-             style={{ borderColor: `${colors.secondary.rgb}, 0.6)` }} />
-        <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 rounded-br-2xl opacity-40"
-             style={{ borderColor: `${colors.primary.rgb}, 0.6)` }} />
+        <div
+          className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 rounded-tl-2xl opacity-40"
+          style={{ borderColor: `${colors.primary.rgb}, 0.6)` }}
+        />
+        <div
+          className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 rounded-tr-2xl opacity-40"
+          style={{ borderColor: `${colors.secondary.rgb}, 0.6)` }}
+        />
+        <div
+          className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 rounded-bl-2xl opacity-40"
+          style={{ borderColor: `${colors.secondary.rgb}, 0.6)` }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 rounded-br-2xl opacity-40"
+          style={{ borderColor: `${colors.primary.rgb}, 0.6)` }}
+        />
 
         <div className="relative flex items-center justify-center gap-3">
           {/* Left ornamental dot */}
@@ -102,7 +134,7 @@ function HeaderCenterText() {
             transition={{
               duration: 2,
               repeat: isHovering ? Infinity : 0,
-              ease: "easeInOut",
+              ease: 'easeInOut',
             }}
           />
 
@@ -125,7 +157,7 @@ function HeaderCenterText() {
             transition={{
               duration: 5,
               repeat: isHovering ? Infinity : 0,
-              ease: "linear",
+              ease: 'linear',
             }}
           >
             GYM GURUS — Elite Fitness Platform
@@ -145,7 +177,7 @@ function HeaderCenterText() {
             transition={{
               duration: 2,
               repeat: isHovering ? Infinity : 0,
-              ease: "easeInOut",
+              ease: 'easeInOut',
               delay: 0.5,
             }}
           />
@@ -175,7 +207,7 @@ function HeaderCenterText() {
                     transition={{
                       duration: 3,
                       repeat: Infinity,
-                      ease: "easeInOut",
+                      ease: 'easeInOut',
                     }}
                   />
                 </motion.div>
@@ -201,7 +233,7 @@ function HeaderCenterText() {
                     transition={{
                       duration: 3,
                       repeat: Infinity,
-                      ease: "easeInOut",
+                      ease: 'easeInOut',
                       delay: 1,
                     }}
                   />
@@ -221,20 +253,14 @@ function UserMenu() {
     queryKey: ['/api/auth/user'],
     retry: false,
   });
-  const { isTrainer } = useUser();
 
-  const colors = isTrainer ? {
-    primary: { rgb: 'rgba(201, 168, 85', hex: '#C9A855' },
-    secondary: { rgb: 'rgba(13, 148, 136', hex: '#0D9488' },
-  } : {
-    primary: { rgb: 'rgba(6, 182, 212', hex: '#06b6d4' },
-    secondary: { rgb: 'rgba(13, 148, 136', hex: '#14b8a6' },
-  };
+  const colors = useRoleColors();
 
   if (!user) return null;
 
   const userData = user as any;
-  const initials = `${userData.firstName?.[0] || ''}${userData.lastName?.[0] || ''}`.toUpperCase() || 'U';
+  const initials =
+    `${userData.firstName?.[0] || ''}${userData.lastName?.[0] || ''}`.toUpperCase() || 'U';
 
   return (
     <DropdownMenu>
@@ -262,29 +288,41 @@ function UserMenu() {
               background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.4), ${colors.secondary.rgb}, 0.4))`,
             }}
             animate={{ rotate: [0, 360] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
           >
             <div className="w-full h-full rounded-full bg-background" />
           </motion.div>
 
           {/* Avatar container */}
-          <div className="relative h-11 w-11 md:h-12 md:w-12 rounded-full border-2 transition-all duration-300 overflow-hidden"
-               style={{
-                 background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.15), ${colors.secondary.rgb}, 0.15))`,
-                 borderColor: `${colors.primary.rgb}, 0.3)`,
-                 backdropFilter: 'blur(12px)',
-                 boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-               }}>
+          <div
+            className="relative h-11 w-11 md:h-12 md:w-12 rounded-full border-2 transition-all duration-300 overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.15), ${colors.secondary.rgb}, 0.15))`,
+              borderColor: `${colors.primary.rgb}, 0.3)`,
+              backdropFilter: 'blur(12px)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <div
+              className="absolute inset-0 opacity-[0.015] mix-blend-overlay"
+              style={{
+                backgroundImage:
+                  "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
+              }}
+            />
 
-            <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay"
-                 style={{
-                   backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")',
-                 }} />
-
-            <div className="absolute inset-0"
-                 style={{ background: `radial-gradient(circle at 30% 30%, ${colors.primary.rgb}, 0.25), transparent 60%)` }} />
-            <div className="absolute inset-0"
-                 style={{ background: `radial-gradient(circle at 70% 70%, ${colors.secondary.rgb}, 0.25), transparent 60%)` }} />
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(circle at 30% 30%, ${colors.primary.rgb}, 0.25), transparent 60%)`,
+              }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(circle at 70% 70%, ${colors.secondary.rgb}, 0.25), transparent 60%)`,
+              }}
+            />
 
             <div className="relative h-full w-full flex items-center justify-center">
               <motion.span
@@ -308,8 +346,11 @@ function UserMenu() {
 
             <motion.div
               className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%]"
-              style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%)' }}
-              transition={{ duration: 0.8, ease: "easeInOut" }}
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%)',
+              }}
+              transition={{ duration: 0.8, ease: 'easeInOut' }}
               initial={false}
             />
           </div>
@@ -324,13 +365,15 @@ function UserMenu() {
             }}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 30, delay: 0.1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30, delay: 0.1 }}
           >
             <motion.div
               className="absolute inset-0 rounded-full"
-              style={{ background: 'radial-gradient(circle, rgba(16, 185, 129, 0.8), transparent)' }}
+              style={{
+                background: 'radial-gradient(circle, rgba(16, 185, 129, 0.8), transparent)',
+              }}
               animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0.9, 0.6] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             />
           </motion.div>
         </motion.button>
@@ -420,7 +463,9 @@ function UserMenu() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-destructive">Sign out</p>
-                  <p className="text-xs text-muted-foreground font-light">End your session securely</p>
+                  <p className="text-xs text-muted-foreground font-light">
+                    End your session securely
+                  </p>
                 </div>
               </div>
             </DropdownMenuItem>
@@ -433,35 +478,47 @@ function UserMenu() {
 
 // Main app header component with role-based colors
 export default function AppHeader() {
-  const { isTrainer } = useUser();
-
-  const colors = isTrainer ? {
-    primary: { rgb: 'rgba(201, 168, 85', hex: '#C9A855' },
-    secondary: { rgb: 'rgba(13, 148, 136', hex: '#0D9488' },
-  } : {
-    primary: { rgb: 'rgba(6, 182, 212', hex: '#06b6d4' },
-    secondary: { rgb: 'rgba(13, 148, 136', hex: '#14b8a6' },
-  };
+  const colors = useRoleColors();
 
   return (
-    <header className="sticky top-0 z-40 h-16 md:h-20 shrink-0 border-b relative overflow-hidden" role="banner" aria-label="App header"
-            style={{
-              borderColor: `${colors.primary.rgb}, 0.3)`,
-              backdropFilter: 'blur(24px)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-            }}>
+    <header
+      className="sticky top-0 z-40 h-16 md:h-20 shrink-0 border-b relative overflow-hidden"
+      role="banner"
+      aria-label="App header"
+      style={{
+        borderColor: `${colors.primary.rgb}, 0.3)`,
+        backdropFilter: 'blur(24px)',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+      }}
+    >
       {/* Premium multi-layered glass background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0"
-             style={{ background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.15) 0%, ${colors.secondary.rgb}, 0.15) 100%)` }} />
-        <div className="absolute inset-0"
-             style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.08), transparent 50%)' }} />
-        <div className="absolute inset-0"
-             style={{ background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.15))' }} />
-        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay"
-             style={{
-               backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")',
-             }} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.15) 0%, ${colors.secondary.rgb}, 0.15) 100%)`,
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.08), transparent 50%)',
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.15))',
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.02] mix-blend-overlay"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
+          }}
+        />
 
         {/* Animated shimmer effect */}
         <motion.div
@@ -471,18 +528,25 @@ export default function AppHeader() {
             backgroundSize: '200% 100%',
           }}
           animate={{ backgroundPosition: ['0% 0%', '200% 0%'] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
         />
 
         {/* Premium top accent line */}
-        <div className="absolute top-0 left-0 right-0 h-[1px]"
-             style={{
-               background: `linear-gradient(90deg, transparent 0%, ${colors.primary.rgb}, 0.5) 20%, ${colors.primary.rgb}, 0.8) 50%, ${colors.secondary.rgb}, 0.8) 50%, ${colors.secondary.rgb}, 0.5) 80%, transparent 100%)`,
-             }} />
+        <div
+          className="absolute top-0 left-0 right-0 h-[1px]"
+          style={{
+            background: `linear-gradient(90deg, transparent 0%, ${colors.primary.rgb}, 0.5) 20%, ${colors.primary.rgb}, 0.8) 50%, ${colors.secondary.rgb}, 0.8) 50%, ${colors.secondary.rgb}, 0.5) 80%, transparent 100%)`,
+          }}
+        />
 
         {/* Inner glow border */}
-        <div className="absolute inset-0 pointer-events-none"
-             style={{ boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.06), inset 0 -1px 2px rgba(0, 0, 0, 0.15)' }} />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            boxShadow:
+              'inset 0 1px 2px rgba(255, 255, 255, 0.06), inset 0 -1px 2px rgba(0, 0, 0, 0.15)',
+          }}
+        />
       </div>
 
       {/* Grid layout for proper centering */}
@@ -494,10 +558,7 @@ export default function AppHeader() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
         >
-          <motion.div
-            whileHover={{ scale: 1.05, y: -1 }}
-            whileTap={{ scale: 0.95 }}
-          >
+          <motion.div whileHover={{ scale: 1.05, y: -1 }} whileTap={{ scale: 0.95 }}>
             <SidebarTrigger
               data-testid="button-sidebar-toggle"
               aria-label="Toggle sidebar navigation"
@@ -506,7 +567,8 @@ export default function AppHeader() {
                 background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.12), ${colors.secondary.rgb}, 0.12))`,
                 borderColor: `${colors.primary.rgb}, 0.25)`,
                 backdropFilter: 'blur(12px)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+                boxShadow:
+                  '0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
               }}
             />
           </motion.div>

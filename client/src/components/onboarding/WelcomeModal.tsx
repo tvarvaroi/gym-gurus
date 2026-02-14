@@ -21,6 +21,7 @@ import {
   Wifi,
 } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
+import { getRoleDisplayName } from '@/lib/roles';
 const Confetti = lazy(() => import('react-confetti'));
 import { useWindowSize } from '@/hooks/use-window-size';
 

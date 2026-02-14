@@ -21,6 +21,8 @@ import {
 import { exportClientsToCSV, exportWorkoutsToCSV } from '@/lib/exportUtils';
 import { PageTransition, StaggerContainer, StaggerItem } from '@/components/AnimationComponents';
 import { UserProvider, useUser } from '@/contexts/UserContext';
+import { ALL_ROLE_CSS_CLASSES, getRoleCssClass } from '@/lib/roles';
+import type { InternalRole } from '@/lib/roles';
 
 // Import critical components directly (not lazy loaded)
 import AppSidebar from '@/components/AppSidebar';
@@ -486,6 +488,15 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.add('dark');
     localStorage.setItem('theme', 'dark');
   }, []);
+
+  // Apply role-specific CSS class to body for theming
+  useEffect(() => {
+    document.body.classList.remove(...ALL_ROLE_CSS_CLASSES);
+    if (user && (user as { role?: InternalRole }).role) {
+      const role = (user as { role: InternalRole }).role;
+      document.body.classList.add(getRoleCssClass(role));
+    }
+  }, [user]);
 
   // Auto-cycling effect - only run on login screen
   useEffect(() => {

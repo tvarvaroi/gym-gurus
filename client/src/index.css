@@ -47,15 +47,15 @@
 
   --sidebar-border: 0 0% 85%;
 
-  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary: 43 54% 55%;
 
-  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-primary-foreground: 0 0% 8%;
 
   --sidebar-accent: 0 0% 87%;
 
   --sidebar-accent-foreground: 0 0% 15%;
 
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-ring: 43 54% 55%;
 
   --popover: 0 0% 93%;
 
@@ -63,9 +63,9 @@
 
   --popover-border: 0 0% 86%;
 
-  --primary: 217 91% 60%;
+  --primary: 43 54% 55%;
 
-  --primary-foreground: 0 0% 98%;
+  --primary-foreground: 0 0% 8%;
 
   --secondary: 160 84% 39%;
 
@@ -75,17 +75,17 @@
 
   --muted-foreground: 0 0% 35%;
 
-  --accent: 217 91% 95%;
+  --accent: 43 54% 92%;
 
-  --accent-foreground: 217 91% 30%;
+  --accent-foreground: 43 54% 25%;
 
   --destructive: 0 75% 55%;
 
   --destructive-foreground: 0 0% 98%;
 
   --input: 0 0% 75%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 60%;
+  --ring: 43 54% 55%;
+  --chart-1: 43 54% 55%;
   --chart-2: 160 84% 39%;
   --chart-3: 250 80% 60%;
   --chart-4: 190 90% 50%;
@@ -165,7 +165,7 @@
 
   --sidebar-border: 0 0% 12%;
 
-  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary: 43 54% 55%;
 
   --sidebar-primary-foreground: 0 0% 98%;
 
@@ -173,7 +173,7 @@
 
   --sidebar-accent-foreground: 0 0% 95%;
 
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-ring: 43 54% 55%;
 
   --popover: 0 0% 11%;
 
@@ -181,7 +181,7 @@
 
   --popover-border: 0 0% 18%;
 
-  --primary: 217 91% 60%;
+  --primary: 43 54% 55%;
 
   --primary-foreground: 0 0% 98%;
 
@@ -193,7 +193,7 @@
 
   --muted-foreground: 0 0% 70%;
 
-  --accent: 160 84% 39%;
+  --accent: 43 40% 20%;
 
   --accent-foreground: 0 0% 95%;
 
@@ -202,8 +202,8 @@
   --destructive-foreground: 0 0% 95%;
 
   --input: 15 8% 35%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 60%;
+  --ring: 43 54% 55%;
+  --chart-1: 43 54% 55%;
   --chart-2: 160 84% 45%;
   --chart-3: 250 80% 65%;
   --chart-4: 190 90% 55%;
@@ -424,37 +424,145 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
 
-  /* Trainer color scheme - Gold/Amber */
+  /* Guru (trainer) color scheme - Gold/Amber */
+  .guru-gradient,
   .trainer-gradient {
     background: linear-gradient(135deg, #c9a855 0%, #d4b86a 50%, #c9a855 100%);
   }
 
+  .guru-gradient-subtle,
   .trainer-gradient-subtle {
     background: linear-gradient(135deg, rgba(201, 168, 85, 0.1) 0%, rgba(212, 184, 106, 0.15) 50%, rgba(201, 168, 85, 0.1) 100%);
   }
 
+  .guru-border,
   .trainer-border {
     border-color: rgba(201, 168, 85, 0.3);
   }
 
+  .guru-glow,
   .trainer-glow {
     box-shadow: 0 0 20px rgba(201, 168, 85, 0.2), 0 0 40px rgba(201, 168, 85, 0.1);
   }
 
-  /* Client color scheme - Teal/Cyan */
+  /* Disciple (client) color scheme - Teal/Cyan */
+  .disciple-gradient,
   .client-gradient {
     background: linear-gradient(135deg, #0d9488 0%, #14b8a6 50%, #0d9488 100%);
   }
 
+  .disciple-gradient-subtle,
   .client-gradient-subtle {
     background: linear-gradient(135deg, rgba(13, 148, 136, 0.1) 0%, rgba(20, 184, 166, 0.15) 50%, rgba(13, 148, 136, 0.1) 100%);
   }
 
+  .disciple-border,
   .client-border {
     border-color: rgba(13, 148, 136, 0.3);
   }
 
+  .disciple-glow,
   .client-glow {
     box-shadow: 0 0 20px rgba(13, 148, 136, 0.2), 0 0 40px rgba(13, 148, 136, 0.1);
   }
+
+  /* Ronin (solo) color scheme - Purple/Indigo */
+  .ronin-gradient {
+    background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 50%, #6366f1 100%);
+  }
+
+  .ronin-gradient-subtle {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(99, 102, 241, 0.1) 100%);
+  }
+
+  .ronin-border {
+    border-color: rgba(168, 85, 247, 0.3);
+  }
+
+  .ronin-glow {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.2), 0 0 40px rgba(99, 102, 241, 0.1);
+  }
+}
+
+/* ================================================
+   ROLE-SPECIFIC THEME OVERRIDES
+   Applied via CSS class on <body> when user logs in
+   ================================================ */
+
+/* Guru (trainer) - Gold theme (same as default brand) */
+.role-guru {
+  --primary: 43 54% 55%;
+  --primary-foreground: 0 0% 8%;
+  --accent: 43 54% 92%;
+  --accent-foreground: 43 54% 25%;
+  --ring: 43 54% 55%;
+  --sidebar-primary: 43 54% 55%;
+  --sidebar-primary-foreground: 0 0% 8%;
+  --sidebar-ring: 43 54% 55%;
+  --chart-1: 43 54% 55%;
+}
+
+.role-guru.dark,
+.dark .role-guru {
+  --primary: 43 54% 55%;
+  --primary-foreground: 0 0% 98%;
+  --accent: 43 40% 20%;
+  --accent-foreground: 0 0% 95%;
+  --ring: 43 54% 55%;
+  --sidebar-primary: 43 54% 55%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-ring: 43 54% 55%;
+  --chart-1: 43 54% 55%;
+}
+
+/* Disciple (client) - Teal theme */
+.role-disciple {
+  --primary: 174 82% 29%;
+  --primary-foreground: 0 0% 98%;
+  --accent: 174 82% 92%;
+  --accent-foreground: 174 82% 20%;
+  --ring: 174 82% 29%;
+  --sidebar-primary: 174 82% 29%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-ring: 174 82% 29%;
+  --chart-1: 174 82% 29%;
+}
+
+.role-disciple.dark,
+.dark .role-disciple {
+  --primary: 170 78% 40%;
+  --primary-foreground: 0 0% 98%;
+  --accent: 174 50% 18%;
+  --accent-foreground: 0 0% 95%;
+  --ring: 170 78% 40%;
+  --sidebar-primary: 170 78% 40%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-ring: 170 78% 40%;
+  --chart-1: 170 78% 40%;
+}
+
+/* Ronin (solo) - Purple/Indigo theme */
+.role-ronin {
+  --primary: 271 81% 56%;
+  --primary-foreground: 0 0% 98%;
+  --accent: 271 81% 94%;
+  --accent-foreground: 271 81% 25%;
+  --ring: 271 81% 56%;
+  --sidebar-primary: 271 81% 56%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-ring: 271 81% 56%;
+  --chart-1: 271 81% 56%;
+}
+
+.role-ronin.dark,
+.dark .role-ronin {
+  --primary: 271 81% 60%;
+  --primary-foreground: 0 0% 98%;
+  --accent: 271 50% 22%;
+  --accent-foreground: 0 0% 95%;
+  --ring: 271 81% 60%;
+  --sidebar-primary: 271 81% 60%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-ring: 271 81% 60%;
+  --chart-1: 271 81% 60%;
 }
