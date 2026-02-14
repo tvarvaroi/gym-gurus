@@ -13,8 +13,8 @@ const PricingPage = lazy(() => import('@/components/landing/pages/PricingPage'))
 // Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen w-full flex items-center justify-center">
-    <div className="text-center">
-      <div className="w-16 h-16 border-4 border-gold-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+    <div className="text-center" role="status" aria-label="Loading page content">
+      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
       <p className="text-white/70">Loading...</p>
     </div>
   </div>
@@ -55,21 +55,21 @@ const LandingPage = memo(() => {
             background: 'linear-gradient(135deg, #000000 0%, #0a0a0a 30%, #111111 50%, #0a0a0a 70%, #000000 100%)',
           }}
         />
-        {/* Subtle gold accent glow */}
+        {/* Subtle blue accent glow */}
         <div
           className="absolute w-[800px] h-[800px] rounded-full pointer-events-none"
           style={{
-            background: 'radial-gradient(circle, rgba(201, 168, 85, 0.04) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)',
             top: '-20%',
             right: '-10%',
             filter: 'blur(100px)',
           }}
         />
-        {/* Subtle teal accent glow */}
+        {/* Subtle emerald accent glow */}
         <div
           className="absolute w-[600px] h-[600px] rounded-full pointer-events-none"
           style={{
-            background: 'radial-gradient(circle, rgba(13, 148, 136, 0.04) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(16, 185, 129, 0.04) 0%, transparent 70%)',
             bottom: '-10%',
             left: '-5%',
             filter: 'blur(100px)',
