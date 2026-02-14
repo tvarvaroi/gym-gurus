@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { aiChat, aiGenerateWorkout, aiGenerateMealPlan, aiProgressInsights } from '../services/aiService';
+import { aiChat, aiChatStream, aiGenerateWorkout, aiGenerateMealPlan, aiProgressInsights } from '../services/aiService';
 import { db } from '../db';
 import { aiChatConversations, aiChatMessages } from '../../shared/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -9,7 +9,7 @@ const router = Router();
 /**
  * AI Chat Coach Endpoint
  * POST /api/ai/chat
- * Uses Anthropic API when available, falls back to smart template responses
+ * Uses Vercel AI SDK with Anthropic Claude, falls back to template responses
  */
 router.post('/chat', async (req: Request, res: Response) => {
   try {
@@ -76,6 +76,97 @@ router.post('/chat', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('AI Chat error:', error);
     res.status(500).json({ error: 'AI service temporarily unavailable' });
+  }
+});
+
+/**
+ * AI Chat Stream Endpoint (Server-Sent Events)
+ * POST /api/ai/chat/stream
+ * Streams AI response token-by-token via SSE
+ */
+router.post('/chat/stream', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { message, conversationId, context } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    // Build message history
+    let messages: { role: 'user' | 'assistant'; content: string }[] = [];
+    if (conversationId) {
+      try {
+        const database = await db;
+        const history = await database
+          .select()
+          .from(aiChatMessages)
+          .where(eq(aiChatMessages.conversationId, conversationId))
+          .orderBy(aiChatMessages.createdAt)
+          .limit(20);
+        messages = history.map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        }));
+      } catch {
+        // Continue without history
+      }
+    }
+    messages.push({ role: 'user', content: message });
+
+    const stream = aiChatStream(messages, context);
+    if (!stream) {
+      // No API key — return non-streamed fallback
+      const fallback = await aiChat(messages, context);
+      return res.json({ message: fallback, conversationId: conversationId || 'temp-' + Date.now() });
+    }
+
+    // Set up SSE headers
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+
+    let fullResponse = '';
+    const result = await stream;
+
+    for await (const chunk of result.textStream) {
+      fullResponse += chunk;
+      res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
+    }
+
+    // Save conversation after streaming completes
+    let activeConversationId = conversationId;
+    try {
+      const database = await db;
+      if (!activeConversationId && userId) {
+        const [conv] = await database.insert(aiChatConversations).values({
+          userId,
+          title: message.slice(0, 50),
+        }).returning();
+        activeConversationId = conv.id;
+      }
+      if (activeConversationId) {
+        await database.insert(aiChatMessages).values([
+          { conversationId: activeConversationId, role: 'user', content: message },
+          { conversationId: activeConversationId, role: 'assistant', content: fullResponse },
+        ]);
+      }
+    } catch {
+      // Non-critical
+    }
+
+    res.write(`data: ${JSON.stringify({ type: 'done', conversationId: activeConversationId || 'temp-' + Date.now() })}\n\n`);
+    res.end();
+  } catch (error) {
+    console.error('AI Chat Stream error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'AI streaming service temporarily unavailable' });
+    } else {
+      res.write(`data: ${JSON.stringify({ type: 'error', error: 'Stream interrupted' })}\n\n`);
+      res.end();
+    }
   }
 });
 
@@ -165,7 +256,6 @@ router.post('/analyze-form', async (req: Request, res: Response) => {
   try {
     const { exerciseName } = req.body;
 
-    // Form analysis requires video/image processing - provide general guidance for now
     const formTips: Record<string, string[]> = {
       squat: ['Keep chest up and core braced', 'Push knees out over toes', 'Break at hips and knees simultaneously', 'Aim for at least parallel depth'],
       'bench press': ['Retract shoulder blades', 'Maintain slight arch in lower back', 'Lower bar to mid-chest', 'Drive feet into floor'],

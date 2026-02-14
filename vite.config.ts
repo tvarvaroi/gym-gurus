@@ -28,6 +28,12 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
+  test: {
+    include: [
+      "src/**/*.{test,spec}.{ts,tsx}",
+      "../server/**/*.{test,spec}.{ts,tsx}",
+    ],
+  },
   server: {
     fs: {
       strict: true,
