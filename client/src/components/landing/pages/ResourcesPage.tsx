@@ -3,16 +3,22 @@ import { motion } from 'framer-motion';
 import { BookOpen, Video, FileText, Crown, ArrowRight, TrendingUp } from 'lucide-react';
 
 // Luxury shimmer particle component - optimized
-const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?: 'gold' | 'teal' }) => (
+const ShimmerParticle = ({
+  delay,
+  variant = 'blue',
+}: {
+  delay: number;
+  variant?: 'blue' | 'emerald';
+}) => (
   <motion.div
     className="absolute w-0.5 h-0.5 rounded-full"
     style={{
-      background: variant === 'gold'
-        ? 'linear-gradient(135deg, #c9a855, #e5e4e2, #c9a855)'
-        : 'linear-gradient(135deg, #0d9488, #e5e4e2, #0d9488)',
-      boxShadow: variant === 'gold'
-        ? '0 0 8px rgba(201, 168, 85, 0.5)'
-        : '0 0 8px rgba(13, 148, 136, 0.5)',
+      background:
+        variant === 'blue'
+          ? 'linear-gradient(135deg, #3B82F6, #e5e4e2, #3B82F6)'
+          : 'linear-gradient(135deg, #10B981, #e5e4e2, #10B981)',
+      boxShadow:
+        variant === 'blue' ? '0 0 8px rgba(59, 130, 246, 0.5)' : '0 0 8px rgba(16, 185, 129, 0.5)',
       willChange: 'transform, opacity',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
@@ -26,7 +32,7 @@ const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?:
       duration: 2.5,
       repeat: Infinity,
       delay,
-      ease: "easeOut"
+      ease: 'easeOut',
     }}
   />
 );
@@ -38,7 +44,7 @@ const ResourcesPage = memo(() => {
       title: 'Blog',
       description: 'Expert insights for growing your training business',
       highlights: ['Marketing tips', 'Client retention', 'Success stories'],
-      variant: 'gold' as const,
+      variant: 'blue' as const,
       cta: 'Read Articles',
     },
     {
@@ -46,7 +52,7 @@ const ResourcesPage = memo(() => {
       title: 'Academy',
       description: 'Master the GymGurus platform with video courses',
       highlights: ['Video tutorials', 'Live webinars', 'Certification'],
-      variant: 'teal' as const,
+      variant: 'emerald' as const,
       cta: 'Watch Now',
     },
     {
@@ -54,9 +60,9 @@ const ResourcesPage = memo(() => {
       title: 'Case Studies',
       description: 'Real success stories from top trainers',
       highlights: ['Revenue growth', 'Time saved', 'Client results'],
-      variant: 'gold' as const,
+      variant: 'blue' as const,
       cta: 'View Stories',
-    }
+    },
   ];
 
   return (
@@ -65,7 +71,7 @@ const ResourcesPage = memo(() => {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(201, 168, 85, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)',
           top: '10%',
           left: '10%',
           filter: 'blur(80px)',
@@ -77,13 +83,13 @@ const ResourcesPage = memo(() => {
         transition={{
           duration: 6,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)',
           bottom: '10%',
           right: '10%',
           filter: 'blur(80px)',
@@ -95,13 +101,12 @@ const ResourcesPage = memo(() => {
         transition={{
           duration: 8,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
 
       <div className="relative z-10 min-h-screen flex items-center px-8 md:px-12 lg:px-20 py-12">
         <div className="w-full max-w-6xl mx-auto space-y-10">
-
           {/* Header Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -115,13 +120,14 @@ const ResourcesPage = memo(() => {
               transition={{ duration: 4, repeat: Infinity }}
               className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
               style={{
-                background: 'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(13, 148, 136, 0.08))',
-                border: '1px solid rgba(201, 168, 85, 0.2)',
+                background:
+                  'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08))',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <Crown className="w-4 h-4" style={{ color: '#c9a855' }} />
+              <Crown className="w-4 h-4" style={{ color: '#3B82F6' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
                 LEARNING CENTER
               </span>
@@ -132,7 +138,7 @@ const ResourcesPage = memo(() => {
               className="text-4xl md:text-5xl lg:text-6xl font-light leading-tight pb-2"
               style={{
                 fontFamily: "'Playfair Display', serif",
-                background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                background: 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -175,17 +181,20 @@ const ResourcesPage = memo(() => {
                 <div
                   className="rounded-2xl p-6 border relative h-full flex flex-col"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
+                    background:
+                      'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                     backdropFilter: 'blur(20px)',
                     border: '1px solid rgba(255, 255, 255, 0.08)',
-                    boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
+                    boxShadow:
+                      '0 20px 40px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
                   }}
                 >
                   {/* Glass overlay */}
                   <div
                     className="absolute inset-0 rounded-2xl"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
+                      background:
+                        'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
                     }}
                   />
 
@@ -193,9 +202,10 @@ const ResourcesPage = memo(() => {
                   <motion.div
                     className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{
-                      background: resource.variant === 'gold'
-                        ? 'radial-gradient(circle at center, rgba(201, 168, 85, 0.06), transparent 70%)'
-                        : 'radial-gradient(circle at center, rgba(13, 148, 136, 0.06), transparent 70%)',
+                      background:
+                        resource.variant === 'blue'
+                          ? 'radial-gradient(circle at center, rgba(59, 130, 246, 0.06), transparent 70%)'
+                          : 'radial-gradient(circle at center, rgba(16, 185, 129, 0.06), transparent 70%)',
                     }}
                   />
 
@@ -209,10 +219,11 @@ const ResourcesPage = memo(() => {
                     <motion.div
                       className="w-14 h-14 rounded-xl flex items-center justify-center mb-4"
                       style={{
-                        background: resource.variant === 'gold'
-                          ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.15), rgba(184, 147, 94, 0.1))'
-                          : 'linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(20, 184, 166, 0.1))',
-                        color: resource.variant === 'gold' ? '#c9a855' : '#0d9488',
+                        background:
+                          resource.variant === 'blue'
+                            ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1))'
+                            : 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1))',
+                        color: resource.variant === 'blue' ? '#3B82F6' : '#10B981',
                       }}
                       whileHover={{ rotate: 360, scale: 1.1 }}
                       transition={{ duration: 0.6 }}
@@ -225,9 +236,10 @@ const ResourcesPage = memo(() => {
                       className="text-2xl font-light mb-2 pb-1"
                       style={{
                         fontFamily: "'Playfair Display', serif",
-                        background: resource.variant === 'gold'
-                          ? 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)'
-                          : 'linear-gradient(90deg, #0d9488 0%, #e5e4e2 50%, #c9a855 100%)',
+                        background:
+                          resource.variant === 'blue'
+                            ? 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)'
+                            : 'linear-gradient(90deg, #10B981 0%, #e5e4e2 50%, #3B82F6 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',
@@ -256,7 +268,7 @@ const ResourcesPage = memo(() => {
                           <TrendingUp
                             className="w-3.5 h-3.5 flex-shrink-0"
                             style={{
-                              color: resource.variant === 'gold' ? '#c9a855' : '#0d9488',
+                              color: resource.variant === 'blue' ? '#3B82F6' : '#10B981',
                             }}
                           />
                           <span
@@ -278,9 +290,10 @@ const ResourcesPage = memo(() => {
                       style={{
                         fontFamily: "'Playfair Display', serif",
                         background: 'transparent',
-                        border: resource.variant === 'gold'
-                          ? '1px solid rgba(201, 168, 85, 0.2)'
-                          : '1px solid rgba(13, 148, 136, 0.2)',
+                        border:
+                          resource.variant === 'blue'
+                            ? '1px solid rgba(59, 130, 246, 0.2)'
+                            : '1px solid rgba(16, 185, 129, 0.2)',
                         color: '#ffffff',
                         letterSpacing: '0.05em',
                       }}
@@ -303,12 +316,12 @@ const ResourcesPage = memo(() => {
           style={{
             width: '1.5px',
             height: '1.5px',
-            background: i % 2 === 0
-              ? 'linear-gradient(135deg, #c9a855, #d4af37)'
-              : 'linear-gradient(135deg, #0d9488, #14b8a6)',
-            boxShadow: i % 2 === 0
-              ? '0 0 8px rgba(201, 168, 85, 0.4)'
-              : '0 0 8px rgba(13, 148, 136, 0.4)',
+            background:
+              i % 2 === 0
+                ? 'linear-gradient(135deg, #3B82F6, #2563EB)'
+                : 'linear-gradient(135deg, #10B981, #059669)',
+            boxShadow:
+              i % 2 === 0 ? '0 0 8px rgba(59, 130, 246, 0.4)' : '0 0 8px rgba(16, 185, 129, 0.4)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             willChange: 'transform, opacity',
@@ -322,7 +335,7 @@ const ResourcesPage = memo(() => {
             duration: 6 + Math.random() * 3,
             repeat: Infinity,
             delay: Math.random() * 6,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
       ))}

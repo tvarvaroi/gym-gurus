@@ -15,7 +15,7 @@ const navItems = [
   { label: 'Resources', index: 3 },
   { label: 'Contact', index: 4 },
   { label: 'Login', index: 5 },
-  { label: 'Pricing', index: 6 }
+  { label: 'Pricing', index: 6 },
 ];
 
 const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => {
@@ -44,9 +44,7 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled
-            ? 'glass-strong border-b border-white/10 shadow-xl'
-            : 'bg-transparent'
+          isScrolled ? 'glass-strong border-b border-white/10 shadow-xl' : 'bg-transparent'
         }`}
       >
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
@@ -59,7 +57,8 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
             <div
               className="relative w-12 h-12 rounded-xl p-0.5"
               style={{
-                background: 'linear-gradient(135deg, rgba(201, 168, 85, 0.12), rgba(13, 148, 136, 0.12))',
+                background:
+                  'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.12))',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
               }}
@@ -68,7 +67,8 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
               <div
                 className="absolute inset-0 rounded-xl"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 60%)',
+                  background:
+                    'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 60%)',
                 }}
               />
               <img
@@ -83,7 +83,7 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                 className="text-xl font-extralight tracking-[0.3em]"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                  background: 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   letterSpacing: '0.2em',
@@ -94,7 +94,8 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
               <div
                 className="h-px my-0.5"
                 style={{
-                  background: 'linear-gradient(90deg, rgba(201, 168, 85, 0.6), rgba(13, 148, 136, 0.6))',
+                  background:
+                    'linear-gradient(90deg, rgba(59, 130, 246, 0.6), rgba(16, 185, 129, 0.6))',
                 }}
               />
               <p
@@ -122,12 +123,14 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                 style={{
                   fontFamily: "'Playfair Display', serif",
                   color: currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
-                  background: currentPage === item.index
-                    ? 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)'
-                    : 'none',
+                  background:
+                    currentPage === item.index
+                      ? 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)'
+                      : 'none',
                   backgroundClip: currentPage === item.index ? 'text' : 'unset',
                   WebkitBackgroundClip: currentPage === item.index ? 'text' : 'unset',
-                  WebkitTextFillColor: currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
+                  WebkitTextFillColor:
+                    currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
                   letterSpacing: '0.05em',
                 }}
               >
@@ -139,7 +142,8 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                     layoutId="activeIndicator"
                     className="absolute -bottom-1 left-0 right-0 h-px rounded-full"
                     style={{
-                      background: 'linear-gradient(90deg, rgba(201, 168, 85, 0.6), rgba(13, 148, 136, 0.6))',
+                      background:
+                        'linear-gradient(90deg, rgba(59, 130, 246, 0.6), rgba(16, 185, 129, 0.6))',
                     }}
                     transition={{ duration: 0.3 }}
                   />
@@ -157,11 +161,7 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
             className="md:hidden p-2 text-white hover:text-gold-primary transition-colors"
             aria-label="Toggle menu"
           >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </motion.header>
@@ -215,23 +215,28 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                     className="text-left py-3 px-4 rounded-xl transition-all"
                     style={{
                       fontFamily: "'Playfair Display', serif",
-                      background: currentPage === item.index
-                        ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.12), rgba(13, 148, 136, 0.12))'
-                        : 'transparent',
-                      border: currentPage === item.index
-                        ? '1px solid rgba(201, 168, 85, 0.2)'
-                        : '1px solid transparent',
+                      background:
+                        currentPage === item.index
+                          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.12))'
+                          : 'transparent',
+                      border:
+                        currentPage === item.index
+                          ? '1px solid rgba(59, 130, 246, 0.2)'
+                          : '1px solid transparent',
                     }}
                   >
                     <span
                       style={{
-                        color: currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
-                        background: currentPage === item.index
-                          ? 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)'
-                          : 'none',
+                        color:
+                          currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
+                        background:
+                          currentPage === item.index
+                            ? 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)'
+                            : 'none',
                         backgroundClip: currentPage === item.index ? 'text' : 'unset',
                         WebkitBackgroundClip: currentPage === item.index ? 'text' : 'unset',
-                        WebkitTextFillColor: currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
+                        WebkitTextFillColor:
+                          currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
                         letterSpacing: '0.05em',
                       }}
                     >

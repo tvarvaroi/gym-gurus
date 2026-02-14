@@ -1,18 +1,33 @@
 import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, MessageSquare, Phone, MapPin, Crown, ArrowRight, CheckCircle } from 'lucide-react';
+import {
+  Mail,
+  MessageSquare,
+  Phone,
+  MapPin,
+  Crown,
+  ArrowRight,
+  CheckCircle,
+  Loader2,
+} from 'lucide-react';
 
 // Luxury shimmer particle component - optimized
-const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?: 'gold' | 'teal' }) => (
+const ShimmerParticle = ({
+  delay,
+  variant = 'blue',
+}: {
+  delay: number;
+  variant?: 'blue' | 'emerald';
+}) => (
   <motion.div
     className="absolute w-0.5 h-0.5 rounded-full"
     style={{
-      background: variant === 'gold'
-        ? 'linear-gradient(135deg, #c9a855, #e5e4e2, #c9a855)'
-        : 'linear-gradient(135deg, #0d9488, #e5e4e2, #0d9488)',
-      boxShadow: variant === 'gold'
-        ? '0 0 8px rgba(201, 168, 85, 0.5)'
-        : '0 0 8px rgba(13, 148, 136, 0.5)',
+      background:
+        variant === 'blue'
+          ? 'linear-gradient(135deg, #3B82F6, #e5e4e2, #3B82F6)'
+          : 'linear-gradient(135deg, #10B981, #e5e4e2, #10B981)',
+      boxShadow:
+        variant === 'blue' ? '0 0 8px rgba(59, 130, 246, 0.5)' : '0 0 8px rgba(16, 185, 129, 0.5)',
       willChange: 'transform, opacity',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
@@ -26,37 +41,40 @@ const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?:
       duration: 2.5,
       repeat: Infinity,
       delay,
-      ease: "easeOut"
+      ease: 'easeOut',
     }}
   />
 );
 
 const ContactPage = memo(() => {
+  const [formState, setFormState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
   const contactMethods = [
     {
       icon: <Mail className="w-5 h-5" />,
       title: 'Email',
       detail: 'support@gymgurus.com',
-      variant: 'gold' as const,
+      variant: 'blue' as const,
     },
     {
       icon: <MessageSquare className="w-5 h-5" />,
       title: 'Live Chat',
       detail: 'Mon-Fri, 9am-5pm EST',
-      variant: 'teal' as const,
+      variant: 'emerald' as const,
     },
     {
       icon: <Phone className="w-5 h-5" />,
       title: 'Phone',
       detail: '1-800-GYM-GURU',
-      variant: 'gold' as const,
+      variant: 'blue' as const,
     },
     {
       icon: <MapPin className="w-5 h-5" />,
       title: 'Location',
       detail: 'San Francisco, CA',
-      variant: 'teal' as const,
-    }
+      variant: 'emerald' as const,
+    },
   ];
 
   return (
@@ -65,7 +83,7 @@ const ContactPage = memo(() => {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(201, 168, 85, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)',
           top: '10%',
           right: '5%',
           filter: 'blur(80px)',
@@ -77,13 +95,13 @@ const ContactPage = memo(() => {
         transition={{
           duration: 6,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)',
           bottom: '10%',
           left: '5%',
           filter: 'blur(80px)',
@@ -95,13 +113,12 @@ const ContactPage = memo(() => {
         transition={{
           duration: 8,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
 
       <div className="relative z-10 min-h-screen flex items-center px-8 md:px-12 lg:px-20 py-12">
         <div className="w-full max-w-5xl mx-auto">
-
           {/* Header Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -115,13 +132,14 @@ const ContactPage = memo(() => {
               transition={{ duration: 4, repeat: Infinity }}
               className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
               style={{
-                background: 'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(13, 148, 136, 0.08))',
-                border: '1px solid rgba(201, 168, 85, 0.2)',
+                background:
+                  'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08))',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <Crown className="w-4 h-4" style={{ color: '#c9a855' }} />
+              <Crown className="w-4 h-4" style={{ color: '#3B82F6' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
                 GET IN TOUCH
               </span>
@@ -132,7 +150,7 @@ const ContactPage = memo(() => {
               className="text-4xl md:text-5xl lg:text-6xl font-light pb-3"
               style={{
                 fontFamily: "'Playfair Display', serif",
-                background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                background: 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -159,7 +177,6 @@ const ContactPage = memo(() => {
 
           {/* Two Column Layout - Compact */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
             {/* Contact Form - Left */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -170,14 +187,16 @@ const ContactPage = memo(() => {
                 background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                 backdropFilter: 'blur(20px)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
-                boxShadow: '0 15px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
+                boxShadow:
+                  '0 15px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
               }}
             >
               {/* Glass overlay */}
               <div
                 className="absolute inset-0 rounded-2xl"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
+                  background:
+                    'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
                 }}
               />
 
@@ -186,7 +205,7 @@ const ContactPage = memo(() => {
                   className="text-xl font-light mb-4 pb-1"
                   style={{
                     fontFamily: "'Playfair Display', serif",
-                    background: 'linear-gradient(135deg, #ffffff, #c9a855)',
+                    background: 'linear-gradient(135deg, #ffffff, #3B82F6)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
@@ -196,101 +215,195 @@ const ContactPage = memo(() => {
                   Send us a message
                 </h3>
 
-                <form className="space-y-3" onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.target as HTMLFormElement;
-                  const formData = new FormData(form);
-                  const name = formData.get('name') as string;
-                  const email = formData.get('email') as string;
-                  const message = formData.get('message') as string;
-                  if (name && email && message) {
-                    form.reset();
-                    alert('Thank you for your message! We will get back to you soon.');
-                  }
-                }}>
-                  <div>
-                    <input
-                      type="text"
-                      name="name"
-                      required
-                      className="w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all text-sm"
-                      placeholder="Your name"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.9), rgba(10, 10, 10, 0.95))',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#ffffff',
-                        fontFamily: "'Cormorant Garamond', serif",
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = 'rgba(201, 168, 85, 0.5)';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      className="w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all text-sm"
-                      placeholder="your@email.com"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.9), rgba(10, 10, 10, 0.95))',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#ffffff',
-                        fontFamily: "'Cormorant Garamond', serif",
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = 'rgba(201, 168, 85, 0.5)';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <textarea
-                      name="message"
-                      required
-                      rows={3}
-                      className="w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all resize-none text-sm"
-                      placeholder="How can we help?"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.9), rgba(10, 10, 10, 0.95))',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#ffffff',
-                        fontFamily: "'Cormorant Garamond', serif",
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = 'rgba(201, 168, 85, 0.5)';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                      }}
-                    />
-                  </div>
-
-                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-                    <button
-                      type="submit"
-                      className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-light transition-all"
-                      style={{
-                        fontFamily: "'Playfair Display', serif",
-                        background: 'linear-gradient(135deg, #c9a855, #d4af37, #b8935e)',
-                        boxShadow: '0 15px 30px rgba(201, 168, 85, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                        color: '#000000',
-                        letterSpacing: '0.05em',
-                      }}
+                <AnimatePresence mode="wait">
+                  {formState === 'success' ? (
+                    <motion.div
+                      key="success"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="flex flex-col items-center justify-center py-8 space-y-4"
                     >
-                      Send Message
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </motion.div>
-                </form>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+                        className="w-16 h-16 rounded-full flex items-center justify-center"
+                        style={{
+                          background:
+                            'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1))',
+                        }}
+                      >
+                        <CheckCircle className="w-8 h-8" style={{ color: '#10B981' }} />
+                      </motion.div>
+                      <h4
+                        className="text-lg font-light text-white"
+                        style={{ fontFamily: "'Playfair Display', serif" }}
+                      >
+                        Message Sent!
+                      </h4>
+                      <p
+                        className="text-sm text-center"
+                        style={{ color: '#b3b3b3', fontFamily: "'Cormorant Garamond', serif" }}
+                      >
+                        Thank you for reaching out. We'll get back to you within 24 hours.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setFormState('idle')}
+                        className="text-sm underline transition-colors hover:text-white"
+                        style={{ color: '#3B82F6' }}
+                      >
+                        Send another message
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                      {errorMessage && (
+                        <div
+                          className="mb-3 px-4 py-2 rounded-xl text-sm"
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: '#ef4444',
+                          }}
+                        >
+                          {errorMessage}
+                        </div>
+                      )}
+                      <form
+                        className="space-y-3"
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const form = e.target as HTMLFormElement;
+                          const formData = new FormData(form);
+                          const name = formData.get('name') as string;
+                          const email = formData.get('email') as string;
+                          const message = formData.get('message') as string;
+                          if (!name || !email || !message) return;
+
+                          setFormState('submitting');
+                          setErrorMessage('');
+                          try {
+                            const res = await fetch('/api/contact', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ name, email, message }),
+                            });
+                            if (!res.ok) {
+                              const data = await res.json().catch(() => ({}));
+                              throw new Error(data.error || 'Failed to send message');
+                            }
+                            form.reset();
+                            setFormState('success');
+                          } catch (err: any) {
+                            setErrorMessage(
+                              err.message || 'Something went wrong. Please try again.'
+                            );
+                            setFormState('error');
+                          }
+                        }}
+                      >
+                        <div>
+                          <input
+                            type="text"
+                            name="name"
+                            required
+                            className="w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all text-sm"
+                            placeholder="Your name"
+                            style={{
+                              background:
+                                'linear-gradient(135deg, rgba(15, 15, 15, 0.9), rgba(10, 10, 10, 0.95))',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              color: '#ffffff',
+                              fontFamily: "'Cormorant Garamond', serif",
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <input
+                            type="email"
+                            name="email"
+                            required
+                            className="w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all text-sm"
+                            placeholder="your@email.com"
+                            style={{
+                              background:
+                                'linear-gradient(135deg, rgba(15, 15, 15, 0.9), rgba(10, 10, 10, 0.95))',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              color: '#ffffff',
+                              fontFamily: "'Cormorant Garamond', serif",
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <textarea
+                            name="message"
+                            required
+                            rows={3}
+                            className="w-full px-4 py-2.5 rounded-xl focus:outline-none transition-all resize-none text-sm"
+                            placeholder="How can we help?"
+                            style={{
+                              background:
+                                'linear-gradient(135deg, rgba(15, 15, 15, 0.9), rgba(10, 10, 10, 0.95))',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              color: '#ffffff',
+                              fontFamily: "'Cormorant Garamond', serif",
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                            }}
+                          />
+                        </div>
+
+                        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                          <button
+                            type="submit"
+                            disabled={formState === 'submitting'}
+                            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-light transition-all disabled:opacity-60"
+                            style={{
+                              fontFamily: "'Playfair Display', serif",
+                              background: 'linear-gradient(135deg, #3B82F6, #2563EB, #1D4ED8)',
+                              boxShadow:
+                                '0 15px 30px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                              color: '#ffffff',
+                              letterSpacing: '0.05em',
+                            }}
+                          >
+                            {formState === 'submitting' ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              <>
+                                Send Message
+                                <ArrowRight className="w-4 h-4" />
+                              </>
+                            )}
+                          </button>
+                        </motion.div>
+                      </form>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
 
@@ -310,17 +423,20 @@ const ContactPage = memo(() => {
                   whileHover={{ scale: 1.05, y: -3 }}
                   className="rounded-2xl p-5 border relative"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
+                    background:
+                      'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                     backdropFilter: 'blur(20px)',
                     border: '1px solid rgba(255, 255, 255, 0.08)',
-                    boxShadow: '0 15px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
+                    boxShadow:
+                      '0 15px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
                   }}
                 >
                   {/* Glass overlay */}
                   <div
                     className="absolute inset-0 rounded-2xl"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
+                      background:
+                        'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
                     }}
                   />
 
@@ -329,10 +445,11 @@ const ContactPage = memo(() => {
                     <motion.div
                       className="w-10 h-10 mx-auto rounded-xl flex items-center justify-center"
                       style={{
-                        background: method.variant === 'gold'
-                          ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.15), rgba(184, 147, 94, 0.1))'
-                          : 'linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(20, 184, 166, 0.1))',
-                        color: method.variant === 'gold' ? '#c9a855' : '#0d9488',
+                        background:
+                          method.variant === 'blue'
+                            ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1))'
+                            : 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1))',
+                        color: method.variant === 'blue' ? '#3B82F6' : '#10B981',
                       }}
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.6 }}
@@ -368,6 +485,17 @@ const ContactPage = memo(() => {
               ))}
             </motion.div>
           </div>
+
+          {/* Legal links */}
+          <div className="mt-8 text-center text-xs" style={{ color: '#666' }}>
+            <a href="/terms" className="hover:text-white transition-colors">
+              Terms of Service
+            </a>
+            <span className="mx-2">·</span>
+            <a href="/privacy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </a>
+          </div>
         </div>
       </div>
 
@@ -379,12 +507,12 @@ const ContactPage = memo(() => {
           style={{
             width: '1.5px',
             height: '1.5px',
-            background: i % 2 === 0
-              ? 'linear-gradient(135deg, #c9a855, #d4af37)'
-              : 'linear-gradient(135deg, #0d9488, #14b8a6)',
-            boxShadow: i % 2 === 0
-              ? '0 0 8px rgba(201, 168, 85, 0.4)'
-              : '0 0 8px rgba(13, 148, 136, 0.4)',
+            background:
+              i % 2 === 0
+                ? 'linear-gradient(135deg, #3B82F6, #2563EB)'
+                : 'linear-gradient(135deg, #10B981, #059669)',
+            boxShadow:
+              i % 2 === 0 ? '0 0 8px rgba(59, 130, 246, 0.4)' : '0 0 8px rgba(16, 185, 129, 0.4)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             willChange: 'transform, opacity',
@@ -398,7 +526,7 @@ const ContactPage = memo(() => {
             duration: 6 + Math.random() * 3,
             repeat: Infinity,
             delay: Math.random() * 6,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
       ))}

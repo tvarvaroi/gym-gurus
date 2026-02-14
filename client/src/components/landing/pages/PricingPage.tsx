@@ -3,16 +3,22 @@ import { motion } from 'framer-motion';
 import { Check, Star, Crown, CheckCircle } from 'lucide-react';
 
 // Luxury shimmer particle component - optimized
-const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?: 'gold' | 'teal' }) => (
+const ShimmerParticle = ({
+  delay,
+  variant = 'blue',
+}: {
+  delay: number;
+  variant?: 'blue' | 'emerald';
+}) => (
   <motion.div
     className="absolute w-0.5 h-0.5 rounded-full"
     style={{
-      background: variant === 'gold'
-        ? 'linear-gradient(135deg, #c9a855, #e5e4e2, #c9a855)'
-        : 'linear-gradient(135deg, #0d9488, #e5e4e2, #0d9488)',
-      boxShadow: variant === 'gold'
-        ? '0 0 8px rgba(201, 168, 85, 0.5)'
-        : '0 0 8px rgba(13, 148, 136, 0.5)',
+      background:
+        variant === 'blue'
+          ? 'linear-gradient(135deg, #3B82F6, #e5e4e2, #3B82F6)'
+          : 'linear-gradient(135deg, #10B981, #e5e4e2, #10B981)',
+      boxShadow:
+        variant === 'blue' ? '0 0 8px rgba(59, 130, 246, 0.5)' : '0 0 8px rgba(16, 185, 129, 0.5)',
       willChange: 'transform, opacity',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
@@ -26,7 +32,7 @@ const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?:
       duration: 2.5,
       repeat: Infinity,
       delay,
-      ease: "easeOut"
+      ease: 'easeOut',
     }}
   />
 );
@@ -42,7 +48,7 @@ const PricingPage = memo(() => {
       features: ['50 clients', 'Core features', 'Mobile apps', 'Email support'],
       cta: 'Start Trial',
       popular: false,
-      variant: 'teal' as const,
+      variant: 'emerald' as const,
     },
     {
       name: 'Professional',
@@ -51,7 +57,7 @@ const PricingPage = memo(() => {
       features: ['Unlimited clients', 'All features', 'Custom branding', 'Priority support'],
       cta: 'Start Trial',
       popular: true,
-      variant: 'gold' as const,
+      variant: 'blue' as const,
     },
     {
       name: 'Enterprise',
@@ -60,11 +66,11 @@ const PricingPage = memo(() => {
       features: ['Everything in Pro', 'Dedicated manager', 'Custom integrations', 'SLA guarantee'],
       cta: 'Contact Sales',
       popular: false,
-      variant: 'teal' as const,
-    }
+      variant: 'emerald' as const,
+    },
   ];
 
-  const getPrice = (plan: typeof plans[0]) => {
+  const getPrice = (plan: (typeof plans)[0]) => {
     if (plan.priceMonthly === null) return 'Custom';
     return billingPeriod === 'monthly' ? plan.priceMonthly : plan.priceAnnual;
   };
@@ -75,7 +81,7 @@ const PricingPage = memo(() => {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(201, 168, 85, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)',
           top: '10%',
           left: '10%',
           filter: 'blur(80px)',
@@ -87,13 +93,13 @@ const PricingPage = memo(() => {
         transition={{
           duration: 6,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)',
           bottom: '10%',
           right: '10%',
           filter: 'blur(80px)',
@@ -105,13 +111,12 @@ const PricingPage = memo(() => {
         transition={{
           duration: 8,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
 
       <div className="relative z-10 min-h-screen flex items-center px-8 md:px-12 lg:px-20 py-12">
         <div className="w-full max-w-6xl mx-auto space-y-8">
-
           {/* Header Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -125,13 +130,14 @@ const PricingPage = memo(() => {
               transition={{ duration: 4, repeat: Infinity }}
               className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
               style={{
-                background: 'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(13, 148, 136, 0.08))',
-                border: '1px solid rgba(201, 168, 85, 0.2)',
+                background:
+                  'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08))',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <Crown className="w-4 h-4" style={{ color: '#c9a855' }} />
+              <Crown className="w-4 h-4" style={{ color: '#3B82F6' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
                 PRICING PLANS
               </span>
@@ -142,7 +148,7 @@ const PricingPage = memo(() => {
               className="text-4xl md:text-5xl lg:text-6xl font-light pb-3"
               style={{
                 fontFamily: "'Playfair Display', serif",
-                background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                background: 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -170,10 +176,11 @@ const PricingPage = memo(() => {
                 className="px-5 py-2 rounded-full transition-all font-light text-sm"
                 style={{
                   fontFamily: "'Inter', sans-serif",
-                  background: billingPeriod === 'monthly'
-                    ? 'linear-gradient(135deg, #c9a855, #d4af37)'
-                    : 'transparent',
-                  color: billingPeriod === 'monthly' ? '#000000' : '#b3b3b3',
+                  background:
+                    billingPeriod === 'monthly'
+                      ? 'linear-gradient(135deg, #3B82F6, #2563EB)'
+                      : 'transparent',
+                  color: billingPeriod === 'monthly' ? '#ffffff' : '#b3b3b3',
                   letterSpacing: '0.05em',
                 }}
               >
@@ -184,9 +191,10 @@ const PricingPage = memo(() => {
                 className="px-5 py-2 rounded-full transition-all font-light text-sm"
                 style={{
                   fontFamily: "'Inter', sans-serif",
-                  background: billingPeriod === 'annual'
-                    ? 'linear-gradient(135deg, #0d9488, #14b8a6)'
-                    : 'transparent',
+                  background:
+                    billingPeriod === 'annual'
+                      ? 'linear-gradient(135deg, #10B981, #059669)'
+                      : 'transparent',
                   color: billingPeriod === 'annual' ? '#ffffff' : '#b3b3b3',
                   letterSpacing: '0.05em',
                 }}
@@ -202,7 +210,7 @@ const PricingPage = memo(() => {
                 className="text-sm"
                 style={{
                   fontFamily: "'Cormorant Garamond', serif",
-                  color: '#c9a855',
+                  color: '#3B82F6',
                 }}
               >
                 Save 20% with annual billing
@@ -237,9 +245,9 @@ const PricingPage = memo(() => {
                     <div
                       className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
                       style={{
-                        background: 'linear-gradient(135deg, #c9a855, #d4af37)',
-                        color: '#000000',
-                        boxShadow: '0 8px 20px rgba(201, 168, 85, 0.4)',
+                        background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                        color: '#ffffff',
+                        boxShadow: '0 8px 20px rgba(59, 130, 246, 0.4)',
                       }}
                     >
                       <Star className="w-3 h-3" />
@@ -252,14 +260,14 @@ const PricingPage = memo(() => {
                   className="p-6 rounded-2xl relative h-full flex flex-col"
                   style={{
                     background: plan.popular
-                      ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(184, 147, 94, 0.05))'
+                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.05))'
                       : 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                     backdropFilter: 'blur(20px)',
                     border: plan.popular
-                      ? '1px solid rgba(201, 168, 85, 0.3)'
+                      ? '1px solid rgba(59, 130, 246, 0.3)'
                       : '1px solid rgba(255, 255, 255, 0.08)',
                     boxShadow: plan.popular
-                      ? '0 20px 40px -10px rgba(201, 168, 85, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                      ? '0 20px 40px -10px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                       : '0 15px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
                   }}
                 >
@@ -267,7 +275,8 @@ const PricingPage = memo(() => {
                   <div
                     className="absolute inset-0 rounded-2xl"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
+                      background:
+                        'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
                     }}
                   />
 
@@ -282,9 +291,10 @@ const PricingPage = memo(() => {
                       className="text-xl font-light mb-4 text-center pb-1"
                       style={{
                         fontFamily: "'Playfair Display', serif",
-                        background: plan.variant === 'gold'
-                          ? 'linear-gradient(135deg, #ffffff, #c9a855)'
-                          : 'linear-gradient(135deg, #ffffff, #0d9488)',
+                        background:
+                          plan.variant === 'blue'
+                            ? 'linear-gradient(135deg, #ffffff, #3B82F6)'
+                            : 'linear-gradient(135deg, #ffffff, #10B981)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',
@@ -337,7 +347,7 @@ const PricingPage = memo(() => {
                           <Check
                             className="w-4 h-4 flex-shrink-0 mt-0.5"
                             style={{
-                              color: plan.variant === 'gold' ? '#c9a855' : '#0d9488',
+                              color: plan.variant === 'blue' ? '#3B82F6' : '#10B981',
                             }}
                           />
                           <span
@@ -361,12 +371,12 @@ const PricingPage = memo(() => {
                         style={{
                           fontFamily: "'Playfair Display', serif",
                           background: plan.popular
-                            ? 'linear-gradient(135deg, #c9a855, #d4af37, #b8935e)'
+                            ? 'linear-gradient(135deg, #3B82F6, #2563EB, #1D4ED8)'
                             : 'transparent',
                           border: plan.popular ? 'none' : '1px solid rgba(255, 255, 255, 0.2)',
-                          color: plan.popular ? '#000000' : '#ffffff',
+                          color: plan.popular ? '#ffffff' : '#ffffff',
                           boxShadow: plan.popular
-                            ? '0 15px 30px rgba(201, 168, 85, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                            ? '0 15px 30px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
                             : 'none',
                           letterSpacing: '0.05em',
                         }}
@@ -385,22 +395,23 @@ const PricingPage = memo(() => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="flex flex-wrap items-center justify-center gap-4 text-xs" style={{ color: '#999' }}
+            className="flex flex-wrap items-center justify-center gap-4 text-xs"
+            style={{ color: '#999' }}
           >
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-3.5 h-3.5" style={{ color: '#c9a855' }} />
+              <CheckCircle className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
               <span className="font-light">30-day trial</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-3.5 h-3.5" style={{ color: '#0d9488' }} />
+              <CheckCircle className="w-3.5 h-3.5" style={{ color: '#10B981' }} />
               <span className="font-light">No credit card</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-3.5 h-3.5" style={{ color: '#c9a855' }} />
+              <CheckCircle className="w-3.5 h-3.5" style={{ color: '#3B82F6' }} />
               <span className="font-light">Cancel anytime</span>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-3.5 h-3.5" style={{ color: '#0d9488' }} />
+              <CheckCircle className="w-3.5 h-3.5" style={{ color: '#10B981' }} />
               <span className="font-light">Money-back guarantee</span>
             </div>
           </motion.div>
@@ -415,12 +426,12 @@ const PricingPage = memo(() => {
           style={{
             width: '1.5px',
             height: '1.5px',
-            background: i % 2 === 0
-              ? 'linear-gradient(135deg, #c9a855, #d4af37)'
-              : 'linear-gradient(135deg, #0d9488, #14b8a6)',
-            boxShadow: i % 2 === 0
-              ? '0 0 8px rgba(201, 168, 85, 0.4)'
-              : '0 0 8px rgba(13, 148, 136, 0.4)',
+            background:
+              i % 2 === 0
+                ? 'linear-gradient(135deg, #3B82F6, #2563EB)'
+                : 'linear-gradient(135deg, #10B981, #059669)',
+            boxShadow:
+              i % 2 === 0 ? '0 0 8px rgba(59, 130, 246, 0.4)' : '0 0 8px rgba(16, 185, 129, 0.4)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             willChange: 'transform, opacity',
@@ -434,7 +445,7 @@ const PricingPage = memo(() => {
             duration: 6 + Math.random() * 3,
             repeat: Infinity,
             delay: Math.random() * 6,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
       ))}

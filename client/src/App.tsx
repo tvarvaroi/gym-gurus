@@ -1,66 +1,76 @@
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "wouter";
-import { lazy, Suspense, useState, useEffect, useMemo, useCallback, memo, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, User, LogOut, Download, Users } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { exportClientsToCSV, exportWorkoutsToCSV } from "@/lib/exportUtils";
-import { PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimationComponents";
-import { UserProvider, useUser } from "@/contexts/UserContext";
+import { Switch, Route } from 'wouter';
+import { queryClient } from './lib/queryClient';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'wouter';
+import { lazy, Suspense, useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, User, LogOut, Download, Users } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { exportClientsToCSV, exportWorkoutsToCSV } from '@/lib/exportUtils';
+import { PageTransition, StaggerContainer, StaggerItem } from '@/components/AnimationComponents';
+import { UserProvider, useUser } from '@/contexts/UserContext';
 
 // Import critical components directly (not lazy loaded)
-import AppSidebar from "@/components/AppSidebar";
+import AppSidebar from '@/components/AppSidebar';
 // Theme toggle removed - app now uses dark theme only
-import Dashboard from "@/components/Dashboard";
-import ClientCard from "@/components/ClientCard";
-import SearchInput from "@/components/SearchInput";
-import NotFound from "@/pages/not-found";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { NewClientButton } from "@/components/ClientFormModal";
-import { LoginPage } from "@/components/LoginPage";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import NotificationCenter from "@/components/NotificationCenter";
-import ClientsPageContent from "@/pages/ClientsPage";
-import AppHeaderComponent from "@/components/layout/AppHeader";
+import Dashboard from '@/components/Dashboard';
+import ClientCard from '@/components/ClientCard';
+import SearchInput from '@/components/SearchInput';
+import NotFound from '@/pages/not-found';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { NewClientButton } from '@/components/ClientFormModal';
+import { LoginPage } from '@/components/LoginPage';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import NotificationCenter from '@/components/NotificationCenter';
+import ClientsPageContent from '@/pages/ClientsPage';
+import AppHeaderComponent from '@/components/layout/AppHeader';
 
 // Lazy load only secondary pages for code splitting
-const LandingPage = lazy(() => import("@/pages/LandingPage"));
-const WorkoutPlans = lazy(() => import("@/pages/WorkoutPlans"));
-const WorkoutBuilder = lazy(() => import("@/pages/WorkoutBuilder"));
-const WorkoutExecution = lazy(() => import("@/pages/WorkoutExecution"));
-const ExercisesPageComponent = lazy(() => import("@/pages/ExercisesPage"));
-const SchedulePageComponent = lazy(() => import("@/pages/SchedulePage"));
-const PaymentsPageComponent = lazy(() => import("@/pages/PaymentsPage"));
+const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const WorkoutPlans = lazy(() => import('@/pages/WorkoutPlans'));
+const WorkoutBuilder = lazy(() => import('@/pages/WorkoutBuilder'));
+const WorkoutExecution = lazy(() => import('@/pages/WorkoutExecution'));
+const ExercisesPageComponent = lazy(() => import('@/pages/ExercisesPage'));
+const SchedulePageComponent = lazy(() => import('@/pages/SchedulePage'));
+const PaymentsPageComponent = lazy(() => import('@/pages/PaymentsPage'));
 
 // Calculator pages
-const CalculatorsHub = lazy(() => import("@/pages/calculators/CalculatorsHub"));
-const OneRepMaxCalc = lazy(() => import("@/pages/calculators/OneRepMaxCalc"));
-const PlatesCalc = lazy(() => import("@/pages/calculators/PlatesCalc"));
-const TDEECalc = lazy(() => import("@/pages/calculators/TDEECalc"));
-const StrengthStandardsCalc = lazy(() => import("@/pages/calculators/StrengthStandardsCalc"));
-const BMICalc = lazy(() => import("@/pages/calculators/BMICalc"));
-const BodyFatCalc = lazy(() => import("@/pages/calculators/BodyFatCalc"));
-const MacroCalc = lazy(() => import("@/pages/calculators/MacroCalc"));
-const VO2MaxCalc = lazy(() => import("@/pages/calculators/VO2MaxCalc"));
-const HeartRateZonesCalc = lazy(() => import("@/pages/calculators/HeartRateZonesCalc"));
-const CaloriesBurnedCalc = lazy(() => import("@/pages/calculators/CaloriesBurnedCalc"));
-const IdealWeightCalc = lazy(() => import("@/pages/calculators/IdealWeightCalc"));
-const WaterIntakeCalc = lazy(() => import("@/pages/calculators/WaterIntakeCalc"));
+const CalculatorsHub = lazy(() => import('@/pages/calculators/CalculatorsHub'));
+const OneRepMaxCalc = lazy(() => import('@/pages/calculators/OneRepMaxCalc'));
+const PlatesCalc = lazy(() => import('@/pages/calculators/PlatesCalc'));
+const TDEECalc = lazy(() => import('@/pages/calculators/TDEECalc'));
+const StrengthStandardsCalc = lazy(() => import('@/pages/calculators/StrengthStandardsCalc'));
+const BMICalc = lazy(() => import('@/pages/calculators/BMICalc'));
+const BodyFatCalc = lazy(() => import('@/pages/calculators/BodyFatCalc'));
+const MacroCalc = lazy(() => import('@/pages/calculators/MacroCalc'));
+const VO2MaxCalc = lazy(() => import('@/pages/calculators/VO2MaxCalc'));
+const HeartRateZonesCalc = lazy(() => import('@/pages/calculators/HeartRateZonesCalc'));
+const CaloriesBurnedCalc = lazy(() => import('@/pages/calculators/CaloriesBurnedCalc'));
+const IdealWeightCalc = lazy(() => import('@/pages/calculators/IdealWeightCalc'));
+const WaterIntakeCalc = lazy(() => import('@/pages/calculators/WaterIntakeCalc'));
+
+// Legal pages
+const TermsPage = lazy(() => import('@/pages/TermsPage'));
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
 
 // Solo user pages
-const SoloDashboard = lazy(() => import("@/pages/solo/SoloDashboard"));
-const SoloOnboarding = lazy(() => import("@/pages/solo/SoloOnboarding"));
-const AICoach = lazy(() => import("@/pages/solo/AICoach"));
-const Recovery = lazy(() => import("@/pages/solo/Recovery"));
-const SoloAchievements = lazy(() => import("@/pages/solo/Achievements"));
-const WorkoutGenerator = lazy(() => import("@/pages/solo/WorkoutGenerator"));
+const SoloDashboard = lazy(() => import('@/pages/solo/SoloDashboard'));
+const SoloOnboarding = lazy(() => import('@/pages/solo/SoloOnboarding'));
+const AICoach = lazy(() => import('@/pages/solo/AICoach'));
+const Recovery = lazy(() => import('@/pages/solo/Recovery'));
+const SoloAchievements = lazy(() => import('@/pages/solo/Achievements'));
+const WorkoutGenerator = lazy(() => import('@/pages/solo/WorkoutGenerator'));
 
 // Loading fallback component
 const LoadingFallback = memo(() => (
@@ -76,19 +86,19 @@ const LoadingFallback = memo(() => (
       <motion.div
         className="relative inline-block"
         animate={{ rotate: 360 }}
-        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
       >
         <Loader2 className="h-12 w-12 text-primary mx-auto" />
         <motion.div
           className="absolute inset-0 rounded-full bg-primary/20 blur-xl"
           animate={{ opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         />
       </motion.div>
       <motion.p
         className="text-base font-light text-muted-foreground/80"
         animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
         aria-live="polite"
       >
         Loading...
@@ -155,7 +165,7 @@ const ExercisesPage = memo(() => {
   );
 });
 
-const ClientDetailsPageComponent = lazy(() => import("@/pages/ClientDetailsPage"));
+const ClientDetailsPageComponent = lazy(() => import('@/pages/ClientDetailsPage'));
 
 function ClientDetailsPage() {
   return (
@@ -191,7 +201,7 @@ const PaymentsPage = memo(() => {
   );
 });
 
-const ProgressPageComponent = lazy(() => import("@/pages/ProgressPage"));
+const ProgressPageComponent = lazy(() => import('@/pages/ProgressPage'));
 
 const ProgressPage = memo(() => {
   return (
@@ -214,9 +224,7 @@ const WorkoutPage = memo(() => {
 
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <PageTransition>
-        {isClient ? <WorkoutExecution /> : <WorkoutBuilder />}
-      </PageTransition>
+      <PageTransition>{isClient ? <WorkoutExecution /> : <WorkoutBuilder />}</PageTransition>
     </Suspense>
   );
 });
@@ -234,6 +242,22 @@ function Router() {
               {() => (
                 <Suspense fallback={<LoadingFallback />}>
                   <LandingPage />
+                </Suspense>
+              )}
+            </Route>
+
+            {/* Legal pages (public) */}
+            <Route path="/terms">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <TermsPage />
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/privacy">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PrivacyPage />
                 </Suspense>
               )}
             </Route>
@@ -433,16 +457,19 @@ function Router() {
   );
 }
 
-
 // Video cycling order - defined outside component to prevent recreations
-const CATEGORY_ORDER = ["trainers", "athletes", "programs", "success"] as const;
+const CATEGORY_ORDER = ['trainers', 'athletes', 'programs', 'success'] as const;
 
 // Authentication wrapper component
 function AuthWrapper({ children }: { children: React.ReactNode }) {
   // Always call hooks at the top level
-  const [activeCategory, setActiveCategory] = useState("trainers");
+  const [activeCategory, setActiveCategory] = useState('trainers');
 
-  const { data: user, isLoading, error } = useQuery({
+  const {
+    data: user,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['/api/auth/user'],
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -450,17 +477,17 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Force dark theme only
-    document.documentElement.classList.add("dark");
-    localStorage.setItem("theme", "dark");
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
   }, []);
 
   // Auto-cycling effect - only run on login screen
   useEffect(() => {
     // Only auto-cycle if user is not authenticated (on login screen)
     if (isLoading || user) return;
-    
+
     const interval = setInterval(() => {
-      setActiveCategory(prev => {
+      setActiveCategory((prev) => {
         const currentIndex = CATEGORY_ORDER.indexOf(prev as any);
         const nextIndex = (currentIndex + 1) % CATEGORY_ORDER.length;
         return CATEGORY_ORDER[nextIndex];
@@ -480,7 +507,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   // Effect to ensure video plays when category changes
   useEffect(() => {
     if (isLoading || user) return;
-    
+
     // Find and play the video
     const videoElement = document.querySelector('video') as HTMLVideoElement;
     if (videoElement && videoElement.paused) {
@@ -506,14 +533,14 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
           <div className="relative inline-block">
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
             >
               <Loader2 className="h-16 w-16 text-primary mx-auto" />
             </motion.div>
             <motion.div
               className="absolute inset-0 rounded-full bg-primary/30 blur-2xl"
               animate={{ opacity: [0.3, 0.7, 0.3], scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             />
           </div>
 
@@ -521,24 +548,24 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
           <motion.div
             className="space-y-2"
             animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
           >
             <p className="text-lg font-light text-foreground">Checking authentication</p>
             <div className="flex items-center justify-center gap-1">
               <motion.span
                 className="w-2 h-2 rounded-full bg-primary"
                 animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: 0 }}
               />
               <motion.span
                 className="w-2 h-2 rounded-full bg-primary"
                 animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: 0.2 }}
               />
               <motion.span
                 className="w-2 h-2 rounded-full bg-primary"
                 animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
               />
             </div>
           </motion.div>
@@ -560,15 +587,15 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 function AppLayout() {
   // Custom sidebar width for fitness application
   const style = {
-    "--sidebar-width": "20rem",       // 320px for better content
-    "--sidebar-width-icon": "6rem",   // 96px for icon mode with larger logo (80px logo + padding)
+    '--sidebar-width': '20rem', // 320px for better content
+    '--sidebar-width-icon': '6rem', // 96px for icon mode with larger logo (80px logo + padding)
   };
 
   // Read sidebar state from cookie to persist across page navigations
   const getSidebarState = () => {
     if (typeof document === 'undefined') return true;
     const cookies = document.cookie.split(';');
-    const sidebarCookie = cookies.find(c => c.trim().startsWith('sidebar_state='));
+    const sidebarCookie = cookies.find((c) => c.trim().startsWith('sidebar_state='));
     if (sidebarCookie) {
       return sidebarCookie.split('=')[1] === 'true';
     }
@@ -577,35 +604,42 @@ function AppLayout() {
 
   const [defaultOpen] = useState(getSidebarState);
   const [location] = useLocation();
-  const isLandingPage = location === '/';
+  const isPublicPage = location === '/' || location === '/terms' || location === '/privacy';
 
   return (
     <>
-      {isLandingPage ? (
-        // Landing page without sidebar/header
+      {isPublicPage ? (
+        // Public pages without sidebar/header
         <Router />
       ) : (
         // Authenticated app with sidebar/header
         <AuthWrapper>
           <SidebarProvider defaultOpen={defaultOpen} style={style as React.CSSProperties}>
-          <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm">
-            Skip to main content
-          </a>
-          <div className="flex h-screen w-full overflow-hidden">
-            <AppSidebar />
-            <div className="flex flex-col flex-1 min-w-0 overflow-hidden transition-all duration-200 ease-linear">
-              <AppHeaderComponent />
-              <main id="main-content" className="flex-1 overflow-y-auto overflow-x-hidden" role="main">
-                <div className="p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20 min-h-full">
-                  <div className="mx-auto">
-                    <ErrorBoundary>
-                      <Router />
-                    </ErrorBoundary>
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm"
+            >
+              Skip to main content
+            </a>
+            <div className="flex h-screen w-full overflow-hidden">
+              <AppSidebar />
+              <div className="flex flex-col flex-1 min-w-0 overflow-hidden transition-all duration-200 ease-linear">
+                <AppHeaderComponent />
+                <main
+                  id="main-content"
+                  className="flex-1 overflow-y-auto overflow-x-hidden"
+                  role="main"
+                >
+                  <div className="p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20 min-h-full">
+                    <div className="mx-auto">
+                      <ErrorBoundary>
+                        <Router />
+                      </ErrorBoundary>
+                    </div>
                   </div>
-                </div>
-              </main>
+                </main>
+              </div>
             </div>
-          </div>
           </SidebarProvider>
         </AuthWrapper>
       )}

@@ -5,16 +5,22 @@ import { Users, Clock, TrendingUp, CheckCircle, Crown, ArrowRight, Trophy } from
 import CTAButton from '../shared/CTAButton';
 
 // Luxury shimmer particle component
-const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?: 'gold' | 'teal' }) => (
+const ShimmerParticle = ({
+  delay,
+  variant = 'blue',
+}: {
+  delay: number;
+  variant?: 'blue' | 'emerald';
+}) => (
   <motion.div
     className="absolute w-0.5 h-0.5 rounded-full"
     style={{
-      background: variant === 'gold'
-        ? 'linear-gradient(135deg, #c9a855, #e5e4e2, #c9a855)'
-        : 'linear-gradient(135deg, #0d9488, #e5e4e2, #0d9488)',
-      boxShadow: variant === 'gold'
-        ? '0 0 8px rgba(201, 168, 85, 0.5)'
-        : '0 0 8px rgba(13, 148, 136, 0.5)',
+      background:
+        variant === 'blue'
+          ? 'linear-gradient(135deg, #3B82F6, #e5e4e2, #3B82F6)'
+          : 'linear-gradient(135deg, #10B981, #e5e4e2, #10B981)',
+      boxShadow:
+        variant === 'blue' ? '0 0 8px rgba(59, 130, 246, 0.5)' : '0 0 8px rgba(16, 185, 129, 0.5)',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
     animate={{
@@ -27,7 +33,7 @@ const ShimmerParticle = ({ delay, variant = 'gold' }: { delay: number; variant?:
       duration: 3,
       repeat: Infinity,
       delay,
-      ease: "easeOut"
+      ease: 'easeOut',
     }}
   />
 );
@@ -39,7 +45,7 @@ const HeroPage = memo(() => {
       <motion.div
         className="absolute w-[600px] h-[600px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(201, 168, 85, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)',
           top: '10%',
           right: '10%',
           filter: 'blur(80px)',
@@ -51,13 +57,13 @@ const HeroPage = memo(() => {
         transition={{
           duration: 6,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
       <motion.div
         className="absolute w-[600px] h-[600px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)',
           bottom: '10%',
           left: '10%',
           filter: 'blur(80px)',
@@ -69,7 +75,7 @@ const HeroPage = memo(() => {
         transition={{
           duration: 8,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: 'easeInOut',
         }}
       />
 
@@ -78,29 +84,28 @@ const HeroPage = memo(() => {
         <div
           className="absolute top-0 left-0 w-2/3 h-px"
           style={{
-            background: 'linear-gradient(90deg, rgba(201, 168, 85, 0.4), transparent)',
+            background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.4), transparent)',
           }}
         />
         <div
           className="absolute bottom-0 right-0 w-2/3 h-px"
           style={{
-            background: 'linear-gradient(270deg, rgba(13, 148, 136, 0.4), transparent)',
+            background: 'linear-gradient(270deg, rgba(16, 185, 129, 0.4), transparent)',
           }}
         />
         <div
           className="absolute top-1/3 right-0 w-px h-1/3"
           style={{
-            background: 'linear-gradient(180deg, transparent, rgba(201, 168, 85, 0.3), transparent)',
+            background:
+              'linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.3), transparent)',
           }}
         />
       </div>
 
       {/* Asymmetric Split Layout */}
       <div className="relative z-10 min-h-screen flex flex-col lg:flex-row items-center justify-center">
-
         {/* LEFT SIDE - 60% width on desktop - Hero Content */}
         <div className="w-full lg:w-[60%] px-6 md:px-12 lg:px-16 py-20 lg:py-24 space-y-12 flex flex-col justify-center">
-
           {/* Top Section - Luxury badge + Headline */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -114,13 +119,14 @@ const HeroPage = memo(() => {
               transition={{ duration: 4, repeat: Infinity }}
               className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
               style={{
-                background: 'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(13, 148, 136, 0.08))',
-                border: '1px solid rgba(201, 168, 85, 0.2)',
+                background:
+                  'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08))',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <Crown className="w-4 h-4" style={{ color: '#c9a855' }} />
+              <Crown className="w-4 h-4" style={{ color: '#3B82F6' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
                 PREMIUM FITNESS PLATFORM
               </span>
@@ -132,7 +138,7 @@ const HeroPage = memo(() => {
                 className="text-5xl md:text-6xl lg:text-7xl font-light pb-4"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                  background: 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -157,12 +163,12 @@ const HeroPage = memo(() => {
                   color: '#b3b3b3',
                   letterSpacing: '0.02em',
                   lineHeight: '2',
-                  borderLeft: '2px solid rgba(201, 168, 85, 0.3)',
+                  borderLeft: '2px solid rgba(59, 130, 246, 0.3)',
                   paddingLeft: '2rem',
                 }}
               >
-                The all-in-one platform for modern personal trainers.
-                Manage, track, and grow—effortlessly.
+                The all-in-one platform for modern personal trainers. Manage, track, and
+                grow—effortlessly.
               </p>
             </div>
           </motion.div>
@@ -182,9 +188,10 @@ const HeroPage = memo(() => {
                   className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all"
                   style={{
                     fontFamily: "'Playfair Display', serif",
-                    background: 'linear-gradient(135deg, #c9a855, #d4af37, #b8935e)',
-                    boxShadow: '0 20px 40px rgba(201, 168, 85, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                    color: '#000000',
+                    background: 'linear-gradient(135deg, #3B82F6, #2563EB, #1D4ED8)',
+                    boxShadow:
+                      '0 20px 40px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    color: '#ffffff',
                     letterSpacing: '0.05em',
                   }}
                 >
@@ -213,15 +220,15 @@ const HeroPage = memo(() => {
             {/* Trust Indicators - Horizontal */}
             <div className="flex flex-wrap items-center gap-6 text-sm" style={{ color: '#999' }}>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" style={{ color: '#c9a855' }} />
+                <CheckCircle className="w-4 h-4" style={{ color: '#3B82F6' }} />
                 <span className="font-light">30-day free trial</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" style={{ color: '#0d9488' }} />
+                <CheckCircle className="w-4 h-4" style={{ color: '#10B981' }} />
                 <span className="font-light">No credit card</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" style={{ color: '#c9a855' }} />
+                <CheckCircle className="w-4 h-4" style={{ color: '#3B82F6' }} />
                 <span className="font-light">Cancel anytime</span>
               </div>
             </div>
@@ -230,7 +237,6 @@ const HeroPage = memo(() => {
 
         {/* RIGHT SIDE - 40% width on desktop - Floating Stats & Cards */}
         <div className="hidden sm:block w-full lg:w-[40%] px-6 md:px-8 lg:px-10 py-12 lg:py-20 space-y-6">
-
           {/* Statistics - Vertical Stack */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
@@ -239,30 +245,29 @@ const HeroPage = memo(() => {
             className="space-y-6"
           >
             {[
-              { value: '10K+', label: 'Active Trainers', variant: 'gold' as const },
-              { value: '50K+', label: 'Clients Served', variant: 'teal' as const },
-              { value: '99%', label: 'Satisfaction', variant: 'gold' as const },
+              { value: '10K+', label: 'Active Trainers', variant: 'blue' as const },
+              { value: '50K+', label: 'Clients Served', variant: 'emerald' as const },
+              { value: '99%', label: 'Satisfaction', variant: 'blue' as const },
             ].map((stat, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ x: 10, scale: 1.05 }}
-                className="relative"
-              >
+              <motion.div key={index} whileHover={{ x: 10, scale: 1.05 }} className="relative">
                 {/* Floating card effect */}
                 <div
                   className="p-8 rounded-2xl relative"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
+                    background:
+                      'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                     backdropFilter: 'blur(30px)',
                     border: '1px solid rgba(255, 255, 255, 0.08)',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
+                    boxShadow:
+                      '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
                   }}
                 >
                   {/* Glass overlay */}
                   <div
                     className="absolute inset-0 rounded-2xl"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
+                      background:
+                        'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
                     }}
                   />
 
@@ -276,9 +281,10 @@ const HeroPage = memo(() => {
                       className="text-4xl lg:text-5xl font-light pb-2"
                       style={{
                         fontFamily: "'Playfair Display', serif",
-                        background: stat.variant === 'gold'
-                          ? 'linear-gradient(135deg, #ffffff, #c9a855)'
-                          : 'linear-gradient(135deg, #ffffff, #0d9488)',
+                        background:
+                          stat.variant === 'blue'
+                            ? 'linear-gradient(135deg, #ffffff, #3B82F6)'
+                            : 'linear-gradient(135deg, #ffffff, #10B981)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',
@@ -308,13 +314,10 @@ const HeroPage = memo(() => {
           >
             <motion.div
               animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
               className="flex items-center justify-center"
             >
-              <Trophy
-                className="w-20 h-20"
-                style={{ color: 'rgba(201, 168, 85, 0.15)' }}
-              />
+              <Trophy className="w-20 h-20" style={{ color: 'rgba(59, 130, 246, 0.15)' }} />
             </motion.div>
           </motion.div>
         </div>
@@ -329,9 +332,21 @@ const HeroPage = memo(() => {
       >
         <div className="flex flex-wrap gap-4 justify-center max-w-4xl px-6">
           {[
-            { icon: <Users className="w-5 h-5" />, text: 'Unlimited Clients', variant: 'gold' as const },
-            { icon: <Clock className="w-5 h-5" />, text: 'Save 10+ Hours Weekly', variant: 'teal' as const },
-            { icon: <TrendingUp className="w-5 h-5" />, text: '40% Revenue Growth', variant: 'gold' as const },
+            {
+              icon: <Users className="w-5 h-5" />,
+              text: 'Unlimited Clients',
+              variant: 'blue' as const,
+            },
+            {
+              icon: <Clock className="w-5 h-5" />,
+              text: 'Save 10+ Hours Weekly',
+              variant: 'emerald' as const,
+            },
+            {
+              icon: <TrendingUp className="w-5 h-5" />,
+              text: '40% Revenue Growth',
+              variant: 'blue' as const,
+            },
           ].map((pill, index) => (
             <motion.div
               key={index}
@@ -340,11 +355,11 @@ const HeroPage = memo(() => {
               style={{
                 background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.8), rgba(10, 10, 10, 0.9))',
                 backdropFilter: 'blur(20px)',
-                border: `1px solid ${pill.variant === 'gold' ? 'rgba(201, 168, 85, 0.2)' : 'rgba(13, 148, 136, 0.2)'}`,
+                border: `1px solid ${pill.variant === 'blue' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <div style={{ color: pill.variant === 'gold' ? '#c9a855' : '#0d9488' }}>
+              <div style={{ color: pill.variant === 'blue' ? '#3B82F6' : '#10B981' }}>
                 {pill.icon}
               </div>
               <span
@@ -370,12 +385,12 @@ const HeroPage = memo(() => {
           style={{
             width: '1.5px',
             height: '1.5px',
-            background: i % 2 === 0
-              ? 'linear-gradient(135deg, #c9a855, #d4af37)'
-              : 'linear-gradient(135deg, #0d9488, #14b8a6)',
-            boxShadow: i % 2 === 0
-              ? '0 0 8px rgba(201, 168, 85, 0.4)'
-              : '0 0 8px rgba(13, 148, 136, 0.4)',
+            background:
+              i % 2 === 0
+                ? 'linear-gradient(135deg, #3B82F6, #2563EB)'
+                : 'linear-gradient(135deg, #10B981, #059669)',
+            boxShadow:
+              i % 2 === 0 ? '0 0 8px rgba(59, 130, 246, 0.4)' : '0 0 8px rgba(16, 185, 129, 0.4)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             willChange: 'transform, opacity',
@@ -389,7 +404,7 @@ const HeroPage = memo(() => {
             duration: 6 + Math.random() * 3,
             repeat: Infinity,
             delay: Math.random() * 6,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
       ))}
