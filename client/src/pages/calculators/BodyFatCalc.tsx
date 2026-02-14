@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Percent, Ruler, Info } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 type Gender = 'male' | 'female';
 
@@ -23,28 +25,45 @@ function calculateBodyFatNavy(
 ): number {
   if (gender === 'male') {
     // Male formula: 495 / (1.0324 - 0.19077 * log10(waist - neck) + 0.15456 * log10(height)) - 450
-    const bodyFat = 495 / (1.0324 - 0.19077 * Math.log10(waistCm - neckCm) + 0.15456 * Math.log10(heightCm)) - 450;
+    const bodyFat =
+      495 / (1.0324 - 0.19077 * Math.log10(waistCm - neckCm) + 0.15456 * Math.log10(heightCm)) -
+      450;
     return Math.max(0, bodyFat);
   } else {
     // Female formula: 495 / (1.29579 - 0.35004 * log10(waist + hips - neck) + 0.22100 * log10(height)) - 450
     const bodyFat =
-      495 / (1.29579 - 0.35004 * Math.log10(waistCm + (hipsCm || 0) - neckCm) + 0.221 * Math.log10(heightCm)) - 450;
+      495 /
+        (1.29579 -
+          0.35004 * Math.log10(waistCm + (hipsCm || 0) - neckCm) +
+          0.221 * Math.log10(heightCm)) -
+      450;
     return Math.max(0, bodyFat);
   }
 }
 
-function getBodyFatCategory(gender: Gender, bodyFat: number): { category: string; color: string; bgColor: string } {
+function getBodyFatCategory(
+  gender: Gender,
+  bodyFat: number
+): { category: string; color: string; bgColor: string } {
   if (gender === 'male') {
-    if (bodyFat < 6) return { category: 'Essential Fat', color: 'text-red-600', bgColor: 'bg-red-100' };
-    if (bodyFat < 14) return { category: 'Athletes', color: 'text-blue-600', bgColor: 'bg-blue-100' };
-    if (bodyFat < 18) return { category: 'Fitness', color: 'text-green-600', bgColor: 'bg-green-100' };
-    if (bodyFat < 25) return { category: 'Average', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+    if (bodyFat < 6)
+      return { category: 'Essential Fat', color: 'text-red-600', bgColor: 'bg-red-100' };
+    if (bodyFat < 14)
+      return { category: 'Athletes', color: 'text-blue-600', bgColor: 'bg-blue-100' };
+    if (bodyFat < 18)
+      return { category: 'Fitness', color: 'text-green-600', bgColor: 'bg-green-100' };
+    if (bodyFat < 25)
+      return { category: 'Average', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
     return { category: 'Obese', color: 'text-orange-600', bgColor: 'bg-orange-100' };
   } else {
-    if (bodyFat < 14) return { category: 'Essential Fat', color: 'text-red-600', bgColor: 'bg-red-100' };
-    if (bodyFat < 21) return { category: 'Athletes', color: 'text-blue-600', bgColor: 'bg-blue-100' };
-    if (bodyFat < 25) return { category: 'Fitness', color: 'text-green-600', bgColor: 'bg-green-100' };
-    if (bodyFat < 32) return { category: 'Average', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+    if (bodyFat < 14)
+      return { category: 'Essential Fat', color: 'text-red-600', bgColor: 'bg-red-100' };
+    if (bodyFat < 21)
+      return { category: 'Athletes', color: 'text-blue-600', bgColor: 'bg-blue-100' };
+    if (bodyFat < 25)
+      return { category: 'Fitness', color: 'text-green-600', bgColor: 'bg-green-100' };
+    if (bodyFat < 32)
+      return { category: 'Average', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
     return { category: 'Obese', color: 'text-orange-600', bgColor: 'bg-orange-100' };
   }
 }
@@ -52,7 +71,11 @@ function getBodyFatCategory(gender: Gender, bodyFat: number): { category: string
 const BODY_FAT_RANGES = {
   male: [
     { category: 'Essential Fat', range: '2-5%', description: 'Minimum for survival' },
-    { category: 'Athletes', range: '6-13%', description: 'Competition bodybuilders, elite athletes' },
+    {
+      category: 'Athletes',
+      range: '6-13%',
+      description: 'Competition bodybuilders, elite athletes',
+    },
     { category: 'Fitness', range: '14-17%', description: 'Fit and lean' },
     { category: 'Average', range: '18-24%', description: 'Healthy range for most men' },
     { category: 'Obese', range: '25%+', description: 'Above healthy range' },
@@ -67,6 +90,23 @@ const BODY_FAT_RANGES = {
 };
 
 export function BodyFatCalculator() {
+  useSEO({
+    title: 'Body Fat Calculator - Estimate Your Body Fat Percentage',
+    description:
+      'Free body fat percentage calculator using the US Navy method. Get accurate estimates based on your measurements.',
+    canonical: 'https://gymgurus.com/calculators/body-fat',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Body Fat Calculator - Estimate Your Body Fat Percentage',
+      url: 'https://gymgurus.com/calculators/body-fat',
+      description:
+        'Free body fat percentage calculator using the US Navy method. Get accurate estimates based on your measurements.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [gender, setGender] = useState<Gender>('male');
   const [height, setHeight] = useState(175);
   const [weight, setWeight] = useState(75);
@@ -83,7 +123,13 @@ export function BodyFatCalculator() {
   const hipsCm = unit === 'imperial' ? hips * 2.54 : hips;
 
   const result = useMemo((): BodyFatResult => {
-    const bodyFat = calculateBodyFatNavy(gender, heightCm, waistCm, neckCm, gender === 'female' ? hipsCm : undefined);
+    const bodyFat = calculateBodyFatNavy(
+      gender,
+      heightCm,
+      waistCm,
+      neckCm,
+      gender === 'female' ? hipsCm : undefined
+    );
     const { category, color, bgColor } = getBodyFatCategory(gender, bodyFat);
     const fatMass = (bodyFat / 100) * weightKg;
     const leanMass = weightKg - fatMass;
@@ -272,7 +318,9 @@ export function BodyFatCalculator() {
 
       {/* Body Fat Ranges */}
       <div className="bg-card rounded-xl p-6 shadow-sm">
-        <h3 className="font-bold text-lg mb-4">Body Fat Categories ({gender === 'male' ? 'Men' : 'Women'})</h3>
+        <h3 className="font-bold text-lg mb-4">
+          Body Fat Categories ({gender === 'male' ? 'Men' : 'Women'})
+        </h3>
         <div className="space-y-2">
           {BODY_FAT_RANGES[gender].map((range) => (
             <div
@@ -280,7 +328,11 @@ export function BodyFatCalculator() {
               className={`p-3 rounded-lg ${result.category === range.category ? result.bgColor : 'bg-secondary/30'}`}
             >
               <div className="flex justify-between items-center">
-                <span className={result.category === range.category ? result.color + ' font-medium' : ''}>
+                <span
+                  className={
+                    result.category === range.category ? result.color + ' font-medium' : ''
+                  }
+                >
                   {range.category}
                 </span>
                 <span className="text-sm text-muted-foreground">{range.range}</span>
@@ -294,10 +346,11 @@ export function BodyFatCalculator() {
       {/* Info */}
       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg text-sm">
         <p className="text-blue-700 dark:text-blue-300">
-          <strong>Measurement Tips:</strong> Take measurements in the morning, before eating, with relaxed muscles.
-          The Navy method is accurate within 3-4% for most people.
+          <strong>Measurement Tips:</strong> Take measurements in the morning, before eating, with
+          relaxed muscles. The Navy method is accurate within 3-4% for most people.
         </p>
       </div>
+      <RelatedCalculators currentPath="/calculators/body-fat" />
     </div>
   );
 }

@@ -8,6 +8,8 @@ import {
   STRENGTH_CLASSIFICATIONS,
   CLASSIFICATION_COLORS,
 } from '@/lib/calculations/strengthStandards';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 type Gender = 'male' | 'female';
 
@@ -19,6 +21,23 @@ interface LiftInput {
 }
 
 export function StrengthStandardsCalculator() {
+  useSEO({
+    title: 'Strength Standards Calculator - How Strong Are You?',
+    description:
+      "Free strength standards calculator. Compare your lifts to population averages. See if you're a beginner, intermediate, advanced, or elite lifter.",
+    canonical: 'https://gymgurus.com/calculators/strength-standards',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Strength Standards Calculator - How Strong Are You?',
+      url: 'https://gymgurus.com/calculators/strength-standards',
+      description:
+        "Free strength standards calculator. Compare your lifts to population averages. See if you're a beginner, intermediate, advanced, or elite lifter.",
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [gender, setGender] = useState<Gender>('male');
   const [bodyweight, setBodyweight] = useState(75);
   const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
@@ -272,7 +291,9 @@ export function StrengthStandardsCalculator() {
               className={`p-3 rounded-lg ${CLASSIFICATION_COLORS[key]?.bg || 'bg-gray-100'}`}
             >
               <div className="flex items-center justify-between">
-                <span className={`font-medium ${CLASSIFICATION_COLORS[key]?.text || 'text-gray-600'}`}>
+                <span
+                  className={`font-medium ${CLASSIFICATION_COLORS[key]?.text || 'text-gray-600'}`}
+                >
                   {info.label}
                 </span>
                 <span className="text-sm opacity-80">{info.percentile}</span>
@@ -282,6 +303,7 @@ export function StrengthStandardsCalculator() {
           ))}
         </div>
       </div>
+      <RelatedCalculators currentPath="/calculators/strength-standards" />
     </div>
   );
 }

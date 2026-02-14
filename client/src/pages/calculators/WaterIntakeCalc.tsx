@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Droplets, Scale, Activity, Sun, ThermometerSun, Coffee, Beer, Info } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 type WeightUnit = 'kg' | 'lbs';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'athlete';
@@ -9,9 +11,17 @@ type Climate = 'cold' | 'moderate' | 'hot' | 'very_hot';
 const ACTIVITY_LEVELS = {
   sedentary: { name: 'Sedentary', description: 'Little to no exercise', multiplier: 1.0 },
   light: { name: 'Lightly Active', description: 'Light exercise 1-3 days/week', multiplier: 1.1 },
-  moderate: { name: 'Moderately Active', description: 'Moderate exercise 3-5 days/week', multiplier: 1.2 },
+  moderate: {
+    name: 'Moderately Active',
+    description: 'Moderate exercise 3-5 days/week',
+    multiplier: 1.2,
+  },
   active: { name: 'Active', description: 'Hard exercise 6-7 days/week', multiplier: 1.3 },
-  very_active: { name: 'Very Active', description: 'Very hard exercise + physical job', multiplier: 1.4 },
+  very_active: {
+    name: 'Very Active',
+    description: 'Very hard exercise + physical job',
+    multiplier: 1.4,
+  },
   athlete: { name: 'Athlete', description: 'Training 2x/day or extreme activity', multiplier: 1.5 },
 };
 
@@ -23,6 +33,23 @@ const CLIMATE_FACTORS = {
 };
 
 export function WaterIntakeCalculator() {
+  useSEO({
+    title: 'Water Intake Calculator - Daily Hydration Guide',
+    description:
+      'Free water intake calculator. Calculate how much water you should drink daily based on your weight, activity level, and climate.',
+    canonical: 'https://gymgurus.com/calculators/water-intake',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Water Intake Calculator - Daily Hydration Guide',
+      url: 'https://gymgurus.com/calculators/water-intake',
+      description:
+        'Free water intake calculator. Calculate how much water you should drink daily based on your weight, activity level, and climate.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [weight, setWeight] = useState(70);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('kg');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
@@ -219,7 +246,9 @@ export function WaterIntakeCalculator() {
         <div className="text-center mb-6">
           <p className="text-sm text-muted-foreground mb-1">Daily Water Intake</p>
           <p className="text-5xl font-bold text-primary mb-2">{results.totalLiters}L</p>
-          <p className="text-lg text-muted-foreground">{results.totalMl} ml / {results.totalOunces} oz</p>
+          <p className="text-lg text-muted-foreground">
+            {results.totalMl} ml / {results.totalOunces} oz
+          </p>
         </div>
 
         <div className="grid grid-cols-3 gap-4 text-center">
@@ -257,7 +286,9 @@ export function WaterIntakeCalculator() {
                 <div className={`w-3 h-3 rounded-full ${item.color}`} />
                 <span className="text-sm">{item.label}</span>
               </div>
-              <span className="font-medium">{item.value > 0 ? `+${item.value}` : item.value} ml</span>
+              <span className="font-medium">
+                {item.value > 0 ? `+${item.value}` : item.value} ml
+              </span>
             </div>
           ))}
           <div className="pt-3 mt-3 border-t flex justify-between font-bold">
@@ -272,16 +303,59 @@ export function WaterIntakeCalculator() {
         <h3 className="font-bold text-lg mb-4">Suggested Hydration Schedule</h3>
         <div className="space-y-2">
           {[
-            { time: '6:00 AM', event: 'Wake up', amount: Math.round(results.totalMl * 0.1), note: 'Start your day hydrated' },
-            { time: '8:00 AM', event: 'Breakfast', amount: Math.round(results.totalMl * 0.12), note: 'With your morning meal' },
-            { time: '10:00 AM', event: 'Mid-morning', amount: Math.round(results.totalMl * 0.12), note: 'Stay consistent' },
-            { time: '12:00 PM', event: 'Lunch', amount: Math.round(results.totalMl * 0.15), note: 'Before and during lunch' },
-            { time: '2:00 PM', event: 'Afternoon', amount: Math.round(results.totalMl * 0.12), note: 'Beat the afternoon slump' },
-            { time: '4:00 PM', event: 'Pre-workout', amount: Math.round(results.totalMl * 0.12), note: 'If exercising' },
-            { time: '6:00 PM', event: 'Dinner', amount: Math.round(results.totalMl * 0.12), note: 'With your evening meal' },
-            { time: '8:00 PM', event: 'Evening', amount: Math.round(results.totalMl * 0.08), note: 'Slow down before bed' },
+            {
+              time: '6:00 AM',
+              event: 'Wake up',
+              amount: Math.round(results.totalMl * 0.1),
+              note: 'Start your day hydrated',
+            },
+            {
+              time: '8:00 AM',
+              event: 'Breakfast',
+              amount: Math.round(results.totalMl * 0.12),
+              note: 'With your morning meal',
+            },
+            {
+              time: '10:00 AM',
+              event: 'Mid-morning',
+              amount: Math.round(results.totalMl * 0.12),
+              note: 'Stay consistent',
+            },
+            {
+              time: '12:00 PM',
+              event: 'Lunch',
+              amount: Math.round(results.totalMl * 0.15),
+              note: 'Before and during lunch',
+            },
+            {
+              time: '2:00 PM',
+              event: 'Afternoon',
+              amount: Math.round(results.totalMl * 0.12),
+              note: 'Beat the afternoon slump',
+            },
+            {
+              time: '4:00 PM',
+              event: 'Pre-workout',
+              amount: Math.round(results.totalMl * 0.12),
+              note: 'If exercising',
+            },
+            {
+              time: '6:00 PM',
+              event: 'Dinner',
+              amount: Math.round(results.totalMl * 0.12),
+              note: 'With your evening meal',
+            },
+            {
+              time: '8:00 PM',
+              event: 'Evening',
+              amount: Math.round(results.totalMl * 0.08),
+              note: 'Slow down before bed',
+            },
           ].map((slot, index) => (
-            <div key={index} className="flex items-center gap-4 p-2 hover:bg-secondary/50 rounded-lg">
+            <div
+              key={index}
+              className="flex items-center gap-4 p-2 hover:bg-secondary/50 rounded-lg"
+            >
               <div className="w-16 text-sm font-medium text-muted-foreground">{slot.time}</div>
               <div className="flex-1">
                 <p className="font-medium text-sm">{slot.event}</p>
@@ -331,12 +405,13 @@ export function WaterIntakeCalculator() {
         <Info className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
         <div className="text-sm text-muted-foreground">
           <p>
-            Water needs vary by individual. This calculator provides general guidelines based on weight,
-            activity, and environment. Listen to your body - thirst, urine color (aim for pale yellow),
-            and energy levels are good indicators of hydration status.
+            Water needs vary by individual. This calculator provides general guidelines based on
+            weight, activity, and environment. Listen to your body - thirst, urine color (aim for
+            pale yellow), and energy levels are good indicators of hydration status.
           </p>
         </div>
       </div>
+      <RelatedCalculators currentPath="/calculators/water-intake" />
     </div>
   );
 }

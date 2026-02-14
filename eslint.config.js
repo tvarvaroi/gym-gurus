@@ -31,6 +31,7 @@ export default [
         },
       },
       globals: {
+        Window: 'readonly',
         window: 'readonly',
         document: 'readonly',
         navigator: 'readonly',
@@ -60,6 +61,9 @@ export default [
         HTMLButtonElement: 'readonly',
         HTMLFormElement: 'readonly',
         HTMLVideoElement: 'readonly',
+        HTMLLinkElement: 'readonly',
+        HTMLScriptElement: 'readonly',
+        HTMLMetaElement: 'readonly',
         HTMLTextAreaElement: 'readonly',
         HTMLSelectElement: 'readonly',
         Element: 'readonly',

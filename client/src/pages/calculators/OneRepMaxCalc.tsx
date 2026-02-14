@@ -8,8 +8,27 @@ import {
   PERCENTAGE_CHART,
   type OneRMFormula,
 } from '@/lib/calculations/oneRepMax';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 export function OneRepMaxCalculator() {
+  useSEO({
+    title: 'One Rep Max (1RM) Calculator - Estimate Your Max Lift',
+    description:
+      'Free 1RM calculator using the Epley formula. Enter your weight and reps to calculate your one rep max for bench press, squat, deadlift, and more.',
+    canonical: 'https://gymgurus.com/calculators/1rm',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'One Rep Max (1RM) Calculator - Estimate Your Max Lift',
+      url: 'https://gymgurus.com/calculators/1rm',
+      description:
+        'Free 1RM calculator using the Epley formula. Enter your weight and reps to calculate your one rep max for bench press, squat, deadlift, and more.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [weight, setWeight] = useState<number>(100);
   const [reps, setReps] = useState<number>(5);
   const [unit, setUnit] = useState<'kg' | 'lbs'>('kg');
@@ -96,7 +115,9 @@ export function OneRepMaxCalculator() {
               key={r}
               onClick={() => setReps(r)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                reps === r ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'
+                reps === r
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary hover:bg-secondary/80'
               }`}
             >
               {r} rep{r !== 1 ? 's' : ''}
@@ -139,11 +160,15 @@ export function OneRepMaxCalculator() {
         <div className="flex justify-center gap-6 text-sm">
           <div className="text-center">
             <p className="text-muted-foreground">Min Estimate</p>
-            <p className="font-bold text-lg">{results.min} {unit}</p>
+            <p className="font-bold text-lg">
+              {results.min} {unit}
+            </p>
           </div>
           <div className="text-center">
             <p className="text-muted-foreground">Max Estimate</p>
-            <p className="font-bold text-lg">{results.max} {unit}</p>
+            <p className="font-bold text-lg">
+              {results.max} {unit}
+            </p>
           </div>
         </div>
       </motion.div>
@@ -188,7 +213,10 @@ export function OneRepMaxCalculator() {
         {showDetails && (
           <div className="p-4 pt-0 space-y-3">
             {Object.entries(FORMULA_INFO).map(([key, info]) => (
-              <div key={key} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+              <div
+                key={key}
+                className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg"
+              >
                 <div>
                   <p className="font-medium">{info.name}</p>
                   <p className="text-xs text-muted-foreground">{info.description}</p>
@@ -209,7 +237,11 @@ export function OneRepMaxCalculator() {
           className="w-full p-4 flex items-center justify-between hover:bg-secondary/50"
         >
           <span className="font-medium">Training Zones by % 1RM</span>
-          {showPercentageChart ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          {showPercentageChart ? (
+            <ChevronUp className="w-5 h-5" />
+          ) : (
+            <ChevronDown className="w-5 h-5" />
+          )}
         </button>
 
         {showPercentageChart && (
@@ -248,6 +280,7 @@ export function OneRepMaxCalculator() {
           spotter when attempting heavy lifts.
         </p>
       </div>
+      <RelatedCalculators currentPath="/calculators/1rm" />
     </div>
   );
 }

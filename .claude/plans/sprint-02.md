@@ -1,27 +1,30 @@
 # Sprint 2: AI Chatbot & Vercel AI SDK
 
-**Status:** NOT STARTED
-**Estimated Time:** 3–4 hours
-**Skills Used:** ai-sdk, vercel-ai-integration, prompt-engineering, nodejs-backend-patterns, react-state-management
+**Status:** COMPLETE
+**Commit:** 1bba3fb
+**Skills Used:** ai-sdk, vercel-ai-integration, prompt-engineering, nodejs-backend-patterns
 
 ## Tasks
 
-- [ ] **Task 2.1** — Audit Current AI Implementation
-  - Review server/aiService.ts for prompt quality, error handling, streaming
-  - Document current state and gaps
+- [x] **Task 2.1** — Audit Current AI Implementation
+  - Found: raw fetch calls, no streaming, no tool calling, fragile JSON parsing
+  - Good: fallback templates, conversation history, 4 AI endpoints
 
-- [ ] **Task 2.2** — Implement Vercel AI SDK
-  - Migrate from raw API calls to Vercel AI SDK
-  - Add proper streaming, tool calling, structured outputs
+- [x] **Task 2.2** — Implement Vercel AI SDK
+  - Replaced raw Anthropic fetch with `ai` + `@ai-sdk/anthropic`
+  - Added generateText, generateObject, streamText
+  - Added POST /api/ai/chat/stream (SSE) for streaming responses
 
-- [ ] **Task 2.3** — MCP Tool Calling Architecture
-  - Design tool schemas for fitness domain (calculate BMI, suggest exercises, etc.)
-  - Implement MCP-compatible tool calling
+- [x] **Task 2.3** — MCP Tool Calling Architecture
+  - 4 fitness domain tools: calculateBMI, calculate1RM, calculateTDEE, suggestExercises
+  - Tools use Zod parameter schemas, maxSteps: 3 for multi-step reasoning
 
-- [ ] **Task 2.4** — Prompt Engineering
-  - Create system prompts with fitness domain expertise
-  - Add context injection (user stats, workout history)
+- [x] **Task 2.4** — Prompt Engineering
+  - Detailed CHAT_SYSTEM_PROMPT with fitness coaching guidelines
+  - Context injection: goals, experience, equipment, bodyWeight, injuries, PRs
+  - Separate system prompts for workout gen, meal planning, progress insights
 
-- [ ] **Task 2.5** — AI Feature Tests
-  - Test streaming responses, tool calls, error handling
-  - Mock Anthropic API for reliable testing
+- [x] **Task 2.5** — AI Feature Tests
+  - 16 unit tests for fallback mode (no API key)
+  - Tests cover: chat routing, workout generation, meal plans, progress insights
+  - Extended vitest config to include server/ test directory

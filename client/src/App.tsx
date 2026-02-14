@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { lazy, Suspense, useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { initAnalytics, trackPageView } from '@/lib/analytics';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, User, LogOut, Download, Users } from 'lucide-react';
@@ -231,6 +232,11 @@ const WorkoutPage = memo(() => {
 
 function Router() {
   const [location] = useLocation();
+
+  // Track page views on route change
+  useEffect(() => {
+    trackPageView(location);
+  }, [location]);
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -585,6 +591,10 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
 // Main app layout wrapper
 function AppLayout() {
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
   // Custom sidebar width for fitness application
   const style = {
     '--sidebar-width': '20rem', // 320px for better content

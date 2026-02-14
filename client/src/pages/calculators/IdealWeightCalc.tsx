@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Scale, Ruler, User, Target, TrendingUp, Info } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 type Gender = 'male' | 'female';
 type HeightUnit = 'cm' | 'ft';
@@ -11,26 +13,26 @@ const FORMULAS = {
   devine: {
     name: 'Devine (1974)',
     description: 'Most commonly used in clinical settings',
-    male: (heightCm: number) => 50 + 2.3 * ((heightCm / 2.54 - 60)),
-    female: (heightCm: number) => 45.5 + 2.3 * ((heightCm / 2.54 - 60)),
+    male: (heightCm: number) => 50 + 2.3 * (heightCm / 2.54 - 60),
+    female: (heightCm: number) => 45.5 + 2.3 * (heightCm / 2.54 - 60),
   },
   robinson: {
     name: 'Robinson (1983)',
     description: 'Modified Devine formula',
-    male: (heightCm: number) => 52 + 1.9 * ((heightCm / 2.54 - 60)),
-    female: (heightCm: number) => 49 + 1.7 * ((heightCm / 2.54 - 60)),
+    male: (heightCm: number) => 52 + 1.9 * (heightCm / 2.54 - 60),
+    female: (heightCm: number) => 49 + 1.7 * (heightCm / 2.54 - 60),
   },
   miller: {
     name: 'Miller (1983)',
     description: 'Tends to give lower estimates',
-    male: (heightCm: number) => 56.2 + 1.41 * ((heightCm / 2.54 - 60)),
-    female: (heightCm: number) => 53.1 + 1.36 * ((heightCm / 2.54 - 60)),
+    male: (heightCm: number) => 56.2 + 1.41 * (heightCm / 2.54 - 60),
+    female: (heightCm: number) => 53.1 + 1.36 * (heightCm / 2.54 - 60),
   },
   hamwi: {
     name: 'Hamwi (1964)',
     description: 'One of the original IBW formulas',
-    male: (heightCm: number) => 48 + 2.7 * ((heightCm / 2.54 - 60)),
-    female: (heightCm: number) => 45.5 + 2.2 * ((heightCm / 2.54 - 60)),
+    male: (heightCm: number) => 48 + 2.7 * (heightCm / 2.54 - 60),
+    female: (heightCm: number) => 45.5 + 2.2 * (heightCm / 2.54 - 60),
   },
   broca: {
     name: 'Broca Index',
@@ -50,6 +52,23 @@ function getBMIWeightRange(heightCm: number): { min: number; max: number } {
 }
 
 export function IdealWeightCalculator() {
+  useSEO({
+    title: 'Ideal Weight Calculator - Find Your Healthy Weight',
+    description:
+      'Free ideal weight calculator using multiple scientific formulas. Find your healthy weight range based on height, gender, and frame size.',
+    canonical: 'https://gymgurus.com/calculators/ideal-weight',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Ideal Weight Calculator - Find Your Healthy Weight',
+      url: 'https://gymgurus.com/calculators/ideal-weight',
+      description:
+        'Free ideal weight calculator using multiple scientific formulas. Find your healthy weight range based on height, gender, and frame size.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [gender, setGender] = useState<Gender>('male');
   const [height, setHeight] = useState(170);
   const [heightUnit, setHeightUnit] = useState<HeightUnit>('cm');
@@ -82,7 +101,8 @@ export function IdealWeightCalculator() {
     });
 
     const bmiRange = getBMIWeightRange(heightCm);
-    const averageIdeal = formulaResults.reduce((sum, r) => sum + r.idealKg, 0) / formulaResults.length;
+    const averageIdeal =
+      formulaResults.reduce((sum, r) => sum + r.idealKg, 0) / formulaResults.length;
 
     return {
       formulas: formulaResults,
@@ -123,7 +143,9 @@ export function IdealWeightCalculator() {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Ideal Body Weight</h1>
-          <p className="text-muted-foreground">Calculate your ideal weight using multiple formulas</p>
+          <p className="text-muted-foreground">
+            Calculate your ideal weight using multiple formulas
+          </p>
         </div>
       </div>
 
@@ -227,7 +249,9 @@ export function IdealWeightCalculator() {
             <input
               type="number"
               value={currentWeight || ''}
-              onChange={(e) => setCurrentWeight(e.target.value ? Number(e.target.value) : undefined)}
+              onChange={(e) =>
+                setCurrentWeight(e.target.value ? Number(e.target.value) : undefined)
+              }
               className="flex-1 p-3 border rounded-lg bg-background"
               placeholder="Enter current weight"
               min={1}
@@ -255,20 +279,26 @@ export function IdealWeightCalculator() {
           >
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-1">Average Ideal Weight</p>
-              <p className="text-4xl font-bold text-primary mb-1">{displayWeight(results.averageIdeal.kg)}</p>
+              <p className="text-4xl font-bold text-primary mb-1">
+                {displayWeight(results.averageIdeal.kg)}
+              </p>
               <p className="text-sm text-muted-foreground">
-                Healthy BMI Range: {displayWeight(results.bmiRange.minKg)} - {displayWeight(results.bmiRange.maxKg)}
+                Healthy BMI Range: {displayWeight(results.bmiRange.minKg)} -{' '}
+                {displayWeight(results.bmiRange.maxKg)}
               </p>
             </div>
 
             {/* Difference from current */}
             {difference && (
-              <div className={`mt-4 p-3 rounded-lg ${Math.abs(difference.percentage) < 5 ? 'bg-green-500/20' : 'bg-background/50'}`}>
+              <div
+                className={`mt-4 p-3 rounded-lg ${Math.abs(difference.percentage) < 5 ? 'bg-green-500/20' : 'bg-background/50'}`}
+              >
                 <div className="flex items-center justify-center gap-2">
                   <TrendingUp className={`w-5 h-5 ${difference.kg > 0 ? '' : 'rotate-180'}`} />
                   <span className="font-medium">
-                    {difference.kg > 0 ? '+' : ''}{displayWeight(difference.kg)} ({difference.percentage.toFixed(1)}%)
-                    {Math.abs(difference.percentage) < 5 && ' - You\'re at a healthy weight!'}
+                    {difference.kg > 0 ? '+' : ''}
+                    {displayWeight(difference.kg)} ({difference.percentage.toFixed(1)}%)
+                    {Math.abs(difference.percentage) < 5 && " - You're at a healthy weight!"}
                   </span>
                 </div>
               </div>
@@ -283,7 +313,9 @@ export function IdealWeightCalculator() {
             </h3>
             <div className="space-y-4">
               {results.formulas.map((formula) => {
-                const inRange = formula.idealKg >= results.bmiRange.minKg && formula.idealKg <= results.bmiRange.maxKg;
+                const inRange =
+                  formula.idealKg >= results.bmiRange.minKg &&
+                  formula.idealKg <= results.bmiRange.maxKg;
                 return (
                   <motion.div
                     key={formula.key}
@@ -331,12 +363,16 @@ export function IdealWeightCalculator() {
             <div className="flex items-center justify-between p-4 bg-green-500/10 rounded-lg">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Minimum</p>
-                <p className="text-xl font-bold text-green-600">{displayWeight(results.bmiRange.minKg)}</p>
+                <p className="text-xl font-bold text-green-600">
+                  {displayWeight(results.bmiRange.minKg)}
+                </p>
               </div>
               <div className="flex-1 mx-4 h-2 bg-gradient-to-r from-green-300 via-green-500 to-green-300 rounded-full" />
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Maximum</p>
-                <p className="text-xl font-bold text-green-600">{displayWeight(results.bmiRange.maxKg)}</p>
+                <p className="text-xl font-bold text-green-600">
+                  {displayWeight(results.bmiRange.maxKg)}
+                </p>
               </div>
             </div>
           </div>
@@ -349,13 +385,14 @@ export function IdealWeightCalculator() {
         <div className="text-sm text-muted-foreground">
           <p className="font-medium mb-1">About These Formulas</p>
           <p>
-            Ideal body weight formulas provide estimates based on height and gender.
-            They don't account for muscle mass, body composition, or frame size.
-            Athletes and muscular individuals may have a healthy weight above these estimates.
-            Consult a healthcare provider for personalized advice.
+            Ideal body weight formulas provide estimates based on height and gender. They don't
+            account for muscle mass, body composition, or frame size. Athletes and muscular
+            individuals may have a healthy weight above these estimates. Consult a healthcare
+            provider for personalized advice.
           </p>
         </div>
       </div>
+      <RelatedCalculators currentPath="/calculators/ideal-weight" />
     </div>
   );
 }

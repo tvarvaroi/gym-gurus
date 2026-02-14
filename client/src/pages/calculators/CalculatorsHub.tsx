@@ -14,6 +14,7 @@ import {
   Target,
   Zap,
 } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
 
 interface CalculatorCard {
   title: string;
@@ -124,6 +125,23 @@ const CALCULATORS: CalculatorCard[] = [
 ];
 
 export function CalculatorsHub() {
+  useSEO({
+    title: 'Free Fitness Calculators - BMI, 1RM, TDEE, Macros & More',
+    description:
+      '12 free fitness calculators: BMI, One Rep Max, TDEE, Body Fat, Macros, Strength Standards, Plates, VO2 Max, Heart Rate Zones, and more. No signup required.',
+    canonical: 'https://gymgurus.com/calculators',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Free Fitness Calculators - BMI, 1RM, TDEE, Macros & More',
+      url: 'https://gymgurus.com/calculators',
+      description:
+        '12 free fitness calculators: BMI, One Rep Max, TDEE, Body Fat, Macros, Strength Standards, Plates, VO2 Max, Heart Rate Zones, and more. No signup required.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
@@ -206,10 +224,12 @@ export function CalculatorsHub() {
       {/* Info Cards */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-          <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-2">Pro Tip: 1RM Testing</h3>
+          <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-2">
+            Pro Tip: 1RM Testing
+          </h3>
           <p className="text-sm text-blue-600 dark:text-blue-400">
-            Use the 1RM calculator to estimate your max without the injury risk of actually lifting it.
-            Most accurate with 3-5 rep sets.
+            Use the 1RM calculator to estimate your max without the injury risk of actually lifting
+            it. Most accurate with 3-5 rep sets.
           </p>
         </div>
         <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
@@ -217,8 +237,8 @@ export function CalculatorsHub() {
             Pro Tip: Loading the Bar
           </h3>
           <p className="text-sm text-green-600 dark:text-green-400">
-            Use the plates calculator to avoid doing math in the gym. It shows you exactly which plates
-            to load on each side.
+            Use the plates calculator to avoid doing math in the gym. It shows you exactly which
+            plates to load on each side.
           </p>
         </div>
       </div>

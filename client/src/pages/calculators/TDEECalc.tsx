@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Calculator, Activity, Scale, Ruler, Target } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 type Gender = 'male' | 'female';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'athlete';
@@ -14,11 +16,21 @@ interface ActivityOption {
 }
 
 const ACTIVITY_LEVELS: ActivityOption[] = [
-  { value: 'sedentary', label: 'Sedentary', description: 'Office job, little exercise', multiplier: 1.2 },
+  {
+    value: 'sedentary',
+    label: 'Sedentary',
+    description: 'Office job, little exercise',
+    multiplier: 1.2,
+  },
   { value: 'light', label: 'Light', description: '1-2 workouts/week', multiplier: 1.375 },
   { value: 'moderate', label: 'Moderate', description: '3-4 workouts/week', multiplier: 1.55 },
   { value: 'active', label: 'Active', description: '5-6 workouts/week', multiplier: 1.725 },
-  { value: 'very_active', label: 'Very Active', description: 'Daily intense training', multiplier: 1.9 },
+  {
+    value: 'very_active',
+    label: 'Very Active',
+    description: 'Daily intense training',
+    multiplier: 1.9,
+  },
   { value: 'athlete', label: 'Athlete', description: '2x daily training', multiplier: 2.1 },
 ];
 
@@ -62,6 +74,23 @@ function calculateMacros(
 }
 
 export function TDEECalculator() {
+  useSEO({
+    title: 'TDEE Calculator - Total Daily Energy Expenditure',
+    description:
+      'Free TDEE calculator using the Mifflin-St Jeor equation. Calculate your daily calorie needs based on age, weight, height, and activity level.',
+    canonical: 'https://gymgurus.com/calculators/tdee',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'TDEE Calculator - Total Daily Energy Expenditure',
+      url: 'https://gymgurus.com/calculators/tdee',
+      description:
+        'Free TDEE calculator using the Mifflin-St Jeor equation. Calculate your daily calorie needs based on age, weight, height, and activity level.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [gender, setGender] = useState<Gender>('male');
   const [age, setAge] = useState(25);
   const [weight, setWeight] = useState(75);
@@ -76,7 +105,8 @@ export function TDEECalculator() {
 
   const results = useMemo(() => {
     const bmr = calculateBMR(weightKg, heightCm, age, gender);
-    const activityMultiplier = ACTIVITY_LEVELS.find((a) => a.value === activityLevel)?.multiplier || 1.55;
+    const activityMultiplier =
+      ACTIVITY_LEVELS.find((a) => a.value === activityLevel)?.multiplier || 1.55;
     const tdee = Math.round(bmr * activityMultiplier);
 
     const goalInfo = GOALS.find((g) => g.value === goal);
@@ -216,7 +246,9 @@ export function TDEECalculator() {
                 }`}
               >
                 <div className="font-medium">{level.label}</div>
-                <div className={`text-sm ${activityLevel === level.value ? 'opacity-80' : 'text-muted-foreground'}`}>
+                <div
+                  className={`text-sm ${activityLevel === level.value ? 'opacity-80' : 'text-muted-foreground'}`}
+                >
                   {level.description}
                 </div>
               </button>
@@ -236,11 +268,15 @@ export function TDEECalculator() {
                 key={g.value}
                 onClick={() => setGoal(g.value)}
                 className={`p-3 rounded-lg text-left transition-colors ${
-                  goal === g.value ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'
+                  goal === g.value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary hover:bg-secondary/80'
                 }`}
               >
                 <div className="font-medium">{g.label}</div>
-                <div className={`text-xs ${goal === g.value ? 'opacity-80' : 'text-muted-foreground'}`}>
+                <div
+                  className={`text-xs ${goal === g.value ? 'opacity-80' : 'text-muted-foreground'}`}
+                >
                   {g.description}
                 </div>
               </button>
@@ -305,31 +341,37 @@ export function TDEECalculator() {
         <div className="mt-4 h-4 rounded-full overflow-hidden flex">
           <div
             className="bg-red-500"
-            style={{ width: `${(results.macros.protein * 4 / results.targetCalories) * 100}%` }}
+            style={{ width: `${((results.macros.protein * 4) / results.targetCalories) * 100}%` }}
           />
           <div
             className="bg-yellow-500"
-            style={{ width: `${(results.macros.carbs * 4 / results.targetCalories) * 100}%` }}
+            style={{ width: `${((results.macros.carbs * 4) / results.targetCalories) * 100}%` }}
           />
           <div
             className="bg-green-500"
-            style={{ width: `${(results.macros.fat * 9 / results.targetCalories) * 100}%` }}
+            style={{ width: `${((results.macros.fat * 9) / results.targetCalories) * 100}%` }}
           />
         </div>
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
-          <span>{Math.round((results.macros.protein * 4 / results.targetCalories) * 100)}% protein</span>
-          <span>{Math.round((results.macros.carbs * 4 / results.targetCalories) * 100)}% carbs</span>
-          <span>{Math.round((results.macros.fat * 9 / results.targetCalories) * 100)}% fat</span>
+          <span>
+            {Math.round(((results.macros.protein * 4) / results.targetCalories) * 100)}% protein
+          </span>
+          <span>
+            {Math.round(((results.macros.carbs * 4) / results.targetCalories) * 100)}% carbs
+          </span>
+          <span>{Math.round(((results.macros.fat * 9) / results.targetCalories) * 100)}% fat</span>
         </div>
       </div>
 
       {/* Info Note */}
       <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg text-sm">
         <p className="text-blue-700 dark:text-blue-300">
-          <strong>Note:</strong> These are estimates using the Mifflin-St Jeor formula. Individual needs may
-          vary based on metabolism, body composition, and other factors. Adjust based on your actual progress.
+          <strong>Note:</strong> These are estimates using the Mifflin-St Jeor formula. Individual
+          needs may vary based on metabolism, body composition, and other factors. Adjust based on
+          your actual progress.
         </p>
       </div>
+      <RelatedCalculators currentPath="/calculators/tdee" />
     </div>
   );
 }

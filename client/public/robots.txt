@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /calculators
+Allow: /calculators/*
+Allow: /terms
+Allow: /privacy
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /clients
+Disallow: /workouts
+Disallow: /exercises
+Disallow: /progress
+Disallow: /schedule
+Disallow: /payments
+Disallow: /solo
+Disallow: /preview-login
+
+Sitemap: https://gymgurus.com/sitemap.xml

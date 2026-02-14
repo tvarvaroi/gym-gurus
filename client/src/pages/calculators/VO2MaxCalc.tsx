@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Timer, TrendingUp, Info } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 type TestMethod = 'cooper' | 'rockport' | 'beep' | 'manual';
 
@@ -30,7 +32,14 @@ function calculateRockport(
   // gender: male = 1, female = 0
   const genderVal = gender === 'male' ? 1 : 0;
   const weightLbs = weightKg * 2.20462;
-  return 132.853 - (0.0769 * weightLbs) - (0.3877 * ageYears) + (6.315 * genderVal) - (3.2649 * timeMinutes) - (0.1565 * heartRate);
+  return (
+    132.853 -
+    0.0769 * weightLbs -
+    0.3877 * ageYears +
+    6.315 * genderVal -
+    3.2649 * timeMinutes -
+    0.1565 * heartRate
+  );
 }
 
 // Beep test (20m shuttle run) - using level and shuttle
@@ -38,10 +47,14 @@ function calculateBeepTest(level: number, shuttles: number): number {
   // Simplified formula based on level reached
   // More accurate formulas exist, but this is a reasonable approximation
   const totalDistance = (level - 1) * 140 + shuttles * 20; // Approximate total distance
-  return 18.043461 + (0.3689295 * totalDistance / 20) - (0.000349 * Math.pow(totalDistance / 20, 2));
+  return 18.043461 + (0.3689295 * totalDistance) / 20 - 0.000349 * Math.pow(totalDistance / 20, 2);
 }
 
-function getVO2Category(age: number, gender: 'male' | 'female', vo2max: number): { category: string; percentile: string; color: string; bgColor: string } {
+function getVO2Category(
+  age: number,
+  gender: 'male' | 'female',
+  vo2max: number
+): { category: string; percentile: string; color: string; bgColor: string } {
   // Simplified categories based on age and gender
   // Reference: ACSM guidelines
 
@@ -49,43 +62,98 @@ function getVO2Category(age: number, gender: 'male' | 'female', vo2max: number):
 
   if (gender === 'male') {
     if (age < 30) {
-      excellent = 55; good = 49; average = 43; fair = 37;
+      excellent = 55;
+      good = 49;
+      average = 43;
+      fair = 37;
     } else if (age < 40) {
-      excellent = 52; good = 46; average = 40; fair = 34;
+      excellent = 52;
+      good = 46;
+      average = 40;
+      fair = 34;
     } else if (age < 50) {
-      excellent = 49; good = 43; average = 37; fair = 31;
+      excellent = 49;
+      good = 43;
+      average = 37;
+      fair = 31;
     } else if (age < 60) {
-      excellent = 45; good = 39; average = 33; fair = 27;
+      excellent = 45;
+      good = 39;
+      average = 33;
+      fair = 27;
     } else {
-      excellent = 42; good = 36; average = 30; fair = 24;
+      excellent = 42;
+      good = 36;
+      average = 30;
+      fair = 24;
     }
   } else {
     if (age < 30) {
-      excellent = 49; good = 43; average = 37; fair = 31;
+      excellent = 49;
+      good = 43;
+      average = 37;
+      fair = 31;
     } else if (age < 40) {
-      excellent = 45; good = 39; average = 33; fair = 27;
+      excellent = 45;
+      good = 39;
+      average = 33;
+      fair = 27;
     } else if (age < 50) {
-      excellent = 42; good = 36; average = 30; fair = 24;
+      excellent = 42;
+      good = 36;
+      average = 30;
+      fair = 24;
     } else if (age < 60) {
-      excellent = 38; good = 32; average = 26; fair = 21;
+      excellent = 38;
+      good = 32;
+      average = 26;
+      fair = 21;
     } else {
-      excellent = 35; good = 29; average = 23; fair = 18;
+      excellent = 35;
+      good = 29;
+      average = 23;
+      fair = 18;
     }
   }
 
   if (vo2max >= excellent) {
-    return { category: 'Excellent', percentile: 'Top 10%', color: 'text-purple-600', bgColor: 'bg-purple-100' };
+    return {
+      category: 'Excellent',
+      percentile: 'Top 10%',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100',
+    };
   }
   if (vo2max >= good) {
-    return { category: 'Good', percentile: 'Top 25%', color: 'text-blue-600', bgColor: 'bg-blue-100' };
+    return {
+      category: 'Good',
+      percentile: 'Top 25%',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+    };
   }
   if (vo2max >= average) {
-    return { category: 'Average', percentile: 'Top 50%', color: 'text-green-600', bgColor: 'bg-green-100' };
+    return {
+      category: 'Average',
+      percentile: 'Top 50%',
+      color: 'text-green-600',
+      bgColor: 'bg-green-100',
+    };
   }
   if (vo2max >= fair) {
-    return { category: 'Fair', percentile: 'Top 75%', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+    return {
+      category: 'Fair',
+      percentile: 'Top 75%',
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-100',
+    };
   }
-  return { category: 'Poor', percentile: 'Bottom 25%', color: 'text-red-600', bgColor: 'bg-red-100' };
+  return {
+    category: 'Poor',
+    percentile: 'Bottom 25%',
+    color: 'text-red-600',
+    bgColor: 'bg-red-100',
+  };
 }
 
 const VO2_EXAMPLES = [
@@ -96,6 +164,23 @@ const VO2_EXAMPLES = [
 ];
 
 export function VO2MaxCalculator() {
+  useSEO({
+    title: 'VO2 Max Calculator - Estimate Your Aerobic Fitness',
+    description:
+      'Free VO2 max calculator. Estimate your maximal oxygen uptake and aerobic fitness level based on your age and exercise performance.',
+    canonical: 'https://gymgurus.com/calculators/vo2max',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'VO2 Max Calculator - Estimate Your Aerobic Fitness',
+      url: 'https://gymgurus.com/calculators/vo2max',
+      description:
+        'Free VO2 max calculator. Estimate your maximal oxygen uptake and aerobic fitness level based on your age and exercise performance.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [method, setMethod] = useState<TestMethod>('cooper');
   const [age, setAge] = useState(30);
   const [gender, setGender] = useState<'male' | 'female'>('male');
@@ -140,7 +225,18 @@ export function VO2MaxCalculator() {
     const { category, percentile, color, bgColor } = getVO2Category(age, gender, vo2max);
 
     return { vo2max, category, percentile, color, bgColor };
-  }, [method, cooperDistance, weight, age, gender, rockportTime, rockportHR, beepLevel, beepShuttles, manualVO2]);
+  }, [
+    method,
+    cooperDistance,
+    weight,
+    age,
+    gender,
+    rockportTime,
+    rockportHR,
+    beepLevel,
+    beepShuttles,
+    manualVO2,
+  ]);
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -341,9 +437,7 @@ export function VO2MaxCalculator() {
 
         {method === 'manual' && (
           <div>
-            <label className="block text-sm font-medium mb-2">
-              VO2 Max (ml/kg/min)
-            </label>
+            <label className="block text-sm font-medium mb-2">VO2 Max (ml/kg/min)</label>
             <input
               type="number"
               value={manualVO2}
@@ -368,9 +462,7 @@ export function VO2MaxCalculator() {
       >
         <div className="text-center mb-6">
           <p className="text-sm opacity-70 mb-1">Estimated VO2 Max</p>
-          <p className={`text-6xl font-bold ${result.color}`}>
-            {result.vo2max.toFixed(1)}
-          </p>
+          <p className={`text-6xl font-bold ${result.color}`}>{result.vo2max.toFixed(1)}</p>
           <p className="text-sm text-muted-foreground">ml/kg/min</p>
           <p className={`text-xl font-medium ${result.color} mt-2`}>{result.category}</p>
           <p className="text-sm text-muted-foreground">{result.percentile}</p>
@@ -413,12 +505,13 @@ export function VO2MaxCalculator() {
           <div className="text-blue-700 dark:text-blue-300">
             <strong>What is VO2 Max?</strong>
             <p className="mt-1">
-              VO2 max is the maximum rate of oxygen consumption during exercise. It's considered
-              the gold standard for measuring cardiovascular fitness and aerobic endurance.
+              VO2 max is the maximum rate of oxygen consumption during exercise. It's considered the
+              gold standard for measuring cardiovascular fitness and aerobic endurance.
             </p>
           </div>
         </div>
       </div>
+      <RelatedCalculators currentPath="/calculators/vo2max" />
     </div>
   );
 }

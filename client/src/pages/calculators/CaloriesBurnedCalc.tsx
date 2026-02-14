@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, Clock, Activity, Scale, Dumbbell, Bike, PersonStanding, Heart } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 // MET values for common exercises (Metabolic Equivalent of Task)
 const EXERCISE_CATEGORIES = {
@@ -79,11 +81,30 @@ const EXERCISE_CATEGORIES = {
 type Unit = 'kg' | 'lbs';
 
 export function CaloriesBurnedCalculator() {
+  useSEO({
+    title: 'Calories Burned Calculator - Exercise Calorie Counter',
+    description:
+      'Free calories burned calculator. Estimate how many calories you burn during different exercises and activities based on duration and body weight.',
+    canonical: 'https://gymgurus.com/calculators/calories-burned',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Calories Burned Calculator - Exercise Calorie Counter',
+      url: 'https://gymgurus.com/calculators/calories-burned',
+      description:
+        'Free calories burned calculator. Estimate how many calories you burn during different exercises and activities based on duration and body weight.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [weight, setWeight] = useState(70);
   const [unit, setUnit] = useState<Unit>('kg');
   const [duration, setDuration] = useState(60);
   const [selectedCategory, setSelectedCategory] = useState<string>('strength');
-  const [selectedExercise, setSelectedExercise] = useState(EXERCISE_CATEGORIES.strength.exercises[0]);
+  const [selectedExercise, setSelectedExercise] = useState(
+    EXERCISE_CATEGORIES.strength.exercises[0]
+  );
 
   const weightKg = unit === 'lbs' ? weight * 0.453592 : weight;
 
@@ -212,13 +233,16 @@ export function CaloriesBurnedCalculator() {
           <select
             value={selectedExercise.name}
             onChange={(e) => {
-              const exercise = EXERCISE_CATEGORIES[selectedCategory as keyof typeof EXERCISE_CATEGORIES]
-                .exercises.find((ex) => ex.name === e.target.value);
+              const exercise = EXERCISE_CATEGORIES[
+                selectedCategory as keyof typeof EXERCISE_CATEGORIES
+              ].exercises.find((ex) => ex.name === e.target.value);
               if (exercise) setSelectedExercise(exercise);
             }}
             className="w-full p-3 border rounded-lg bg-background"
           >
-            {EXERCISE_CATEGORIES[selectedCategory as keyof typeof EXERCISE_CATEGORIES].exercises.map((exercise) => (
+            {EXERCISE_CATEGORIES[
+              selectedCategory as keyof typeof EXERCISE_CATEGORIES
+            ].exercises.map((exercise) => (
               <option key={exercise.name} value={exercise.name}>
                 {exercise.name} (MET: {exercise.met})
               </option>
@@ -288,7 +312,11 @@ export function CaloriesBurnedCalculator() {
               return (
                 <div key={exercise.name} className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className={exercise.name === selectedExercise.name ? 'font-bold text-orange-500' : ''}>
+                    <span
+                      className={
+                        exercise.name === selectedExercise.name ? 'font-bold text-orange-500' : ''
+                      }
+                    >
                       {exercise.name}
                     </span>
                     <span className="font-medium">{calories} cal</span>
@@ -312,11 +340,12 @@ export function CaloriesBurnedCalculator() {
       {/* Info */}
       <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
         <p className="text-sm text-muted-foreground">
-          <strong>Note:</strong> Calorie estimates are based on MET (Metabolic Equivalent of Task) values.
-          Actual calories burned may vary based on intensity, fitness level, age, and individual metabolism.
-          Formula: Calories = MET x Weight (kg) x Duration (hours)
+          <strong>Note:</strong> Calorie estimates are based on MET (Metabolic Equivalent of Task)
+          values. Actual calories burned may vary based on intensity, fitness level, age, and
+          individual metabolism. Formula: Calories = MET x Weight (kg) x Duration (hours)
         </p>
       </div>
+      <RelatedCalculators currentPath="/calculators/calories-burned" />
     </div>
   );
 }

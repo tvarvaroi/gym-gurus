@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Calculator, Target, Scale, Activity } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 type Gender = 'male' | 'female';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -32,7 +34,10 @@ const GOAL_ADJUSTMENTS: Record<Goal, number> = {
   bulk: 500,
 };
 
-const DIET_MACROS: Record<DietType, { protein: number; carbs: number; fat: number; label: string }> = {
+const DIET_MACROS: Record<
+  DietType,
+  { protein: number; carbs: number; fat: number; label: string }
+> = {
   balanced: { protein: 0.3, carbs: 0.4, fat: 0.3, label: 'Balanced (30/40/30)' },
   low_carb: { protein: 0.35, carbs: 0.25, fat: 0.4, label: 'Low Carb (35/25/40)' },
   high_carb: { protein: 0.25, carbs: 0.55, fat: 0.2, label: 'High Carb (25/55/20)' },
@@ -79,6 +84,23 @@ function calculateMacros(
 }
 
 export function MacroCalculator() {
+  useSEO({
+    title: 'Macro Calculator - Calculate Your Daily Macros',
+    description:
+      'Free macro calculator. Calculate your optimal protein, carbs, and fat intake based on your goals (lose fat, maintain, or build muscle).',
+    canonical: 'https://gymgurus.com/calculators/macros',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Macro Calculator - Calculate Your Daily Macros',
+      url: 'https://gymgurus.com/calculators/macros',
+      description:
+        'Free macro calculator. Calculate your optimal protein, carbs, and fat intake based on your goals (lose fat, maintain, or build muscle).',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [gender, setGender] = useState<Gender>('male');
   const [age, setAge] = useState(25);
   const [weight, setWeight] = useState(75);
@@ -229,11 +251,17 @@ export function MacroCalculator() {
                 key={g.value}
                 onClick={() => setGoal(g.value as Goal)}
                 className={`p-3 rounded-lg text-left transition-colors ${
-                  goal === g.value ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'
+                  goal === g.value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary hover:bg-secondary/80'
                 }`}
               >
                 <div className="font-medium">{g.label}</div>
-                <div className={`text-xs ${goal === g.value ? 'opacity-80' : 'text-muted-foreground'}`}>{g.desc}</div>
+                <div
+                  className={`text-xs ${goal === g.value ? 'opacity-80' : 'text-muted-foreground'}`}
+                >
+                  {g.desc}
+                </div>
               </button>
             ))}
           </div>
@@ -304,9 +332,18 @@ export function MacroCalculator() {
 
         {/* Macro Bar */}
         <div className="h-6 rounded-full overflow-hidden flex">
-          <div className="bg-red-500" style={{ width: `${(result.proteinCalories / result.calories) * 100}%` }} />
-          <div className="bg-yellow-500" style={{ width: `${(result.carbsCalories / result.calories) * 100}%` }} />
-          <div className="bg-green-500" style={{ width: `${(result.fatCalories / result.calories) * 100}%` }} />
+          <div
+            className="bg-red-500"
+            style={{ width: `${(result.proteinCalories / result.calories) * 100}%` }}
+          />
+          <div
+            className="bg-yellow-500"
+            style={{ width: `${(result.carbsCalories / result.calories) * 100}%` }}
+          />
+          <div
+            className="bg-green-500"
+            style={{ width: `${(result.fatCalories / result.calories) * 100}%` }}
+          />
         </div>
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
           <span>{Math.round((result.proteinCalories / result.calories) * 100)}% protein</span>
@@ -341,10 +378,12 @@ export function MacroCalculator() {
       {/* Tips */}
       <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg text-sm">
         <p className="text-blue-700 dark:text-blue-300">
-          <strong>Tip:</strong> These are starting points. Adjust based on your progress. If not losing weight, reduce
-          by 100-200 calories. If energy is low during workouts, add more carbs around training.
+          <strong>Tip:</strong> These are starting points. Adjust based on your progress. If not
+          losing weight, reduce by 100-200 calories. If energy is low during workouts, add more
+          carbs around training.
         </p>
       </div>
+      <RelatedCalculators currentPath="/calculators/macros" />
     </div>
   );
 }

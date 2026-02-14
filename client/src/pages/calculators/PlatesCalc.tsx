@@ -11,8 +11,27 @@ import {
   type WeightUnit,
   type BarbellType,
 } from '@/lib/calculations/plates';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 export function PlatesCalculator() {
+  useSEO({
+    title: 'Barbell Plate Calculator - Load Your Bar',
+    description:
+      'Free barbell plate loading calculator. Enter your target weight to see which plates to load on each side of the bar.',
+    canonical: 'https://gymgurus.com/calculators/plates',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Barbell Plate Calculator - Load Your Bar',
+      url: 'https://gymgurus.com/calculators/plates',
+      description:
+        'Free barbell plate loading calculator. Enter your target weight to see which plates to load on each side of the bar.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [targetWeight, setTargetWeight] = useState<number>(100);
   const [unit, setUnit] = useState<WeightUnit>('kg');
   const [barbellType, setBarbellType] = useState<BarbellType>('olympic');
@@ -23,10 +42,7 @@ export function PlatesCalculator() {
     [targetWeight, unit, barbellType]
   );
 
-  const warmupPyramid = useMemo(
-    () => getWarmupPyramid(targetWeight, unit),
-    [targetWeight, unit]
-  );
+  const warmupPyramid = useMemo(() => getWarmupPyramid(targetWeight, unit), [targetWeight, unit]);
 
   const plateColors = unit === 'kg' ? PLATE_COLORS_KG : PLATE_COLORS_LBS;
   const increment = unit === 'kg' ? 2.5 : 5;
@@ -120,7 +136,8 @@ export function PlatesCalculator() {
                   : 'bg-secondary hover:bg-secondary/80'
               }`}
             >
-              {w}{unit}
+              {w}
+              {unit}
             </button>
           ))}
         </div>
@@ -159,7 +176,8 @@ export function PlatesCalculator() {
           {/* Barbell */}
           <div className="h-4 bg-gray-500 rounded-full" style={{ width: '200px' }}>
             <div className="h-full flex items-center justify-center text-xs text-white font-medium">
-              {result.barbellWeight}{unit}
+              {result.barbellWeight}
+              {unit}
             </div>
           </div>
 
@@ -193,11 +211,10 @@ export function PlatesCalculator() {
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           {result.platesPerSide.map((p) => (
             <div key={p.plate} className="flex items-center gap-1 text-sm">
-              <div
-                className={`w-4 h-4 rounded-sm ${plateColors[p.plate]?.bg || 'bg-gray-400'}`}
-              />
+              <div className={`w-4 h-4 rounded-sm ${plateColors[p.plate]?.bg || 'bg-gray-400'}`} />
               <span>
-                {p.plate}{unit} × {p.count}
+                {p.plate}
+                {unit} × {p.count}
               </span>
             </div>
           ))}
@@ -303,6 +320,7 @@ export function PlatesCalculator() {
           </div>
         )}
       </div>
+      <RelatedCalculators currentPath="/calculators/plates" />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Scale, Ruler, Info } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 type BMICategory = 'underweight' | 'normal' | 'overweight' | 'obese_1' | 'obese_2' | 'obese_3';
 
@@ -11,12 +13,40 @@ interface BMIResult {
   idealWeightRange: { min: number; max: number };
 }
 
-const BMI_CATEGORIES: Record<BMICategory, { label: string; color: string; bgColor: string; range: string }> = {
-  underweight: { label: 'Underweight', color: 'text-blue-600', bgColor: 'bg-blue-100', range: '< 18.5' },
-  normal: { label: 'Normal', color: 'text-green-600', bgColor: 'bg-green-100', range: '18.5 - 24.9' },
-  overweight: { label: 'Overweight', color: 'text-yellow-600', bgColor: 'bg-yellow-100', range: '25 - 29.9' },
-  obese_1: { label: 'Obese Class I', color: 'text-orange-600', bgColor: 'bg-orange-100', range: '30 - 34.9' },
-  obese_2: { label: 'Obese Class II', color: 'text-red-500', bgColor: 'bg-red-100', range: '35 - 39.9' },
+const BMI_CATEGORIES: Record<
+  BMICategory,
+  { label: string; color: string; bgColor: string; range: string }
+> = {
+  underweight: {
+    label: 'Underweight',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
+    range: '< 18.5',
+  },
+  normal: {
+    label: 'Normal',
+    color: 'text-green-600',
+    bgColor: 'bg-green-100',
+    range: '18.5 - 24.9',
+  },
+  overweight: {
+    label: 'Overweight',
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-100',
+    range: '25 - 29.9',
+  },
+  obese_1: {
+    label: 'Obese Class I',
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-100',
+    range: '30 - 34.9',
+  },
+  obese_2: {
+    label: 'Obese Class II',
+    color: 'text-red-500',
+    bgColor: 'bg-red-100',
+    range: '35 - 39.9',
+  },
   obese_3: { label: 'Obese Class III', color: 'text-red-700', bgColor: 'bg-red-200', range: '40+' },
 };
 
@@ -57,6 +87,23 @@ function calculateBMI(weightKg: number, heightCm: number): BMIResult {
 }
 
 export function BMICalculator() {
+  useSEO({
+    title: 'BMI Calculator - Calculate Your Body Mass Index',
+    description:
+      'Free BMI calculator. Enter your height and weight to instantly calculate your Body Mass Index, see your BMI category, and get health recommendations.',
+    canonical: 'https://gymgurus.com/calculators/bmi',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'BMI Calculator - Calculate Your Body Mass Index',
+      url: 'https://gymgurus.com/calculators/bmi',
+      description:
+        'Free BMI calculator. Enter your height and weight to instantly calculate your Body Mass Index, see your BMI category, and get health recommendations.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [weight, setWeight] = useState(70);
   const [height, setHeight] = useState(170);
   const [unit, setUnit] = useState<'metric' | 'imperial'>('metric');
@@ -218,7 +265,9 @@ export function BMICalculator() {
                 result.category === key ? info.bgColor : 'bg-secondary/30'
               }`}
             >
-              <span className={result.category === key ? info.color + ' font-medium' : ''}>{info.label}</span>
+              <span className={result.category === key ? info.color + ' font-medium' : ''}>
+                {info.label}
+              </span>
               <span className="text-sm text-muted-foreground">{info.range}</span>
             </div>
           ))}
@@ -228,10 +277,12 @@ export function BMICalculator() {
       {/* Disclaimer */}
       <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg text-sm">
         <p className="text-yellow-700 dark:text-yellow-300">
-          <strong>Note:</strong> BMI is a general indicator and doesn't account for muscle mass, bone density, or
-          body composition. Athletes and muscular individuals may have a high BMI but low body fat.
+          <strong>Note:</strong> BMI is a general indicator and doesn't account for muscle mass,
+          bone density, or body composition. Athletes and muscular individuals may have a high BMI
+          but low body fat.
         </p>
       </div>
+      <RelatedCalculators currentPath="/calculators/bmi" />
     </div>
   );
 }

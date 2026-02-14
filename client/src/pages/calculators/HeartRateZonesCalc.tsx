@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Activity, Zap, Info } from 'lucide-react';
+import { useSEO } from '@/lib/seo';
+import RelatedCalculators from '@/components/RelatedCalculators';
 
 type CalculationMethod = 'age' | 'karvonen' | 'manual';
 
@@ -27,11 +29,7 @@ function calculateMaxHR(age: number, method: 'standard' | 'tanaka' = 'tanaka'): 
 }
 
 // Calculate zones using percentage of max HR or Karvonen formula
-function calculateZones(
-  maxHR: number,
-  restingHR: number,
-  useKarvonen: boolean
-): HeartRateZone[] {
+function calculateZones(maxHR: number, restingHR: number, useKarvonen: boolean): HeartRateZone[] {
   const zones = [
     {
       name: 'Zone 1 - Recovery',
@@ -75,7 +73,7 @@ function calculateZones(
       maxPercent: 100,
       color: 'text-red-600',
       bgColor: 'bg-red-100',
-      description: 'Maximum effort, can\'t talk',
+      description: "Maximum effort, can't talk",
       benefits: ['Peak performance', 'Sprint training', 'Neuromuscular power'],
     },
   ];
@@ -103,6 +101,23 @@ function calculateZones(
 }
 
 export function HeartRateZonesCalculator() {
+  useSEO({
+    title: 'Heart Rate Zones Calculator - Training Zone Guide',
+    description:
+      'Free heart rate zones calculator. Find your optimal training zones for fat burn, cardio, and peak performance based on your max heart rate.',
+    canonical: 'https://gymgurus.com/calculators/heart-rate-zones',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Heart Rate Zones Calculator - Training Zone Guide',
+      url: 'https://gymgurus.com/calculators/heart-rate-zones',
+      description:
+        'Free heart rate zones calculator. Find your optimal training zones for fat burn, cardio, and peak performance based on your max heart rate.',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+  });
+
   const [method, setMethod] = useState<CalculationMethod>('age');
   const [age, setAge] = useState(30);
   const [restingHR, setRestingHR] = useState(60);
@@ -191,9 +206,7 @@ export function HeartRateZonesCalculator() {
 
         {method === 'karvonen' && (
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">
-              Resting Heart Rate (bpm)
-            </label>
+            <label className="block text-sm font-medium mb-2">Resting Heart Rate (bpm)</label>
             <input
               type="number"
               value={restingHR}
@@ -210,9 +223,7 @@ export function HeartRateZonesCalculator() {
 
         {method === 'manual' && (
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">
-              Maximum Heart Rate (bpm)
-            </label>
+            <label className="block text-sm font-medium mb-2">Maximum Heart Rate (bpm)</label>
             <input
               type="number"
               value={manualMaxHR}
@@ -262,7 +273,9 @@ export function HeartRateZonesCalculator() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-muted-foreground text-sm">Estimated Maximum Heart Rate</p>
-            <p className="text-5xl font-bold text-primary">{maxHR} <span className="text-2xl font-normal">bpm</span></p>
+            <p className="text-5xl font-bold text-primary">
+              {maxHR} <span className="text-2xl font-normal">bpm</span>
+            </p>
           </div>
           <Heart className="w-16 h-16 text-primary/20" />
         </div>
@@ -329,11 +342,15 @@ export function HeartRateZonesCalculator() {
             <motion.div
               key={zone.name}
               className={`h-full flex items-center justify-center text-white text-xs font-medium ${
-                index === 0 ? 'bg-gray-400' :
-                index === 1 ? 'bg-blue-500' :
-                index === 2 ? 'bg-green-500' :
-                index === 3 ? 'bg-orange-500' :
-                'bg-red-500'
+                index === 0
+                  ? 'bg-gray-400'
+                  : index === 1
+                    ? 'bg-blue-500'
+                    : index === 2
+                      ? 'bg-green-500'
+                      : index === 3
+                        ? 'bg-orange-500'
+                        : 'bg-red-500'
               }`}
               initial={{ width: 0 }}
               animate={{ width: '20%' }}
@@ -363,17 +380,21 @@ export function HeartRateZonesCalculator() {
           <div className="p-3 bg-secondary/30 rounded-lg">
             <p className="font-medium text-blue-600 dark:text-blue-400">80/20 Rule</p>
             <p className="text-sm text-muted-foreground">
-              Spend 80% of training time in Zones 1-2 and 20% in Zones 4-5 for optimal endurance gains
+              Spend 80% of training time in Zones 1-2 and 20% in Zones 4-5 for optimal endurance
+              gains
             </p>
           </div>
           <div className="p-3 bg-secondary/30 rounded-lg">
             <p className="font-medium text-green-600 dark:text-green-400">Avoid Zone 3</p>
             <p className="text-sm text-muted-foreground">
-              Zone 3 is "no man's land" - too hard to recover from, not hard enough for big gains. Use sparingly.
+              Zone 3 is "no man's land" - too hard to recover from, not hard enough for big gains.
+              Use sparingly.
             </p>
           </div>
           <div className="p-3 bg-secondary/30 rounded-lg">
-            <p className="font-medium text-orange-600 dark:text-orange-400">Build Your Base First</p>
+            <p className="font-medium text-orange-600 dark:text-orange-400">
+              Build Your Base First
+            </p>
             <p className="text-sm text-muted-foreground">
               Master Zones 1-2 before adding high-intensity work in Zones 4-5
             </p>
@@ -387,10 +408,12 @@ export function HeartRateZonesCalculator() {
           <Info className="w-4 h-4 mt-0.5 text-blue-600 dark:text-blue-400" />
           <div className="text-blue-700 dark:text-blue-300">
             <strong>Note:</strong> These zones are estimates. For most accurate results, consider a
-            professional exercise test. Individual variation in max HR can be 10-15 bpm from formulas.
+            professional exercise test. Individual variation in max HR can be 10-15 bpm from
+            formulas.
           </div>
         </div>
       </div>
+      <RelatedCalculators currentPath="/calculators/heart-rate-zones" />
     </div>
   );
 }
