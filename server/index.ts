@@ -33,6 +33,8 @@ import { env, isDevelopment, isProduction } from "./env";
 import { initSentry } from "./sentry";
 import { csrfCookieSetter, csrfProtection } from "./middleware/csrf";
 import { sanitizeInput } from "./middleware/sanitize";
+import { globalErrorHandler } from "./middleware/errors";
+import webhookRoutes from "./routes/webhooks";
 
 // Initialize Sentry error monitoring (production only)
 initSentry();
@@ -75,6 +77,9 @@ app.use(compression({
   level: 6, // Compression level (0-9, higher = more compression)
   threshold: 1024, // Only compress responses larger than 1KB
 }));
+
+// Stripe webhooks need raw body for signature verification — mount BEFORE express.json()
+app.use('/api/webhooks', express.raw({ type: 'application/json' }), webhookRoutes);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -122,13 +127,8 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Global error handler — structured error responses, DB error handling, env-aware
+  app.use(globalErrorHandler);
 
   // Serve static files from client/public in development too
   // This needs to be before setupVite to avoid catch-all route interference

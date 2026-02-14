@@ -89,8 +89,10 @@ async function initializeDatabase() {
         const neonPool = new NeonPool({
           connectionString,
           connectionTimeoutMillis: 10000 * attempt, // Increase timeout with each attempt
-          idleTimeoutMillis: 30000,
+          idleTimeoutMillis: 60000,  // 60s idle before reclaim
           max: 20,
+          min: 2,                    // Keep warm connections
+          application_name: 'gymgurus',
         });
 
         // Test Neon connection
@@ -137,9 +139,12 @@ async function fallbackToStandardPg() {
       ssl: connectionString.includes('sslmode=require') ? {
         rejectUnauthorized: false
       } : undefined,
-      connectionTimeoutMillis: 5000,
-      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 60000,     // 60s idle before reclaim
       max: 20,
+      min: 2,                       // Keep warm connections
+      statement_timeout: 30000,     // 30s query timeout prevents runaway queries
+      application_name: 'gymgurus',
     });
 
     // Test standard pg connection

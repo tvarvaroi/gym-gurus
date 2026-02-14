@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, decimal, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, decimal, boolean, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -213,6 +213,7 @@ export const progressEntries = pgTable("progress_entries", {
 }, (table) => [
   index("idx_progress_entries_client_id").on(table.clientId),
   index("idx_progress_entries_recorded_at").on(table.recordedAt),
+  index("idx_progress_entries_client_type_date").on(table.clientId, table.type, table.recordedAt),
 ]);
 
 // Training Sessions (renamed to avoid conflict with auth sessions)
@@ -251,6 +252,7 @@ export const appointments = pgTable("appointments", {
   index("idx_appointments_client_id").on(table.clientId),
   index("idx_appointments_date").on(table.date),
   index("idx_appointments_status").on(table.status),
+  index("idx_appointments_trainer_date").on(table.trainerId, table.date, table.status),
 ]);
 
 // User Onboarding Progress Tracking
@@ -564,6 +566,7 @@ export const userAchievements = pgTable("user_achievements", {
 }, (table) => [
   index("idx_user_achievements_user_id").on(table.userId),
   index("idx_user_achievements_achievement_id").on(table.achievementId),
+  uniqueIndex("idx_user_achievements_unique").on(table.userId, table.achievementId),
 ]);
 
 // XP Transaction Log
@@ -734,6 +737,7 @@ export const aiChatMessages = pgTable("ai_chat_messages", {
 }, (table) => [
   index("idx_ai_messages_conversation_id").on(table.conversationId),
   index("idx_ai_messages_created_at").on(table.createdAt),
+  index("idx_ai_messages_conversation_date").on(table.conversationId, table.createdAt),
 ]);
 
 // -------------------- MEAL PLANNING & NUTRITION --------------------
@@ -917,6 +921,7 @@ export const leaderboardEntries = pgTable("leaderboard_entries", {
   index("idx_leaderboard_entries_leaderboard").on(table.leaderboardId),
   index("idx_leaderboard_entries_user").on(table.userId),
   index("idx_leaderboard_entries_rank").on(table.leaderboardId, table.rank),
+  uniqueIndex("idx_leaderboard_entries_unique").on(table.leaderboardId, table.userId),
 ]);
 
 // User Follows (social connections)
@@ -928,6 +933,7 @@ export const userFollows = pgTable("user_follows", {
 }, (table) => [
   index("idx_user_follows_follower").on(table.followerId),
   index("idx_user_follows_following").on(table.followingId),
+  uniqueIndex("idx_user_follows_unique").on(table.followerId, table.followingId),
 ]);
 
 // -------------------- WORKOUT SESSION & REST TIMER --------------------
@@ -971,6 +977,7 @@ export const workoutSetLogs = pgTable("workout_set_logs", {
 }, (table) => [
   index("idx_workout_set_logs_session").on(table.sessionId),
   index("idx_workout_set_logs_exercise").on(table.exerciseId),
+  index("idx_workout_set_logs_session_exercise").on(table.sessionId, table.exerciseId, table.setNumber),
 ]);
 
 // -------------------- AI GENERATED WORKOUTS --------------------
@@ -1022,6 +1029,7 @@ export const notifications = pgTable("notifications", {
   index("idx_notifications_user_id").on(table.userId),
   index("idx_notifications_read").on(table.read),
   index("idx_notifications_created_at").on(table.createdAt),
+  index("idx_notifications_user_feed").on(table.userId, table.read, table.createdAt),
 ]);
 
 // Payment Plans / Packages
