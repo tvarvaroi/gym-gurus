@@ -29,7 +29,9 @@ import {
   generalRateLimit,
   strictRateLimit,
   authRateLimit,
-  exportRateLimit
+  exportRateLimit,
+  aiRateLimit,
+  writeRateLimit
 } from "./middleware/rateLimiter";
 import { getMessageDeliveryStatuses } from "./middleware/deliveredTracking";
 import {
@@ -59,17 +61,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply general rate limiting to all API routes
   app.use('/api', generalRateLimit);
 
-  // Register new feature routes (with authentication middleware)
-  app.use('/api/gamification', secureAuth, gamificationRoutes);
-  app.use('/api/calculators', calculatorRoutes); // Calculators are public (SEO traffic)
-  app.use('/api/strength', secureAuth, strengthRoutes);
-  app.use('/api/recovery', secureAuth, recoveryRoutes);
-  app.use('/api/ai', secureAuth, aiRoutes);
-  app.use('/api/shopping', secureAuth, shoppingRoutes);
-  app.use('/api/leaderboards', secureAuth, leaderboardRoutes);
-  app.use('/api/notifications', secureAuth, notificationRoutes);
-  app.use('/api/intake', secureAuth, intakeRoutes);
-  app.use('/api/payments', secureAuth, paymentRoutes);
+  // Register new feature routes with tiered rate limiting
+  app.use('/api/gamification', secureAuth, apiRateLimit, gamificationRoutes);
+  app.use('/api/calculators', calculatorRoutes); // Calculators are public — covered by generalRateLimit (60/min)
+  app.use('/api/strength', secureAuth, apiRateLimit, strengthRoutes);
+  app.use('/api/recovery', secureAuth, apiRateLimit, recoveryRoutes);
+  app.use('/api/ai', secureAuth, aiRateLimit, aiRoutes); // AI: 10/min (expensive API calls)
+  app.use('/api/shopping', secureAuth, apiRateLimit, shoppingRoutes);
+  app.use('/api/leaderboards', secureAuth, apiRateLimit, leaderboardRoutes);
+  app.use('/api/notifications', secureAuth, apiRateLimit, notificationRoutes);
+  app.use('/api/intake', secureAuth, apiRateLimit, intakeRoutes);
+  app.use('/api/payments', secureAuth, strictRateLimit, paymentRoutes); // Payments: strict (10/min)
 
   // Auth routes
   // Note: No rate limiting on auth check as it's frequently called to verify session
@@ -208,24 +210,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/dashboard/stats - Get dashboard statistics
-  app.get("/api/dashboard/stats/:trainerId", async (req: Request, res: Response) => {
+  // GET /api/dashboard/stats - Get dashboard statistics (secured)
+  app.get("/api/dashboard/stats", secureAuth, apiRateLimit, async (req: Request, res: Response) => {
     try {
-      const { trainerId } = req.params;
+      const trainerId = (req.user as any).id as string;
       const stats = await storage.getDashboardStats(trainerId);
       res.json(stats);
     } catch (error) {
       // Return mock data when database is unavailable
       console.warn("Database unavailable, returning mock dashboard stats:", error);
-      const mockStats = getMockDashboardStats(req.params.trainerId);
+      const trainerId = (req.user as any).id as string;
+      const mockStats = getMockDashboardStats(trainerId);
       res.json(mockStats);
     }
   });
 
-  // GET /api/dashboard/charts - Get chart data for trainer dashboard
-  app.get("/api/dashboard/charts/:trainerId", async (req: Request, res: Response) => {
+  // GET /api/dashboard/charts - Get chart data for trainer dashboard (secured)
+  app.get("/api/dashboard/charts", secureAuth, apiRateLimit, async (req: Request, res: Response) => {
     try {
-      const { trainerId } = req.params;
+      const trainerId = (req.user as any).id as string;
       const charts = await storage.getDashboardCharts(trainerId);
       res.json(charts);
     } catch (error) {
@@ -242,36 +245,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/clients/:trainerId - Get all clients for specific trainer (for development)
-  app.get("/api/clients/:trainerId", async (req: Request, res: Response) => {
-    try {
-      const { trainerId } = req.params;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 50; // Default 50 items per page
-      const offset = (page - 1) * limit;
-      
-      const clients = await storage.getClientsByTrainer(trainerId);
-      
-      // Add caching headers
-      res.set({
-        'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=120',
-        'ETag': `W/"${clients.length}-${Date.now()}"`,
-      });
-      
-      // For now, return unpaginated data for backward compatibility
-      // Frontend can be updated gradually to use pagination
-      if (req.query.noPagination === 'true') {
-        res.json(clients);
-      } else {
-        // Implement pagination
-        const paginatedClients = clients.slice(offset, offset + limit);
-        res.json(paginatedClients);
-      }
-    } catch (error) {
-      // Error logged internally
-      res.status(500).json({ error: "Failed to fetch clients" });
-    }
-  });
+  // REMOVED: /api/clients/:trainerId — was unauthenticated IDOR route.
+  // Use GET /api/clients (secured, line 197) instead. TrainerId derived from session.
 
   // GET /api/client/profile - Get current user's client profile (for client users)
   app.get("/api/client/profile", secureAuth, async (req: Request, res: Response) => {
@@ -471,39 +446,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/workouts/:trainerId - Get all workouts for specific trainer (for development)
-  app.get("/api/workouts/:trainerId", async (req: Request, res: Response) => {
-    try {
-      const { trainerId } = req.params;
-      console.log('🔍 Fetching workouts for trainer:', trainerId);
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 50; // Default 50 items per page
-      const offset = (page - 1) * limit;
-      
-      // Fetching workouts for trainer
-      const workouts = await storage.getWorkoutsByTrainer(trainerId);
-      console.log(`📚 Found ${workouts.length} workouts for trainer ${trainerId}`);
-      
-      // Add caching headers
-      res.set({
-        'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=120',
-        'ETag': `W/"${workouts.length}-${Date.now()}"`,
-      });
-      
-      // For now, return unpaginated data for backward compatibility
-      // Frontend can be updated gradually to use pagination
-      if (req.query.noPagination === 'true') {
-        res.json(workouts);
-      } else {
-        // Implement pagination
-        const paginatedWorkouts = workouts.slice(offset, offset + limit);
-        res.json(paginatedWorkouts);
-      }
-    } catch (error) {
-      // Error logged internally
-      res.status(500).json({ error: "Failed to fetch workouts" });
-    }
-  });
+  // REMOVED: /api/workouts/:trainerId — was unauthenticated IDOR route.
+  // Use GET /api/workouts (secured, line 461) instead. TrainerId derived from session.
 
   // GET /api/workouts/detail/:id - Get specific workout with exercises
   app.get("/api/workouts/detail/:id", secureAuth, async (req: Request, res: Response) => {
@@ -635,8 +579,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/workout-templates - Get predefined workout templates
-  app.get("/api/workout-templates", async (_req: Request, res: Response) => {
+  // GET /api/workout-templates - Get predefined workout templates (secured)
+  app.get("/api/workout-templates", secureAuth, apiRateLimit, async (_req: Request, res: Response) => {
     try {
       const templates = await storage.getWorkoutTemplates();
       res.json(templates);
@@ -813,10 +757,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/workout-assignments/trainer/:trainerId - Get all scheduled workout assignments for trainer's clients
-  app.get("/api/workout-assignments/trainer/:trainerId", secureAuth, async (req: Request, res: Response) => {
+  // GET /api/workout-assignments/trainer - Get all scheduled workout assignments for trainer's clients (secured)
+  app.get("/api/workout-assignments/trainer", secureAuth, apiRateLimit, async (req: Request, res: Response) => {
     try {
-      const { trainerId } = req.params;
+      // SECURITY: Derive trainerId from session, not URL params
+      const trainerId = (req.user as any).id as string;
       const workoutAssignments = await storage.getTrainerWorkoutAssignments(trainerId);
       res.json(workoutAssignments);
     } catch (error) {
@@ -1240,8 +1185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Settings Routes
   
-  // GET /api/settings - Get application settings
-  app.get("/api/settings", async (req: Request, res: Response) => {
+  // GET /api/settings - Get application settings (secured)
+  app.get("/api/settings", secureAuth, apiRateLimit, async (req: Request, res: Response) => {
     try {
       // In a real app, you might fetch settings from database
       // For now, we'll always return mock settings
@@ -1257,41 +1202,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Analytics Routes
   
-  // GET /api/analytics - Get analytics data (real data)
-  app.get("/api/analytics", secureAuth, async (req: Request, res: Response) => {
+  // GET /api/analytics - Get analytics data (secured, trainerId from session only)
+  app.get("/api/analytics", secureAuth, apiRateLimit, async (req: Request, res: Response) => {
     try {
-      const trainerId = req.query.trainerId as string || (req as any).user?.id;
-      if (!trainerId) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
+      // SECURITY: Always derive trainerId from session — never from query params
+      const trainerId = (req.user as any).id as string;
       const analytics = await storage.getTrainerAnalytics(trainerId);
       res.json(analytics);
     } catch (error) {
       console.error("Error fetching analytics:", error);
-      const analytics = getMockAnalytics();
+      const trainerId = (req.user as any).id as string;
+      const analytics = getMockAnalytics(trainerId);
       res.json(analytics);
     }
   });
 
-  // GET /api/analytics/:trainerId - Get analytics for specific trainer
-  app.get("/api/analytics/:trainerId", secureAuth, async (req: Request, res: Response) => {
-    try {
-      const { trainerId } = req.params;
-      const analytics = await storage.getTrainerAnalytics(trainerId);
-      res.json(analytics);
-    } catch (error) {
-      console.error("Error fetching trainer analytics:", error);
-      const analytics = getMockAnalytics(req.params.trainerId);
-      res.json(analytics);
-    }
-  });
+  // REMOVED: /api/analytics/:trainerId — was IDOR-vulnerable (no ownership check).
+  // Use GET /api/analytics instead. TrainerId derived from session.
 
   // Appointment Routes
 
-  // GET /api/appointments/:trainerId - Get all appointments for a trainer
-  app.get("/api/appointments/:trainerId", async (req: Request, res: Response) => {
+  // GET /api/appointments - Get all appointments for authenticated trainer (secured)
+  app.get("/api/appointments", secureAuth, apiRateLimit, async (req: Request, res: Response) => {
     try {
-      const { trainerId } = req.params;
+      const trainerId = (req.user as any).id as string;
       const appointments = await storage.getAppointmentsByTrainer(trainerId);
       res.json(appointments);
     } catch (error) {
@@ -1300,8 +1234,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/appointments/client/:clientId - Get all appointments for a client
-  app.get("/api/appointments/client/:clientId", secureAuth, async (req: Request, res: Response) => {
+  // GET /api/appointments/client/:clientId - Get all appointments for a client (secured + ownership)
+  app.get("/api/appointments/client/:clientId", secureAuth, requireClientOwnership, apiRateLimit, async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
       const appointments = await storage.getAppointmentsByClient(clientId);

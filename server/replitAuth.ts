@@ -8,6 +8,7 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { env, isDevelopment, isProduction } from "./env";
+import { authRateLimit } from "./middleware/rateLimiter";
 
 // Check if we have proper Replit Auth configuration
 const hasReplitAuth = !!(process.env.ISSUER_URL && process.env.REPL_ID && process.env.REPLIT_DOMAINS);
@@ -158,7 +159,7 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
-  app.get("/api/login", (req, res, next) => {
+  app.get("/api/login", authRateLimit, (req, res, next) => {
     // Store the role in session before starting OAuth flow
     const role = req.query.role === 'client' ? 'client' : req.query.role === 'solo' ? 'solo' : 'trainer';
     (req.session as any).pendingRole = role;
@@ -169,7 +170,7 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/callback", (req, res, next) => {
+  app.get("/api/callback", authRateLimit, (req, res, next) => {
     passport.authenticate(`replitauth:${req.hostname}`, async (err, user) => {
       if (err || !user) {
         return res.redirect("/api/login");
@@ -299,7 +300,7 @@ function setupDevAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   // Development login route
-  app.get("/api/login", async (req: any, res) => {
+  app.get("/api/login", authRateLimit, async (req: any, res) => {
     // Get role from query parameter (defaults to trainer)
     const role = req.query.role === 'client' ? 'client' : req.query.role === 'solo' ? 'solo' : 'trainer';
 
@@ -387,16 +388,16 @@ function setupDevAuth(app: Express) {
     });
   });
 
-  // Development logout route
+  // Development logout route — redirect to home (not JSON)
   app.get("/api/logout", (req: any, res) => {
     req.session.destroy((err: any) => {
       if (err) {
         console.error('Session destruction error:', err);
-        return res.status(500).json({ error: 'Failed to logout' });
+        return res.redirect('/');
       }
-      // Clear the session cookie
+      // Clear the session cookie and redirect
       res.clearCookie('connect.sid');
-      res.json({ success: true });
+      res.redirect('/');
     });
   });
 }

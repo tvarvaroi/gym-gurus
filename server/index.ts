@@ -26,10 +26,13 @@ try {
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { env, isDevelopment, isProduction } from "./env";
 import { initSentry } from "./sentry";
+import { csrfCookieSetter, csrfProtection } from "./middleware/csrf";
+import { sanitizeInput } from "./middleware/sanitize";
 
 // Initialize Sentry error monitoring (production only)
 initSentry();
@@ -75,6 +78,16 @@ app.use(compression({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+
+// Server-side input sanitization — strips XSS payloads from all request bodies
+app.use(sanitizeInput);
+
+// CSRF protection — Double Submit Cookie pattern
+// Set CSRF cookie on every response
+app.use(csrfCookieSetter);
+// Validate CSRF token on state-changing requests (exclude Stripe webhooks)
+app.use('/api', csrfProtection(['/api/webhooks/stripe', '/api/callback']));
 
 app.use((req, res, next) => {
   const start = Date.now();

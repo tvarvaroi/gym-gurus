@@ -238,8 +238,8 @@ const Dashboard = memo(() => {
 
   // Fetch workouts for stats with automatic refetching
   const { data: workouts } = useQuery({
-    queryKey: ['/api/workouts', user?.id],
-    queryFn: () => fetch(`/api/workouts/${user?.id}`).then(res => res.json()),
+    queryKey: ['/api/workouts'],
+    queryFn: () => fetch('/api/workouts').then(res => res.json()),
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
     refetchOnWindowFocus: true,
@@ -248,8 +248,8 @@ const Dashboard = memo(() => {
 
   // Fetch comprehensive dashboard stats with automatic refetching
   const { data: dashboardStats, isLoading: loadingStats } = useQuery({
-    queryKey: ['/api/dashboard/stats', user?.id],
-    queryFn: () => fetch(`/api/dashboard/stats/${user?.id}`).then(res => res.json()),
+    queryKey: ['/api/dashboard/stats'],
+    queryFn: () => fetch('/api/dashboard/stats').then(res => res.json()),
     staleTime: 10 * 1000, // Fresh for 10 seconds
     refetchInterval: 15 * 1000, // Auto-refetch every 15 seconds
     refetchOnWindowFocus: true,
@@ -258,8 +258,8 @@ const Dashboard = memo(() => {
 
   // Fetch real chart data from backend
   const { data: chartData } = useQuery({
-    queryKey: ['/api/dashboard/charts', user?.id],
-    queryFn: () => fetch(`/api/dashboard/charts/${user?.id}`).then(res => res.json()),
+    queryKey: ['/api/dashboard/charts'],
+    queryFn: () => fetch('/api/dashboard/charts').then(res => res.json()),
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
     refetchOnWindowFocus: true,

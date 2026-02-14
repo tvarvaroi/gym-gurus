@@ -269,11 +269,11 @@ const WorkoutPlans = memo(() => {
   const { data: workouts, isLoading, error } = useQuery({
     queryKey: isClient
       ? [`/api/clients/${clientProfile?.id}/workouts`]
-      : ['/api/workouts', user?.id],
+      : ['/api/workouts'],
     queryFn: async () => {
       const endpoint = isClient
         ? `/api/clients/${clientProfile?.id}/workouts`
-        : `/api/workouts/${user?.id}`;
+        : '/api/workouts';
       const response = await fetch(endpoint, {
         credentials: 'include'
       });

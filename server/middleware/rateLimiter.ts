@@ -109,3 +109,17 @@ export const exportRateLimit = createRateLimiter({
   maxRequests: 10,
   message: 'Export rate limit exceeded. Please try again later.'
 });
+
+// AI chatbot — expensive API calls, limit to 10/minute per user
+export const aiRateLimit = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 10,
+  message: 'AI request rate limit exceeded. Please wait before sending more messages.'
+});
+
+// Write operations (POST/PUT/PATCH/DELETE) — 30/minute per user
+export const writeRateLimit = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 30,
+  message: 'Write rate limit exceeded. Please slow down.'
+});

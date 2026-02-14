@@ -80,13 +80,14 @@ export default function SchedulePage() {
 
   // Fetch appointments - use different endpoint based on role
   const { data: appointments = [], isLoading, error } = useQuery<Appointment[]>({
-    queryKey: ['/api/appointments', user?.id, isClient],
+    queryKey: ['/api/appointments', isClient],
     queryFn: async () => {
       try {
         // Use client-specific endpoint for clients, trainer endpoint for trainers
+        // TrainerId is derived from session on the server — no ID in URL
         const endpoint = isClient
           ? `/api/appointments/client/${user?.id}`
-          : `/api/appointments/${user?.id}`;
+          : '/api/appointments';
 
         const response = await fetch(endpoint);
         if (!response.ok) {
@@ -134,10 +135,10 @@ export default function SchedulePage() {
 
   // Fetch workout assignments for trainer (to show on calendar)
   const { data: workoutAssignments = [] } = useQuery({
-    queryKey: ['/api/workout-assignments/trainer', user?.id],
+    queryKey: ['/api/workout-assignments/trainer'],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/workout-assignments/trainer/${user?.id}`, {
+        const response = await fetch('/api/workout-assignments/trainer', {
           credentials: 'include'
         });
         if (!response.ok) {
