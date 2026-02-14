@@ -17,10 +17,10 @@ const ShimmerParticle = ({
     style={{
       background:
         variant === 'blue'
-          ? 'linear-gradient(135deg, #3B82F6, #e5e4e2, #3B82F6)'
-          : 'linear-gradient(135deg, #10B981, #e5e4e2, #10B981)',
+          ? 'linear-gradient(135deg, #c9a855, #e5e4e2, #c9a855)'
+          : 'linear-gradient(135deg, #0d9488, #e5e4e2, #0d9488)',
       boxShadow:
-        variant === 'blue' ? '0 0 8px rgba(59, 130, 246, 0.5)' : '0 0 8px rgba(16, 185, 129, 0.5)',
+        variant === 'blue' ? '0 0 8px rgba(201, 168, 85, 0.5)' : '0 0 8px rgba(13, 148, 136, 0.5)',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
     animate={{
@@ -45,7 +45,7 @@ const HeroPage = memo(() => {
       <motion.div
         className="absolute w-[600px] h-[600px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(201, 168, 85, 0.08) 0%, transparent 70%)',
           top: '10%',
           right: '10%',
           filter: 'blur(80px)',
@@ -63,7 +63,7 @@ const HeroPage = memo(() => {
       <motion.div
         className="absolute w-[600px] h-[600px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%)',
           bottom: '10%',
           left: '10%',
           filter: 'blur(80px)',
@@ -84,20 +84,20 @@ const HeroPage = memo(() => {
         <div
           className="absolute top-0 left-0 w-2/3 h-px"
           style={{
-            background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.4), transparent)',
+            background: 'linear-gradient(90deg, rgba(201, 168, 85, 0.4), transparent)',
           }}
         />
         <div
           className="absolute bottom-0 right-0 w-2/3 h-px"
           style={{
-            background: 'linear-gradient(270deg, rgba(16, 185, 129, 0.4), transparent)',
+            background: 'linear-gradient(270deg, rgba(13, 148, 136, 0.4), transparent)',
           }}
         />
         <div
           className="absolute top-1/3 right-0 w-px h-1/3"
           style={{
             background:
-              'linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.3), transparent)',
+              'linear-gradient(180deg, transparent, rgba(201, 168, 85, 0.3), transparent)',
           }}
         />
       </div>
@@ -120,13 +120,13 @@ const HeroPage = memo(() => {
               className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
               style={{
                 background:
-                  'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08))',
-                border: '1px solid rgba(59, 130, 246, 0.2)',
+                  'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(13, 148, 136, 0.08))',
+                border: '1px solid rgba(201, 168, 85, 0.2)',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <Crown className="w-4 h-4" style={{ color: '#3B82F6' }} />
+              <Crown className="w-4 h-4" style={{ color: '#c9a855' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
                 PREMIUM FITNESS PLATFORM
               </span>
@@ -138,7 +138,7 @@ const HeroPage = memo(() => {
                 className="text-5xl md:text-6xl lg:text-7xl font-light pb-4"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)',
+                  background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -163,7 +163,7 @@ const HeroPage = memo(() => {
                   color: '#b3b3b3',
                   letterSpacing: '0.02em',
                   lineHeight: '2',
-                  borderLeft: '2px solid rgba(59, 130, 246, 0.3)',
+                  borderLeft: '2px solid rgba(201, 168, 85, 0.3)',
                   paddingLeft: '2rem',
                 }}
               >
@@ -188,9 +188,9 @@ const HeroPage = memo(() => {
                   className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all"
                   style={{
                     fontFamily: "'Playfair Display', serif",
-                    background: 'linear-gradient(135deg, #3B82F6, #2563EB, #1D4ED8)',
+                    background: 'linear-gradient(135deg, #c9a855, #b8935e, #d4af37)',
                     boxShadow:
-                      '0 20px 40px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                      '0 20px 40px rgba(201, 168, 85, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                     color: '#ffffff',
                     letterSpacing: '0.05em',
                   }}
@@ -220,15 +220,15 @@ const HeroPage = memo(() => {
             {/* Trust Indicators - Horizontal */}
             <div className="flex flex-wrap items-center gap-6 text-sm" style={{ color: '#999' }}>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" style={{ color: '#3B82F6' }} />
+                <CheckCircle className="w-4 h-4" style={{ color: '#c9a855' }} />
                 <span className="font-light">30-day free trial</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" style={{ color: '#10B981' }} />
+                <CheckCircle className="w-4 h-4" style={{ color: '#0d9488' }} />
                 <span className="font-light">No credit card</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" style={{ color: '#3B82F6' }} />
+                <CheckCircle className="w-4 h-4" style={{ color: '#c9a855' }} />
                 <span className="font-light">Cancel anytime</span>
               </div>
             </div>
@@ -283,8 +283,8 @@ const HeroPage = memo(() => {
                         fontFamily: "'Playfair Display', serif",
                         background:
                           stat.variant === 'blue'
-                            ? 'linear-gradient(135deg, #ffffff, #3B82F6)'
-                            : 'linear-gradient(135deg, #ffffff, #10B981)',
+                            ? 'linear-gradient(135deg, #ffffff, #c9a855)'
+                            : 'linear-gradient(135deg, #ffffff, #0d9488)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',
@@ -317,7 +317,7 @@ const HeroPage = memo(() => {
               transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
               className="flex items-center justify-center"
             >
-              <Trophy className="w-20 h-20" style={{ color: 'rgba(59, 130, 246, 0.15)' }} />
+              <Trophy className="w-20 h-20" style={{ color: 'rgba(201, 168, 85, 0.15)' }} />
             </motion.div>
           </motion.div>
         </div>
@@ -355,11 +355,11 @@ const HeroPage = memo(() => {
               style={{
                 background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.8), rgba(10, 10, 10, 0.9))',
                 backdropFilter: 'blur(20px)',
-                border: `1px solid ${pill.variant === 'blue' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                border: `1px solid ${pill.variant === 'blue' ? 'rgba(201, 168, 85, 0.2)' : 'rgba(13, 148, 136, 0.2)'}`,
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <div style={{ color: pill.variant === 'blue' ? '#3B82F6' : '#10B981' }}>
+              <div style={{ color: pill.variant === 'blue' ? '#c9a855' : '#0d9488' }}>
                 {pill.icon}
               </div>
               <span
@@ -387,10 +387,10 @@ const HeroPage = memo(() => {
             height: '1.5px',
             background:
               i % 2 === 0
-                ? 'linear-gradient(135deg, #3B82F6, #2563EB)'
-                : 'linear-gradient(135deg, #10B981, #059669)',
+                ? 'linear-gradient(135deg, #c9a855, #b8935e)'
+                : 'linear-gradient(135deg, #0d9488, #0f766e)',
             boxShadow:
-              i % 2 === 0 ? '0 0 8px rgba(59, 130, 246, 0.4)' : '0 0 8px rgba(16, 185, 129, 0.4)',
+              i % 2 === 0 ? '0 0 8px rgba(201, 168, 85, 0.4)' : '0 0 8px rgba(13, 148, 136, 0.4)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             willChange: 'transform, opacity',

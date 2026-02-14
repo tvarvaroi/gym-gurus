@@ -24,10 +24,10 @@ const ShimmerParticle = ({
     style={{
       background:
         variant === 'blue'
-          ? 'linear-gradient(135deg, #3B82F6, #e5e4e2, #3B82F6)'
-          : 'linear-gradient(135deg, #10B981, #e5e4e2, #10B981)',
+          ? 'linear-gradient(135deg, #c9a855, #e5e4e2, #c9a855)'
+          : 'linear-gradient(135deg, #0d9488, #e5e4e2, #0d9488)',
       boxShadow:
-        variant === 'blue' ? '0 0 8px rgba(59, 130, 246, 0.5)' : '0 0 8px rgba(16, 185, 129, 0.5)',
+        variant === 'blue' ? '0 0 8px rgba(201, 168, 85, 0.5)' : '0 0 8px rgba(13, 148, 136, 0.5)',
       willChange: 'transform, opacity',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
@@ -83,7 +83,7 @@ const ContactPage = memo(() => {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(201, 168, 85, 0.08) 0%, transparent 70%)',
           top: '10%',
           right: '5%',
           filter: 'blur(80px)',
@@ -101,7 +101,7 @@ const ContactPage = memo(() => {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%)',
           bottom: '10%',
           left: '5%',
           filter: 'blur(80px)',
@@ -133,13 +133,13 @@ const ContactPage = memo(() => {
               className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
               style={{
                 background:
-                  'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08))',
-                border: '1px solid rgba(59, 130, 246, 0.2)',
+                  'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(13, 148, 136, 0.08))',
+                border: '1px solid rgba(201, 168, 85, 0.2)',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <Crown className="w-4 h-4" style={{ color: '#3B82F6' }} />
+              <Crown className="w-4 h-4" style={{ color: '#c9a855' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
                 GET IN TOUCH
               </span>
@@ -150,7 +150,7 @@ const ContactPage = memo(() => {
               className="text-4xl md:text-5xl lg:text-6xl font-light pb-3"
               style={{
                 fontFamily: "'Playfair Display', serif",
-                background: 'linear-gradient(90deg, #3B82F6 0%, #e5e4e2 50%, #10B981 100%)',
+                background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -205,7 +205,7 @@ const ContactPage = memo(() => {
                   className="text-xl font-light mb-4 pb-1"
                   style={{
                     fontFamily: "'Playfair Display', serif",
-                    background: 'linear-gradient(135deg, #ffffff, #3B82F6)',
+                    background: 'linear-gradient(135deg, #ffffff, #c9a855)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
@@ -231,10 +231,10 @@ const ContactPage = memo(() => {
                         className="w-16 h-16 rounded-full flex items-center justify-center"
                         style={{
                           background:
-                            'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1))',
+                            'linear-gradient(135deg, rgba(13, 148, 136, 0.2), rgba(13, 148, 136, 0.1))',
                         }}
                       >
-                        <CheckCircle className="w-8 h-8" style={{ color: '#10B981' }} />
+                        <CheckCircle className="w-8 h-8" style={{ color: '#0d9488' }} />
                       </motion.div>
                       <h4
                         className="text-lg font-light text-white"
@@ -252,7 +252,7 @@ const ContactPage = memo(() => {
                         type="button"
                         onClick={() => setFormState('idle')}
                         className="text-sm underline transition-colors hover:text-white"
-                        style={{ color: '#3B82F6' }}
+                        style={{ color: '#c9a855' }}
                       >
                         Send another message
                       </button>
@@ -319,7 +319,7 @@ const ContactPage = memo(() => {
                               fontFamily: "'Cormorant Garamond', serif",
                             }}
                             onFocus={(e) => {
-                              e.target.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                              e.target.style.borderColor = 'rgba(201, 168, 85, 0.5)';
                             }}
                             onBlur={(e) => {
                               e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
@@ -342,7 +342,7 @@ const ContactPage = memo(() => {
                               fontFamily: "'Cormorant Garamond', serif",
                             }}
                             onFocus={(e) => {
-                              e.target.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                              e.target.style.borderColor = 'rgba(201, 168, 85, 0.5)';
                             }}
                             onBlur={(e) => {
                               e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
@@ -365,7 +365,7 @@ const ContactPage = memo(() => {
                               fontFamily: "'Cormorant Garamond', serif",
                             }}
                             onFocus={(e) => {
-                              e.target.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                              e.target.style.borderColor = 'rgba(201, 168, 85, 0.5)';
                             }}
                             onBlur={(e) => {
                               e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
@@ -380,9 +380,9 @@ const ContactPage = memo(() => {
                             className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-light transition-all disabled:opacity-60"
                             style={{
                               fontFamily: "'Playfair Display', serif",
-                              background: 'linear-gradient(135deg, #3B82F6, #2563EB, #1D4ED8)',
+                              background: 'linear-gradient(135deg, #c9a855, #b8935e, #d4af37)',
                               boxShadow:
-                                '0 15px 30px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                                '0 15px 30px rgba(201, 168, 85, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                               color: '#ffffff',
                               letterSpacing: '0.05em',
                             }}
@@ -447,9 +447,9 @@ const ContactPage = memo(() => {
                       style={{
                         background:
                           method.variant === 'blue'
-                            ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1))'
-                            : 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1))',
-                        color: method.variant === 'blue' ? '#3B82F6' : '#10B981',
+                            ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.15), rgba(184, 147, 94, 0.1))'
+                            : 'linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(15, 118, 110, 0.1))',
+                        color: method.variant === 'blue' ? '#c9a855' : '#0d9488',
                       }}
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.6 }}
@@ -509,10 +509,10 @@ const ContactPage = memo(() => {
             height: '1.5px',
             background:
               i % 2 === 0
-                ? 'linear-gradient(135deg, #3B82F6, #2563EB)'
-                : 'linear-gradient(135deg, #10B981, #059669)',
+                ? 'linear-gradient(135deg, #c9a855, #b8935e)'
+                : 'linear-gradient(135deg, #0d9488, #0f766e)',
             boxShadow:
-              i % 2 === 0 ? '0 0 8px rgba(59, 130, 246, 0.4)' : '0 0 8px rgba(16, 185, 129, 0.4)',
+              i % 2 === 0 ? '0 0 8px rgba(201, 168, 85, 0.4)' : '0 0 8px rgba(13, 148, 136, 0.4)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             willChange: 'transform, opacity',
