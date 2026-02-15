@@ -135,6 +135,18 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
 
   const hasParqConcerns = PAR_Q_QUESTIONS.some(q => formData[q.key]);
 
+  // Form validation - ensure required fields are filled
+  const isFormValid = () => {
+    return (
+      formData.fitnessExperience !== '' &&
+      formData.primaryGoal !== '' &&
+      formData.emergencyContactName.trim() !== '' &&
+      formData.emergencyContactPhone.trim() !== '' &&
+      formData.emergencyContactRelation.trim() !== '' &&
+      formData.consentSigned
+    );
+  };
+
   const steps = [
     { title: 'PAR-Q Health Screening', icon: Heart },
     { title: 'Fitness Background', icon: Dumbbell },
@@ -528,7 +540,7 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
             <Button
               size="sm"
               onClick={() => submitMutation.mutate()}
-              disabled={submitMutation.isPending}
+              disabled={submitMutation.isPending || !isFormValid()}
             >
               {submitMutation.isPending ? 'Saving...' : 'Submit Questionnaire'}
             </Button>

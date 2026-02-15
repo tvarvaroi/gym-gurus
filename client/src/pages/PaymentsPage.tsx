@@ -90,6 +90,13 @@ export default function PaymentsPage() {
       setShowPlanModal(false);
       setNewPlan({ name: '', description: '', price: '', interval: 'monthly', sessions: '' });
     },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error Creating Plan",
+        description: error.message || "Failed to create payment plan"
+      });
+    },
   });
 
   const recordPaymentMutation = useMutation({
@@ -104,6 +111,13 @@ export default function PaymentsPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/payments/summary'] });
       setShowRecordModal(false);
       setNewPayment({ clientId: '', amount: '', description: '' });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error Recording Payment",
+        description: error.message || "Failed to record payment"
+      });
     },
   });
 
@@ -344,7 +358,13 @@ export default function PaymentsPage() {
               <Button
                 className="w-full"
                 onClick={() => createPlanMutation.mutate()}
-                disabled={!newPlan.name || !newPlan.price || createPlanMutation.isPending}
+                disabled={
+                  !newPlan.name ||
+                  !newPlan.price ||
+                  isNaN(parseFloat(newPlan.price)) ||
+                  parseFloat(newPlan.price) <= 0 ||
+                  createPlanMutation.isPending
+                }
               >
                 {createPlanMutation.isPending ? 'Creating...' : 'Create Plan'}
               </Button>
@@ -397,7 +417,13 @@ export default function PaymentsPage() {
               <Button
                 className="w-full"
                 onClick={() => recordPaymentMutation.mutate()}
-                disabled={!newPayment.clientId || !newPayment.amount || recordPaymentMutation.isPending}
+                disabled={
+                  !newPayment.clientId ||
+                  !newPayment.amount ||
+                  isNaN(parseFloat(newPayment.amount)) ||
+                  parseFloat(newPayment.amount) <= 0 ||
+                  recordPaymentMutation.isPending
+                }
               >
                 {recordPaymentMutation.isPending ? 'Recording...' : 'Record Payment'}
               </Button>

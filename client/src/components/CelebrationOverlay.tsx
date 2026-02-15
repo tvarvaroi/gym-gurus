@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { Trophy, Star, Sparkles, Award, Flame, Zap } from "lucide-react";
 
 interface ConfettiParticle {
@@ -49,6 +50,7 @@ export function CelebrationOverlay({
   onComplete,
   duration = 3000,
 }: CelebrationOverlayProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [confetti, setConfetti] = useState<ConfettiParticle[]>([]);
   const Icon = ICONS[icon];
 
@@ -145,7 +147,7 @@ export function CelebrationOverlay({
               }}
               transition={{
                 duration: 2,
-                repeat: Infinity,
+                repeat: prefersReducedMotion ? 0 : Infinity,
                 ease: "easeInOut",
               }}
             />
@@ -173,7 +175,7 @@ export function CelebrationOverlay({
                     }}
                     transition={{
                       duration: 2,
-                      repeat: Infinity,
+                      repeat: prefersReducedMotion ? 0 : Infinity,
                       ease: "easeInOut",
                     }}
                   />
@@ -222,7 +224,7 @@ export function CelebrationOverlay({
                   transition={{
                     duration: 1.5,
                     delay: 0.5 + i * 0.1,
-                    repeat: Infinity,
+                    repeat: prefersReducedMotion ? 0 : Infinity,
                     repeatDelay: 2,
                   }}
                 />

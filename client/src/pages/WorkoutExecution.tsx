@@ -148,6 +148,20 @@ export default function WorkoutExecution() {
     }
   }, [isResting, restTimeLeft, soundEnabled]);
 
+  // Navigation guard - prevent accidental data loss during active workout
+  useEffect(() => {
+    if (session && !showCompletion) {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requires returnValue to be set
+        return ''; // Some browsers show this message
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+  }, [session, showCompletion]);
+
   // Play sound notification
   const playSound = () => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();

@@ -1,4 +1,4 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient, QueryFunction, MutationCache, QueryCache } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -63,7 +63,21 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+// Global error handler for 401 responses
+function handle401Error(error: unknown) {
+  if (error instanceof Error && error.message.startsWith('401:')) {
+    // Redirect to landing page on session expiry
+    window.location.href = '/';
+  }
+}
+
 export const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => handle401Error(error),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => handle401Error(error),
+  }),
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),

@@ -1,8 +1,12 @@
 import { Home, Dumbbell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { useUser } from '@/contexts/UserContext';
 
 export default function NotFound() {
+  const { user } = useUser();
+  const homeUrl = user ? '/dashboard' : '/';
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4">
       <motion.div
@@ -27,7 +31,7 @@ export default function NotFound() {
           </p>
         </div>
 
-        <Button size="lg" onClick={() => (window.location.href = '/')}>
+        <Button size="lg" onClick={() => (window.location.href = homeUrl)}>
           <Home className="w-4 h-4 mr-2" />
           Back to Home
         </Button>

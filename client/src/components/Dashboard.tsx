@@ -20,6 +20,7 @@ import { useUser } from "@/contexts/UserContext"
 import { LoginPage } from "./LoginPage"
 import { CelebrationOverlay, useCelebration } from "./CelebrationOverlay"
 import ClientDashboard from "./dashboard/ClientDashboard"
+import { DashboardSkeleton } from "./skeletons/DashboardSkeleton"
 
 
 // Shimmer loading component
@@ -457,6 +458,11 @@ const Dashboard = memo(() => {
     return <LoginPage />;
   }
 
+  // Show loading skeleton while initial data loads
+  if (loadingStats || loadingClients) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Modal - First time user onboarding */}
@@ -583,7 +589,7 @@ const Dashboard = memo(() => {
             }}
             transition={{
               duration: 8,
-              repeat: Infinity,
+              repeat: prefersReducedMotion ? 0 : Infinity,
               ease: "easeInOut"
             }}
           />
@@ -605,7 +611,7 @@ const Dashboard = memo(() => {
             }}
             transition={{
               duration: 9,
-              repeat: Infinity,
+              repeat: prefersReducedMotion ? 0 : Infinity,
               ease: "easeInOut",
               delay: 1
             }}
@@ -627,7 +633,7 @@ const Dashboard = memo(() => {
             }}
             transition={{
               duration: 10,
-              repeat: Infinity,
+              repeat: prefersReducedMotion ? 0 : Infinity,
               ease: "easeInOut",
               delay: 0.5
             }}
@@ -647,7 +653,7 @@ const Dashboard = memo(() => {
             }}
             transition={{
               duration: 7,
-              repeat: Infinity,
+              repeat: prefersReducedMotion ? 0 : Infinity,
               ease: "easeInOut",
               delay: 2
             }}
@@ -666,7 +672,7 @@ const Dashboard = memo(() => {
             }}
             transition={{
               duration: 6,
-              repeat: Infinity,
+              repeat: prefersReducedMotion ? 0 : Infinity,
               ease: "easeInOut",
               delay: 1.5
             }}
@@ -893,7 +899,7 @@ const Dashboard = memo(() => {
                             }}
                             transition={{
                               duration: 2,
-                              repeat: Infinity,
+                              repeat: prefersReducedMotion ? 0 : Infinity,
                               ease: "easeInOut"
                             }}
                           />
