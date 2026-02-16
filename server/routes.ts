@@ -519,9 +519,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           addedFirstClient: true,
         });
       } catch (onboardingError) {
-        // Don't fail client creation if onboarding update fails
         console.warn('Failed to update onboarding progress:', onboardingError);
       }
+
+      // Notify trainer about new client (async)
+      import('./services/notificationService').then(({ notifyClientJoined }) => {
+        notifyClientJoined(trainerId, client.name, client.id).catch(() => {});
+      });
 
       res.status(201).json(client);
     } catch (error) {
@@ -1622,8 +1626,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/appointments', secureAuth, apiRateLimit, async (req: Request, res: Response) => {
     try {
       const trainerId = (req.user as any).id as string;
-      const appointments = await storage.getAppointmentsByTrainer(trainerId);
-      res.json(appointments);
+      const appointmentList = await storage.getAppointmentsByTrainer(trainerId);
+
+      // Fire session reminders for appointments starting within 1 hour (async, non-blocking)
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      for (const apt of appointmentList) {
+        if (apt.date === today && apt.status === 'scheduled' && apt.startTime) {
+          const [h, m] = apt.startTime.split(':').map(Number);
+          const aptMinutes = h * 60 + m;
+          const diff = aptMinutes - currentMinutes;
+          if (diff > 0 && diff <= 60) {
+            // Session starting within 1 hour — notify trainer
+            import('./services/notificationService').then(({ notifySessionReminder }) => {
+              notifySessionReminder(trainerId, apt.title, apt.startTime, apt.id).catch(() => {});
+            });
+          }
+        }
+      }
+
+      res.json(appointmentList);
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
       res.status(500).json({ error: 'Failed to fetch appointments' });

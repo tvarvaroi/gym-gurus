@@ -9,6 +9,7 @@ export type NotificationType =
   | 'session_reminder'
   | 'achievement_unlocked'
   | 'streak_milestone'
+  | 'streak_danger'
   | 'level_up'
   | 'payment_received'
   | 'client_joined'
@@ -209,5 +210,66 @@ export async function notifyPaymentReceived(
     'Payment Received',
     `${clientName} paid ${amountFormatted}`,
     { paymentId }
+  );
+}
+
+export async function notifyStreakDanger(
+  userId: string,
+  currentStreak: number,
+  hoursRemaining: number
+): Promise<void> {
+  // Prevent duplicate streak danger notifications (check last 12 hours)
+  const database = await db;
+  const recent = await database
+    .select({ id: notifications.id })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.type, 'streak_danger'),
+        sql`${notifications.createdAt} > now() - interval '12 hours'`
+      )
+    )
+    .limit(1);
+
+  if (recent.length > 0) return; // Already notified recently
+
+  await createNotification(
+    userId,
+    'streak_danger',
+    'Streak in Danger!',
+    `Your ${currentStreak}-day streak expires in ~${Math.round(hoursRemaining)} hours. Work out to keep it alive!`,
+    { currentStreak, hoursRemaining }
+  );
+}
+
+export async function notifySessionReminder(
+  userId: string,
+  sessionTitle: string,
+  startTime: string,
+  appointmentId: string
+): Promise<void> {
+  // Prevent duplicate session reminders
+  const database = await db;
+  const recent = await database
+    .select({ id: notifications.id })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.type, 'session_reminder'),
+        sql`${notifications.data}->>'appointmentId' = ${appointmentId}`
+      )
+    )
+    .limit(1);
+
+  if (recent.length > 0) return;
+
+  await createNotification(
+    userId,
+    'session_reminder',
+    'Session Starting Soon',
+    `"${sessionTitle}" starts at ${startTime}`,
+    { appointmentId }
   );
 }

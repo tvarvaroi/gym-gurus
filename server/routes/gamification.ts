@@ -25,6 +25,21 @@ router.get('/profile', async (req: Request, res: Response) => {
     }
 
     const profile = await getUserGamification(userId);
+
+    // Check for streak danger and fire notification if needed
+    if (profile && profile.currentStreakDays > 0 && profile.lastWorkoutDate) {
+      const lastWorkout = new Date(profile.lastWorkoutDate);
+      const hoursSince = (Date.now() - lastWorkout.getTime()) / (1000 * 60 * 60);
+      const hoursRemaining = 24 - hoursSince; // streak breaks at 24h (adjustable)
+
+      if (hoursRemaining > 0 && hoursRemaining <= 6) {
+        // Streak is in danger — fire notification asynchronously
+        import('../services/notificationService').then(({ notifyStreakDanger }) => {
+          notifyStreakDanger(userId, profile.currentStreakDays, hoursRemaining).catch(() => {});
+        });
+      }
+    }
+
     res.json(profile);
   } catch (error) {
     console.error('Error getting gamification profile:', error);

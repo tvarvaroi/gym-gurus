@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { Bell, Check, CheckCheck, Trophy, Flame, Zap, Dumbbell, UserPlus, CreditCard, MessageCircle } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trophy, Flame, Zap, Dumbbell, UserPlus, CreditCard, MessageCircle, AlertTriangle, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -33,6 +33,10 @@ function getNotificationIcon(type: string) {
       return UserPlus;
     case 'payment_received':
       return CreditCard;
+    case 'streak_danger':
+      return AlertTriangle;
+    case 'session_reminder':
+      return Clock;
     case 'message':
       return MessageCircle;
     default:
@@ -58,6 +62,10 @@ function getNotificationColor(type: string) {
       return 'text-cyan-400';
     case 'payment_received':
       return 'text-emerald-400';
+    case 'streak_danger':
+      return 'text-red-400';
+    case 'session_reminder':
+      return 'text-blue-400';
     default:
       return 'text-gray-400';
   }
