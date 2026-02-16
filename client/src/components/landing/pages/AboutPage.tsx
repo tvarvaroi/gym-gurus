@@ -1,47 +1,32 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Target, Users, Zap, Shield, Crown } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
-// Luxury shimmer particle component - optimized
-const ShimmerParticle = ({
+// Luxury shimmer dot - one-shot entrance
+const ShimmerDot = ({
   delay,
   variant = 'blue',
-  prefersReducedMotion = false,
 }: {
   delay: number;
   variant?: 'blue' | 'emerald';
-  prefersReducedMotion?: boolean;
 }) => (
   <motion.div
-    className="absolute w-0.5 h-0.5 rounded-full"
+    className="absolute w-1 h-1 rounded-full"
     style={{
       background:
         variant === 'blue'
-          ? 'linear-gradient(135deg, hsl(var(--color-guru)), #e5e4e2, hsl(var(--color-guru)))'
-          : 'linear-gradient(135deg, hsl(var(--color-disciple)), #e5e4e2, hsl(var(--color-disciple)))',
+          ? 'hsl(var(--color-guru))'
+          : 'hsl(var(--color-disciple))',
       boxShadow:
-        variant === 'blue' ? '0 0 8px hsl(var(--color-guru) / 0.5)' : '0 0 8px hsl(var(--color-disciple) / 0.5)',
-      willChange: 'transform, opacity',
+        variant === 'blue' ? '0 0 6px hsl(var(--color-guru) / 0.4)' : '0 0 6px hsl(var(--color-disciple) / 0.4)',
     }}
-    initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
-    animate={{
-      opacity: [0, 0.7, 0],
-      scale: [0, 1.5, 0],
-      x: [0, Math.random() * 100 - 50],
-      y: [0, Math.random() * -100],
-    }}
-    transition={{
-      duration: 2.5,
-      repeat: prefersReducedMotion ? 0 : Infinity,
-      delay,
-      ease: 'easeOut',
-    }}
+    initial={{ opacity: 0, scale: 0 }}
+    animate={{ opacity: 0.5, scale: 1 }}
+    transition={{ duration: 1, delay, ease: 'easeOut' }}
   />
 );
 
 const AboutPage = memo(() => {
-  const prefersReducedMotion = useReducedMotion();
   const values = [
     {
       icon: <Target className="w-7 h-7" />,
@@ -71,7 +56,7 @@ const AboutPage = memo(() => {
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
-      {/* Sophisticated dual-tone ambient glow - optimized */}
+      {/* Ambient glow - one-shot entrance */}
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
@@ -79,16 +64,10 @@ const AboutPage = memo(() => {
           top: '10%',
           right: '5%',
           filter: 'blur(80px)',
-          willChange: 'opacity',
         }}
-        animate={{
-          opacity: [0.4, 0.6, 0.4],
-        }}
-        transition={{
-          duration: 6,
-          repeat: prefersReducedMotion ? 0 : Infinity,
-          ease: 'easeInOut',
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        transition={{ duration: 1.5, ease: 'easeOut' }}
       />
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
@@ -97,16 +76,10 @@ const AboutPage = memo(() => {
           bottom: '10%',
           left: '5%',
           filter: 'blur(80px)',
-          willChange: 'opacity',
         }}
-        animate={{
-          opacity: [0.4, 0.6, 0.4],
-        }}
-        transition={{
-          duration: 8,
-          repeat: prefersReducedMotion ? 0 : Infinity,
-          ease: 'easeInOut',
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        transition={{ duration: 2, delay: 0.3, ease: 'easeOut' }}
       />
 
       <div className="relative z-10 min-h-screen flex items-center px-8 md:px-12 lg:px-20 py-12">
@@ -120,8 +93,9 @@ const AboutPage = memo(() => {
           >
             {/* Luxury badge */}
             <motion.div
-              animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 4, repeat: prefersReducedMotion ? 0 : Infinity }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
               className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
               style={{
                 background:
@@ -223,7 +197,7 @@ const AboutPage = memo(() => {
 
                     {/* Shimmer particle - optimized */}
                     <div className="absolute top-2 right-2">
-                      <ShimmerParticle delay={index * 0.5} variant={value.variant} prefersReducedMotion={prefersReducedMotion} />
+                      <ShimmerDot delay={index * 0.5} variant={value.variant} />
                     </div>
 
                     {/* Content */}
@@ -263,35 +237,25 @@ const AboutPage = memo(() => {
         </div>
       </div>
 
-      {/* Floating luxury particles - optimized count */}
-      {[...Array(6)].map((_, i) => (
+      {/* Static entrance dots */}
+      {[
+        { left: '12%', top: '25%', variant: 'guru' },
+        { left: '85%', top: '30%', variant: 'disciple' },
+        { left: '20%', top: '80%', variant: 'disciple' },
+        { left: '75%', top: '70%', variant: 'guru' },
+      ].map((dot, i) => (
         <motion.div
           key={i}
-          className="absolute rounded-full pointer-events-none z-50"
+          className="absolute w-1 h-1 rounded-full pointer-events-none"
           style={{
-            width: '1.5px',
-            height: '1.5px',
-            background:
-              i % 2 === 0
-                ? 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))'
-                : 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
-            boxShadow:
-              i % 2 === 0 ? '0 0 8px hsl(var(--color-guru) / 0.4)' : '0 0 8px hsl(var(--color-disciple) / 0.4)',
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            willChange: 'transform, opacity',
+            left: dot.left,
+            top: dot.top,
+            background: dot.variant === 'guru' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
+            boxShadow: dot.variant === 'guru' ? '0 0 6px hsl(var(--color-guru) / 0.4)' : '0 0 6px hsl(var(--color-disciple) / 0.4)',
           }}
-          animate={{
-            y: [0, -150, 0],
-            opacity: [0, 0.5, 0],
-            scale: [0, 1.5, 0],
-          }}
-          transition={{
-            duration: 6 + Math.random() * 3,
-            repeat: prefersReducedMotion ? 0 : Infinity,
-            delay: Math.random() * 6,
-            ease: 'easeInOut',
-          }}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 0.4, scale: 1 }}
+          transition={{ duration: 1, delay: 0.5 + i * 0.2, ease: 'easeOut' }}
         />
       ))}
     </div>

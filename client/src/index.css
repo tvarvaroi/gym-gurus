@@ -645,3 +645,22 @@
   --sidebar-ring: 271 81% 60%;
   --chart-1: 271 81% 60%;
 }
+
+/* ================================================
+   REDUCED MOTION ACCESSIBILITY (WCAG 2.3.3)
+   Disables decorative Tailwind animations for users
+   who prefer reduced motion in their OS settings.
+   ================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce,
+  .animate-ping {
+    animation: none !important;
+  }
+
+  /* Also reduce framer-motion transitions globally */
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
