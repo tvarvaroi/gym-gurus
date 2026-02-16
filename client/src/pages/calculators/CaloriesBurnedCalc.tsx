@@ -4,6 +4,7 @@ import { Flame, Clock, Activity, Scale, Dumbbell, Bike, PersonStanding, Heart } 
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 // MET values for common exercises (Metabolic Equivalent of Task)
 const EXERCISE_CATEGORIES = {
@@ -354,6 +355,7 @@ export function CaloriesBurnedCalculator() {
         </p>
       </div>
       <RelatedCalculators currentPath="/calculators/calories-burned" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={caloriesBurned > 0} />
     </div>
   );
 }

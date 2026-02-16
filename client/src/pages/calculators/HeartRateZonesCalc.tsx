@@ -4,6 +4,7 @@ import { Heart, Activity, Zap, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 type CalculationMethod = 'age' | 'karvonen' | 'manual';
 
@@ -422,6 +423,7 @@ export function HeartRateZonesCalculator() {
         </div>
       </div>
       <RelatedCalculators currentPath="/calculators/heart-rate-zones" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={zones.length > 0} />
     </div>
   );
 }

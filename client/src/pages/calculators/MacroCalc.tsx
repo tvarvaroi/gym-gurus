@@ -4,6 +4,7 @@ import { Calculator, Target, Scale, Activity } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 type Gender = 'male' | 'female';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -392,6 +393,7 @@ export function MacroCalculator() {
         </p>
       </div>
       <RelatedCalculators currentPath="/calculators/macros" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={!!result} />
     </div>
   );
 }

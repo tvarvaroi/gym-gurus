@@ -206,7 +206,7 @@ export default function WorkoutBuilder() {
 
   if (workoutLoading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         <motion.div
           className="space-y-2"
           initial={{ opacity: 0 }}
@@ -305,7 +305,7 @@ export default function WorkoutBuilder() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-      className="space-y-8"
+      className="space-y-6"
     >
       {/* Header - Premium */}
       <div className="flex flex-col gap-6">
@@ -465,7 +465,7 @@ export default function WorkoutBuilder() {
                       <p className="text-sm font-medium text-primary">
                         Configure: {exercises?.find((e: any) => e.id === selectedExercise)?.name}
                       </p>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-xs font-light text-muted-foreground">Sets</label>
                           <Input

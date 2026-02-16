@@ -11,6 +11,7 @@ import {
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 type Gender = 'male' | 'female';
 
@@ -312,6 +313,7 @@ export function StrengthStandardsCalculator() {
         </div>
       </div>
       <RelatedCalculators currentPath="/calculators/strength-standards" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={results.length > 0} />
     </div>
   );
 }

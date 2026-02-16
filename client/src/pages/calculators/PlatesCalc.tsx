@@ -14,6 +14,7 @@ import {
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 export function PlatesCalculator() {
   useSEO({
@@ -329,6 +330,7 @@ export function PlatesCalculator() {
         )}
       </div>
       <RelatedCalculators currentPath="/calculators/plates" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={!!result} />
     </div>
   );
 }

@@ -413,7 +413,7 @@ export default function SchedulePage() {
 
   if (isLoading || userLoading) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         <div className="flex justify-between items-center">
           <motion.div
             className="space-y-2"
@@ -493,7 +493,7 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Enhanced Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
         <motion.div

@@ -426,7 +426,7 @@ const WorkoutPlans = memo(() => {
   if (userLoading || isLoading) {
     return (
       <PageTransition>
-        <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
             <div className="space-y-3">
               <Skeleton className="h-12 w-72 bg-muted/30" />
@@ -439,7 +439,7 @@ const WorkoutPlans = memo(() => {
             </div>
           </div>
           <Skeleton className="h-10 w-full lg:w-96 bg-muted/30" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <motion.div
                 key={i}
@@ -491,7 +491,7 @@ const WorkoutPlans = memo(() => {
 
   return (
     <PageTransition>
-      <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
@@ -572,7 +572,7 @@ const WorkoutPlans = memo(() => {
             <h2 className="text-2xl sm:text-3xl font-extralight tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               Quick Start Templates
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {templates.map((template: any, index: number) => (
                 <motion.div
                   key={template.id}
@@ -654,7 +654,7 @@ const WorkoutPlans = memo(() => {
             )}
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredWorkouts.map((workout: any, index: number) => (
               <TrainerWorkoutCard
                 key={workout.id}

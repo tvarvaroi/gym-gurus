@@ -4,6 +4,7 @@ import { Activity, Timer, TrendingUp, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 type TestMethod = 'cooper' | 'rockport' | 'beep' | 'manual';
 
@@ -520,6 +521,7 @@ export function VO2MaxCalculator() {
         </div>
       </div>
       <RelatedCalculators currentPath="/calculators/vo2max" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={!!result} />
     </div>
   );
 }

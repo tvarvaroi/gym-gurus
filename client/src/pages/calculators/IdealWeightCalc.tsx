@@ -4,6 +4,7 @@ import { Scale, Ruler, User, Target, TrendingUp, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 type Gender = 'male' | 'female';
 type HeightUnit = 'cm' | 'ft';
@@ -401,6 +402,7 @@ export function IdealWeightCalculator() {
         </div>
       </div>
       <RelatedCalculators currentPath="/calculators/ideal-weight" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={!!results} />
     </div>
   );
 }

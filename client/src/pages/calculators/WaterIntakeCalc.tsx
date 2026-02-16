@@ -4,6 +4,7 @@ import { Droplets, Scale, Activity, Sun, ThermometerSun, Coffee, Beer, Info } fr
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 type WeightUnit = 'kg' | 'lbs';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'athlete';
@@ -420,6 +421,7 @@ export function WaterIntakeCalculator() {
         </div>
       </div>
       <RelatedCalculators currentPath="/calculators/water-intake" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={!!results} />
     </div>
   );
 }

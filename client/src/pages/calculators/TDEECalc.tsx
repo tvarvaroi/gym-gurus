@@ -4,6 +4,7 @@ import { Calculator, Activity, Scale, Ruler, Target } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 type Gender = 'male' | 'female';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'athlete';
@@ -380,6 +381,7 @@ export function TDEECalculator() {
         </p>
       </div>
       <RelatedCalculators currentPath="/calculators/tdee" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={!!results} />
     </div>
   );
 }

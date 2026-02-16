@@ -4,6 +4,7 @@ import { Scale, Ruler, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 type BMICategory = 'underweight' | 'normal' | 'overweight' | 'obese_1' | 'obese_2' | 'obese_3';
 
@@ -291,6 +292,7 @@ export function BMICalculator() {
         </p>
       </div>
       <RelatedCalculators currentPath="/calculators/bmi" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={!!result} />
     </div>
   );
 }

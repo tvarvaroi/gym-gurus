@@ -11,6 +11,7 @@ import {
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { LeadCapturePopup } from '@/components/LeadCapturePopup';
 
 export function OneRepMaxCalculator() {
   useSEO({
@@ -289,6 +290,7 @@ export function OneRepMaxCalculator() {
         </p>
       </div>
       <RelatedCalculators currentPath="/calculators/1rm" />
+      <LeadCapturePopup trigger="calculator-result" calculationComplete={!!results} />
     </div>
   );
 }

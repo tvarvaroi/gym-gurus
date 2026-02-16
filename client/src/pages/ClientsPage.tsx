@@ -76,7 +76,7 @@ const ClientsPageContent = memo(() => {
   if (isLoading) {
     return (
       <PageTransition>
-        <div className="space-y-8">
+        <div className="space-y-6">
           <div className="flex justify-between items-center">
             <motion.div
               className="space-y-2"
@@ -137,7 +137,7 @@ const ClientsPageContent = memo(() => {
 
   return (
     <PageTransition>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <StaggerItem>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
