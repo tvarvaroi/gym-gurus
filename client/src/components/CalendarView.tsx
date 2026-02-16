@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Clock, User } from "lucide-react";
 import { useState, useMemo, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { TruncatedText } from "./TruncatedText";
 import { useUser } from "@/contexts/UserContext";
 
 interface CalendarEvent {
@@ -282,13 +283,15 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                                   </div>
 
                                   {/* Event title with ellipsis */}
-                                  <div className={cn(
-                                    "text-[11px] font-normal truncate flex-1 min-w-0 tracking-wide",
-                                    config.text,
-                                    "opacity-90"
-                                  )}>
-                                    {event.title}
-                                  </div>
+                                  <TruncatedText
+                                    as="div"
+                                    text={event.title}
+                                    className={cn(
+                                      "text-[11px] font-normal flex-1 min-w-0 tracking-wide",
+                                      config.text,
+                                      "opacity-90"
+                                    )}
+                                  />
                                 </div>
                               </motion.div>
                             );
@@ -376,13 +379,15 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
                             <div className={cn("w-2 h-2 rounded-full", config.dot)} />
-                            <h4 className={cn("font-medium text-base truncate tracking-wide", config.text)}>
-                              {event.title}
-                            </h4>
+                            <TruncatedText
+                              as="h3"
+                              text={event.title}
+                              className={cn("font-medium text-base tracking-wide", config.text)}
+                            />
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <User className="w-3.5 h-3.5" />
-                            <span className="truncate font-light">{event.client}</span>
+                            <TruncatedText text={event.client} className="font-light" />
                           </div>
                         </div>
 

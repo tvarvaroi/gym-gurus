@@ -13,6 +13,7 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useUser } from '@/contexts/UserContext';
 import NotificationCenter from '@/components/NotificationCenter';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getRoleThemeByRole } from '@/lib/theme';
 import type { InternalRole } from '@/lib/roles';
 
@@ -401,22 +402,32 @@ function UserMenu() {
                 </span>
               </div>
               <div className="flex-1 min-w-0 space-y-1">
-                <motion.p
-                  className="text-base font-semibold text-foreground truncate"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  {userData.firstName} {userData.lastName}
-                </motion.p>
-                <motion.p
-                  className="text-xs text-muted-foreground truncate font-light"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.15 }}
-                >
-                  {userData.email}
-                </motion.p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.p
+                      className="text-base font-semibold text-foreground truncate"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      {userData.firstName} {userData.lastName}
+                    </motion.p>
+                  </TooltipTrigger>
+                  <TooltipContent>{userData.firstName} {userData.lastName}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.p
+                      className="text-xs text-muted-foreground truncate font-light"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15 }}
+                    >
+                      {userData.email}
+                    </motion.p>
+                  </TooltipTrigger>
+                  <TooltipContent>{userData.email}</TooltipContent>
+                </Tooltip>
                 <motion.div
                   className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"
                   initial={{ opacity: 0 }}

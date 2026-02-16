@@ -34,6 +34,7 @@ import type { Client as ClientSchema } from "@shared/schema";
 import ClientIntakeForm from "@/components/ClientIntakeForm";
 import { QueryErrorState } from "@/components/query-states/QueryErrorState";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { TruncatedText } from "@/components/TruncatedText";
 
 // API response type - dates are serialized as strings
 interface ClientAPI {
@@ -366,7 +367,7 @@ export default function ClientDetailsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="text-sm font-medium truncate">{client.email}</p>
+                      <TruncatedText as="p" text={client.email} className="text-sm font-medium" />
                     </div>
                   </motion.div>
                 )}

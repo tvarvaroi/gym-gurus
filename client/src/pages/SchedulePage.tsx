@@ -17,6 +17,7 @@ import { Plus, Calendar as CalendarIcon, Clock, User, MapPin, Video, Edit, Trash
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { TruncatedText } from "@/components/TruncatedText";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -1091,8 +1092,8 @@ export default function SchedulePage() {
                                   {apt.startTime}
                                 </div>
                               </div>
-                              <div className="text-xs font-medium truncate">{apt.client?.name}</div>
-                              <div className="text-xs text-muted-foreground truncate">{apt.title}</div>
+                              <TruncatedText as="div" text={apt.client?.name || ''} className="text-xs font-medium" />
+                              <TruncatedText as="div" text={apt.title} className="text-xs text-muted-foreground" />
                             </motion.div>
                           );
                         })

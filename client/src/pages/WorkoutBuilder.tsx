@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2, Search, Dumbbell, ChevronUp, ChevronDown, Link2, Unlink } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { TruncatedText } from "@/components/TruncatedText";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 
@@ -443,10 +444,8 @@ export default function WorkoutBuilder() {
                             <Dumbbell className="w-4 h-4 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{exercise.name}</p>
-                            <p className="text-xs text-muted-foreground/60 truncate">
-                              {exercise.muscleGroups?.join(', ')}
-                            </p>
+                            <TruncatedText as="p" text={exercise.name} className="text-sm font-medium" />
+                            <TruncatedText as="p" text={exercise.muscleGroups?.join(', ') || ''} className="text-xs text-muted-foreground/60" />
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
                             <Badge variant="outline" className="text-[10px] capitalize">{exercise.difficulty}</Badge>

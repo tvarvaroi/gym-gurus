@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Clock, Users, Copy, Edit, MoreHorizontal } from "lucide-react"
 import { motion } from "framer-motion"
 import { memo } from "react"
+import { TruncatedText } from "./TruncatedText"
 
 interface Exercise {
   name: string
@@ -82,11 +83,11 @@ const WorkoutCard = memo(function WorkoutCard({
             className="flex items-start justify-between"
             variants={contentVariants}
           >
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0 flex-1">
               <CardTitle className="text-lg" data-testid="text-workout-title">
-                {title}
+                <TruncatedText text={title} />
               </CardTitle>
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{category}</Badge>
                 <Badge className={difficultyColors[difficulty]}>

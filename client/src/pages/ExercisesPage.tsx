@@ -14,6 +14,7 @@ import { Plus, Search, Filter, Play, BookmarkPlus, Dumbbell, Target, Clock } fro
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { TruncatedText } from "@/components/TruncatedText";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -493,9 +494,9 @@ const ExercisesPage = memo(() => {
                 )}
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="space-y-2 flex-1">
+                    <div className="space-y-2 flex-1 min-w-0">
                       <CardTitle className="text-lg" data-testid={`text-exercise-name-${exercise.id}`}>
-                        {exercise.name}
+                        <TruncatedText text={exercise.name} />
                       </CardTitle>
                       <CardDescription className="line-clamp-2">
                         {exercise.description}
