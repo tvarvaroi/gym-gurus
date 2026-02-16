@@ -59,6 +59,13 @@ export default function AICoach() {
     refetchOnReconnect: false,
   });
 
+  // Fetch fitness profile for AI context personalization
+  const { data: fitnessProfile } = useQuery<any>({
+    queryKey: ['/api/solo/fitness-profile'],
+    retry: false,
+    staleTime: 10 * 60 * 1000,
+  });
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -91,8 +98,11 @@ export default function AICoach() {
           message: content.trim(),
           conversationId: messages.length > 1 ? 'solo-chat' : undefined,
           context: {
-            goals: 'general fitness',
-            experience: 'intermediate',
+            goals: fitnessProfile?.primaryGoal || 'general fitness',
+            experience: fitnessProfile?.experienceLevel || 'intermediate',
+            environment: fitnessProfile?.workoutEnvironment || undefined,
+            equipment: fitnessProfile?.availableEquipment || undefined,
+            frequency: fitnessProfile?.workoutFrequencyPerWeek || undefined,
           },
         }),
       });
