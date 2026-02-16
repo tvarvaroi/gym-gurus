@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2, Search, Dumbbell } from "lucide-react";
+import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2, Search, Dumbbell, ChevronUp, ChevronDown } from "lucide-react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 
@@ -102,6 +102,22 @@ export default function WorkoutBuilder() {
       toast({
         title: "Error",
         description: error.message || "Failed to remove exercise",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reorder exercise mutation
+  const reorderMutation = useMutation({
+    mutationFn: ({ exerciseId, direction }: { exerciseId: string; direction: 'up' | 'down' }) =>
+      apiRequest('PATCH', `/api/workouts/${workoutId}/reorder`, { exerciseId, direction }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workouts/detail', workoutId] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to reorder exercise",
         variant: "destructive",
       });
     },
@@ -607,13 +623,34 @@ export default function WorkoutBuilder() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => reorderMutation.mutate({ exerciseId: workoutExercise.exerciseId, direction: 'up' })}
+                              disabled={index === 0 || reorderMutation.isPending}
+                              className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-30"
+                              aria-label="Move exercise up"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => reorderMutation.mutate({ exerciseId: workoutExercise.exerciseId, direction: 'down' })}
+                              disabled={index === (workout.exercises?.length || 1) - 1 || reorderMutation.isPending}
+                              className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-30"
+                              aria-label="Move exercise down"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => removeExerciseMutation.mutate(workoutExercise.exerciseId)}
                               data-testid={`button-remove-exercise-${workoutExercise.id}`}
-                              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+                              className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                              aria-label="Remove exercise"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

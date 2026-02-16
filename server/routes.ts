@@ -33,7 +33,7 @@ import {
   users,
   userFitnessProfile,
 } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, lt, isNull, or, desc, sql } from 'drizzle-orm';
 import { ZodError } from 'zod';
 import { startOfWeek, endOfWeek, addWeeks, format, getISOWeek, getISOWeekYear } from 'date-fns';
 import {
@@ -365,6 +365,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clientComplianceRates: [],
           performanceInsight: { metric: 'session_completion', value: 0, label: 'No data yet' },
         });
+      }
+    }
+  );
+
+  // GET /api/dashboard/needs-attention - Clients needing attention (secured)
+  app.get(
+    '/api/dashboard/needs-attention',
+    secureAuth,
+    apiRateLimit,
+    async (req: Request, res: Response) => {
+      try {
+        const trainerId = (req.user as any).id as string;
+        const database = await getDb();
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+        // Get all active clients for this trainer
+        const allClients = await database
+          .select()
+          .from(clients)
+          .where(and(eq(clients.trainerId, trainerId), eq(clients.status, 'active')));
+
+        const alerts: Array<{
+          clientId: string;
+          clientName: string;
+          reason: string;
+          severity: 'warning' | 'urgent';
+          lastSession: string | null;
+        }> = [];
+
+        for (const client of allClients) {
+          // Check for inactivity (no session in 7+ days)
+          if (!client.lastSession || client.lastSession < sevenDaysAgo) {
+            const isUrgent = !client.lastSession || client.lastSession < fourteenDaysAgo;
+            alerts.push({
+              clientId: client.id,
+              clientName: client.name,
+              reason: !client.lastSession
+                ? 'Never logged a session'
+                : `No session in ${Math.floor((now.getTime() - client.lastSession.getTime()) / (24 * 60 * 60 * 1000))} days`,
+              severity: isUrgent ? 'urgent' : 'warning',
+              lastSession: client.lastSession?.toISOString() || null,
+            });
+            continue; // Only one alert per client
+          }
+
+          // Check for no upcoming session scheduled
+          if (!client.nextSession || client.nextSession < now) {
+            alerts.push({
+              clientId: client.id,
+              clientName: client.name,
+              reason: 'No upcoming session scheduled',
+              severity: 'warning',
+              lastSession: client.lastSession?.toISOString() || null,
+            });
+          }
+        }
+
+        // Sort: urgent first, then warning
+        alerts.sort((a, b) => {
+          if (a.severity === 'urgent' && b.severity !== 'urgent') return -1;
+          if (a.severity !== 'urgent' && b.severity === 'urgent') return 1;
+          return 0;
+        });
+
+        res.json({ alerts: alerts.slice(0, 5) }); // Top 5 alerts
+      } catch (error) {
+        console.warn('Error fetching needs-attention:', error);
+        res.json({ alerts: [] });
       }
     }
   );
@@ -826,6 +896,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         // Error logged internally
         res.status(500).json({ error: 'Failed to remove exercise from workout' });
+      }
+    }
+  );
+
+  // PATCH /api/workouts/:workoutId/reorder - Reorder exercise within workout
+  app.patch(
+    '/api/workouts/:workoutId/reorder',
+    secureAuth,
+    apiRateLimit,
+    async (req: Request, res: Response) => {
+      try {
+        const { workoutId } = req.params;
+        const { exerciseId, direction } = req.body;
+
+        if (!exerciseId || !['up', 'down'].includes(direction)) {
+          return res.status(400).json({ error: 'exerciseId and direction (up/down) are required' });
+        }
+
+        const workout = await storage.getWorkout(workoutId);
+        if (!workout || workout.trainerId !== (req.user as any).id) {
+          return res.status(403).json({ error: 'Access denied to this workout' });
+        }
+
+        const success = await storage.reorderWorkoutExercises(workoutId, exerciseId, direction);
+        if (!success) {
+          return res.status(400).json({ error: 'Cannot move exercise in that direction' });
+        }
+        res.json({ message: 'Exercise reordered successfully' });
+      } catch (error) {
+        res.status(500).json({ error: 'Failed to reorder exercise' });
       }
     }
   );

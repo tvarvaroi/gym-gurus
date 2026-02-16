@@ -110,6 +110,57 @@ const AchievementBadge = memo(({ icon: Icon, title, description, unlocked = fals
 ));
 AchievementBadge.displayName = 'AchievementBadge';
 
+// Needs Attention Card — shows clients requiring follow-up
+const NeedsAttentionCard = memo(() => {
+  const [, navigate] = useLocation();
+  const { data, isLoading } = useQuery<{ alerts: Array<{ clientId: string; clientName: string; reason: string; severity: 'warning' | 'urgent'; lastSession: string | null }> }>({
+    queryKey: ['/api/dashboard/needs-attention'],
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  const alerts = data?.alerts || [];
+
+  if (isLoading || alerts.length === 0) return null;
+
+  return (
+    <Card className="glass border-border/40 border-l-4 border-l-amber-500">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            Needs Attention
+          </CardTitle>
+          <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+            {alerts.length} client{alerts.length !== 1 ? 's' : ''}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {alerts.map((alert) => (
+            <div
+              key={alert.clientId}
+              onClick={() => navigate(`/clients/${alert.clientId}`)}
+              className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-2 h-2 rounded-full shrink-0 ${alert.severity === 'urgent' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                <div>
+                  <p className="text-sm font-medium group-hover:text-primary transition-colors">{alert.clientName}</p>
+                  <p className="text-xs text-muted-foreground">{alert.reason}</p>
+                </div>
+              </div>
+              <TrendingDown className="w-4 h-4 text-muted-foreground shrink-0" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+NeedsAttentionCard.displayName = 'NeedsAttentionCard';
+
 const Dashboard = memo(() => {
   const prefersReducedMotion = useReducedMotion();
   const [, navigate] = useLocation();
@@ -895,6 +946,9 @@ const Dashboard = memo(() => {
               ))}
         </div>
       </StaggerContainer>
+
+      {/* Needs Attention Alerts */}
+      <NeedsAttentionCard />
 
       {/* Two-Column Layout: Quick Actions + Progress Widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

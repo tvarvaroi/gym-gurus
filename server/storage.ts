@@ -92,6 +92,7 @@ export interface IStorage {
   getWorkoutExercises(workoutId: string): Promise<WorkoutExercise[]>;
   addExerciseToWorkout(workoutExercise: InsertWorkoutExercise): Promise<WorkoutExercise>;
   removeExerciseFromWorkout(workoutId: string, exerciseId: string): Promise<boolean>;
+  reorderWorkoutExercises(workoutId: string, exerciseId: string, direction: 'up' | 'down'): Promise<boolean>;
 
   // Workout Assignments
   getClientWorkouts(clientId: string): Promise<WorkoutAssignment[]>;
@@ -267,6 +268,33 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(workoutExercises)
       .where(and(eq(workoutExercises.workoutId, workoutId), eq(workoutExercises.exerciseId, exerciseId)));
     return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async reorderWorkoutExercises(workoutId: string, exerciseId: string, direction: 'up' | 'down'): Promise<boolean> {
+    const db = await getDb();
+    const exercises = await db.select()
+      .from(workoutExercises)
+      .where(eq(workoutExercises.workoutId, workoutId))
+      .orderBy(workoutExercises.sortOrder);
+
+    const currentIndex = exercises.findIndex(e => e.exerciseId === exerciseId);
+    if (currentIndex === -1) return false;
+
+    const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (swapIndex < 0 || swapIndex >= exercises.length) return false;
+
+    const current = exercises[currentIndex];
+    const swap = exercises[swapIndex];
+
+    // Swap sortOrder values
+    await db.update(workoutExercises)
+      .set({ sortOrder: swap.sortOrder })
+      .where(eq(workoutExercises.id, current.id));
+    await db.update(workoutExercises)
+      .set({ sortOrder: current.sortOrder })
+      .where(eq(workoutExercises.id, swap.id));
+
+    return true;
   }
 
   // Workout Assignments

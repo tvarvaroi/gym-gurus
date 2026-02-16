@@ -351,6 +351,25 @@ export class MemoryStorage implements IStorage {
     return false;
   }
 
+  async reorderWorkoutExercises(workoutId: string, exerciseId: string, direction: 'up' | 'down'): Promise<boolean> {
+    const exercises = this.workoutExercises.get(workoutId);
+    if (!exercises) return false;
+
+    const sorted = [...exercises].sort((a, b) => a.sortOrder - b.sortOrder);
+    const currentIndex = sorted.findIndex(e => e.exerciseId === exerciseId);
+    if (currentIndex === -1) return false;
+
+    const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (swapIndex < 0 || swapIndex >= sorted.length) return false;
+
+    const tempOrder = sorted[currentIndex].sortOrder;
+    sorted[currentIndex].sortOrder = sorted[swapIndex].sortOrder;
+    sorted[swapIndex].sortOrder = tempOrder;
+
+    this.workoutExercises.set(workoutId, sorted);
+    return true;
+  }
+
   // Workout Assignments
   async getClientWorkouts(clientId: string): Promise<WorkoutAssignment[]> {
     return Array.from(this.workoutAssignments.values())
