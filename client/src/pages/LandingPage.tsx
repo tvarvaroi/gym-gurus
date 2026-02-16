@@ -3,6 +3,7 @@ import PageCarousel from '@/components/landing/PageCarousel';
 
 // Lazy load pages for better performance
 const HeroPage = lazy(() => import('@/components/landing/pages/HeroPage'));
+const HowItWorksPage = lazy(() => import('@/components/landing/pages/HowItWorksPage'));
 const FeaturesPage = lazy(() => import('@/components/landing/pages/FeaturesPage'));
 const AboutPage = lazy(() => import('@/components/landing/pages/AboutPage'));
 // ResourcesPage removed from carousel — content not yet available
@@ -24,6 +25,9 @@ const LandingPage = memo(() => {
   const pages = [
     <Suspense key="hero" fallback={<PageLoader />}>
       <HeroPage />
+    </Suspense>,
+    <Suspense key="how-it-works" fallback={<PageLoader />}>
+      <HowItWorksPage />
     </Suspense>,
     <Suspense key="features" fallback={<PageLoader />}>
       <FeaturesPage />

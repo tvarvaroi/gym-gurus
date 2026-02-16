@@ -1,5 +1,6 @@
 import { Link } from 'wouter';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, BookmarkPlus } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 interface RelatedCalc {
   title: string;
@@ -57,9 +58,36 @@ interface Props {
 
 export default function RelatedCalculators({ currentPath, count = 3 }: Props) {
   const related = ALL_CALCULATORS.filter((c) => c.path !== currentPath).slice(0, count);
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   return (
     <div className="mt-8 pt-6 border-t border-border">
+      {/* Save Results CTA — only for unauthenticated visitors */}
+      {!user && (
+        <div className="mb-6 p-4 rounded-xl bg-primary/5 border border-primary/20">
+          <div className="flex items-start gap-3">
+            <BookmarkPlus className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium text-sm">Save &amp; Track Your Results</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Create a free account to save your calculator results, track progress over time, and get personalized workout plans.
+              </p>
+              <a
+                href="/api/login?role=solo"
+                className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-primary hover:underline"
+              >
+                Sign up free
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Related Calculators</h3>
         <Link href="/calculators" className="text-sm text-primary hover:underline">

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Users, Zap, Shield, Crown } from 'lucide-react';
+import { Target, Users, Zap, Shield, Crown, Quote } from 'lucide-react';
 
 // Luxury shimmer dot - one-shot entrance
 const ShimmerDot = ({
@@ -229,6 +229,66 @@ const AboutPage = memo(() => {
                         {value.description}
                       </p>
                     </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Testimonials */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto"
+          >
+            {[
+              {
+                quote: 'GymGurus cut my admin time in half. I spend more time coaching and less time on spreadsheets.',
+                name: 'Sarah M.',
+                role: 'Personal Trainer, NYC',
+                variant: 'guru' as const,
+              },
+              {
+                quote: 'The AI workout generator is a game-changer. My clients love the personalized programs.',
+                name: 'James K.',
+                role: 'Strength Coach, LA',
+                variant: 'disciple' as const,
+              },
+              {
+                quote: 'Finally a platform that understands what trainers actually need. Simple, fast, effective.',
+                name: 'Maria L.',
+                role: 'Fitness Studio Owner',
+                variant: 'guru' as const,
+              },
+            ].map((testimonial, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
+                className="rounded-2xl p-5 relative"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                }}
+              >
+                <div className="relative space-y-3">
+                  <Quote
+                    className="w-5 h-5"
+                    style={{
+                      color: testimonial.variant === 'guru' ? 'hsl(var(--color-guru) / 0.4)' : 'hsl(var(--color-disciple) / 0.4)',
+                    }}
+                  />
+                  <p
+                    className="text-sm font-light italic"
+                    style={{ fontFamily: "'Cormorant Garamond', serif", color: '#ccc', lineHeight: '1.8' }}
+                  >
+                    "{testimonial.quote}"
+                  </p>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: '#fff' }}>{testimonial.name}</p>
+                    <p className="text-xs font-light" style={{ color: '#888' }}>{testimonial.role}</p>
                   </div>
                 </div>
               </motion.div>
