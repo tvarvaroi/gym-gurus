@@ -88,6 +88,20 @@ export default function WorkoutExecution() {
   const [showProgressOverview, setShowProgressOverview] = useState(false);
 
 
+  // Warn before closing/refreshing if workout is in progress
+  useEffect(() => {
+    const hasProgress = session?.exercises.some(ex =>
+      ex.sets.some(s => s.completed)
+    );
+    if (!hasProgress || showCompletion) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [session, showCompletion]);
+
   // Fetch workout assignment details
   const { data: workout, isLoading, error: workoutError } = useQuery({
     queryKey: [`/api/workout-assignments/${workoutId}`],

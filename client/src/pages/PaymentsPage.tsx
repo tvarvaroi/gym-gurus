@@ -13,6 +13,8 @@ import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { PageTransition, StaggerContainer, StaggerItem } from '@/components/AnimationComponents';
+import { QueryErrorState } from '@/components/query-states/QueryErrorState';
+import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface PaymentPlan {
@@ -59,17 +61,19 @@ export default function PaymentsPage() {
   const [newPlan, setNewPlan] = useState({ name: '', description: '', price: '', interval: 'monthly', sessions: '' });
   const [newPayment, setNewPayment] = useState({ clientId: '', amount: '', description: '' });
 
-  const { data: plans = [] } = useQuery<PaymentPlan[]>({
+  const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery<PaymentPlan[]>({
     queryKey: ['/api/payments/plans'],
   });
 
-  const { data: paymentHistory = [] } = useQuery<PaymentRecord[]>({
+  const { data: paymentHistory = [], isLoading: paymentsLoading } = useQuery<PaymentRecord[]>({
     queryKey: ['/api/payments'],
   });
 
-  const { data: summary } = useQuery<PaymentSummary>({
+  const { data: summary, isLoading: summaryLoading, error: summaryError } = useQuery<PaymentSummary>({
     queryKey: ['/api/payments/summary'],
   });
+
+  const isLoading = plansLoading || paymentsLoading || summaryLoading;
 
   const { data: clientsList = [] } = useQuery<any[]>({
     queryKey: [`/api/clients/${user?.id}`],
@@ -122,6 +126,57 @@ export default function PaymentsPage() {
   });
 
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
+
+  if (plansError || summaryError) {
+    return (
+      <PageTransition>
+        <div className="p-4 md:p-6 max-w-7xl mx-auto">
+          <QueryErrorState
+            error={plansError || summaryError}
+            title="Failed to load payments"
+            onRetry={() => {
+              queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
+              queryClient.invalidateQueries({ queryKey: ['/api/payments/plans'] });
+              queryClient.invalidateQueries({ queryKey: ['/api/payments/summary'] });
+            }}
+          />
+        </div>
+      </PageTransition>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <PageTransition>
+        <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-32" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-36" />
+              <Skeleton className="h-9 w-24" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="glass">
+                <CardContent className="pt-6 space-y-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-7 w-24" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="glass"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
+            <Card className="glass"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>

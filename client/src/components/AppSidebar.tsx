@@ -211,8 +211,12 @@ const AppSidebar = memo(() => {
   };
 
   const isActive = (url: string) => {
-    // Handle exact match for all routes
-    return location === url;
+    if (url === '/dashboard' || url === '/solo') {
+      // Dashboard routes use exact match to avoid false positives
+      return location === url;
+    }
+    // All other routes use prefix matching so sub-routes highlight parent
+    return location === url || location.startsWith(url + '/');
   };
 
   return (

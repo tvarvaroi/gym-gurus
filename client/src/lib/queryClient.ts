@@ -64,10 +64,14 @@ export const getQueryFn: <T>(options: {
   };
 
 // Global error handler for 401 responses
+let redirecting401 = false;
 function handle401Error(error: unknown) {
   if (error instanceof Error && error.message.startsWith('401:')) {
-    // Only redirect to landing page if not already there (prevents infinite loop)
-    if (window.location.pathname !== '/') {
+    // Only redirect once and only if not already on the landing page
+    if (!redirecting401 && window.location.pathname !== '/') {
+      redirecting401 = true;
+      // Store the current URL so user can return after re-login
+      sessionStorage.setItem('returnUrl', window.location.pathname + window.location.search);
       window.location.href = '/';
     }
   }

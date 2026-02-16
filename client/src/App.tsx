@@ -635,6 +635,14 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     if (u.role === 'solo' && !u.onboardingCompleted && !window.location.pathname.startsWith('/solo/onboarding')) {
       return <Redirect to="/solo/onboarding" />;
     }
+
+    // Restore the URL the user was on before session expired
+    const returnUrl = sessionStorage.getItem('returnUrl');
+    if (returnUrl && window.location.pathname === '/dashboard') {
+      sessionStorage.removeItem('returnUrl');
+      return <Redirect to={returnUrl} />;
+    }
+
     return children;
   }
 
