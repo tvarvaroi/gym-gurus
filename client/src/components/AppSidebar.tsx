@@ -64,6 +64,11 @@ const trainerMenuItems = [
     icon: Calendar,
   },
   {
+    title: 'AI Coach',
+    url: '/solo/coach',
+    icon: Sparkles,
+  },
+  {
     title: 'Payments',
     url: '/payments',
     icon: CreditCard,

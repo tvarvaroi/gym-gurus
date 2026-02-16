@@ -88,6 +88,23 @@ export default function WorkoutExecution() {
   const [showProgressOverview, setShowProgressOverview] = useState(false);
 
 
+  // Persist session state to sessionStorage for recovery on refresh
+  const storageKey = `workout-session-${workoutId}`;
+
+  useEffect(() => {
+    if (!session || showCompletion) return;
+    const hasProgress = session.exercises.some(ex => ex.sets.some(s => s.completed));
+    if (!hasProgress) return;
+    sessionStorage.setItem(storageKey, JSON.stringify({ session, currentExerciseIndex }));
+  }, [session, currentExerciseIndex, showCompletion, storageKey]);
+
+  // Clear saved state on completion
+  useEffect(() => {
+    if (showCompletion) {
+      sessionStorage.removeItem(storageKey);
+    }
+  }, [showCompletion, storageKey]);
+
   // Warn before closing/refreshing if workout is in progress
   useEffect(() => {
     const hasProgress = session?.exercises.some(ex =>
@@ -114,9 +131,24 @@ export default function WorkoutExecution() {
     }
   });
 
-  // Initialize session when workout loads
+  // Initialize session when workout loads — restore from sessionStorage if available
   useEffect(() => {
     if (workout && !session) {
+      // Try to restore a saved session first
+      const saved = sessionStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const { session: savedSession, currentExerciseIndex: savedIndex } = JSON.parse(saved);
+          if (savedSession?.workoutId === workoutId) {
+            setSession(savedSession);
+            setCurrentExerciseIndex(savedIndex || 0);
+            return;
+          }
+        } catch {
+          sessionStorage.removeItem(storageKey);
+        }
+      }
+
       const exercises: ExerciseSession[] = (workout.exercises || []).map((ex: any, index: number) => ({
         exerciseId: ex.exerciseId || ex.id || `exercise-${index}`,
         exerciseName: ex.name || 'Exercise',

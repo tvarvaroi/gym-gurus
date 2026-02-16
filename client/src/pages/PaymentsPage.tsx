@@ -130,7 +130,7 @@ export default function PaymentsPage() {
   if (plansError || summaryError) {
     return (
       <PageTransition>
-        <div className="p-4 md:p-6 max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <QueryErrorState
             error={plansError || summaryError}
             title="Failed to load payments"
@@ -148,7 +148,7 @@ export default function PaymentsPage() {
   if (isLoading) {
     return (
       <PageTransition>
-        <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+        <div className="space-y-6 max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <Skeleton className="h-7 w-32" />
@@ -180,7 +180,7 @@ export default function PaymentsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+      <div className="space-y-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

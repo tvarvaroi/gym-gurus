@@ -568,7 +568,7 @@ export function SoloDashboard() {
   const streak = gamification?.currentStreakDays || 0;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Welcome Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

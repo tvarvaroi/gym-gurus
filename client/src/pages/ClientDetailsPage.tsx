@@ -203,7 +203,7 @@ export default function ClientDetailsPage() {
 
   if (loadingClient) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-muted rounded w-64"></div>
           <div className="h-64 bg-muted rounded"></div>
@@ -219,7 +219,7 @@ export default function ClientDetailsPage() {
 
   if (clientError) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto">
         <QueryErrorState
           error={clientError}
           title="Failed to load client"
@@ -231,7 +231,7 @@ export default function ClientDetailsPage() {
 
   if (!client) {
     return (
-      <div className="container mx-auto p-6 text-center">
+      <div className="container mx-auto text-center">
         <p className="text-muted-foreground">Client not found</p>
       </div>
     );
@@ -241,7 +241,7 @@ export default function ClientDetailsPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="container mx-auto p-6 space-y-6"
+      className="container mx-auto space-y-6"
     >
       {/* Header with Back Button */}
       <div className="flex items-center gap-4">
