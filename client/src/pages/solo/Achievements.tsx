@@ -97,10 +97,32 @@ export default function Achievements() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-amber-400 mx-auto" />
-          <p className="text-muted-foreground font-light">Loading achievements...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-64 bg-muted/60 rounded animate-pulse" />
+          </div>
+          <div className="flex gap-3">
+            <div className="h-9 w-20 bg-muted rounded-lg animate-pulse" />
+            <div className="h-9 w-20 bg-muted rounded-lg animate-pulse" />
+          </div>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="bg-card/30 border-border/30">
+              <CardContent className="p-6 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                    <div className="h-3 w-48 bg-muted/60 rounded animate-pulse" />
+                  </div>
+                </div>
+                <Progress value={0} className="h-1.5 opacity-30" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -173,6 +195,15 @@ export default function Achievements() {
         transition={{ delay: 0.2 }}
         className="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
       >
+        {filteredAchievements.length === 0 && (
+          <div className="col-span-full flex flex-col items-center py-12 text-center space-y-3">
+            <Trophy className="h-12 w-12 text-muted-foreground/30" />
+            <div className="space-y-1">
+              <p className="text-base font-medium text-muted-foreground">No achievements found</p>
+              <p className="text-sm text-muted-foreground/60">Complete workouts and hit milestones to unlock achievements</p>
+            </div>
+          </div>
+        )}
         <AnimatePresence mode="popLayout">
           {filteredAchievements.map((achievement, index) => {
             const rarityKey = achievement.rarity || 'common';

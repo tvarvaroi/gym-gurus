@@ -1130,8 +1130,12 @@ const Dashboard = memo(() => {
                 </div>
               </>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-                Log client weight progress to see trends
+              <div className="h-[200px] flex flex-col items-center justify-center space-y-2">
+                <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">Log client weight progress to see trends</p>
+                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/clients')}>
+                  Go to Clients
+                </Button>
               </div>
             )}
           </CardContent>
@@ -1165,8 +1169,12 @@ const Dashboard = memo(() => {
                 </div>
               </>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-                Schedule sessions to see weekly trends
+              <div className="h-[200px] flex flex-col items-center justify-center space-y-2">
+                <Calendar className="h-8 w-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">Schedule sessions to see weekly trends</p>
+                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/schedule')}>
+                  Go to Schedule
+                </Button>
               </div>
             )}
           </CardContent>
@@ -1210,8 +1218,12 @@ const Dashboard = memo(() => {
                 </div>
               </>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-                Add clients to see growth trends
+              <div className="h-[200px] flex flex-col items-center justify-center space-y-2">
+                <Users className="h-8 w-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">Add clients to see growth trends</p>
+                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/clients')}>
+                  Go to Clients
+                </Button>
               </div>
             )}
           </CardContent>

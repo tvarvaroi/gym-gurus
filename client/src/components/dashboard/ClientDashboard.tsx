@@ -619,60 +619,68 @@ export default function ClientDashboard() {
       )}
 
       {/* Assigned Workouts */}
-      {clientWorkouts && clientWorkouts.length > 0 && (
-        <StaggerItem>
-          <Card className="glass-strong shadow-premium client-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Dumbbell className="h-5 w-5 text-teal-500" />
-                My Workout Plans
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {clientWorkouts.slice(0, 3).map((workout: any, idx: number) => (
-                  <div key={workout.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                    <div>
-                      <p className="font-medium">{workout.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {workout.exercises?.length || 0} exercises
-                      </p>
+      <StaggerItem>
+        <Card className="glass-strong shadow-premium client-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Dumbbell className="h-5 w-5 text-teal-500" />
+              My Workout Plans
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {clientWorkouts && clientWorkouts.length > 0 ? (
+              <>
+                <div className="space-y-3">
+                  {clientWorkouts.slice(0, 3).map((workout: any) => (
+                    <div key={workout.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                      <div>
+                        <p className="font-medium">{workout.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {workout.exercises?.length || 0} exercises
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="client-gradient hover:opacity-90"
+                        onClick={() => navigate('/workouts')}
+                      >
+                        View
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      className="client-gradient hover:opacity-90"
-                      onClick={() => navigate('/workouts')}
-                    >
-                      View
-                    </Button>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                {clientWorkouts.length > 3 && (
+                  <Button
+                    variant="ghost"
+                    className="w-full mt-4"
+                    onClick={() => navigate('/workouts')}
+                  >
+                    View all {clientWorkouts.length} workouts
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center py-6 text-center space-y-2">
+                <Dumbbell className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">No workouts assigned yet</p>
+                <p className="text-xs text-muted-foreground/60">Your trainer will assign workout plans here</p>
               </div>
-              {clientWorkouts.length > 3 && (
-                <Button
-                  variant="ghost"
-                  className="w-full mt-4"
-                  onClick={() => navigate('/workouts')}
-                >
-                  View all {clientWorkouts.length} workouts
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </StaggerItem>
-      )}
+            )}
+          </CardContent>
+        </Card>
+      </StaggerItem>
 
       {/* Upcoming Sessions */}
-      {upcomingSessions.length > 0 && (
-        <StaggerItem>
-          <Card className="glass-strong shadow-premium client-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-teal-500" />
-                Upcoming Sessions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+      <StaggerItem>
+        <Card className="glass-strong shadow-premium client-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-teal-500" />
+              Upcoming Sessions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {upcomingSessions.length > 0 ? (
               <div className="space-y-3">
                 {upcomingSessions.map((session: any) => (
                   <div key={session.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
@@ -689,10 +697,23 @@ export default function ClientDashboard() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </StaggerItem>
-      )}
+            ) : (
+              <div className="flex flex-col items-center py-6 text-center space-y-2">
+                <Calendar className="h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">No upcoming sessions</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-1"
+                  onClick={() => navigate('/schedule')}
+                >
+                  View Schedule
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </StaggerItem>
 
       {/* Celebration Overlay */}
       <CelebrationOverlay

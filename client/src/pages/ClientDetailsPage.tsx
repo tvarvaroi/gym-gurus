@@ -32,6 +32,7 @@ import {
 } from "@/lib/biometricCalculations";
 import type { Client as ClientSchema } from "@shared/schema";
 import ClientIntakeForm from "@/components/ClientIntakeForm";
+import { QueryErrorState } from "@/components/query-states/QueryErrorState";
 
 // API response type - dates are serialized as strings
 interface ClientAPI {
@@ -118,7 +119,7 @@ export default function ClientDetailsPage() {
   const tabParam = searchParams.get('tab') || 'overview';
 
   // Fetch client details
-  const { data: clientAPI, isLoading: loadingClient } = useQuery<ClientAPI>({
+  const { data: clientAPI, isLoading: loadingClient, error: clientError } = useQuery<ClientAPI>({
     queryKey: [`/api/clients/detail/${clientId}`],
     enabled: !!clientId
   });
@@ -212,6 +213,18 @@ export default function ClientDetailsPage() {
             <div className="h-32 bg-muted rounded"></div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (clientError) {
+    return (
+      <div className="container mx-auto p-6">
+        <QueryErrorState
+          error={clientError}
+          title="Failed to load client"
+          onRetry={() => queryClient.invalidateQueries({ queryKey: [`/api/clients/detail/${clientId}`] })}
+        />
       </div>
     );
   }
