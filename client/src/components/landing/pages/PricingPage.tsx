@@ -419,38 +419,121 @@ const PricingPage = memo(() => {
               <span className="font-light">Money-back guarantee</span>
             </div>
           </motion.div>
+
+          {/* Feature Comparison Table */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-12 rounded-2xl overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+            }}
+          >
+            <div className="px-6 py-4 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+              <h3
+                className="text-xl font-light text-center"
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  color: '#e5e4e2',
+                }}
+              >
+                Feature Comparison
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                    <th className="text-left px-6 py-3 font-light" style={{ color: '#999', fontFamily: "'Inter', sans-serif" }}>Feature</th>
+                    {plans.map((plan) => (
+                      <th
+                        key={plan.name}
+                        className="text-center px-4 py-3 font-light"
+                        style={{
+                          fontFamily: "'Playfair Display', serif",
+                          color: plan.popular ? 'hsl(var(--color-guru))' : '#d4d4d4',
+                        }}
+                      >
+                        {plan.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { feature: 'Client Management', values: ['Up to 50', 'Unlimited', 'Unlimited'] },
+                    { feature: 'Workout Builder', values: [true, true, true] },
+                    { feature: 'Exercise Library', values: [true, true, true] },
+                    { feature: 'Progress Tracking', values: [true, true, true] },
+                    { feature: 'Schedule & Calendar', values: [true, true, true] },
+                    { feature: 'AI Workout Generator', values: [false, true, true] },
+                    { feature: 'AI Coach', values: [false, true, true] },
+                    { feature: 'Custom Branding', values: [false, true, true] },
+                    { feature: 'Fitness Calculators', values: ['Basic', 'All 12', 'All 12'] },
+                    { feature: 'Client Intake Forms', values: [false, true, true] },
+                    { feature: 'Payment Tracking', values: [false, true, true] },
+                    { feature: 'Gamification & XP', values: [false, true, true] },
+                    { feature: 'API Access', values: [false, false, true] },
+                    { feature: 'Custom Integrations', values: [false, false, true] },
+                    { feature: 'Dedicated Account Manager', values: [false, false, true] },
+                    { feature: 'SLA Guarantee', values: [false, false, true] },
+                  ].map((row, i) => (
+                    <tr
+                      key={row.feature}
+                      style={{
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                        background: i % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.01)',
+                      }}
+                    >
+                      <td
+                        className="px-6 py-2.5 font-light"
+                        style={{ color: '#d4d4d4', fontFamily: "'Cormorant Garamond', serif" }}
+                      >
+                        {row.feature}
+                      </td>
+                      {row.values.map((val, j) => (
+                        <td key={j} className="text-center px-4 py-2.5">
+                          {val === true ? (
+                            <Check className="w-4 h-4 mx-auto" style={{ color: 'hsl(var(--color-guru))' }} />
+                          ) : val === false ? (
+                            <span style={{ color: '#555' }}>—</span>
+                          ) : (
+                            <span className="text-xs font-light" style={{ color: '#d4d4d4' }}>{val}</span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
         </div>
       </div>
 
-      {/* Floating luxury particles - optimized count */}
-      {[...Array(6)].map((_, i) => (
+      {/* Static accent dots */}
+      {[...Array(4)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute rounded-full pointer-events-none z-50"
           style={{
-            width: '1.5px',
-            height: '1.5px',
+            width: '1px',
+            height: '1px',
             background:
               i % 2 === 0
                 ? 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))'
                 : 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
             boxShadow:
               i % 2 === 0 ? '0 0 8px hsl(var(--color-guru) / 0.4)' : '0 0 8px hsl(var(--color-disciple) / 0.4)',
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            willChange: 'transform, opacity',
+            left: `${20 + i * 20}%`,
+            top: `${15 + i * 18}%`,
           }}
-          animate={{
-            y: [0, -150, 0],
-            opacity: [0, 0.5, 0],
-            scale: [0, 1.5, 0],
-          }}
-          transition={{
-            duration: 6 + Math.random() * 3,
-            repeat: prefersReducedMotion ? 0 : Infinity,
-            delay: Math.random() * 6,
-            ease: 'easeInOut',
-          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.3 }}
+          transition={{ duration: 1.5, delay: i * 0.3 }}
         />
       ))}
     </div>
