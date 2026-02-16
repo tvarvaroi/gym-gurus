@@ -379,12 +379,15 @@ export default function PaymentsPage() {
                   <input
                     type="number"
                     step="0.01"
-                    min="0"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
+                    min="0.01"
+                    className={`w-full bg-white/5 border rounded-lg px-3 py-2 text-sm text-white/90 ${newPlan.price && (isNaN(parseFloat(newPlan.price)) || parseFloat(newPlan.price) <= 0) ? 'border-destructive' : 'border-white/10'}`}
                     placeholder="0.00"
                     value={newPlan.price}
                     onChange={(e) => setNewPlan(p => ({ ...p, price: e.target.value }))}
                   />
+                  {newPlan.price && (isNaN(parseFloat(newPlan.price)) || parseFloat(newPlan.price) <= 0) && (
+                    <p className="text-xs text-destructive mt-1">Enter a valid price greater than $0</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm text-white/60 mb-1 block">Billing Interval<span className="text-destructive ml-0.5">*</span></label>
@@ -452,12 +455,15 @@ export default function PaymentsPage() {
                 <input
                   type="number"
                   step="0.01"
-                  min="0"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
+                  min="0.01"
+                  className={`w-full bg-white/5 border rounded-lg px-3 py-2 text-sm text-white/90 ${newPayment.amount && (isNaN(parseFloat(newPayment.amount)) || parseFloat(newPayment.amount) <= 0) ? 'border-destructive' : 'border-white/10'}`}
                   placeholder="0.00"
                   value={newPayment.amount}
                   onChange={(e) => setNewPayment(p => ({ ...p, amount: e.target.value }))}
                 />
+                {newPayment.amount && (isNaN(parseFloat(newPayment.amount)) || parseFloat(newPayment.amount) <= 0) && (
+                  <p className="text-xs text-destructive mt-1">Enter a valid amount greater than $0</p>
+                )}
               </div>
               <div>
                 <label className="text-sm text-white/60 mb-1 block">Description</label>
