@@ -140,6 +140,9 @@ export const workoutExercises = pgTable("workout_exercises", {
   // NEW: Per-set configuration (allows different weight per set)
   setsConfiguration: jsonb("sets_configuration").$type<SetConfiguration[]>(),
   sortOrder: integer("sort_order").notNull(), // order in workout
+  // Superset/circuit grouping
+  groupId: varchar("group_id"), // shared ID links exercises in a superset/circuit
+  groupType: text("group_type"), // 'superset', 'circuit', or null for standalone
 }, (table) => [
   index("idx_workout_exercises_workout_id").on(table.workoutId),
   index("idx_workout_exercises_exercise_id").on(table.exerciseId),

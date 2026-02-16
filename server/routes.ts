@@ -1246,6 +1246,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           weight: ex.workout_exercises.weight,
           restTime: ex.workout_exercises.restTime,
           sortOrder: ex.workout_exercises.sortOrder,
+          groupId: ex.workout_exercises.groupId,
+          groupType: ex.workout_exercises.groupType,
         })),
       });
     } catch (error) {

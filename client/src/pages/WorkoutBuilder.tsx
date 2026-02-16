@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2, Search, Dumbbell, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2, Search, Dumbbell, ChevronUp, ChevronDown, Link2, Unlink } from "lucide-react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 
@@ -27,6 +27,8 @@ export default function WorkoutBuilder() {
     weight: "",
     restTime: 60,
   });
+  const [groupType, setGroupType] = useState<"none" | "superset" | "circuit">("none");
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const prefersReducedMotion = useReducedMotion();
@@ -182,10 +184,21 @@ export default function WorkoutBuilder() {
       return;
     }
 
+    // Handle group ID for supersets/circuits
+    let groupId = null;
+    let groupTypeValue = null;
+    if (groupType !== "none") {
+      groupId = activeGroupId || crypto.randomUUID();
+      groupTypeValue = groupType;
+      // Keep the group active so the next exercise can be added to the same group
+      setActiveGroupId(groupId);
+    }
+
     addExerciseMutation.mutate({
       exerciseId: selectedExercise,
       ...exerciseData,
-      sortOrder: (workout?.exercises?.length || 0) + 1
+      sortOrder: (workout?.exercises?.length || 0) + 1,
+      ...(groupId ? { groupId, groupType: groupTypeValue } : {}),
     });
   };
 
@@ -504,6 +517,37 @@ export default function WorkoutBuilder() {
                           />
                         </div>
                       </div>
+
+                      {/* Group Type Selector */}
+                      <div className="col-span-2 space-y-1">
+                        <label className="text-xs font-light text-muted-foreground">Group Type</label>
+                        <div className="flex gap-2">
+                          {(["none", "superset", "circuit"] as const).map((type) => (
+                            <Badge
+                              key={type}
+                              variant={groupType === type ? "default" : "outline"}
+                              className="cursor-pointer text-xs capitalize"
+                              onClick={() => {
+                                setGroupType(type);
+                                if (type === "none") setActiveGroupId(null);
+                              }}
+                            >
+                              {type === "none" ? "Standalone" : type === "superset" ? "Superset" : "Circuit"}
+                            </Badge>
+                          ))}
+                        </div>
+                        {groupType !== "none" && activeGroupId && (
+                          <p className="text-[10px] text-primary/70 mt-1">
+                            Adding to active {groupType} group
+                            <button
+                              className="ml-2 text-muted-foreground hover:text-destructive underline"
+                              onClick={() => { setActiveGroupId(null); }}
+                            >
+                              start new group
+                            </button>
+                          </p>
+                        )}
+                      </div>
                     </motion.div>
                   )}
 
@@ -560,6 +604,13 @@ export default function WorkoutBuilder() {
             ) : (
               workout.exercises?.map((workoutExercise: any, index: number) => {
                 const exercise = exercises?.find((e: any) => e.id === workoutExercise.exerciseId);
+                const isGrouped = !!workoutExercise.groupId;
+                const isSuperset = workoutExercise.groupType === 'superset';
+                const isCircuit = workoutExercise.groupType === 'circuit';
+                const nextEx = workout.exercises?.[index + 1];
+                const prevEx = workout.exercises?.[index - 1];
+                const isGroupStart = isGrouped && (!prevEx || prevEx.groupId !== workoutExercise.groupId);
+                const isGroupEnd = isGrouped && (!nextEx || nextEx.groupId !== workoutExercise.groupId);
                 return (
                   <motion.div
                     key={workoutExercise.id}
@@ -567,8 +618,23 @@ export default function WorkoutBuilder() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05, duration: 0.3 }}
                     whileHover={{ y: -4 }}
+                    className={isGrouped ? `${!isGroupStart ? '-mt-2' : ''}` : ''}
                   >
-                    <Card className="glass-strong border-border/50 hover:shadow-premium-lg transition-all duration-300 group overflow-hidden">
+                    {/* Group header */}
+                    {isGroupStart && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <Link2 className={`h-3.5 w-3.5 ${isSuperset ? 'text-amber-500' : 'text-violet-500'}`} />
+                        <span className={`text-xs font-medium uppercase tracking-wider ${isSuperset ? 'text-amber-500' : 'text-violet-500'}`}>
+                          {isSuperset ? 'Superset' : 'Circuit'}
+                        </span>
+                        <div className={`flex-1 h-px ${isSuperset ? 'bg-amber-500/30' : 'bg-violet-500/30'}`} />
+                      </div>
+                    )}
+                    <Card className={`glass-strong hover:shadow-premium-lg transition-all duration-300 group overflow-hidden ${
+                      isGrouped
+                        ? `${isSuperset ? 'border-l-2 border-l-amber-500/60' : 'border-l-2 border-l-violet-500/60'} border-border/50 ${!isGroupEnd ? 'rounded-b-none border-b-0' : ''} ${!isGroupStart ? 'rounded-t-none' : ''}`
+                        : 'border-border/50'
+                    }`}>
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 space-y-3">
@@ -582,7 +648,14 @@ export default function WorkoutBuilder() {
                                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
                               </motion.div>
                               <div className="flex-1">
-                                <h3 className="font-light text-lg">{exercise?.name}</h3>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-light text-lg">{exercise?.name}</h3>
+                                  {isGrouped && (
+                                    <Badge variant="outline" className={`text-[10px] ${isSuperset ? 'border-amber-500/40 text-amber-500' : 'border-violet-500/40 text-violet-500'}`}>
+                                      {isSuperset ? 'SS' : 'CIR'}
+                                    </Badge>
+                                  )}
+                                </div>
                                 <p className="text-sm font-light text-muted-foreground/70">{exercise?.description}</p>
                               </div>
                             </div>
