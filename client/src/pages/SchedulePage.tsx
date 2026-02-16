@@ -575,7 +575,7 @@ export default function SchedulePage() {
                     name="clientId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Client</FormLabel>
+                        <FormLabel>Client<span className="text-destructive ml-0.5">*</span></FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-client">
@@ -600,7 +600,7 @@ export default function SchedulePage() {
                     name="title"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Title</FormLabel>
+                        <FormLabel>Title<span className="text-destructive ml-0.5">*</span></FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Personal Training Session" {...field} data-testid="input-title" />
                         </FormControl>
@@ -634,7 +634,7 @@ export default function SchedulePage() {
                       name="date"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>Date</FormLabel>
+                          <FormLabel>Date<span className="text-destructive ml-0.5">*</span></FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -677,7 +677,7 @@ export default function SchedulePage() {
                       name="type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Type</FormLabel>
+                          <FormLabel>Type<span className="text-destructive ml-0.5">*</span></FormLabel>
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger data-testid="select-type">
@@ -703,7 +703,7 @@ export default function SchedulePage() {
                       name="startTime"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Start Time</FormLabel>
+                          <FormLabel>Start Time<span className="text-destructive ml-0.5">*</span></FormLabel>
                           <FormControl>
                             <Input type="time" {...field} data-testid="input-start-time" />
                           </FormControl>
@@ -717,7 +717,7 @@ export default function SchedulePage() {
                       name="endTime"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>End Time</FormLabel>
+                          <FormLabel>End Time<span className="text-destructive ml-0.5">*</span></FormLabel>
                           <FormControl>
                             <Input type="time" {...field} data-testid="input-end-time" />
                           </FormControl>

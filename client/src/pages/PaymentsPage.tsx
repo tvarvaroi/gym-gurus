@@ -299,7 +299,7 @@ export default function PaymentsPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Plan Name</label>
+                <label className="text-sm text-white/60 mb-1 block">Plan Name<span className="text-destructive ml-0.5">*</span></label>
                 <input
                   type="text"
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
@@ -320,7 +320,7 @@ export default function PaymentsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-white/60 mb-1 block">Price ($)</label>
+                  <label className="text-sm text-white/60 mb-1 block">Price ($)<span className="text-destructive ml-0.5">*</span></label>
                   <input
                     type="number"
                     step="0.01"
@@ -332,7 +332,7 @@ export default function PaymentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-white/60 mb-1 block">Billing Interval</label>
+                  <label className="text-sm text-white/60 mb-1 block">Billing Interval<span className="text-destructive ml-0.5">*</span></label>
                   <select
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
                     value={newPlan.interval}
@@ -380,7 +380,7 @@ export default function PaymentsPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Client</label>
+                <label className="text-sm text-white/60 mb-1 block">Client<span className="text-destructive ml-0.5">*</span></label>
                 <select
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
                   value={newPayment.clientId}
@@ -393,7 +393,7 @@ export default function PaymentsPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Amount ($)</label>
+                <label className="text-sm text-white/60 mb-1 block">Amount ($)<span className="text-destructive ml-0.5">*</span></label>
                 <input
                   type="number"
                   step="0.01"

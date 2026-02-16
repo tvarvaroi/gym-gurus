@@ -174,7 +174,7 @@ export function ClientFormModal({ mode, client, trainerId, trigger, open, onOpen
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>Full Name<span className="text-destructive ml-0.5">*</span></FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Enter client's full name" 
@@ -192,7 +192,7 @@ export function ClientFormModal({ mode, client, trainerId, trigger, open, onOpen
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel>Email Address<span className="text-destructive ml-0.5">*</span></FormLabel>
                     <FormControl>
                       <Input 
                         type="email"
@@ -211,7 +211,7 @@ export function ClientFormModal({ mode, client, trainerId, trigger, open, onOpen
                 name="goal"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fitness Goal</FormLabel>
+                    <FormLabel>Fitness Goal<span className="text-destructive ml-0.5">*</span></FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Describe the client's fitness goals and objectives"

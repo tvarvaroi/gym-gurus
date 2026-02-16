@@ -162,7 +162,7 @@ export default function WorkoutFormModal({ mode, workout, trainerId, trigger, op
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Workout Title</FormLabel>
+                    <FormLabel>Workout Title<span className="text-destructive ml-0.5">*</span></FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="e.g., Upper Body Strength" 
@@ -180,7 +180,7 @@ export default function WorkoutFormModal({ mode, workout, trainerId, trigger, op
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Description<span className="text-destructive ml-0.5">*</span></FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Describe the workout plan goals and focus areas"
@@ -199,7 +199,7 @@ export default function WorkoutFormModal({ mode, workout, trainerId, trigger, op
                   name="duration"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Duration (minutes)</FormLabel>
+                      <FormLabel>Duration (minutes)<span className="text-destructive ml-0.5">*</span></FormLabel>
                       <FormControl>
                         <Input 
                           type="number"
@@ -219,7 +219,7 @@ export default function WorkoutFormModal({ mode, workout, trainerId, trigger, op
                   name="difficulty"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Difficulty</FormLabel>
+                      <FormLabel>Difficulty<span className="text-destructive ml-0.5">*</span></FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value} data-testid="select-workout-difficulty">
                         <FormControl>
                           <SelectTrigger>
@@ -243,7 +243,7 @@ export default function WorkoutFormModal({ mode, workout, trainerId, trigger, op
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
+                    <FormLabel>Category<span className="text-destructive ml-0.5">*</span></FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="e.g., Strength, Cardio, Flexibility"

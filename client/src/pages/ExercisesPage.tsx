@@ -236,7 +236,7 @@ const ExercisesPage = memo(() => {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Exercise Name</FormLabel>
+                      <FormLabel>Exercise Name<span className="text-destructive ml-0.5">*</span></FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., Barbell Squat" {...field} data-testid="input-exercise-name" />
                       </FormControl>
@@ -250,7 +250,7 @@ const ExercisesPage = memo(() => {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Description<span className="text-destructive ml-0.5">*</span></FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Brief description of the exercise" 
@@ -269,7 +269,7 @@ const ExercisesPage = memo(() => {
                     name="category"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Category</FormLabel>
+                        <FormLabel>Category<span className="text-destructive ml-0.5">*</span></FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., Strength, Cardio" {...field} data-testid="input-category" />
                         </FormControl>
@@ -283,7 +283,7 @@ const ExercisesPage = memo(() => {
                     name="difficulty"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Difficulty</FormLabel>
+                        <FormLabel>Difficulty<span className="text-destructive ml-0.5">*</span></FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-difficulty">
@@ -307,7 +307,7 @@ const ExercisesPage = memo(() => {
                   name="muscleGroups"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Muscle Groups</FormLabel>
+                      <FormLabel>Muscle Groups<span className="text-destructive ml-0.5">*</span></FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="e.g., Chest, Triceps, Shoulders (comma-separated)" 
@@ -343,7 +343,7 @@ const ExercisesPage = memo(() => {
                   name="instructions"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Instructions</FormLabel>
+                      <FormLabel>Instructions<span className="text-destructive ml-0.5">*</span></FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Enter step-by-step instructions (one per line)" 

@@ -143,7 +143,7 @@ export default function ProgressFormModal({ open, onClose, clientId }: ProgressF
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Progress Type</FormLabel>
+                  <FormLabel>Progress Type<span className="text-destructive ml-0.5">*</span></FormLabel>
                   <Select 
                     onValueChange={(value) => {
                       field.onChange(value);
@@ -176,7 +176,7 @@ export default function ProgressFormModal({ open, onClose, clientId }: ProgressF
                 name="value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Value</FormLabel>
+                    <FormLabel>Value<span className="text-destructive ml-0.5">*</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter value"
@@ -194,7 +194,7 @@ export default function ProgressFormModal({ open, onClose, clientId }: ProgressF
                 name="unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Unit</FormLabel>
+                    <FormLabel>Unit<span className="text-destructive ml-0.5">*</span></FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-progress-unit">
