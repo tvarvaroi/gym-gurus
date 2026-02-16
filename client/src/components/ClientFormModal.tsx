@@ -44,6 +44,7 @@ export function ClientFormModal({ mode, client, trainerId, trigger, open, onOpen
   const setDialogOpen = onOpenChange || setIsOpen
 
   const form = useForm<ClientFormData>({
+    mode: "onTouched",
     resolver: zodResolver(clientFormSchema),
     defaultValues: {
       trainerId: trainerId,

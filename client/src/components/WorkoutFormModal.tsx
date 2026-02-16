@@ -48,6 +48,7 @@ export default function WorkoutFormModal({ mode, workout, trainerId, trigger, op
   const setDialogOpen = onOpenChange || setIsOpen;
 
   const form = useForm<WorkoutFormData>({
+    mode: "onTouched",
     resolver: zodResolver(workoutFormSchema),
     defaultValues: {
       trainerId: trainerId,

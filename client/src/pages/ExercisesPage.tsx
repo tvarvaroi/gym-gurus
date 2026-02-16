@@ -106,6 +106,7 @@ const ExercisesPage = memo(() => {
     Array.from(new Set(exercises.flatMap(e => e.muscleGroups))), [exercises]);
 
   const form = useForm<ExerciseFormData>({
+    mode: "onTouched",
     resolver: zodResolver(exerciseFormSchema),
     defaultValues: {
       name: "",

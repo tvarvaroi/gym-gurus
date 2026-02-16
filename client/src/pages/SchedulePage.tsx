@@ -180,6 +180,7 @@ export default function SchedulePage() {
   }, [appointments, workoutAssignments, isClient]);
 
   const form = useForm<AppointmentFormData>({
+    mode: "onTouched",
     resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
       clientId: "",

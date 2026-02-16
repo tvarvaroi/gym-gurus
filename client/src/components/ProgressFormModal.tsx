@@ -68,6 +68,7 @@ export default function ProgressFormModal({ open, onClose, clientId }: ProgressF
   const { toast } = useToast();
 
   const form = useForm<ProgressFormData>({
+    mode: "onTouched",
     resolver: zodResolver(progressFormSchema),
     defaultValues: {
       clientId: clientId || "",
