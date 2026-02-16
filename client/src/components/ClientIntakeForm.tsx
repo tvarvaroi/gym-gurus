@@ -136,15 +136,28 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
   const hasParqConcerns = PAR_Q_QUESTIONS.some(q => formData[q.key]);
 
   // Form validation - ensure required fields are filled
+  const isStepValid = (stepIndex: number) => {
+    switch (stepIndex) {
+      case 0: // PAR-Q — all boolean, always valid (users may answer "No" to all)
+        return true;
+      case 1: // Fitness Background — experience level required
+        return formData.fitnessExperience !== '';
+      case 2: // Goals — primary goal required
+        return formData.primaryGoal !== '';
+      case 3: // Emergency Contact & Consent
+        return (
+          formData.emergencyContactName.trim() !== '' &&
+          formData.emergencyContactPhone.trim() !== '' &&
+          formData.emergencyContactRelation.trim() !== '' &&
+          formData.consentSigned
+        );
+      default:
+        return true;
+    }
+  };
+
   const isFormValid = () => {
-    return (
-      formData.fitnessExperience !== '' &&
-      formData.primaryGoal !== '' &&
-      formData.emergencyContactName.trim() !== '' &&
-      formData.emergencyContactPhone.trim() !== '' &&
-      formData.emergencyContactRelation.trim() !== '' &&
-      formData.consentSigned
-    );
+    return isStepValid(0) && isStepValid(1) && isStepValid(2) && isStepValid(3);
   };
 
   const steps = [
@@ -533,6 +546,7 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
             <Button
               size="sm"
               onClick={() => setStep(step + 1)}
+              disabled={!isStepValid(step)}
             >
               Next
             </Button>
