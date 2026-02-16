@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Activity, Timer, TrendingUp, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 type TestMethod = 'cooper' | 'rockport' | 'beep' | 'manual';
 
@@ -240,6 +241,13 @@ export function VO2MaxCalculator() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      <Breadcrumbs
+        showHome={false}
+        items={[
+          { label: 'All Calculators', href: '/calculators' },
+          { label: 'VO2 Max Calculator' },
+        ]}
+      />
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-primary/10 rounded-xl">

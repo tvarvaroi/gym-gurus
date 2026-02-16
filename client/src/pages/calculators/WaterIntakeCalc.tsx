@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Droplets, Scale, Activity, Sun, ThermometerSun, Coffee, Beer, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 type WeightUnit = 'kg' | 'lbs';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'athlete';
@@ -102,6 +103,13 @@ export function WaterIntakeCalculator() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      <Breadcrumbs
+        showHome={false}
+        items={[
+          { label: 'All Calculators', href: '/calculators' },
+          { label: 'Water Intake Calculator' },
+        ]}
+      />
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-cyan-500/10 rounded-xl">

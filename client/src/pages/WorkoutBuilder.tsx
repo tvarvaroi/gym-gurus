@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2, Search, Dumbbell, ChevronUp, ChevronDown, Link2, Unlink } from "lucide-react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 
@@ -307,22 +308,12 @@ export default function WorkoutBuilder() {
     >
       {/* Header - Premium */}
       <div className="flex flex-col gap-6">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1, duration: 0.5 }}
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation('/workouts')}
-            data-testid="button-back-to-workouts"
-            className="hover:bg-primary/5 hover:text-primary transition-colors duration-300"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Workouts
-          </Button>
-        </motion.div>
+        <Breadcrumbs
+          items={[
+            { label: 'Workout Plans', href: '/workouts' },
+            { label: workout.title },
+          ]}
+        />
 
         <motion.div
           className="space-y-3"

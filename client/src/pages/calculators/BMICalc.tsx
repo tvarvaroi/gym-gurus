@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Scale, Ruler, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 type BMICategory = 'underweight' | 'normal' | 'overweight' | 'obese_1' | 'obese_2' | 'obese_3';
 
@@ -120,6 +121,13 @@ export function BMICalculator() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      <Breadcrumbs
+        showHome={false}
+        items={[
+          { label: 'All Calculators', href: '/calculators' },
+          { label: 'BMI Calculator' },
+        ]}
+      />
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-primary/10 rounded-xl">

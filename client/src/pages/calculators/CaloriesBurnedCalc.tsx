@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Flame, Clock, Activity, Scale, Dumbbell, Bike, PersonStanding, Heart } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 // MET values for common exercises (Metabolic Equivalent of Task)
 const EXERCISE_CATEGORIES = {
@@ -139,6 +140,13 @@ export function CaloriesBurnedCalculator() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      <Breadcrumbs
+        showHome={false}
+        items={[
+          { label: 'All Calculators', href: '/calculators' },
+          { label: 'Calories Burned Calculator' },
+        ]}
+      />
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-orange-500/10 rounded-xl">

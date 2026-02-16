@@ -3,7 +3,7 @@ import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, Mail, Target, Calendar, TrendingUp,
+  Mail, Target, Calendar, TrendingUp,
   Dumbbell, Plus, Edit2, UserCircle,
   Activity, Weight, CheckCircle2, Clock, Send, CalendarPlus,
   X, TrendingDown, Percent, BarChart3, Flame, Heart, Apple, Beef, ClipboardCheck
@@ -33,6 +33,7 @@ import {
 import type { Client as ClientSchema } from "@shared/schema";
 import ClientIntakeForm from "@/components/ClientIntakeForm";
 import { QueryErrorState } from "@/components/query-states/QueryErrorState";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 // API response type - dates are serialized as strings
 interface ClientAPI {
@@ -243,17 +244,13 @@ export default function ClientDetailsPage() {
       animate={{ opacity: 1 }}
       className="container mx-auto space-y-6"
     >
-      {/* Header with Back Button */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          onClick={() => setLocation("/clients")}
-          className="gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Clients
-        </Button>
-      </div>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: 'My Clients', href: '/clients' },
+          { label: client?.name || 'Client Details' },
+        ]}
+      />
 
       {/* Client Header Card - Enhanced Glass Design */}
       <motion.div
