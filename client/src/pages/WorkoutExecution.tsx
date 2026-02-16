@@ -89,7 +89,7 @@ export default function WorkoutExecution() {
 
 
   // Fetch workout assignment details
-  const { data: workout, isLoading } = useQuery({
+  const { data: workout, isLoading, error: workoutError } = useQuery({
     queryKey: [`/api/workout-assignments/${workoutId}`],
     queryFn: async () => {
       const response = await fetch(`/api/workout-assignments/${workoutId}`, {
@@ -298,6 +298,24 @@ export default function WorkoutExecution() {
       });
     }
   });
+
+  if (workoutError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0F0F0F] p-4">
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="w-14 h-14 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+            <X className="h-7 w-7 text-destructive" />
+          </div>
+          <h2 className="text-lg font-medium">Failed to load workout</h2>
+          <p className="text-sm text-muted-foreground">{workoutError.message}</p>
+          <Button variant="outline" onClick={() => setLocation('/workouts')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Workouts
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || !session) {
     return (

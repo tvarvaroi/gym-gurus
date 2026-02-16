@@ -14,6 +14,7 @@ import { calculateWorkoutStreak, getStreakMessage, getStreakEmoji } from "@/lib/
 import { calculateAchievements, getNextAchievement, type BadgeCalculationData } from "@/lib/achievements"
 import { AchievementGrid } from "../AchievementBadge"
 import { CelebrationOverlay, useCelebration } from "../CelebrationOverlay"
+import { QueryErrorState } from '@/components/query-states/QueryErrorState'
 
 export default function ClientDashboard() {
   const [, navigate] = useLocation();
@@ -22,7 +23,7 @@ export default function ClientDashboard() {
   const prefersReducedMotion = useReducedMotion();
 
   // Fetch client data
-  const { data: clientData, isLoading: clientDataLoading } = useQuery({
+  const { data: clientData, isLoading: clientDataLoading, error: clientError } = useQuery({
     queryKey: ['/api/client/profile'],
     queryFn: async () => {
       const response = await fetch('/api/client/profile', {
@@ -128,6 +129,10 @@ export default function ClientDashboard() {
       celebrate("100 Workouts!", "You're a champion! 🥇", "trophy");
     }
   }, [streakData.currentStreak, streakData.isStreakActive, completedWorkouts, celebrate]);
+
+  if (clientError) {
+    return <QueryErrorState error={clientError} onRetry={() => window.location.reload()} />;
+  }
 
   return (
     <StaggerContainer className="space-y-8">

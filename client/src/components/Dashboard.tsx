@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Calendar, TrendingUp, Target, Plus, Download, Dumbbell, Award, Zap, TrendingDown, Flame, Star } from "lucide-react"
+import { Users, Calendar, TrendingUp, Target, Plus, Download, Dumbbell, Award, Zap, TrendingDown, Flame, Star, AlertCircle } from "lucide-react"
 import AnimatedButton from "./AnimatedButton"
 import { NewClientButton, ClientFormModal } from "./ClientFormModal"
 import { motion, AnimatePresence } from "framer-motion"
@@ -233,7 +233,7 @@ const Dashboard = memo(() => {
   });
 
   // Fetch real client data for stats with automatic refetching
-  const { data: clients, isLoading: loadingClients } = useQuery({
+  const { data: clients, isLoading: loadingClients, error: clientsError } = useQuery({
     queryKey: ['/api/clients', user?.id, 'noPagination'],
     queryFn: () => fetch(`/api/clients/${user?.id}?noPagination=true`).then(res => res.json()),
     staleTime: 30 * 1000, // Consider data fresh for 30 seconds
@@ -253,7 +253,7 @@ const Dashboard = memo(() => {
   });
 
   // Fetch comprehensive dashboard stats with automatic refetching
-  const { data: dashboardStats, isLoading: loadingStats } = useQuery({
+  const { data: dashboardStats, isLoading: loadingStats, error: statsError } = useQuery({
     queryKey: ['/api/dashboard/stats'],
     queryFn: () => fetch('/api/dashboard/stats').then(res => res.json()),
     staleTime: 10 * 1000, // Fresh for 10 seconds
@@ -466,6 +466,26 @@ const Dashboard = memo(() => {
   // Show loading skeleton while initial data loads
   if (loadingStats || loadingClients) {
     return <DashboardSkeleton />;
+  }
+
+  // Show error state if critical data failed to load
+  if (clientsError || statsError) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="w-14 h-14 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+            <AlertCircle className="h-7 w-7 text-destructive" />
+          </div>
+          <h2 className="text-lg font-medium">Failed to load dashboard</h2>
+          <p className="text-sm text-muted-foreground">
+            {(clientsError || statsError)?.message || 'Unable to fetch dashboard data. Please try again.'}
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

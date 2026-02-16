@@ -12,10 +12,9 @@ const navItems = [
   { label: 'Home', index: 0 },
   { label: 'Features', index: 1 },
   { label: 'About', index: 2 },
-  { label: 'Resources', index: 3 },
-  { label: 'Contact', index: 4 },
-  { label: 'Login', index: 5 },
-  { label: 'Pricing', index: 6 },
+  { label: 'Contact', index: 3 },
+  { label: 'Login', index: 4 },
+  { label: 'Pricing', index: 5 },
 ];
 
 const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => {

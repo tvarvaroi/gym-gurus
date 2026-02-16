@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 import {
   Trophy,
   Star,
@@ -77,7 +78,7 @@ export default function Achievements() {
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
-  const { data: achievements = [], isLoading } = useQuery<Achievement[]>({
+  const { data: achievements = [], isLoading, error } = useQuery<Achievement[]>({
     queryKey: ['/api/gamification/achievements'],
   });
 
@@ -103,6 +104,10 @@ export default function Achievements() {
         </div>
       </div>
     );
+  }
+
+  if (error) {
+    return <QueryErrorState error={error} onRetry={() => window.location.reload()} />;
   }
 
   return (

@@ -9,6 +9,7 @@ import ProgressFormModal from "../components/ProgressFormModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/contexts/UserContext";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 // Import all chart components directly
 import {
   Bar,
@@ -62,7 +63,7 @@ export default function ProgressPage() {
   });
 
   // Fetch clients for trainer only
-  const { data: clients = [], isLoading: loadingClients } = useQuery<Client[]>({
+  const { data: clients = [], isLoading: loadingClients, error: clientsError } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
     enabled: !!user?.id && isTrainer // Only fetch when user is available and is a trainer
   });
@@ -122,6 +123,10 @@ export default function ProgressPage() {
   const progressTypes = Object.keys(groupedProgress);
   // For clients, use their own profile; for trainers, find the selected client from the list
   const selectedClientData = isClient ? clientProfile : (clients || []).find((client: Client) => client.id === selectedClient);
+
+  if (clientsError) {
+    return <QueryErrorState error={clientsError} onRetry={() => window.location.reload()} />;
+  }
 
   return (
     <motion.div

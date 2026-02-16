@@ -42,7 +42,7 @@ const PageCarousel = memo(({ pages }: PageCarouselProps) => {
         nextPage();
       } else if (e.key === 'ArrowLeft') {
         previousPage();
-      } else if (e.key >= '1' && e.key <= '7') {
+      } else if (e.key >= '1' && e.key <= String(totalPages)) {
         const pageIndex = parseInt(e.key) - 1;
         if (pageIndex < totalPages) {
           navigateToPage(pageIndex);
@@ -137,7 +137,7 @@ const PageCarousel = memo(({ pages }: PageCarouselProps) => {
             {/* Tooltip */}
             <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               <div className="glass-strong px-3 py-1 rounded-lg text-xs text-white whitespace-nowrap">
-                {['Home', 'Features', 'About', 'Resources', 'Contact', 'Login', 'Pricing'][index]}
+                {['Home', 'Features', 'About', 'Contact', 'Login', 'Pricing'][index]}
               </div>
             </div>
           </button>

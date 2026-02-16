@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Plus, ArrowLeft, Clock, Target, Users, Play, Trash2, Search, Dumbbell } from "lucide-react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 
 export default function WorkoutBuilder() {
   const params = useParams();
@@ -48,7 +49,7 @@ export default function WorkoutBuilder() {
   });
 
   // Fetch workout details with exercises
-  const { data: workout, isLoading: workoutLoading } = useQuery({
+  const { data: workout, isLoading: workoutLoading, error: workoutError } = useQuery({
     queryKey: ['/api/workouts/detail', workoutId],
     queryFn: () => fetch(`/api/workouts/detail/${workoutId}`).then(res => res.json())
   });
@@ -228,6 +229,10 @@ export default function WorkoutBuilder() {
         </div>
       </div>
     );
+  }
+
+  if (workoutError) {
+    return <QueryErrorState error={workoutError} onRetry={() => window.location.reload()} />;
   }
 
   if (!workout) {

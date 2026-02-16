@@ -5,7 +5,7 @@ import PageCarousel from '@/components/landing/PageCarousel';
 const HeroPage = lazy(() => import('@/components/landing/pages/HeroPage'));
 const FeaturesPage = lazy(() => import('@/components/landing/pages/FeaturesPage'));
 const AboutPage = lazy(() => import('@/components/landing/pages/AboutPage'));
-const ResourcesPage = lazy(() => import('@/components/landing/pages/ResourcesPage'));
+// ResourcesPage removed from carousel — content not yet available
 const ContactPage = lazy(() => import('@/components/landing/pages/ContactPage'));
 const LoginCarouselPage = lazy(() => import('@/components/landing/pages/LoginCarouselPage'));
 const PricingPage = lazy(() => import('@/components/landing/pages/PricingPage'));
@@ -30,9 +30,6 @@ const LandingPage = memo(() => {
     </Suspense>,
     <Suspense key="about" fallback={<PageLoader />}>
       <AboutPage />
-    </Suspense>,
-    <Suspense key="resources" fallback={<PageLoader />}>
-      <ResourcesPage />
     </Suspense>,
     <Suspense key="contact" fallback={<PageLoader />}>
       <ContactPage />

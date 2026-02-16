@@ -19,6 +19,7 @@ import {
   Heart as HeartPulse,
 } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
+import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 
 // Quick Action Card
 function QuickActionCard({
@@ -537,7 +538,7 @@ export function SoloDashboard() {
   const { user } = useUser();
 
   // Fetch dashboard stats
-  const { data: soloStats } = useQuery<any>({
+  const { data: soloStats, error: statsError } = useQuery<any>({
     queryKey: ['/api/solo/stats'],
     retry: false,
     staleTime: 2 * 60 * 1000,
@@ -554,6 +555,10 @@ export function SoloDashboard() {
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
+
+  if (statsError) {
+    return <QueryErrorState error={statsError} onRetry={() => window.location.reload()} />;
+  }
 
   // Calculate stats with fallbacks
   const workoutsThisWeek = soloStats?.workoutsThisWeek || 0;
