@@ -772,7 +772,7 @@ export function WelcomeModal({
 
         {/* Close Button */}
         <div
-          className="absolute right-4 top-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center cursor-pointer transition-colors z-50"
+          className="absolute right-3 top-3 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center cursor-pointer transition-colors z-50"
           onClick={handleDismiss}
         >
           <X className="w-4 h-4 text-white/70" />

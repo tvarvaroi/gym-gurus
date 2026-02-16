@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { Bell, Check, CheckCheck, Trophy, Flame, Zap, Dumbbell, UserPlus, CreditCard, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -62,10 +63,35 @@ function getNotificationColor(type: string) {
   }
 }
 
+function getNotificationRoute(notif: Notification): string | null {
+  switch (notif.type) {
+    case 'workout_assigned':
+      return '/schedule';
+    case 'workout_completed':
+      return '/progress';
+    case 'achievement_unlocked':
+      return '/solo/achievements';
+    case 'level_up':
+    case 'streak_milestone':
+      return '/solo';
+    case 'personal_record':
+      return '/progress';
+    case 'client_joined':
+      return notif.data?.clientId ? `/clients/${notif.data.clientId}` : '/clients';
+    case 'payment_received':
+      return '/payments';
+    case 'session_reminder':
+      return '/schedule';
+    default:
+      return null;
+  }
+}
+
 export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
@@ -178,6 +204,11 @@ export default function NotificationCenter() {
                       onClick={() => {
                         if (!notif.read) {
                           markReadMutation.mutate(notif.id);
+                        }
+                        const route = getNotificationRoute(notif);
+                        if (route) {
+                          setLocation(route);
+                          setIsOpen(false);
                         }
                       }}
                     >

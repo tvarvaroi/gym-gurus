@@ -104,7 +104,7 @@ export function AchievementUnlockModal({
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute -top-2 -right-2 z-20 p-2 bg-background rounded-full shadow-lg hover:bg-muted transition-colors"
+              className="absolute -top-2 -right-2 z-20 p-3 bg-background rounded-full shadow-lg hover:bg-muted transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

@@ -595,7 +595,7 @@ const Dashboard = memo(() => {
           }}
         />
 
-        {/* Luxury animated orbs with sophisticated gradients */}
+        {/* Static gradient orbs (entrance-only, no infinite animations) */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Primary gold/teal orb - top right */}
           <motion.div
@@ -606,17 +606,9 @@ const Dashboard = memo(() => {
                 : 'radial-gradient(circle, rgba(13, 148, 136, 0.35) 0%, rgba(20, 184, 166, 0.15) 50%, transparent 100%)',
               filter: 'blur(40px)',
             }}
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [0.4, 0.7, 0.4],
-              x: [0, 30, 0],
-              y: [0, -20, 0]
-            }}
-            transition={{
-              duration: 8,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: "easeInOut"
-            }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 0.5, scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
           />
 
           {/* Secondary orb - bottom left */}
@@ -628,18 +620,9 @@ const Dashboard = memo(() => {
                 : 'radial-gradient(circle, rgba(20, 184, 166, 0.3) 0%, rgba(13, 148, 136, 0.1) 50%, transparent 100%)',
               filter: 'blur(50px)',
             }}
-            animate={{
-              scale: [1, 1.4, 1],
-              opacity: [0.3, 0.6, 0.3],
-              x: [0, -30, 0],
-              y: [0, 20, 0]
-            }}
-            transition={{
-              duration: 9,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: "easeInOut",
-              delay: 1
-            }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 0.4, scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
           />
 
           {/* Center accent orb */}
@@ -651,56 +634,9 @@ const Dashboard = memo(() => {
                 : 'radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, rgba(13, 148, 136, 0.08) 50%, transparent 100%)',
               filter: 'blur(45px)',
             }}
-            animate={{
-              scale: [1, 1.25, 1],
-              opacity: [0.2, 0.4, 0.2],
-              rotate: [0, 180, 360]
-            }}
-            transition={{
-              duration: 10,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: "easeInOut",
-              delay: 0.5
-            }}
-          />
-
-          {/* Additional accent orbs for depth */}
-          <motion.div
-            className="absolute top-1/4 left-1/4 w-40 h-40 rounded-full blur-2xl"
-            style={{
-              background: 'radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%)',
-            }}
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.3, 0.5, 0.3],
-              x: [0, 20, 0],
-              y: [0, -15, 0]
-            }}
-            transition={{
-              duration: 7,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: "easeInOut",
-              delay: 2
-            }}
-          />
-
-          <motion.div
-            className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full blur-2xl"
-            style={{
-              background: 'radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, transparent 70%)',
-            }}
-            animate={{
-              scale: [1, 1.15, 1],
-              opacity: [0.2, 0.4, 0.2],
-              x: [0, -15, 0],
-              y: [0, 15, 0]
-            }}
-            transition={{
-              duration: 6,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: "easeInOut",
-              delay: 1.5
-            }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 0.3, scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut", delay: 0.6 }}
           />
         </div>
 
@@ -970,7 +906,7 @@ const Dashboard = memo(() => {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl font-light tracking-tight">Quick Actions</CardTitle>
                 <Badge variant="secondary" className="font-light text-xs bg-primary/10 text-primary border-primary/20">
-                  <Zap className="h-3 w-3 mr-1 animate-pulse" />
+                  <Zap className="h-3 w-3 mr-1" />
                   Shortcuts
                 </Badge>
               </div>
@@ -1049,7 +985,7 @@ const Dashboard = memo(() => {
             <CardContent className="p-4 text-center space-y-2">
               <div className="flex justify-center">
                 <div className="relative">
-                  <Flame className="h-12 w-12 text-orange-500 animate-pulse" />
+                  <Flame className="h-12 w-12 text-orange-500" />
                   <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                     {currentStreak}
                   </div>

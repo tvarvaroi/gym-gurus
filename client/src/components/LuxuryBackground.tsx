@@ -5,10 +5,7 @@
 
 import { motion } from 'framer-motion';
 import { useUser } from '@/contexts/UserContext';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
-
 export function LuxuryBackground({ children, variant = 'default' }: { children: React.ReactNode; variant?: 'default' | 'subtle' }) {
-  const prefersReducedMotion = useReducedMotion();
   const { isClient } = useUser();
 
   // Role-specific colors using CSS variables
@@ -35,7 +32,7 @@ export function LuxuryBackground({ children, variant = 'default' }: { children: 
         }}
       />
 
-      {/* Animated Role-Specific Ambient Glows */}
+      {/* Role-Specific Ambient Glows (entrance-only, no infinite animations) */}
       {variant === 'default' && (
         <>
           <motion.div
@@ -46,15 +43,9 @@ export function LuxuryBackground({ children, variant = 'default' }: { children: 
               left: '10%',
               filter: 'blur(120px)',
             }}
-            animate={{
-              opacity: [0.3, 0.5, 0.3],
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              duration: 10,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: "easeInOut"
-            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            transition={{ duration: 2, ease: "easeOut" }}
           />
           <motion.div
             className="fixed w-[600px] h-[600px] rounded-full pointer-events-none -z-40"
@@ -64,16 +55,9 @@ export function LuxuryBackground({ children, variant = 'default' }: { children: 
               right: '10%',
               filter: 'blur(120px)',
             }}
-            animate={{
-              opacity: [0.3, 0.5, 0.3],
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              duration: 12,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: "easeInOut",
-              delay: 1,
-            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
           />
         </>
       )}
@@ -87,34 +71,26 @@ export function LuxuryBackground({ children, variant = 'default' }: { children: 
         }}
       />
 
-      {/* Floating Luxury Particles */}
-      {variant === 'default' && [...Array(12)].map((_, i) => (
+      {/* Static accent dots (replaced 12 infinite particle animations) */}
+      {variant === 'default' && [...Array(6)].map((_, i) => (
         <motion.div
           key={i}
           className="fixed rounded-full pointer-events-none -z-30"
           style={{
-            width: Math.random() > 0.7 ? '1.5px' : '1px',
-            height: Math.random() > 0.7 ? '1.5px' : '1px',
+            width: '1px',
+            height: '1px',
             background: i % 2 === 0
               ? `linear-gradient(135deg, ${roleColors.primary}, ${roleColors.secondary})`
               : 'linear-gradient(135deg, hsl(var(--achievement-silver)), hsl(0 0% 100%))',
             boxShadow: i % 2 === 0
               ? `0 0 8px ${roleColors.glow}`
               : '0 0 5px hsl(var(--achievement-silver) / 0.3)',
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
+            left: `${15 + i * 14}%`,
+            top: `${10 + i * 15}%`,
           }}
-          animate={{
-            y: [0, -120, 0],
-            opacity: [0, 0.5, 0],
-            scale: [0, 1.5, 0],
-          }}
-          transition={{
-            duration: 8 + Math.random() * 4,
-            repeat: prefersReducedMotion ? 0 : Infinity,
-            delay: Math.random() * 8,
-            ease: "easeInOut"
-          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.3 }}
+          transition={{ duration: 1.5, delay: i * 0.2 }}
         />
       ))}
 
