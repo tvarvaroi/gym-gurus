@@ -13,6 +13,7 @@ import { useUser } from "@/contexts/UserContext"
 import { useReducedMotion } from "@/hooks/use-reduced-motion"
 import { calculateWorkoutStreak, getStreakMessage, getStreakEmoji } from "@/lib/streakCalculations"
 import { calculateAchievements, getNextAchievement, type BadgeCalculationData } from "@/lib/achievements"
+import { getRankForLevel } from "@/lib/constants/xpRewards"
 import { AchievementGrid } from "../AchievementBadge"
 import { CelebrationOverlay, useCelebration } from "../CelebrationOverlay"
 import { QueryErrorState } from '@/components/query-states/QueryErrorState'
@@ -495,12 +496,15 @@ export default function ClientDashboard() {
                     />
                   </div>
                 </div>
-                {gamification.rankGenZ && gamification.rankGenZ !== 'NPC' && (
-                  <div className="mt-3 flex items-center justify-center gap-2">
-                    <Zap className="h-3.5 w-3.5 text-cyan-500" />
-                    <span className="text-xs font-light text-muted-foreground/80">Rank: <span className="text-cyan-500">{gamification.rankGenZ}</span></span>
-                  </div>
-                )}
+                {(gamification.currentLevel || 1) > 1 && (() => {
+                  const rank = getRankForLevel(gamification.currentLevel || 1);
+                  return (
+                    <div className="mt-3 flex items-center justify-center gap-2">
+                      <Zap className="h-3.5 w-3.5 text-cyan-500" />
+                      <span className="text-xs font-light text-muted-foreground/80">Rank: <span className="text-cyan-500">{rank.emoji} {rank.name}</span></span>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </div>
           </Card>

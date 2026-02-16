@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
+import { getRankForLevel } from '@/lib/constants/xpRewards';
 import { User as UserIcon } from 'lucide-react';
 
 // Quick Action Card
@@ -218,28 +219,15 @@ function GamificationCard() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const currentLevel = gamification?.currentLevel || 1;
+  const currentRank = getRankForLevel(currentLevel);
   const stats = {
-    level: gamification?.currentLevel || 1,
+    level: currentLevel,
     xp: gamification?.totalXp || 0,
     xpToNext: gamification?.xpToNextLevel || 50,
     streak: gamification?.currentStreakDays || 0,
-    rank: gamification?.rankGenZ || 'NPC',
-    rankEmoji:
-      gamification?.rankGenZ === 'GOATED'
-        ? '🐐'
-        : gamification?.rankGenZ === 'No Cap'
-          ? '🧢'
-          : gamification?.rankGenZ === 'Bussin'
-            ? '💯'
-            : gamification?.rankGenZ === 'Fire'
-              ? '🔥'
-              : gamification?.rankGenZ === 'Slay'
-                ? '💅'
-                : gamification?.rankGenZ === 'Valid'
-                  ? '✓'
-                  : gamification?.rankGenZ === 'Mid'
-                    ? '😐'
-                    : '🤖',
+    rank: currentRank.name,
+    rankEmoji: currentRank.emoji,
   };
 
   const xpProgress = stats.xpToNext > 0 ? (stats.xp / (stats.xp + stats.xpToNext)) * 100 : 0;
