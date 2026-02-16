@@ -630,6 +630,11 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   // User is authenticated, show the main app
   if (user) {
+    // Redirect solo users to onboarding if not completed
+    const u = user as any;
+    if (u.role === 'solo' && !u.onboardingCompleted && !window.location.pathname.startsWith('/solo/onboarding')) {
+      return <Redirect to="/solo/onboarding" />;
+    }
     return children;
   }
 

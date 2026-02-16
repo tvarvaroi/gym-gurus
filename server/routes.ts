@@ -30,6 +30,8 @@ import {
   workouts,
   workoutExercises,
   exercises,
+  users,
+  userFitnessProfile,
 } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { ZodError } from 'zod';
@@ -188,6 +190,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Auth error:', error);
       res.status(500).json({ message: 'Failed to fetch user' });
+    }
+  });
+
+  // Solo User Onboarding - Save fitness profile
+  app.post('/api/users/onboarding', secureAuth, writeRateLimit, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as any).id as string;
+      const { primaryGoal, experienceLevel, workoutEnvironment, availableEquipment, workoutFrequencyPerWeek } = req.body;
+
+      if (!primaryGoal || !experienceLevel || !workoutEnvironment || !availableEquipment || !workoutFrequencyPerWeek) {
+        return res.status(400).json({ error: 'All onboarding fields are required' });
+      }
+
+      const database = await getDb();
+
+      // Upsert fitness profile
+      const existing = await database
+        .select()
+        .from(userFitnessProfile)
+        .where(eq(userFitnessProfile.userId, userId))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await database
+          .update(userFitnessProfile)
+          .set({
+            primaryGoal,
+            experienceLevel,
+            workoutEnvironment,
+            availableEquipment,
+            workoutFrequencyPerWeek,
+            updatedAt: new Date(),
+          })
+          .where(eq(userFitnessProfile.userId, userId));
+      } else {
+        await database
+          .insert(userFitnessProfile)
+          .values({
+            userId,
+            primaryGoal,
+            experienceLevel,
+            workoutEnvironment,
+            availableEquipment,
+            workoutFrequencyPerWeek,
+          });
+      }
+
+      // Mark onboarding as completed on user record
+      await database
+        .update(users)
+        .set({ onboardingCompleted: true })
+        .where(eq(users.id, userId));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error saving onboarding data:', error);
+      res.status(500).json({ error: 'Failed to save onboarding data' });
     }
   });
 

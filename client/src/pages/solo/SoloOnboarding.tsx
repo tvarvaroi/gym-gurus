@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -111,6 +111,7 @@ interface OnboardingData {
 export function SoloOnboarding() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
     primaryGoal: '',
@@ -133,7 +134,9 @@ export function SoloOnboarding() {
       return response.json();
     },
     onSuccess: () => {
-      navigate('/dashboard');
+      // Invalidate user query so AuthWrapper sees onboardingCompleted: true
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      navigate('/solo');
     },
     onError: (error: any) => {
       toast({
