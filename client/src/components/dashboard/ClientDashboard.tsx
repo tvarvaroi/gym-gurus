@@ -2,12 +2,13 @@ import { useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, TrendingUp, Activity, Target, Dumbbell, Award, Flame } from "lucide-react"
+import { Calendar, TrendingUp, Activity, Target, Dumbbell, Award, Flame, Trophy, Zap } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { motion } from "framer-motion"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation } from "@tanstack/react-query"
 import { StaggerContainer, StaggerItem } from "@/components/AnimationComponents"
 import { useLocation } from "wouter"
+import { apiRequest } from "@/lib/queryClient"
 import { useUser } from "@/contexts/UserContext"
 import { useReducedMotion } from "@/hooks/use-reduced-motion"
 import { calculateWorkoutStreak, getStreakMessage, getStreakEmoji } from "@/lib/streakCalculations"
@@ -72,6 +73,24 @@ export default function ClientDashboard() {
     },
     enabled: !!clientData?.id,
   });
+
+  // Fetch gamification profile (XP, Level, Rank)
+  const { data: gamification, isLoading: gamificationLoading } = useQuery<any>({
+    queryKey: ['/api/gamification/profile'],
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Auto-initialize gamification if profile doesn't exist
+  const initGamification = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/gamification/initialize'),
+  });
+
+  useEffect(() => {
+    if (!gamificationLoading && !gamification && !initGamification.isPending) {
+      initGamification.mutate();
+    }
+  }, [gamificationLoading, gamification]);
 
   const upcomingSessions = clientSessions?.filter((session: any) =>
     new Date(session.scheduledAt) > new Date()
@@ -423,6 +442,70 @@ export default function ClientDashboard() {
           </motion.div>
         </StaggerItem>
       </div>
+
+      {/* XP & Level Card */}
+      {gamification && (
+        <StaggerItem>
+          <Card className="glass-strong shadow-premium border border-cyan-500/20 overflow-hidden">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-teal-500/5 to-cyan-500/5" />
+              <CardContent className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-light text-lg flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    <span className="bg-gradient-to-r from-cyan-500 via-teal-500 to-cyan-400 bg-clip-text text-transparent">
+                      Your Level
+                    </span>
+                  </h3>
+                  <span className="text-2xl">{
+                    gamification.currentLevel >= 75 ? '💎' :
+                    gamification.currentLevel >= 50 ? '👑' :
+                    gamification.currentLevel >= 30 ? '🔥' :
+                    gamification.currentLevel >= 10 ? '⭐' : '🌱'
+                  }</span>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center">
+                    <p className="text-3xl font-extralight text-cyan-500">{gamification.currentLevel || 1}</p>
+                    <p className="text-xs text-muted-foreground/70 font-light">Level</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-3xl font-extralight text-teal-500">{gamification.totalXp || 0}</p>
+                    <p className="text-xs text-muted-foreground/70 font-light">Total XP</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-3xl font-extralight text-cyan-400">{gamification.totalWorkoutsCompleted || 0}</p>
+                    <p className="text-xs text-muted-foreground/70 font-light">Workouts</p>
+                  </div>
+                </div>
+                {/* XP Progress Bar */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-muted-foreground/70 font-light">XP to next level</span>
+                    <span className="font-light text-cyan-500">
+                      {gamification.xpToNextLevel || 0} XP needed
+                    </span>
+                  </div>
+                  <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${gamification.xpToNextLevel > 0 ? Math.min(((gamification.totalXp || 0) / ((gamification.totalXp || 0) + (gamification.xpToNextLevel || 50))) * 100, 100) : 0}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+                {gamification.rankGenZ && gamification.rankGenZ !== 'NPC' && (
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    <Zap className="h-3.5 w-3.5 text-cyan-500" />
+                    <span className="text-xs font-light text-muted-foreground/80">Rank: <span className="text-cyan-500">{gamification.rankGenZ}</span></span>
+                  </div>
+                )}
+              </CardContent>
+            </div>
+          </Card>
+        </StaggerItem>
+      )}
 
       {/* Achievements Section */}
       {!workoutsLoading && (
