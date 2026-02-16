@@ -120,7 +120,7 @@ const PageCarousel = memo(({ pages }: PageCarouselProps) => {
           <button
             key={index}
             onClick={() => navigateToPage(index)}
-            className="group relative"
+            className="group relative p-4"
             aria-label={`Go to page ${index + 1}`}
           >
             <motion.div
@@ -131,7 +131,7 @@ const PageCarousel = memo(({ pages }: PageCarouselProps) => {
                   : 'rgba(255, 255, 255, 0.3)'
               }}
               transition={{ duration: 0.3 }}
-              className="w-2.5 h-2.5 rounded-full cursor-pointer"
+              className="w-3 h-3 rounded-full cursor-pointer"
             />
 
             {/* Tooltip */}

@@ -1,24 +1,27 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Target, Users, Zap, Shield, Crown } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 // Luxury shimmer particle component - optimized
 const ShimmerParticle = ({
   delay,
   variant = 'blue',
+  prefersReducedMotion = false,
 }: {
   delay: number;
   variant?: 'blue' | 'emerald';
+  prefersReducedMotion?: boolean;
 }) => (
   <motion.div
     className="absolute w-0.5 h-0.5 rounded-full"
     style={{
       background:
         variant === 'blue'
-          ? 'linear-gradient(135deg, #c9a855, #e5e4e2, #c9a855)'
-          : 'linear-gradient(135deg, #0d9488, #e5e4e2, #0d9488)',
+          ? 'linear-gradient(135deg, hsl(var(--color-guru)), #e5e4e2, hsl(var(--color-guru)))'
+          : 'linear-gradient(135deg, hsl(var(--color-disciple)), #e5e4e2, hsl(var(--color-disciple)))',
       boxShadow:
-        variant === 'blue' ? '0 0 8px rgba(201, 168, 85, 0.5)' : '0 0 8px rgba(13, 148, 136, 0.5)',
+        variant === 'blue' ? '0 0 8px hsl(var(--color-guru) / 0.5)' : '0 0 8px hsl(var(--color-disciple) / 0.5)',
       willChange: 'transform, opacity',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
@@ -30,7 +33,7 @@ const ShimmerParticle = ({
     }}
     transition={{
       duration: 2.5,
-      repeat: Infinity,
+      repeat: prefersReducedMotion ? 0 : Infinity,
       delay,
       ease: 'easeOut',
     }}
@@ -38,6 +41,7 @@ const ShimmerParticle = ({
 );
 
 const AboutPage = memo(() => {
+  const prefersReducedMotion = useReducedMotion();
   const values = [
     {
       icon: <Target className="w-7 h-7" />,
@@ -71,7 +75,7 @@ const AboutPage = memo(() => {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(201, 168, 85, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, hsl(var(--color-guru) / 0.08) 0%, transparent 70%)',
           top: '10%',
           right: '5%',
           filter: 'blur(80px)',
@@ -82,14 +86,14 @@ const AboutPage = memo(() => {
         }}
         transition={{
           duration: 6,
-          repeat: Infinity,
+          repeat: prefersReducedMotion ? 0 : Infinity,
           ease: 'easeInOut',
         }}
       />
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
           bottom: '10%',
           left: '5%',
           filter: 'blur(80px)',
@@ -100,7 +104,7 @@ const AboutPage = memo(() => {
         }}
         transition={{
           duration: 8,
-          repeat: Infinity,
+          repeat: prefersReducedMotion ? 0 : Infinity,
           ease: 'easeInOut',
         }}
       />
@@ -117,17 +121,17 @@ const AboutPage = memo(() => {
             {/* Luxury badge */}
             <motion.div
               animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 4, repeat: Infinity }}
+              transition={{ duration: 4, repeat: prefersReducedMotion ? 0 : Infinity }}
               className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
               style={{
                 background:
-                  'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(13, 148, 136, 0.08))',
-                border: '1px solid rgba(201, 168, 85, 0.2)',
+                  'linear-gradient(135deg, hsl(var(--color-guru) / 0.08), hsl(var(--color-disciple) / 0.08))',
+                border: '1px solid hsl(var(--color-guru) / 0.2)',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <Crown className="w-4 h-4" style={{ color: '#c9a855' }} />
+              <Crown className="w-4 h-4" style={{ color: 'hsl(var(--color-guru))' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
                 OUR MISSION
               </span>
@@ -138,7 +142,7 @@ const AboutPage = memo(() => {
               className="text-4xl md:text-5xl lg:text-6xl font-light pb-3"
               style={{
                 fontFamily: "'Playfair Display', serif",
-                background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -207,9 +211,9 @@ const AboutPage = memo(() => {
                       style={{
                         background:
                           value.variant === 'blue'
-                            ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.15), rgba(184, 147, 94, 0.1))'
-                            : 'linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(15, 118, 110, 0.1))',
-                        color: value.variant === 'blue' ? '#c9a855' : '#0d9488',
+                            ? 'linear-gradient(135deg, hsl(var(--color-guru) / 0.15), hsl(var(--color-guru-secondary) / 0.1))'
+                            : 'linear-gradient(135deg, hsl(var(--color-disciple) / 0.15), hsl(var(--color-disciple-secondary) / 0.1))',
+                        color: value.variant === 'blue' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
                       }}
                       whileHover={{ rotate: 360, scale: 1.1 }}
                       transition={{ duration: 0.6 }}
@@ -219,7 +223,7 @@ const AboutPage = memo(() => {
 
                     {/* Shimmer particle - optimized */}
                     <div className="absolute top-2 right-2">
-                      <ShimmerParticle delay={index * 0.5} variant={value.variant} />
+                      <ShimmerParticle delay={index * 0.5} variant={value.variant} prefersReducedMotion={prefersReducedMotion} />
                     </div>
 
                     {/* Content */}
@@ -230,8 +234,8 @@ const AboutPage = memo(() => {
                           fontFamily: "'Playfair Display', serif",
                           background:
                             value.variant === 'blue'
-                              ? 'linear-gradient(135deg, #ffffff, #c9a855)'
-                              : 'linear-gradient(135deg, #ffffff, #0d9488)',
+                              ? 'linear-gradient(135deg, #ffffff, hsl(var(--color-guru)))'
+                              : 'linear-gradient(135deg, #ffffff, hsl(var(--color-disciple)))',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                           backgroundClip: 'text',
@@ -269,10 +273,10 @@ const AboutPage = memo(() => {
             height: '1.5px',
             background:
               i % 2 === 0
-                ? 'linear-gradient(135deg, #c9a855, #b8935e)'
-                : 'linear-gradient(135deg, #0d9488, #0f766e)',
+                ? 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))'
+                : 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
             boxShadow:
-              i % 2 === 0 ? '0 0 8px rgba(201, 168, 85, 0.4)' : '0 0 8px rgba(13, 148, 136, 0.4)',
+              i % 2 === 0 ? '0 0 8px hsl(var(--color-guru) / 0.4)' : '0 0 8px hsl(var(--color-disciple) / 0.4)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             willChange: 'transform, opacity',
@@ -284,7 +288,7 @@ const AboutPage = memo(() => {
           }}
           transition={{
             duration: 6 + Math.random() * 3,
-            repeat: Infinity,
+            repeat: prefersReducedMotion ? 0 : Infinity,
             delay: Math.random() * 6,
             ease: 'easeInOut',
           }}

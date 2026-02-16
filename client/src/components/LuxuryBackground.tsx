@@ -5,14 +5,25 @@
 
 import { motion } from 'framer-motion';
 import { useUser } from '@/contexts/UserContext';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 export function LuxuryBackground({ children, variant = 'default' }: { children: React.ReactNode; variant?: 'default' | 'subtle' }) {
+  const prefersReducedMotion = useReducedMotion();
   const { isClient } = useUser();
 
-  // Role-specific colors
+  // Role-specific colors using CSS variables
+  // Use static role colors for consistency
   const roleColors = isClient
-    ? { primary: '#0d9488', secondary: '#14b8a6', glow: 'rgba(13, 148, 136, 0.08)' }
-    : { primary: '#c9a855', secondary: '#d4af37', glow: 'rgba(201, 168, 85, 0.08)' };
+    ? {
+        primary: 'hsl(var(--color-disciple))',
+        secondary: 'hsl(var(--color-disciple-secondary))',
+        glow: 'hsl(var(--color-disciple) / 0.08)'
+      }
+    : {
+        primary: 'hsl(var(--color-guru))',
+        secondary: 'hsl(var(--color-guru-secondary))',
+        glow: 'hsl(var(--color-guru) / 0.08)'
+      };
 
   return (
     <div className="relative min-h-screen">
@@ -41,7 +52,7 @@ export function LuxuryBackground({ children, variant = 'default' }: { children: 
             }}
             transition={{
               duration: 10,
-              repeat: Infinity,
+              repeat: prefersReducedMotion ? 0 : Infinity,
               ease: "easeInOut"
             }}
           />
@@ -59,7 +70,7 @@ export function LuxuryBackground({ children, variant = 'default' }: { children: 
             }}
             transition={{
               duration: 12,
-              repeat: Infinity,
+              repeat: prefersReducedMotion ? 0 : Infinity,
               ease: "easeInOut",
               delay: 1,
             }}
@@ -86,10 +97,10 @@ export function LuxuryBackground({ children, variant = 'default' }: { children: 
             height: Math.random() > 0.7 ? '1.5px' : '1px',
             background: i % 2 === 0
               ? `linear-gradient(135deg, ${roleColors.primary}, ${roleColors.secondary})`
-              : 'linear-gradient(135deg, #e5e4e2, #ffffff)',
+              : 'linear-gradient(135deg, hsl(var(--achievement-silver)), hsl(0 0% 100%))',
             boxShadow: i % 2 === 0
-              ? `0 0 8px ${roleColors.primary}40`
-              : '0 0 5px rgba(229, 228, 226, 0.3)',
+              ? `0 0 8px ${roleColors.glow}`
+              : '0 0 5px hsl(var(--achievement-silver) / 0.3)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
           }}
@@ -100,7 +111,7 @@ export function LuxuryBackground({ children, variant = 'default' }: { children: 
           }}
           transition={{
             duration: 8 + Math.random() * 4,
-            repeat: Infinity,
+            repeat: prefersReducedMotion ? 0 : Infinity,
             delay: Math.random() * 8,
             ease: "easeInOut"
           }}

@@ -2,8 +2,10 @@ import { Home, Dumbbell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useUser } from '@/contexts/UserContext';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 export default function NotFound() {
+  const prefersReducedMotion = useReducedMotion();
   const { user } = useUser();
   const homeUrl = user ? '/dashboard' : '/';
 
@@ -18,7 +20,7 @@ export default function NotFound() {
         <motion.div
           className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center"
           animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
         >
           <Dumbbell className="h-10 w-10 text-primary/60" />
         </motion.div>

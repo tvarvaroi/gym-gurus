@@ -58,7 +58,7 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
               className="relative w-12 h-12 rounded-xl p-0.5"
               style={{
                 background:
-                  'linear-gradient(135deg, rgba(201, 168, 85, 0.12), rgba(13, 148, 136, 0.12))',
+                  'linear-gradient(135deg, hsl(var(--color-guru) / 0.12), hsl(var(--color-disciple) / 0.12))',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
               }}
@@ -83,7 +83,7 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                 className="text-xl font-extralight tracking-[0.3em]"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                  background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   letterSpacing: '0.2em',
@@ -95,7 +95,7 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                 className="h-px my-0.5"
                 style={{
                   background:
-                    'linear-gradient(90deg, rgba(201, 168, 85, 0.6), rgba(13, 148, 136, 0.6))',
+                    'linear-gradient(90deg, hsl(var(--color-guru) / 0.6), hsl(var(--color-disciple) / 0.6))',
                 }}
               />
               <p
@@ -125,7 +125,7 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                   color: currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
                   background:
                     currentPage === item.index
-                      ? 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)'
+                      ? 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)'
                       : 'none',
                   backgroundClip: currentPage === item.index ? 'text' : 'unset',
                   WebkitBackgroundClip: currentPage === item.index ? 'text' : 'unset',
@@ -143,7 +143,7 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                     className="absolute -bottom-1 left-0 right-0 h-px rounded-full"
                     style={{
                       background:
-                        'linear-gradient(90deg, rgba(201, 168, 85, 0.6), rgba(13, 148, 136, 0.6))',
+                        'linear-gradient(90deg, hsl(var(--color-guru) / 0.6), hsl(var(--color-disciple) / 0.6))',
                     }}
                     transition={{ duration: 0.3 }}
                   />
@@ -217,11 +217,11 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                       fontFamily: "'Playfair Display', serif",
                       background:
                         currentPage === item.index
-                          ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.12), rgba(13, 148, 136, 0.12))'
+                          ? 'linear-gradient(135deg, hsl(var(--color-guru) / 0.12), hsl(var(--color-disciple) / 0.12))'
                           : 'transparent',
                       border:
                         currentPage === item.index
-                          ? '1px solid rgba(201, 168, 85, 0.2)'
+                          ? '1px solid hsl(var(--color-guru) / 0.2)'
                           : '1px solid transparent',
                     }}
                   >
@@ -231,7 +231,7 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                           currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
                         background:
                           currentPage === item.index
-                            ? 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)'
+                            ? 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)'
                             : 'none',
                         backgroundClip: currentPage === item.index ? 'text' : 'unset',
                         WebkitBackgroundClip: currentPage === item.index ? 'text' : 'unset',

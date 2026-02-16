@@ -14,6 +14,7 @@ import {
   calculateTDEE,
   type ClientBiometrics
 } from "@/lib/biometricCalculations"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface ClientCardProps {
   client: Client
@@ -40,6 +41,7 @@ const ClientCard = memo(function ClientCard({
   status,
   nextSession
 }: ClientCardProps) {
+  const prefersReducedMotion = useReducedMotion()
   const [, setLocation] = useLocation()
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase()
   const [isHovered, setIsHovered] = useState(false)
@@ -146,7 +148,7 @@ const ClientCard = memo(function ClientCard({
                     <motion.div
                       className="absolute inset-0 rounded-full bg-emerald-500"
                       animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                     />
                   )}
                 </motion.div>

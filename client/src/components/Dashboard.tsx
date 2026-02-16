@@ -128,7 +128,12 @@ const Dashboard = memo(() => {
       });
       if (!response.ok) throw new Error('Failed to fetch user');
       return response.json();
-    }
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // If user is a client, render the dedicated ClientDashboard component
@@ -690,7 +695,7 @@ const Dashboard = memo(() => {
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             }}
           >
-            <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#c9a855] to-[#0d9488]" />
+            <div className="w-2 h-2 rounded-full bg-gradient-to-r from-primary to-accent" />
             <span className="text-xs font-medium tracking-wider uppercase" style={{ letterSpacing: '0.15em' }}>
               Elite Trainer
             </span>
@@ -734,7 +739,7 @@ const Dashboard = memo(() => {
                   className="text-sm sm:text-base font-light text-white/90 tracking-widest uppercase"
                   style={{ letterSpacing: '0.2em' }}
                 >
-                  {greeting}, <span className="font-normal bg-gradient-to-r from-[#c9a855] via-white to-[#0d9488] bg-clip-text text-transparent">{user?.firstName || 'Trainer'}</span>
+                  {greeting}, <span className="font-normal bg-gradient-to-r from-primary via-white to-accent bg-clip-text text-transparent">{user?.firstName || 'Trainer'}</span>
                 </motion.p>
                 <div className="h-[1px] w-8 bg-gradient-to-l from-transparent via-white/40 to-white/60" />
               </motion.div>
@@ -754,7 +759,7 @@ const Dashboard = memo(() => {
             >
               <span className="block" style={{ fontFamily: "'Playfair Display', serif" }}>Your</span>
               <span
-                className="block font-light bg-gradient-to-r from-[#c9a855] via-[#e5e4e2] to-[#0d9488] bg-clip-text text-transparent"
+                className="block font-light bg-gradient-to-r from-primary via-muted to-accent bg-clip-text text-transparent"
                 style={{
                   fontFamily: "'Playfair Display', serif",
                   letterSpacing: '0.05em',
@@ -771,11 +776,11 @@ const Dashboard = memo(() => {
               animate={{ opacity: 1, scaleX: 1 }}
               transition={{ delay: 0.7, duration: 0.6 }}
             >
-              <div className="h-[1px] w-16 bg-gradient-to-r from-transparent via-[#c9a855] to-transparent" />
-              <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#c9a855] to-[#0d9488]" style={{
-                boxShadow: '0 0 8px rgba(201, 168, 85, 0.6)',
+              <div className="h-[1px] w-16 bg-gradient-to-r from-transparent via-primary to-transparent" />
+              <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-primary to-accent" style={{
+                boxShadow: '0 0 8px hsl(var(--primary) / 0.6)',
               }} />
-              <div className="h-[1px] w-16 bg-gradient-to-r from-transparent via-[#0d9488] to-transparent" />
+              <div className="h-[1px] w-16 bg-gradient-to-r from-transparent via-accent to-transparent" />
             </motion.div>
 
             <motion.p
@@ -788,7 +793,7 @@ const Dashboard = memo(() => {
                 textShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
               }}
             >
-              You're doing <span className="font-medium bg-gradient-to-r from-[#c9a855] to-[#0d9488] bg-clip-text text-transparent">exceptional</span> work! {dashboardStats?.activeClients || 0} clients trust your expertise this week.
+              You're doing <span className="font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">exceptional</span> work! {dashboardStats?.activeClients || 0} clients trust your expertise this week.
             </motion.p>
           </motion.div>
           {prefersReducedMotion ? (
@@ -1175,7 +1180,7 @@ const Dashboard = memo(() => {
                       contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
                       formatter={(value: any) => [`${value}`, 'Clients']}
                     />
-                    <Line type="monotone" dataKey="clients" stroke="#a855f7" strokeWidth={3} dot={{ fill: '#a855f7', r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="clients" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ fill: 'hsl(var(--primary))', r: 4 }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
                 <div className="mt-4 flex items-center justify-between text-sm">

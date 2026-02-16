@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import ProgressFormModal from "../components/ProgressFormModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/contexts/UserContext";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 // Import all chart components directly
 import {
   Bar,
@@ -42,6 +43,7 @@ interface Client {
 export default function ProgressPage() {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   // Get current user and role from context
   const { user, isLoading: userLoading, isClient, isTrainer } = useUser();
@@ -197,7 +199,7 @@ export default function ProgressPage() {
                   <motion.div
                     className="text-muted-foreground/80 font-light"
                     animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                   >
                     Loading clients...
                   </motion.div>
@@ -245,14 +247,14 @@ export default function ProgressPage() {
               <div className="relative inline-block mb-6">
                 <motion.div
                   animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                 >
                   <Target className="w-16 h-16 text-primary/60 mx-auto" />
                 </motion.div>
                 <motion.div
                   className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-xl"
                   animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                 />
               </div>
               <div className="space-y-2">
@@ -332,8 +334,8 @@ export default function ProgressPage() {
             {progressTypes.map((type, index) => {
               const chartData = groupedProgress[type];
               const trend = calculateTrend(chartData);
-              const chartColor = isClient ? '#06b6d4' : 'hsl(var(--primary))';
-              const chartColorSecondary = isClient ? '#14b8a6' : 'hsl(var(--primary))';
+              const chartColor = 'hsl(var(--primary))';
+              const chartColorSecondary = 'hsl(var(--primary))';
 
               return (
                 <motion.div
@@ -566,7 +568,7 @@ export default function ProgressPage() {
                   <motion.div
                     className="text-center py-12 text-muted-foreground/80 font-light"
                     animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                   >
                     Loading progress data...
                   </motion.div>
@@ -703,14 +705,14 @@ export default function ProgressPage() {
                     <div className="relative inline-block">
                       <motion.div
                         animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                       >
                         <Activity className={`w-16 h-16 ${isClient ? 'text-cyan-500/40' : 'text-primary/40'} mx-auto`} />
                       </motion.div>
                       <motion.div
                         className={`absolute inset-0 rounded-full bg-gradient-to-br ${isClient ? 'from-cyan-500/10' : 'from-primary/10'} to-transparent blur-2xl`}
                         animate={{ opacity: [0.3, 0.6, 0.3] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                       />
                     </div>
                     <div className="space-y-2">

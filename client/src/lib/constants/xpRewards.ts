@@ -75,9 +75,9 @@ export function getXpToNextLevel(totalXp: number): { current: number; required: 
   };
 }
 
-// Gen Z Rank System (NPC -> GOATED)
+// Gen Z Rank System (Newcomer -> GOATED)
 export const GEN_Z_RANKS = [
-  { rank: 'NPC', minLevel: 1, emoji: '🤖', color: 'text-gray-400', description: 'Just spawned into the gym. Time to start your main character arc!' },
+  { rank: 'Newcomer', minLevel: 1, emoji: '🌟', color: 'text-gray-400', description: 'Welcome to the gym! Time to start your fitness journey!' },
   { rank: 'Mid', minLevel: 11, emoji: '😐', color: 'text-gray-500', description: "You're showing up, but let's be real... room for improvement." },
   { rank: 'Valid', minLevel: 26, emoji: '✓', color: 'text-green-500', description: 'Okay, we see you! Your gains are getting noticed.' },
   { rank: 'Slay', minLevel: 46, emoji: '💅', color: 'text-pink-500', description: 'Absolutely slaying it! The gym is your runway.' },

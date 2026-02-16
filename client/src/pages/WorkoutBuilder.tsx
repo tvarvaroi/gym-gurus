@@ -39,7 +39,12 @@ export default function WorkoutBuilder() {
       });
       if (!response.ok) throw new Error('Failed to fetch user');
       return response.json();
-    }
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // Fetch workout details with exercises
@@ -182,7 +187,7 @@ export default function WorkoutBuilder() {
           <p className="text-base font-light text-muted-foreground/80 flex items-center gap-2">
             <motion.span
               animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
             >
               Preparing workout builder...
             </motion.span>
@@ -202,7 +207,7 @@ export default function WorkoutBuilder() {
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
                   animate={{ x: ['-100%', '100%'] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: i * 0.15 }}
+                  transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear", delay: i * 0.15 }}
                 />
               </motion.div>
             ))}
@@ -217,7 +222,7 @@ export default function WorkoutBuilder() {
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
               animate={{ x: ['-100%', '100%'] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
             />
           </motion.div>
         </div>
@@ -239,7 +244,7 @@ export default function WorkoutBuilder() {
           <motion.div
             className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
             animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
           />
         </div>
         <div className="space-y-2 text-center">
@@ -292,7 +297,7 @@ export default function WorkoutBuilder() {
           transition={{ delay: 0.2, duration: 0.5 }}
         >
           <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
-            <span className="font-light bg-gradient-to-r from-[#c9a855] to-[#0d9488] bg-clip-text text-transparent">
+            <span className="font-light bg-gradient-to-r from-[hsl(var(--color-guru))] to-[hsl(var(--color-disciple))] bg-clip-text text-transparent">
               {workout.title}
             </span>
           </h1>
@@ -520,7 +525,7 @@ export default function WorkoutBuilder() {
                     <motion.div
                       className="absolute inset-0 rounded-full bg-primary/20 blur-xl"
                       animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                     />
                   </div>
                   <div className="text-center space-y-2">

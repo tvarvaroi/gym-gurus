@@ -98,7 +98,7 @@ export const slideInFromRight = {
   },
 };
 
-export const pulseGlow = {
+export const pulseGlow = (prefersReducedMotion = false) => ({
   initial: {
     opacity: 0.3,
     scale: 1
@@ -108,20 +108,20 @@ export const pulseGlow = {
     scale: [1, 1.2, 1],
     transition: {
       duration: 6,
-      repeat: Infinity,
+      repeat: prefersReducedMotion ? 0 : Infinity,
       ease: 'easeInOut',
     },
   },
-};
+});
 
-export const floatingAnimation = {
+export const floatingAnimation = (prefersReducedMotion = false) => ({
   initial: { y: 0 },
   animate: {
     y: [-10, 10, -10],
     transition: {
       duration: 6,
-      repeat: Infinity,
+      repeat: prefersReducedMotion ? 0 : Infinity,
       ease: 'easeInOut',
     },
   },
-};
+});

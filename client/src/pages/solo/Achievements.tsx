@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
   Trophy,
   Star,
@@ -74,6 +75,7 @@ const rarityColors: Record<string, { bg: string; border: string; text: string; g
 export default function Achievements() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   const { data: achievements = [], isLoading } = useQuery<Achievement[]>({
     queryKey: ['/api/gamification/achievements'],
@@ -213,7 +215,7 @@ export default function Achievements() {
                             className="absolute inset-0 rounded-xl"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: [0.3, 0.6, 0.3] }}
-                            transition={{ duration: 2, repeat: Infinity }}
+                            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity }}
                             style={{
                               background: `radial-gradient(circle, ${
                                 rarityKey === 'legendary' ? 'rgba(251, 191, 36, 0.3)' :

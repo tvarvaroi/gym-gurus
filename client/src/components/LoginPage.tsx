@@ -7,6 +7,7 @@ import { DiscipleIcon } from '@/components/icons/DiscipleIcon';
 import { RoninIcon } from '@/components/icons/RoninIcon';
 import { getRoleDisplayName, getRoleTagline } from '@/lib/roles';
 import logoImage from '@assets/Sophisticated Logo with Japanese Influences (3)_1757605872884.png';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 type UserRole = 'trainer' | 'client' | 'solo';
 
@@ -14,19 +15,21 @@ type UserRole = 'trainer' | 'client' | 'solo';
 const ShimmerParticle = ({
   delay,
   variant = 'gold',
+  prefersReducedMotion = false,
 }: {
   delay: number;
   variant?: 'gold' | 'teal';
+  prefersReducedMotion?: boolean;
 }) => (
   <motion.div
     className="absolute w-0.5 h-0.5 rounded-full"
     style={{
       background:
         variant === 'gold'
-          ? 'linear-gradient(135deg, #c9a855, #e5e4e2, #c9a855)'
-          : 'linear-gradient(135deg, #0d9488, #e5e4e2, #0d9488)',
+          ? 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--muted)), hsl(var(--color-guru)))'
+          : 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--muted)), hsl(var(--color-disciple)))',
       boxShadow:
-        variant === 'gold' ? '0 0 8px rgba(201, 168, 85, 0.5)' : '0 0 8px rgba(13, 148, 136, 0.5)',
+        variant === 'gold' ? '0 0 8px hsl(var(--color-guru) / 0.5)' : '0 0 8px hsl(var(--color-disciple) / 0.5)',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
     animate={{
@@ -37,7 +40,7 @@ const ShimmerParticle = ({
     }}
     transition={{
       duration: 3,
-      repeat: Infinity,
+      repeat: prefersReducedMotion ? 0 : Infinity,
       delay,
       ease: 'easeOut',
     }}
@@ -104,6 +107,7 @@ const ParallaxCard = ({
 };
 
 export function LoginPage() {
+  const prefersReducedMotion = useReducedMotion();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -181,7 +185,7 @@ export function LoginPage() {
             }}
             transition={{
               duration: 10,
-              repeat: Infinity,
+              repeat: prefersReducedMotion ? 0 : Infinity,
               ease: 'easeInOut',
             }}
           />
@@ -227,7 +231,7 @@ export function LoginPage() {
         <motion.div
           className="absolute w-[700px] h-[700px] rounded-full pointer-events-none z-30"
           style={{
-            background: 'radial-gradient(circle, rgba(201, 168, 85, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, hsl(var(--color-guru) / 0.08) 0%, transparent 70%)',
             top: '15%',
             left: '15%',
             filter: 'blur(140px)',
@@ -237,14 +241,14 @@ export function LoginPage() {
           }}
           transition={{
             duration: 10,
-            repeat: Infinity,
+            repeat: prefersReducedMotion ? 0 : Infinity,
             ease: 'easeInOut',
           }}
         />
         <motion.div
           className="absolute w-[700px] h-[700px] rounded-full pointer-events-none z-30"
           style={{
-            background: 'radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
             bottom: '15%',
             right: '15%',
             filter: 'blur(140px)',
@@ -254,7 +258,7 @@ export function LoginPage() {
           }}
           transition={{
             duration: 12,
-            repeat: Infinity,
+            repeat: prefersReducedMotion ? 0 : Infinity,
             ease: 'easeInOut',
           }}
         />
@@ -265,14 +269,14 @@ export function LoginPage() {
             className="absolute top-0 left-0 w-full h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(201, 168, 85, 0.2), rgba(13, 148, 136, 0.2), transparent)',
+                'linear-gradient(90deg, transparent, hsl(var(--color-guru) / 0.2), hsl(var(--color-disciple) / 0.2), transparent)',
             }}
           />
           <div
             className="absolute bottom-0 left-0 w-full h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(13, 148, 136, 0.2), rgba(201, 168, 85, 0.2), transparent)',
+                'linear-gradient(90deg, transparent, hsl(var(--color-disciple) / 0.2), hsl(var(--color-guru) / 0.2), transparent)',
             }}
           />
         </div>
@@ -294,7 +298,7 @@ export function LoginPage() {
                 className="relative w-18 h-18 lg:w-24 lg:h-24 rounded-2xl p-1"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(201, 168, 85, 0.12), rgba(13, 148, 136, 0.12))',
+                    'linear-gradient(135deg, hsl(var(--color-guru) / 0.12), hsl(var(--color-disciple) / 0.12))',
                   backdropFilter: 'blur(24px)',
                   boxShadow:
                     '0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
@@ -320,7 +324,7 @@ export function LoginPage() {
                   className="text-3xl lg:text-4xl font-extralight tracking-[0.4em] mb-2"
                   style={{
                     fontFamily: "'Playfair Display', serif",
-                    background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                    background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, hsl(var(--muted)) 50%, hsl(var(--color-disciple)) 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     letterSpacing: '0.25em',
@@ -332,14 +336,14 @@ export function LoginPage() {
                   className="h-px my-2"
                   style={{
                     background:
-                      'linear-gradient(90deg, rgba(201, 168, 85, 0.6), rgba(13, 148, 136, 0.6))',
+                      'linear-gradient(90deg, hsl(var(--color-guru) / 0.6), hsl(var(--color-disciple) / 0.6))',
                   }}
                 />
                 <p
                   className="text-xs tracking-[0.4em] font-light"
                   style={{
                     fontFamily: 'Inter, sans-serif',
-                    color: '#999',
+                    color: 'hsl(var(--muted-foreground))',
                     letterSpacing: '0.35em',
                   }}
                 >
@@ -360,18 +364,18 @@ export function LoginPage() {
               {/* Luxury badge */}
               <motion.div
                 animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 4, repeat: Infinity }}
+                transition={{ duration: 4, repeat: prefersReducedMotion ? 0 : Infinity }}
                 className="inline-flex items-center gap-3 px-6 py-3 rounded-full mb-10"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(13, 148, 136, 0.08))',
-                  border: '1px solid rgba(201, 168, 85, 0.2)',
+                    'linear-gradient(135deg, hsl(var(--color-guru) / 0.08), hsl(var(--color-disciple) / 0.08))',
+                  border: '1px solid hsl(var(--color-guru) / 0.2)',
                   backdropFilter: 'blur(24px)',
                   boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
                 }}
               >
-                <Crown className="w-4 h-4" style={{ color: '#c9a855' }} />
-                <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
+                <Crown className="w-4 h-4" style={{ color: 'hsl(var(--color-guru))' }} />
+                <span className="text-sm font-light tracking-wider" style={{ color: 'hsl(var(--border))' }}>
                   PREMIUM EXPERIENCE
                 </span>
               </motion.div>
@@ -382,7 +386,7 @@ export function LoginPage() {
                 style={{
                   fontFamily: "'Playfair Display', serif",
                   background:
-                    'linear-gradient(135deg, #ffffff 0%, #e5e4e2 30%, #c9a855 70%, #0d9488 100%)',
+                    'linear-gradient(135deg, #ffffff 0%, hsl(var(--muted)) 30%, hsl(var(--color-guru)) 70%, hsl(var(--color-disciple)) 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -398,7 +402,7 @@ export function LoginPage() {
                 className="text-lg max-w-lg leading-relaxed font-light"
                 style={{
                   fontFamily: "'Cormorant Garamond', serif",
-                  color: '#b3b3b3',
+                  color: 'hsl(var(--muted-foreground))',
                   letterSpacing: '0.02em',
                   lineHeight: '1.8',
                 }}
@@ -412,7 +416,7 @@ export function LoginPage() {
             <div
               className="grid grid-cols-3 gap-8 max-w-lg pt-10"
               style={{
-                borderTop: '1px solid rgba(201, 168, 85, 0.12)',
+                borderTop: '1px solid hsl(var(--color-guru) / 0.12)',
               }}
             >
               {[
@@ -432,7 +436,7 @@ export function LoginPage() {
                     {/* Dual-tone shimmer particles */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       {[...Array(2)].map((_, j) => (
-                        <ShimmerParticle key={j} delay={i * 0.4 + j * 0.3} variant={stat.variant} />
+                        <ShimmerParticle key={j} delay={i * 0.4 + j * 0.3} variant={stat.variant} prefersReducedMotion={prefersReducedMotion} />
                       ))}
                     </div>
                     <div
@@ -441,8 +445,8 @@ export function LoginPage() {
                         fontFamily: "'Playfair Display', serif",
                         background:
                           stat.variant === 'gold'
-                            ? 'linear-gradient(135deg, #ffffff, #c9a855)'
-                            : 'linear-gradient(135deg, #ffffff, #0d9488)',
+                            ? 'linear-gradient(135deg, #ffffff, hsl(var(--color-guru)))'
+                            : 'linear-gradient(135deg, #ffffff, hsl(var(--color-disciple)))',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                       }}
@@ -452,7 +456,7 @@ export function LoginPage() {
                   </div>
                   <div
                     className="text-xs uppercase tracking-widest font-light"
-                    style={{ color: '#808080', letterSpacing: '0.15em' }}
+                    style={{ color: 'hsl(var(--muted-foreground))', letterSpacing: '0.15em' }}
                   >
                     {stat.label}
                   </div>
@@ -465,9 +469,9 @@ export function LoginPage() {
           <div className="absolute bottom-20 left-20 hidden lg:block">
             <motion.div
               animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
-              transition={{ duration: 5, repeat: Infinity }}
+              transition={{ duration: 5, repeat: prefersReducedMotion ? 0 : Infinity }}
             >
-              <Trophy className="w-14 h-14" style={{ color: 'rgba(201, 168, 85, 0.15)' }} />
+              <Trophy className="w-14 h-14" style={{ color: 'hsl(var(--color-guru) / 0.15)' }} />
             </motion.div>
           </div>
         </div>
@@ -486,7 +490,7 @@ export function LoginPage() {
                 className="text-4xl lg:text-5xl font-light mb-4"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(90deg, #c9a855 0%, #ffffff 50%, #0d9488 100%)',
+                  background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #ffffff 50%, hsl(var(--color-disciple)) 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   letterSpacing: '-0.02em',
@@ -494,7 +498,7 @@ export function LoginPage() {
               >
                 Choose Your Path
               </h3>
-              <p style={{ color: '#999', letterSpacing: '0.05em' }} className="font-light text-sm">
+              <p style={{ color: 'hsl(var(--muted-foreground))', letterSpacing: '0.05em' }} className="font-light text-sm">
                 Select your role to begin your journey
               </p>
             </div>
@@ -512,22 +516,22 @@ export function LoginPage() {
                   style={{
                     background:
                       selectedRole === 'trainer'
-                        ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.10), rgba(184, 147, 94, 0.08))'
+                        ? 'linear-gradient(135deg, hsl(var(--color-guru) / 0.10), hsl(var(--color-guru-secondary) / 0.08))'
                         : 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                     backdropFilter: 'blur(30px)',
                     border:
                       selectedRole === 'trainer'
-                        ? '1px solid rgba(201, 168, 85, 0.35)'
+                        ? '1px solid hsl(var(--color-guru) / 0.35)'
                         : '1px solid rgba(255, 255, 255, 0.08)',
                     boxShadow:
                       selectedRole === 'trainer'
-                        ? '0 25px 50px -12px rgba(201, 168, 85, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                        ? '0 25px 50px -12px hsl(var(--color-guru) / 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                         : '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
                   }}
                   whileHover={{
                     boxShadow:
                       selectedRole === 'trainer'
-                        ? '0 30px 60px -15px rgba(201, 168, 85, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                        ? '0 30px 60px -15px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
                         : '0 30px 60px -15px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
                   }}
                 >
@@ -550,8 +554,8 @@ export function LoginPage() {
                       <div
                         className="w-11 h-11 rounded-full flex items-center justify-center"
                         style={{
-                          background: 'linear-gradient(135deg, #c9a855, #d4af37)',
-                          boxShadow: '0 10px 20px rgba(201, 168, 85, 0.4)',
+                          background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))',
+                          boxShadow: '0 10px 20px hsl(var(--color-guru) / 0.4)',
                         }}
                       >
                         <CheckCircle className="w-6 h-6 text-black" strokeWidth={3} />
@@ -563,9 +567,9 @@ export function LoginPage() {
                   <motion.div
                     className="absolute top-6 left-6 w-16 h-16 rounded-full flex items-center justify-center z-10"
                     style={{
-                      background: 'linear-gradient(135deg, #c9a855, #b8935e)',
+                      background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-accent)))',
                       boxShadow:
-                        '0 12px 30px rgba(201, 168, 85, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+                        '0 12px 30px hsl(var(--color-guru) / 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
                     }}
                     whileHover={{ rotate: 360, scale: 1.15 }}
                     transition={{ duration: 0.7 }}
@@ -591,7 +595,7 @@ export function LoginPage() {
                         className="text-4xl font-light mb-3"
                         style={{
                           fontFamily: "'Playfair Display', serif",
-                          background: 'linear-gradient(135deg, #ffffff, #c9a855)',
+                          background: 'linear-gradient(135deg, #ffffff, hsl(var(--color-guru)))',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                         }}
@@ -600,7 +604,7 @@ export function LoginPage() {
                       </h4>
                       <p
                         className="text-sm leading-relaxed mb-6 font-light"
-                        style={{ color: '#b3b3b3', letterSpacing: '0.01em' }}
+                        style={{ color: 'hsl(var(--muted-foreground))', letterSpacing: '0.01em' }}
                       >
                         {getRoleTagline('trainer')} — Empower, build programs, track progress
                       </p>
@@ -620,13 +624,13 @@ export function LoginPage() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.6 + i * 0.1 }}
                           className="flex items-center gap-3 text-sm"
-                          style={{ color: '#d4d4d4' }}
+                          style={{ color: 'hsl(var(--border))' }}
                         >
                           <div
                             className="w-1.5 h-1.5 rounded-full"
                             style={{
-                              background: 'linear-gradient(135deg, #c9a855, #d4af37)',
-                              boxShadow: '0 0 8px rgba(201, 168, 85, 0.5)',
+                              background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))',
+                              boxShadow: '0 0 8px hsl(var(--color-guru) / 0.5)',
                             }}
                           />
                           <span className="font-light tracking-wide">{feature}</span>
@@ -640,7 +644,7 @@ export function LoginPage() {
                     className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{
                       background:
-                        'radial-gradient(circle at center, rgba(201, 168, 85, 0.06), transparent 70%)',
+                        'radial-gradient(circle at center, hsl(var(--color-guru) / 0.06), transparent 70%)',
                     }}
                   />
                 </motion.div>
@@ -657,22 +661,22 @@ export function LoginPage() {
                   style={{
                     background:
                       selectedRole === 'client'
-                        ? 'linear-gradient(135deg, rgba(13, 148, 136, 0.10), rgba(20, 184, 166, 0.08))'
+                        ? 'linear-gradient(135deg, hsl(var(--color-disciple) / 0.10), hsl(var(--color-disciple-secondary) / 0.08))'
                         : 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                     backdropFilter: 'blur(30px)',
                     border:
                       selectedRole === 'client'
-                        ? '1px solid rgba(13, 148, 136, 0.35)'
+                        ? '1px solid hsl(var(--color-disciple) / 0.35)'
                         : '1px solid rgba(255, 255, 255, 0.08)',
                     boxShadow:
                       selectedRole === 'client'
-                        ? '0 25px 50px -12px rgba(13, 148, 136, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                        ? '0 25px 50px -12px hsl(var(--color-disciple) / 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                         : '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
                   }}
                   whileHover={{
                     boxShadow:
                       selectedRole === 'client'
-                        ? '0 30px 60px -15px rgba(13, 148, 136, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                        ? '0 30px 60px -15px hsl(var(--color-disciple) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
                         : '0 30px 60px -15px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
                   }}
                 >
@@ -695,8 +699,8 @@ export function LoginPage() {
                       <div
                         className="w-11 h-11 rounded-full flex items-center justify-center"
                         style={{
-                          background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
-                          boxShadow: '0 10px 20px rgba(13, 148, 136, 0.4)',
+                          background: 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
+                          boxShadow: '0 10px 20px hsl(var(--color-disciple) / 0.4)',
                         }}
                       >
                         <CheckCircle className="w-6 h-6 text-white" strokeWidth={3} />
@@ -708,9 +712,9 @@ export function LoginPage() {
                   <motion.div
                     className="absolute top-6 left-6 w-16 h-16 rounded-full flex items-center justify-center z-10"
                     style={{
-                      background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
+                      background: 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
                       boxShadow:
-                        '0 12px 30px rgba(13, 148, 136, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+                        '0 12px 30px hsl(var(--color-disciple) / 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
                     }}
                     whileHover={{ rotate: 360, scale: 1.15 }}
                     transition={{ duration: 0.7 }}
@@ -736,7 +740,7 @@ export function LoginPage() {
                         className="text-4xl font-light mb-3"
                         style={{
                           fontFamily: "'Playfair Display', serif",
-                          background: 'linear-gradient(135deg, #ffffff, #0d9488)',
+                          background: 'linear-gradient(135deg, #ffffff, hsl(var(--color-disciple)))',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                         }}
@@ -745,7 +749,7 @@ export function LoginPage() {
                       </h4>
                       <p
                         className="text-sm leading-relaxed mb-6 font-light"
-                        style={{ color: '#b3b3b3', letterSpacing: '0.01em' }}
+                        style={{ color: 'hsl(var(--muted-foreground))', letterSpacing: '0.01em' }}
                       >
                         {getRoleTagline('client')} — Follow programs, track progress
                       </p>
@@ -765,13 +769,13 @@ export function LoginPage() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.6 + i * 0.1 }}
                           className="flex items-center gap-3 text-sm"
-                          style={{ color: '#d4d4d4' }}
+                          style={{ color: 'hsl(var(--border))' }}
                         >
                           <div
                             className="w-1.5 h-1.5 rounded-full"
                             style={{
-                              background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
-                              boxShadow: '0 0 8px rgba(13, 148, 136, 0.5)',
+                              background: 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
+                              boxShadow: '0 0 8px hsl(var(--color-disciple) / 0.5)',
                             }}
                           />
                           <span className="font-light tracking-wide">{feature}</span>
@@ -785,7 +789,7 @@ export function LoginPage() {
                     className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{
                       background:
-                        'radial-gradient(circle at center, rgba(13, 148, 136, 0.06), transparent 70%)',
+                        'radial-gradient(circle at center, hsl(var(--color-disciple) / 0.06), transparent 70%)',
                     }}
                   />
                 </motion.div>
@@ -802,22 +806,22 @@ export function LoginPage() {
                   style={{
                     background:
                       selectedRole === 'solo'
-                        ? 'linear-gradient(135deg, rgba(168, 85, 247, 0.10), rgba(99, 102, 241, 0.08))'
+                        ? 'linear-gradient(135deg, hsl(var(--color-ronin) / 0.10), hsl(var(--color-ronin-secondary) / 0.08))'
                         : 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                     backdropFilter: 'blur(30px)',
                     border:
                       selectedRole === 'solo'
-                        ? '1px solid rgba(168, 85, 247, 0.35)'
+                        ? '1px solid hsl(var(--color-ronin) / 0.35)'
                         : '1px solid rgba(255, 255, 255, 0.08)',
                     boxShadow:
                       selectedRole === 'solo'
-                        ? '0 25px 50px -12px rgba(168, 85, 247, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                        ? '0 25px 50px -12px hsl(var(--color-ronin) / 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                         : '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
                   }}
                   whileHover={{
                     boxShadow:
                       selectedRole === 'solo'
-                        ? '0 30px 60px -15px rgba(168, 85, 247, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                        ? '0 30px 60px -15px hsl(var(--color-ronin) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
                         : '0 30px 60px -15px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
                   }}
                 >
@@ -840,8 +844,8 @@ export function LoginPage() {
                       <div
                         className="w-11 h-11 rounded-full flex items-center justify-center"
                         style={{
-                          background: 'linear-gradient(135deg, #a855f7, #6366f1)',
-                          boxShadow: '0 10px 20px rgba(168, 85, 247, 0.4)',
+                          background: 'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)))',
+                          boxShadow: '0 10px 20px hsl(var(--color-ronin) / 0.4)',
                         }}
                       >
                         <CheckCircle className="w-6 h-6 text-white" strokeWidth={3} />
@@ -853,9 +857,9 @@ export function LoginPage() {
                   <motion.div
                     className="absolute top-6 left-6 w-16 h-16 rounded-full flex items-center justify-center z-10"
                     style={{
-                      background: 'linear-gradient(135deg, #a855f7, #6366f1)',
+                      background: 'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)))',
                       boxShadow:
-                        '0 12px 30px rgba(168, 85, 247, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+                        '0 12px 30px hsl(var(--color-ronin) / 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
                     }}
                     whileHover={{ rotate: 360, scale: 1.15 }}
                     transition={{ duration: 0.7 }}
@@ -881,7 +885,7 @@ export function LoginPage() {
                         className="text-4xl font-light mb-3"
                         style={{
                           fontFamily: "'Playfair Display', serif",
-                          background: 'linear-gradient(135deg, #ffffff, #a855f7)',
+                          background: 'linear-gradient(135deg, #ffffff, hsl(var(--color-ronin)))',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                         }}
@@ -890,7 +894,7 @@ export function LoginPage() {
                       </h4>
                       <p
                         className="text-sm leading-relaxed mb-6 font-light"
-                        style={{ color: '#b3b3b3', letterSpacing: '0.01em' }}
+                        style={{ color: 'hsl(var(--muted-foreground))', letterSpacing: '0.01em' }}
                       >
                         {getRoleTagline('solo')} — Train independently with AI
                       </p>
@@ -910,13 +914,13 @@ export function LoginPage() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.6 + i * 0.1 }}
                           className="flex items-center gap-3 text-sm"
-                          style={{ color: '#d4d4d4' }}
+                          style={{ color: 'hsl(var(--border))' }}
                         >
                           <div
                             className="w-1.5 h-1.5 rounded-full"
                             style={{
-                              background: 'linear-gradient(135deg, #a855f7, #6366f1)',
-                              boxShadow: '0 0 8px rgba(168, 85, 247, 0.5)',
+                              background: 'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)))',
+                              boxShadow: '0 0 8px hsl(var(--color-ronin) / 0.5)',
                             }}
                           />
                           <span className="font-light tracking-wide">{feature}</span>
@@ -930,7 +934,7 @@ export function LoginPage() {
                     className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{
                       background:
-                        'radial-gradient(circle at center, rgba(168, 85, 247, 0.06), transparent 70%)',
+                        'radial-gradient(circle at center, hsl(var(--color-ronin) / 0.06), transparent 70%)',
                     }}
                   />
                 </motion.div>
@@ -951,29 +955,29 @@ export function LoginPage() {
                   selectedRole
                     ? selectedRole === 'trainer'
                       ? {
-                          background: 'linear-gradient(135deg, #c9a855, #d4af37, #b8935e)',
+                          background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
                           boxShadow:
-                            '0 20px 40px rgba(201, 168, 85, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                            '0 20px 40px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                           color: '#000000',
                         }
                       : selectedRole === 'client'
                         ? {
-                            background: 'linear-gradient(135deg, #0d9488, #14b8a6, #0f766e)',
+                            background: 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)), hsl(var(--color-disciple-accent)))',
                             boxShadow:
-                              '0 20px 40px rgba(13, 148, 136, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                              '0 20px 40px hsl(var(--color-disciple) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                             color: '#ffffff',
                           }
                         : {
-                            background: 'linear-gradient(135deg, #a855f7, #6366f1, #8b5cf6)',
+                            background: 'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)), hsl(var(--color-ronin-accent)))',
                             boxShadow:
-                              '0 20px 40px rgba(168, 85, 247, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                              '0 20px 40px hsl(var(--color-ronin) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                             color: '#ffffff',
                           }
                     : {
                         background:
                           'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#666',
+                        color: 'hsl(var(--muted-foreground))',
                       }
                 }
               >
@@ -989,7 +993,7 @@ export function LoginPage() {
                       animate={{ x: ['-100%', '200%'] }}
                       transition={{
                         duration: 2.5,
-                        repeat: Infinity,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
                         ease: 'linear',
                       }}
                     />
@@ -1022,7 +1026,7 @@ export function LoginPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 1.2 }}
               className="text-center text-xs mt-8 flex items-center justify-center gap-2"
-              style={{ color: '#808080' }}
+              style={{ color: 'hsl(var(--muted-foreground))' }}
             >
               <Shield className="w-3.5 h-3.5" />
               <span className="font-light tracking-wide">
@@ -1043,16 +1047,16 @@ export function LoginPage() {
             height: Math.random() > 0.7 ? '1.5px' : '1px',
             background:
               i % 3 === 0
-                ? 'linear-gradient(135deg, #c9a855, #d4af37)'
+                ? 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))'
                 : i % 3 === 1
-                  ? 'linear-gradient(135deg, #0d9488, #14b8a6)'
-                  : 'linear-gradient(135deg, #e5e4e2, #ffffff)',
+                  ? 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))'
+                  : 'linear-gradient(135deg, hsl(var(--muted)), #ffffff)',
             boxShadow:
               i % 3 === 0
-                ? '0 0 8px rgba(201, 168, 85, 0.4)'
+                ? '0 0 8px hsl(var(--color-guru) / 0.4)'
                 : i % 3 === 1
-                  ? '0 0 8px rgba(13, 148, 136, 0.4)'
-                  : '0 0 5px rgba(229, 228, 226, 0.3)',
+                  ? '0 0 8px hsl(var(--color-disciple) / 0.4)'
+                  : '0 0 5px hsl(var(--muted) / 0.3)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
           }}
@@ -1063,7 +1067,7 @@ export function LoginPage() {
           }}
           transition={{
             duration: 8 + Math.random() * 6,
-            repeat: Infinity,
+            repeat: prefersReducedMotion ? 0 : Infinity,
             delay: Math.random() * 8,
             ease: 'easeInOut',
           }}

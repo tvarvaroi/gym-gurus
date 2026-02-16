@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Check, SkipForward, Dumbbell } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface SetStatus {
   completed: boolean;
@@ -27,6 +28,7 @@ export function ExerciseProgressBar({
   isPaused = false,
   showDetails = false,
 }: ExerciseProgressBarProps) {
+  const prefersReducedMotion = useReducedMotion();
   const progress = (completedSets / totalSets) * 100;
 
   return (
@@ -56,7 +58,7 @@ export function ExerciseProgressBar({
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
             animate={{ x: ['100%', '-100%'] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
           />
         )}
       </div>

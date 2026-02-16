@@ -8,12 +8,19 @@ import { exportClientsToCSV } from "@/lib/exportUtils";
 import ClientCard from "@/components/ClientCard";
 import SearchInput from "@/components/SearchInput";
 import { NewClientButton } from "@/components/ClientFormModal";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 const ClientsPageContent = memo(() => {
+  const prefersReducedMotion = useReducedMotion();
+
   // Get the authenticated user's ID from the auth system
   const { data: user } = useQuery({
     queryKey: ['/api/auth/user'],
     retry: false,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // Use authenticated user's ID or fallback to demo ID
@@ -81,7 +88,7 @@ const ClientsPageContent = memo(() => {
               <p className="text-base font-light text-muted-foreground/80 flex items-center gap-2">
                 <motion.span
                   animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                 >
                   Loading client data...
                 </motion.span>
@@ -101,7 +108,7 @@ const ClientsPageContent = memo(() => {
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
                   animate={{ x: ['-100%', '100%'] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: i * 0.1 }}
+                  transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear", delay: i * 0.1 }}
                 />
               </motion.div>
             ))}
@@ -202,14 +209,14 @@ const ClientsPageContent = memo(() => {
                 <motion.div
                   className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center"
                   animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                 >
                   <Users className="h-12 w-12 text-primary/60" />
                 </motion.div>
                 <motion.div
                   className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-xl"
                   animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                 />
               </div>
               <div className="space-y-2">
@@ -234,7 +241,7 @@ const ClientsPageContent = memo(() => {
                       <motion.div
                         className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
                         animate={{ x: ['-100%', '100%'] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
                       />
                     </motion.div>
                   }>

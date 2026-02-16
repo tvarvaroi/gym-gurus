@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
+import { useToast } from '@/hooks/use-toast';
 import {
   User,
   Target,
@@ -109,6 +110,7 @@ interface OnboardingData {
 
 export function SoloOnboarding() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
     primaryGoal: '',
@@ -132,6 +134,13 @@ export function SoloOnboarding() {
     },
     onSuccess: () => {
       navigate('/dashboard');
+    },
+    onError: (error: any) => {
+      toast({
+        variant: 'destructive',
+        title: 'Error Saving Preferences',
+        description: error.message || 'Failed to save onboarding data',
+      });
     },
   });
 

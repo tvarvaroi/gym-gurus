@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'wouter';
+import { useToast } from '@/hooks/use-toast';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,9 +74,13 @@ interface GeneratedWorkout {
 }
 
 export default function WorkoutGenerator() {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const prefersReducedMotion = useReducedMotion();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedWorkout, setGeneratedWorkout] = useState<GeneratedWorkout | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [workoutFocus, setWorkoutFocus] = useState('push');
@@ -142,6 +149,60 @@ export default function WorkoutGenerator() {
   const handleRegenerate = () => {
     setGeneratedWorkout(null);
     handleGenerate();
+  };
+
+  const handleSaveWorkout = async () => {
+    if (!generatedWorkout) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/workouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: generatedWorkout.name,
+          description: `AI-generated ${workoutFocus} workout`,
+          exercises: generatedWorkout.exercises.map(ex => ({
+            exerciseName: ex.name,
+            sets: ex.sets,
+            reps: ex.reps,
+            restSeconds: ex.rest,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save workout');
+      }
+
+      toast({
+        title: 'Workout Saved',
+        description: 'Your workout has been saved to My Workouts',
+      });
+
+      // Navigate to workouts page
+      navigate('/workouts');
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: err.message || 'Failed to save workout',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleStartWorkout = () => {
+    if (!generatedWorkout) return;
+    // Navigate to workouts list where user can start the workout
+    // In a future iteration, this could navigate to workout execution directly
+    navigate('/workouts');
+    toast({
+      title: 'Workout Ready',
+      description: 'Find your new workout in My Workouts to start',
+    });
   };
 
   return (
@@ -348,7 +409,7 @@ export default function WorkoutGenerator() {
                   <div className="text-center space-y-4">
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                      transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
                     >
                       <Brain className="h-16 w-16 text-purple-400 mx-auto" />
                     </motion.div>
@@ -360,17 +421,17 @@ export default function WorkoutGenerator() {
                       <motion.div
                         className="w-2 h-2 rounded-full bg-purple-400"
                         animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                        transition={{ duration: 0.6, repeat: prefersReducedMotion ? 0 : Infinity, delay: 0 }}
                       />
                       <motion.div
                         className="w-2 h-2 rounded-full bg-purple-400"
                         animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                        transition={{ duration: 0.6, repeat: prefersReducedMotion ? 0 : Infinity, delay: 0.2 }}
                       />
                       <motion.div
                         className="w-2 h-2 rounded-full bg-purple-400"
                         animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                        transition={{ duration: 0.6, repeat: prefersReducedMotion ? 0 : Infinity, delay: 0.4 }}
                       />
                     </div>
                   </div>
@@ -489,14 +550,22 @@ export default function WorkoutGenerator() {
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Regenerate
                       </Button>
-                      <Button className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white">
+                      <Button
+                        className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
+                        onClick={handleStartWorkout}
+                      >
                         <Play className="h-4 w-4 mr-2" />
                         Start Workout
                       </Button>
                     </div>
-                    <Button variant="ghost" className="w-full text-muted-foreground">
+                    <Button
+                      variant="ghost"
+                      className="w-full text-muted-foreground"
+                      onClick={handleSaveWorkout}
+                      disabled={isSaving}
+                    >
                       <Save className="h-4 w-4 mr-2" />
-                      Save to My Workouts
+                      {isSaving ? 'Saving...' : 'Save to My Workouts'}
                     </Button>
                   </CardContent>
                 </Card>

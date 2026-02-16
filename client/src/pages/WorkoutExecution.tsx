@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { apiRequest } from "@/lib/queryClient";
 import {
   ArrowLeft,
@@ -72,6 +73,7 @@ export default function WorkoutExecution() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const prefersReducedMotion = useReducedMotion();
 
   // State
   const [session, setSession] = useState<WorkoutSession | null>(null);
@@ -303,7 +305,7 @@ export default function WorkoutExecution() {
         <div className="text-center">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 1, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
             className="w-16 h-16 border-[3px] border-primary/20 border-t-primary rounded-full mx-auto mb-4"
           />
           <p className="text-muted-foreground font-light">Loading workout...</p>
@@ -776,7 +778,7 @@ export default function WorkoutExecution() {
                       <motion.div
                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
                         animate={{ x: ['-100%', '200%'] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
                       />
                     </motion.div>
                   </div>
@@ -987,7 +989,7 @@ export default function WorkoutExecution() {
                         <motion.div
                           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                           animate={{ x: ['-100%', '200%'] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
                         />
                       )}
                       <span className="relative">KG</span>
@@ -1006,7 +1008,7 @@ export default function WorkoutExecution() {
                         <motion.div
                           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                           animate={{ x: ['-100%', '200%'] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
                         />
                       )}
                       <span className="relative">LBS</span>
@@ -1447,7 +1449,7 @@ export default function WorkoutExecution() {
                 }}
                 transition={{
                   duration: 3,
-                  repeat: Infinity,
+                  repeat: prefersReducedMotion ? 0 : Infinity,
                   ease: "linear",
                 }}
               >
@@ -1455,7 +1457,7 @@ export default function WorkoutExecution() {
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
                   animate={{ x: ['-100%', '200%'] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
                 />
                 <Check className="w-5 h-5 relative" />
                 <span className="relative">Complete Set</span>
@@ -1475,7 +1477,7 @@ export default function WorkoutExecution() {
                 }}
                 transition={{
                   duration: 2,
-                  repeat: Infinity,
+                  repeat: prefersReducedMotion ? 0 : Infinity,
                   ease: "easeInOut",
                 }}
               >

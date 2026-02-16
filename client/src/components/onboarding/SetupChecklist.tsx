@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle, ChevronRight, X, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 export interface ChecklistItem {
   id: string;
@@ -21,6 +22,7 @@ interface SetupChecklistProps {
 }
 
 export function SetupChecklist({ items, onDismiss, className }: SetupChecklistProps) {
+  const prefersReducedMotion = useReducedMotion();
   const completedCount = items.filter((item) => item.completed).length;
   const totalCount = items.length;
   const progressPercentage = (completedCount / totalCount) * 100;
@@ -121,7 +123,7 @@ export function SetupChecklist({ items, onDismiss, className }: SetupChecklistPr
                   }}
                   transition={{
                     duration: 2,
-                    repeat: Infinity,
+                    repeat: prefersReducedMotion ? 0 : Infinity,
                     ease: 'linear',
                   }}
                   className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent"
@@ -252,7 +254,7 @@ export function SetupChecklist({ items, onDismiss, className }: SetupChecklistPr
                 }}
                 transition={{
                   duration: 5,
-                  repeat: Infinity,
+                  repeat: prefersReducedMotion ? 0 : Infinity,
                   ease: 'linear',
                 }}
               />
@@ -275,7 +277,7 @@ export function SetupChecklist({ items, onDismiss, className }: SetupChecklistPr
                     }}
                     transition={{
                       duration: 2,
-                      repeat: Infinity,
+                      repeat: prefersReducedMotion ? 0 : Infinity,
                       ease: "easeInOut",
                     }}
                   />

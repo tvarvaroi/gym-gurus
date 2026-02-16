@@ -338,7 +338,7 @@ const AppSidebar = memo(() => {
                     transition={{ type: 'spring', damping: 20, stiffness: 300 }}
                     style={{
                       fontFamily: "'Playfair Display', serif",
-                      background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                      background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       letterSpacing: '0.2em',

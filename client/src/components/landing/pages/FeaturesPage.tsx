@@ -10,24 +10,27 @@ import {
   ArrowRight,
   CheckCircle,
 } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 // Luxury shimmer particle component - optimized
 const ShimmerParticle = ({
   delay,
   variant = 'blue',
+  prefersReducedMotion = false,
 }: {
   delay: number;
   variant?: 'blue' | 'emerald';
+  prefersReducedMotion?: boolean;
 }) => (
   <motion.div
     className="absolute w-0.5 h-0.5 rounded-full"
     style={{
       background:
         variant === 'blue'
-          ? 'linear-gradient(135deg, #c9a855, #e5e4e2, #c9a855)'
-          : 'linear-gradient(135deg, #0d9488, #e5e4e2, #0d9488)',
+          ? 'linear-gradient(135deg, hsl(var(--color-guru)), #e5e4e2, hsl(var(--color-guru)))'
+          : 'linear-gradient(135deg, hsl(var(--color-disciple)), #e5e4e2, hsl(var(--color-disciple)))',
       boxShadow:
-        variant === 'blue' ? '0 0 8px rgba(201, 168, 85, 0.5)' : '0 0 8px rgba(13, 148, 136, 0.5)',
+        variant === 'blue' ? '0 0 8px hsl(var(--color-guru) / 0.5)' : '0 0 8px hsl(var(--color-disciple) / 0.5)',
       willChange: 'transform, opacity',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
@@ -39,7 +42,7 @@ const ShimmerParticle = ({
     }}
     transition={{
       duration: 2.5,
-      repeat: Infinity,
+      repeat: prefersReducedMotion ? 0 : Infinity,
       delay,
       ease: 'easeOut',
     }}
@@ -47,6 +50,7 @@ const ShimmerParticle = ({
 );
 
 const FeaturesPage = memo(() => {
+  const prefersReducedMotion = useReducedMotion();
   const features = [
     {
       icon: <Users className="w-6 h-6" />,
@@ -86,7 +90,7 @@ const FeaturesPage = memo(() => {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(201, 168, 85, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, hsl(var(--color-guru) / 0.08) 0%, transparent 70%)',
           top: '10%',
           right: '5%',
           filter: 'blur(80px)',
@@ -97,14 +101,14 @@ const FeaturesPage = memo(() => {
         }}
         transition={{
           duration: 6,
-          repeat: Infinity,
+          repeat: prefersReducedMotion ? 0 : Infinity,
           ease: 'easeInOut',
         }}
       />
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, rgba(13, 148, 136, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
           bottom: '10%',
           left: '5%',
           filter: 'blur(80px)',
@@ -115,7 +119,7 @@ const FeaturesPage = memo(() => {
         }}
         transition={{
           duration: 8,
-          repeat: Infinity,
+          repeat: prefersReducedMotion ? 0 : Infinity,
           ease: 'easeInOut',
         }}
       />
@@ -166,9 +170,9 @@ const FeaturesPage = memo(() => {
                       style={{
                         background:
                           feature.variant === 'blue'
-                            ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.15), rgba(184, 147, 94, 0.1))'
-                            : 'linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(15, 118, 110, 0.1))',
-                        color: feature.variant === 'blue' ? '#c9a855' : '#0d9488',
+                            ? 'linear-gradient(135deg, hsl(var(--color-guru) / 0.15), hsl(var(--color-guru-secondary) / 0.1))'
+                            : 'linear-gradient(135deg, hsl(var(--color-disciple) / 0.15), hsl(var(--color-disciple-secondary) / 0.1))',
+                        color: feature.variant === 'blue' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
                       }}
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.6 }}
@@ -178,7 +182,7 @@ const FeaturesPage = memo(() => {
 
                     {/* Shimmer particle - optimized to 1 */}
                     <div className="absolute top-2 right-2">
-                      <ShimmerParticle delay={index * 0.5} variant={feature.variant} />
+                      <ShimmerParticle delay={index * 0.5} variant={feature.variant} prefersReducedMotion={prefersReducedMotion} />
                     </div>
 
                     {/* Title */}
@@ -189,8 +193,8 @@ const FeaturesPage = memo(() => {
                           fontFamily: "'Playfair Display', serif",
                           background:
                             feature.variant === 'blue'
-                              ? 'linear-gradient(135deg, #ffffff, #c9a855)'
-                              : 'linear-gradient(135deg, #ffffff, #0d9488)',
+                              ? 'linear-gradient(135deg, #ffffff, hsl(var(--color-guru)))'
+                              : 'linear-gradient(135deg, #ffffff, hsl(var(--color-disciple)))',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                           backgroundClip: 'text',
@@ -226,17 +230,17 @@ const FeaturesPage = memo(() => {
             {/* Luxury badge */}
             <motion.div
               animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 4, repeat: Infinity }}
+              transition={{ duration: 4, repeat: prefersReducedMotion ? 0 : Infinity }}
               className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
               style={{
                 background:
-                  'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(13, 148, 136, 0.08))',
-                border: '1px solid rgba(201, 168, 85, 0.2)',
+                  'linear-gradient(135deg, hsl(var(--color-guru) / 0.08), hsl(var(--color-disciple) / 0.08))',
+                border: '1px solid hsl(var(--color-guru) / 0.2)',
                 backdropFilter: 'blur(24px)',
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <Crown className="w-4 h-4" style={{ color: '#c9a855' }} />
+              <Crown className="w-4 h-4" style={{ color: 'hsl(var(--color-guru))' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
                 PLATFORM FEATURES
               </span>
@@ -247,7 +251,7 @@ const FeaturesPage = memo(() => {
               className="text-4xl md:text-5xl lg:text-6xl font-light pb-3"
               style={{
                 fontFamily: "'Playfair Display', serif",
-                background: 'linear-gradient(90deg, #c9a855 0%, #e5e4e2 50%, #0d9488 100%)',
+                background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -278,9 +282,9 @@ const FeaturesPage = memo(() => {
                 className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(135deg, #c9a855, #b8935e, #d4af37)',
+                  background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
                   boxShadow:
-                    '0 20px 40px rgba(201, 168, 85, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    '0 20px 40px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                   color: '#ffffff',
                   letterSpacing: '0.05em',
                 }}
@@ -296,15 +300,15 @@ const FeaturesPage = memo(() => {
               style={{ color: '#999' }}
             >
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5" style={{ color: '#c9a855' }} />
+                <CheckCircle className="w-3.5 h-3.5" style={{ color: 'hsl(var(--color-guru))' }} />
                 <span className="font-light">30-day trial</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5" style={{ color: '#0d9488' }} />
+                <CheckCircle className="w-3.5 h-3.5" style={{ color: 'hsl(var(--color-disciple))' }} />
                 <span className="font-light">No credit card</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5" style={{ color: '#c9a855' }} />
+                <CheckCircle className="w-3.5 h-3.5" style={{ color: 'hsl(var(--color-guru))' }} />
                 <span className="font-light">Cancel anytime</span>
               </div>
             </div>
@@ -353,9 +357,9 @@ const FeaturesPage = memo(() => {
                       style={{
                         background:
                           feature.variant === 'blue'
-                            ? 'linear-gradient(135deg, rgba(201, 168, 85, 0.15), rgba(184, 147, 94, 0.1))'
-                            : 'linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(15, 118, 110, 0.1))',
-                        color: feature.variant === 'blue' ? '#c9a855' : '#0d9488',
+                            ? 'linear-gradient(135deg, hsl(var(--color-guru) / 0.15), hsl(var(--color-guru-secondary) / 0.1))'
+                            : 'linear-gradient(135deg, hsl(var(--color-disciple) / 0.15), hsl(var(--color-disciple-secondary) / 0.1))',
+                        color: feature.variant === 'blue' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
                       }}
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.6 }}
@@ -365,7 +369,7 @@ const FeaturesPage = memo(() => {
 
                     {/* Shimmer particle - optimized to 1 */}
                     <div className="absolute top-2 right-2">
-                      <ShimmerParticle delay={index * 0.5 + 0.3} variant={feature.variant} />
+                      <ShimmerParticle delay={index * 0.5 + 0.3} variant={feature.variant} prefersReducedMotion={prefersReducedMotion} />
                     </div>
 
                     {/* Title */}
@@ -376,8 +380,8 @@ const FeaturesPage = memo(() => {
                           fontFamily: "'Playfair Display', serif",
                           background:
                             feature.variant === 'blue'
-                              ? 'linear-gradient(135deg, #ffffff, #c9a855)'
-                              : 'linear-gradient(135deg, #ffffff, #0d9488)',
+                              ? 'linear-gradient(135deg, #ffffff, hsl(var(--color-guru)))'
+                              : 'linear-gradient(135deg, #ffffff, hsl(var(--color-disciple)))',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                           backgroundClip: 'text',
@@ -415,10 +419,10 @@ const FeaturesPage = memo(() => {
             height: '1.5px',
             background:
               i % 2 === 0
-                ? 'linear-gradient(135deg, #c9a855, #b8935e)'
-                : 'linear-gradient(135deg, #0d9488, #0f766e)',
+                ? 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))'
+                : 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
             boxShadow:
-              i % 2 === 0 ? '0 0 8px rgba(201, 168, 85, 0.4)' : '0 0 8px rgba(13, 148, 136, 0.4)',
+              i % 2 === 0 ? '0 0 8px hsl(var(--color-guru) / 0.4)' : '0 0 8px hsl(var(--color-disciple) / 0.4)',
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
             willChange: 'transform, opacity',
@@ -430,7 +434,7 @@ const FeaturesPage = memo(() => {
           }}
           transition={{
             duration: 6 + Math.random() * 3,
-            repeat: Infinity,
+            repeat: prefersReducedMotion ? 0 : Infinity,
             delay: Math.random() * 6,
             ease: 'easeInOut',
           }}

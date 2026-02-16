@@ -249,7 +249,12 @@ const WorkoutPlans = memo(() => {
       });
       if (!response.ok) throw new Error('Failed to fetch user');
       return response.json();
-    }
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // Fetch client profile for client users (to get actual client ID)
@@ -503,7 +508,7 @@ const WorkoutPlans = memo(() => {
             <div className="space-y-2 sm:space-y-3">
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-extralight tracking-tight">
                 <span className="text-foreground">{isClient ? "My " : "Workout "}</span>
-                <span className={isClient ? "text-cyan-500" : "text-[#c9a855]"}>
+                <span className={isClient ? "text-cyan-500" : "text-[hsl(var(--color-guru))]"}>
                   {isClient ? "Workouts" : "Plans"}
                 </span>
               </h1>

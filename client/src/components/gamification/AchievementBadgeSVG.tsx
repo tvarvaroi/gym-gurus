@@ -11,13 +11,48 @@ interface AchievementBadgeSVGProps {
   className?: string;
 }
 
-// Tier gradient color definitions
-const TIER_GRADIENTS: Record<Tier, { from: string; to: string }> = {
-  bronze: { from: '#CD7F32', to: '#8B4513' },
-  silver: { from: '#C0C0C0', to: '#808080' },
-  gold: { from: '#FFD700', to: '#DAA520' },
-  platinum: { from: '#60A5FA', to: '#06B6D4' },
-  diamond: { from: '#A855F7', to: '#EC4899' },
+// Tier gradient color definitions - using CSS variables
+const TIER_GRADIENTS: Record<Tier, { from: string; to: string; light: string; lighter: string; darker: string; bg: string }> = {
+  bronze: {
+    from: 'hsl(var(--achievement-bronze))',
+    to: 'hsl(var(--achievement-bronze-dark))',
+    light: 'hsl(var(--achievement-bronze-light))',
+    lighter: 'hsl(var(--achievement-bronze-lighter))',
+    darker: 'hsl(var(--achievement-bronze-darker))',
+    bg: 'hsl(var(--achievement-bronze-bg))',
+  },
+  silver: {
+    from: 'hsl(var(--achievement-silver))',
+    to: 'hsl(var(--achievement-silver-dark))',
+    light: 'hsl(var(--achievement-silver-light))',
+    lighter: 'hsl(var(--achievement-silver-lighter))',
+    darker: 'hsl(var(--achievement-silver-darker))',
+    bg: 'hsl(var(--achievement-silver-bg))',
+  },
+  gold: {
+    from: 'hsl(var(--achievement-gold))',
+    to: 'hsl(var(--achievement-gold-dark))',
+    light: 'hsl(var(--achievement-gold-light))',
+    lighter: 'hsl(var(--achievement-gold-lighter))',
+    darker: 'hsl(var(--achievement-gold-darker))',
+    bg: 'hsl(var(--achievement-gold-bg))',
+  },
+  platinum: {
+    from: 'hsl(var(--achievement-platinum))',
+    to: 'hsl(var(--achievement-platinum-dark))',
+    light: 'hsl(var(--achievement-platinum-light))',
+    lighter: 'hsl(var(--achievement-platinum-lighter))',
+    darker: 'hsl(var(--achievement-platinum-darker))',
+    bg: 'hsl(var(--achievement-platinum-bg))',
+  },
+  diamond: {
+    from: 'hsl(var(--achievement-diamond))',
+    to: 'hsl(var(--achievement-diamond-dark))',
+    light: 'hsl(var(--achievement-diamond-light))',
+    lighter: 'hsl(var(--achievement-diamond-lighter))',
+    darker: 'hsl(var(--achievement-diamond-darker))',
+    bg: 'hsl(var(--achievement-diamond-bg))',
+  },
 };
 
 // Category icon SVG path data, designed for a 24x24 viewBox centered at (0, 0)
@@ -119,12 +154,12 @@ function AchievementBadgeSVG({
   const shieldRadius = 30;
 
   // Determine icon colors based on tier for visual richness
-  const iconFill = unlocked ? '#FFFFFF' : '#9CA3AF';
-  const iconStroke = unlocked ? '#FFFFFF' : '#9CA3AF';
+  const iconFill = unlocked ? '#FFFFFF' : 'hsl(var(--achievement-locked))';
+  const iconStroke = unlocked ? '#FFFFFF' : 'hsl(var(--achievement-locked))';
 
   // Shield center gradient: slightly lighter version of the tier
-  const shieldFrom = unlocked ? gradient.from : '#6B7280';
-  const shieldTo = unlocked ? gradient.to : '#4B5563';
+  const shieldFrom = unlocked ? gradient.from : 'hsl(var(--achievement-locked-dark))';
+  const shieldTo = unlocked ? gradient.to : 'hsl(var(--achievement-locked-darker))';
 
   return (
     <svg
@@ -139,14 +174,14 @@ function AchievementBadgeSVG({
       <defs>
         {/* Outer ring gradient */}
         <linearGradient id={ringGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={unlocked ? gradient.from : '#9CA3AF'} />
-          <stop offset="50%" stopColor={unlocked ? lightenColor(gradient.from, 30) : '#B0B0B0'} />
-          <stop offset="100%" stopColor={unlocked ? gradient.to : '#6B7280'} />
+          <stop offset="0%" stopColor={unlocked ? gradient.from : 'hsl(var(--achievement-locked))'} />
+          <stop offset="50%" stopColor={unlocked ? gradient.light : 'hsl(var(--achievement-locked-light))'} />
+          <stop offset="100%" stopColor={unlocked ? gradient.to : 'hsl(var(--achievement-locked-dark))'} />
         </linearGradient>
 
         {/* Shield/medallion gradient */}
         <radialGradient id={shieldGradientId} cx="40%" cy="35%" r="60%">
-          <stop offset="0%" stopColor={lightenColor(shieldFrom, 20)} />
+          <stop offset="0%" stopColor={unlocked ? gradient.light : 'hsl(var(--achievement-locked))'} />
           <stop offset="60%" stopColor={shieldFrom} />
           <stop offset="100%" stopColor={shieldTo} />
         </radialGradient>
@@ -187,7 +222,7 @@ function AchievementBadgeSVG({
           cx={center}
           cy={center}
           r={outerRadius}
-          fill={unlocked ? darkenColor(gradient.to, 40) : '#374151'}
+          fill={unlocked ? gradient.bg : 'hsl(var(--achievement-bg-dark))'}
         />
 
         {/* Outer ring */}
@@ -216,7 +251,7 @@ function AchievementBadgeSVG({
               y1={y1}
               x2={x2}
               y2={y2}
-              stroke={unlocked ? lightenColor(gradient.from, 40) : '#9CA3AF'}
+              stroke={unlocked ? gradient.lighter : 'hsl(var(--achievement-locked))'}
               strokeWidth={1}
               opacity={0.6}
             />
@@ -228,7 +263,7 @@ function AchievementBadgeSVG({
           cx={center}
           cy={center}
           r={innerRadius - 1}
-          fill={unlocked ? darkenColor(gradient.to, 50) : '#1F2937'}
+          fill={unlocked ? gradient.darker : 'hsl(var(--achievement-bg-darker))'}
         />
 
         {/* Shield / medallion shape */}
@@ -265,10 +300,10 @@ function AchievementBadgeSVG({
         {/* Diamond tier: extra sparkle dots */}
         {tier === 'diamond' && unlocked && (
           <>
-            <circle cx={center - 16} cy={center - 18} r={1.5} fill="#E9D5FF" opacity={0.8} />
-            <circle cx={center + 18} cy={center - 14} r={1} fill="#F9A8D4" opacity={0.7} />
-            <circle cx={center + 14} cy={center + 17} r={1.2} fill="#E9D5FF" opacity={0.6} />
-            <circle cx={center - 18} cy={center + 12} r={1} fill="#F9A8D4" opacity={0.7} />
+            <circle cx={center - 16} cy={center - 18} r={1.5} fill="hsl(var(--achievement-diamond-sparkle-1))" opacity={0.8} />
+            <circle cx={center + 18} cy={center - 14} r={1} fill="hsl(var(--achievement-diamond-sparkle-2))" opacity={0.7} />
+            <circle cx={center + 14} cy={center + 17} r={1.2} fill="hsl(var(--achievement-diamond-sparkle-1))" opacity={0.6} />
+            <circle cx={center - 18} cy={center + 12} r={1} fill="hsl(var(--achievement-diamond-sparkle-2))" opacity={0.7} />
           </>
         )}
 
@@ -277,12 +312,12 @@ function AchievementBadgeSVG({
           <>
             <polygon
               points={createStarPoints(center + 19, center - 19, 3, 1.2, 5)}
-              fill="#93C5FD"
+              fill="hsl(var(--achievement-platinum-star-1))"
               opacity={0.7}
             />
             <polygon
               points={createStarPoints(center - 20, center + 16, 2.5, 1, 5)}
-              fill="#67E8F9"
+              fill="hsl(var(--achievement-platinum-star-2))"
               opacity={0.6}
             />
           </>
@@ -292,7 +327,7 @@ function AchievementBadgeSVG({
         {tier === 'gold' && unlocked && (
           <polygon
             points={createStarPoints(center + 17, center - 18, 3.5, 1.5, 5)}
-            fill="#FDE68A"
+            fill="hsl(var(--achievement-gold-star))"
             opacity={0.8}
           />
         )}
@@ -307,21 +342,21 @@ function AchievementBadgeSVG({
               width={12}
               height={10}
               rx={2}
-              fill="#6B7280"
-              stroke="#9CA3AF"
+              fill="hsl(var(--achievement-locked-dark))"
+              stroke="hsl(var(--achievement-locked))"
               strokeWidth={1}
             />
             {/* Lock shackle */}
             <path
               d="M-4,-2 L-4,-6 A4,4 0 0,1 4,-6 L4,-2"
               fill="none"
-              stroke="#9CA3AF"
+              stroke="hsl(var(--achievement-locked))"
               strokeWidth={1.5}
               strokeLinecap="round"
             />
             {/* Keyhole */}
-            <circle cx={0} cy={3} r={1.5} fill="#9CA3AF" />
-            <rect x={-0.75} y={3} width={1.5} height={3} rx={0.5} fill="#9CA3AF" />
+            <circle cx={0} cy={3} r={1.5} fill="hsl(var(--achievement-locked))" />
+            <rect x={-0.75} y={3} width={1.5} height={3} rx={0.5} fill="hsl(var(--achievement-locked))" />
           </g>
         )}
       </g>
@@ -541,27 +576,7 @@ function renderCategoryIcon(
   }
 }
 
-/**
- * Lighten a hex color by a given amount (0-100)
- */
-function lightenColor(hex: string, amount: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, ((num >> 16) & 0xff) + Math.round(amount * 2.55));
-  const g = Math.min(255, ((num >> 8) & 0xff) + Math.round(amount * 2.55));
-  const b = Math.min(255, (num & 0xff) + Math.round(amount * 2.55));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
-
-/**
- * Darken a hex color by a given amount (0-100)
- */
-function darkenColor(hex: string, amount: number): string {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.max(0, ((num >> 16) & 0xff) - Math.round(amount * 2.55));
-  const g = Math.max(0, ((num >> 8) & 0xff) - Math.round(amount * 2.55));
-  const b = Math.max(0, (num & 0xff) - Math.round(amount * 2.55));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
+// Utility functions removed - now using pre-defined CSS variable color variants
 
 const MemoizedAchievementBadgeSVG = memo(AchievementBadgeSVG);
 MemoizedAchievementBadgeSVG.displayName = 'AchievementBadgeSVG';

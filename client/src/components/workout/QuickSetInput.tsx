@@ -227,7 +227,7 @@ export function QuickSetInput({
         {/* Swipe Instructions */}
         <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
-            <ChevronLeft className="w-4 h-4" /> Swipe left = Failed
+            <ChevronLeft className="w-4 h-4" /> Swipe left = Missed
           </span>
           <span className="flex items-center gap-1">
             Swipe right = Complete <ChevronRight className="w-4 h-4" />
@@ -278,7 +278,7 @@ export function SetCompleteOverlay({ type, setNumber, onDismiss }: SetCompleteOv
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
         >
-          Set {setNumber} {type === 'complete' ? 'Complete!' : 'Failed'}
+          Set {setNumber} {type === 'complete' ? 'Complete!' : 'Missed'}
         </motion.p>
       </motion.div>
     </AnimatePresence>

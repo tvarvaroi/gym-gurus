@@ -3,7 +3,7 @@ import { Crown, Star, Flame, Sparkles, Zap, Trophy } from 'lucide-react';
 
 // Gen Z rank system based on level
 export const RANKS = [
-  { minLevel: 1, name: 'NPC', emoji: '🤖', icon: null, color: 'text-gray-500', bgColor: 'bg-gray-100', borderColor: 'border-gray-300' },
+  { minLevel: 1, name: 'Newcomer', emoji: '🌟', icon: null, color: 'text-gray-500', bgColor: 'bg-gray-100', borderColor: 'border-gray-300' },
   { minLevel: 5, name: 'Newbie', emoji: '🌱', icon: null, color: 'text-green-500', bgColor: 'bg-green-100', borderColor: 'border-green-300' },
   { minLevel: 10, name: 'Rookie', emoji: '⭐', icon: Star, color: 'text-blue-500', bgColor: 'bg-blue-100', borderColor: 'border-blue-300' },
   { minLevel: 20, name: 'Grinder', emoji: '💪', icon: Zap, color: 'text-yellow-500', bgColor: 'bg-yellow-100', borderColor: 'border-yellow-300' },
@@ -181,34 +181,32 @@ export function RankProgress({ level }: RankProgressProps) {
       {/* Progress bar */}
       <div className="h-3 bg-secondary rounded-full overflow-hidden">
         <motion.div
-          className={`h-full ${rank.bgColor.replace('100', '500')}`}
+          className={`h-full`}
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           style={{
-            background: `linear-gradient(90deg, ${
-              rank.color.includes('gray') ? '#9ca3af' :
-              rank.color.includes('green') ? '#22c55e' :
-              rank.color.includes('blue') ? '#3b82f6' :
-              rank.color.includes('yellow') ? '#eab308' :
-              rank.color.includes('orange') ? '#f97316' :
-              rank.color.includes('purple') ? '#a855f7' :
-              rank.color.includes('indigo') ? '#6366f1' :
-              rank.color.includes('pink') ? '#ec4899' :
-              rank.color.includes('cyan') ? '#06b6d4' :
-              '#f59e0b'
-            }, ${
-              nextRank.color.includes('gray') ? '#9ca3af' :
-              nextRank.color.includes('green') ? '#22c55e' :
-              nextRank.color.includes('blue') ? '#3b82f6' :
-              nextRank.color.includes('yellow') ? '#eab308' :
-              nextRank.color.includes('orange') ? '#f97316' :
-              nextRank.color.includes('purple') ? '#a855f7' :
-              nextRank.color.includes('indigo') ? '#6366f1' :
-              nextRank.color.includes('pink') ? '#ec4899' :
-              nextRank.color.includes('cyan') ? '#06b6d4' :
-              '#f59e0b'
-            })`,
+            background: `linear-gradient(90deg,
+              ${rank.color.includes('gray') ? 'hsl(0 0% 61%)' :
+              rank.color.includes('green') ? 'hsl(142 71% 45%)' :
+              rank.color.includes('blue') ? 'hsl(221 83% 53%)' :
+              rank.color.includes('yellow') ? 'hsl(48 96% 53%)' :
+              rank.color.includes('orange') ? 'hsl(25 95% 53%)' :
+              rank.color.includes('purple') ? 'hsl(271 91% 65%)' :
+              rank.color.includes('indigo') ? 'hsl(239 84% 67%)' :
+              rank.color.includes('pink') ? 'hsl(330 81% 60%)' :
+              rank.color.includes('cyan') ? 'hsl(187 96% 42%)' :
+              'hsl(38 92% 50%)'},
+              ${nextRank.color.includes('gray') ? 'hsl(0 0% 61%)' :
+              nextRank.color.includes('green') ? 'hsl(142 71% 45%)' :
+              nextRank.color.includes('blue') ? 'hsl(221 83% 53%)' :
+              nextRank.color.includes('yellow') ? 'hsl(48 96% 53%)' :
+              nextRank.color.includes('orange') ? 'hsl(25 95% 53%)' :
+              nextRank.color.includes('purple') ? 'hsl(271 91% 65%)' :
+              nextRank.color.includes('indigo') ? 'hsl(239 84% 67%)' :
+              nextRank.color.includes('pink') ? 'hsl(330 81% 60%)' :
+              nextRank.color.includes('cyan') ? 'hsl(187 96% 42%)' :
+              'hsl(38 92% 50%)'})`,
           }}
         />
       </div>

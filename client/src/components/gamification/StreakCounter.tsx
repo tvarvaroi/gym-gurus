@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Flame, Calendar, TrendingUp } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface StreakCounterProps {
   currentStreak: number;
@@ -26,6 +27,7 @@ export function StreakCounter({
   size = 'md',
   showDetails = true,
 }: StreakCounterProps) {
+  const prefersReducedMotion = useReducedMotion();
   const { color, bgColor, status } = getStreakStatus(currentStreak);
 
   const sizeClasses = {
@@ -59,7 +61,7 @@ export function StreakCounter({
                 }
               : {}
           }
-          transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 0.5 }}
+          transition={{ duration: 0.5, repeat: prefersReducedMotion ? 0 : Infinity, repeatDelay: 0.5 }}
         >
           <Flame className={`${flame} ${streakActive ? color : 'text-gray-300'}`} />
         </motion.div>

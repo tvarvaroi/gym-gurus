@@ -3,6 +3,7 @@ import { Redirect } from 'wouter';
 import { useUser, type Permission } from '@/contexts/UserContext';
 import { motion } from 'framer-motion';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -38,6 +39,7 @@ export default function ProtectedRoute({
   fallbackPath = '/',
 }: ProtectedRouteProps) {
   const { user, isLoading, isTrainer, isClient, hasPermission } = useUser();
+  const prefersReducedMotion = useReducedMotion();
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -52,19 +54,19 @@ export default function ProtectedRoute({
           <motion.div
             className="relative inline-block"
             animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
           >
             <Loader2 className="h-12 w-12 text-primary mx-auto" />
             <motion.div
               className="absolute inset-0 rounded-full bg-primary/20 blur-xl"
               animate={{ opacity: [0.3, 0.6, 0.3] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
             />
           </motion.div>
           <motion.p
             className="text-base font-light text-muted-foreground/80"
             animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
           >
             Checking permissions...
           </motion.p>
@@ -120,14 +122,14 @@ function UnauthorizedAccess({
           <motion.div
             className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-destructive/20 via-destructive/10 to-transparent flex items-center justify-center"
             animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
           >
             <AlertCircle className="h-12 w-12 text-destructive/60" />
           </motion.div>
           <motion.div
             className="absolute inset-0 rounded-full bg-gradient-to-br from-destructive/10 to-transparent blur-xl"
             animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
           />
         </div>
 

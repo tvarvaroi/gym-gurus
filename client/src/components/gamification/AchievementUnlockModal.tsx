@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Star, X, Share2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 export interface Achievement {
   id: string;
@@ -69,6 +70,7 @@ export function AchievementUnlockModal({
   onClose,
   onShare,
 }: AchievementUnlockModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   if (!achievement) return null;
 
   const config = rarityConfig[achievement.rarity];
@@ -135,7 +137,7 @@ export function AchievementUnlockModal({
                       }}
                       transition={{
                         duration: 2 + Math.random() * 2,
-                        repeat: Infinity,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
                         delay: Math.random() * 2,
                         ease: 'easeOut',
                       }}
@@ -174,7 +176,7 @@ export function AchievementUnlockModal({
                       }}
                       transition={{
                         duration: 2,
-                        repeat: Infinity,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
                         ease: 'easeInOut',
                       }}
                     >

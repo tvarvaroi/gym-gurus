@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface AchievementBadgeProps {
   achievement: Achievement;
@@ -15,6 +16,7 @@ interface AchievementBadgeProps {
 }
 
 export function AchievementBadge({ achievement, size = 'md', showProgress = false }: AchievementBadgeProps) {
+  const prefersReducedMotion = useReducedMotion();
   const tierColor = TIER_COLORS[achievement.tier];
 
   const sizeClasses = {
@@ -54,7 +56,7 @@ export function AchievementBadge({ achievement, size = 'md', showProgress = fals
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent rounded-full pointer-events-none"
                   animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                 />
               )}
 
@@ -112,7 +114,7 @@ export function AchievementBadge({ achievement, size = 'md', showProgress = fals
                       transition={{
                         duration: 1,
                         delay: i * 0.1,
-                        repeat: Infinity,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
                         repeatDelay: 2,
                       }}
                     />

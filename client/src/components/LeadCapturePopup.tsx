@@ -6,6 +6,7 @@ import { X, Calculator, BookOpen, Sparkles } from 'lucide-react';
 import { useLeadCapture } from '@/hooks/useLeadCapture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { trackEvent } from '@/lib/analytics';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -64,6 +65,7 @@ export function LeadCapturePopup({
   ctaHref = '/api/login',
   calculationComplete,
 }: LeadCapturePopupProps) {
+  const prefersReducedMotion = useReducedMotion();
   const { shouldShow, dismiss } = useLeadCapture({
     trigger,
     calculationComplete,
@@ -226,7 +228,7 @@ export function LeadCapturePopup({
                     }}
                     transition={{
                       duration: 2.5,
-                      repeat: Infinity,
+                      repeat: prefersReducedMotion ? 0 : Infinity,
                       ease: 'easeInOut',
                     }}
                   />

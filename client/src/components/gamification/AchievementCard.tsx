@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Lock, Trophy, Star, Flame, Target, Dumbbell, Users, Scale, Compass, Utensils } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface AchievementCardProps {
   name: string;
@@ -53,6 +54,7 @@ export function AchievementCard({
   size = 'md',
   onClick,
 }: AchievementCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const IconComponent = BADGE_ICONS[badgeIcon] || Trophy;
   const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.consistency;
 
@@ -101,7 +103,7 @@ export function AchievementCard({
             background: `radial-gradient(circle at center, ${colors.text.replace('text-', '')} 0%, transparent 70%)`,
           }}
           animate={{ opacity: [0.1, 0.2, 0.1] }}
-          transition={{ duration: 2, repeat: Infinity }}
+          transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity }}
         />
       )}
 

@@ -66,8 +66,10 @@ export const getQueryFn: <T>(options: {
 // Global error handler for 401 responses
 function handle401Error(error: unknown) {
   if (error instanceof Error && error.message.startsWith('401:')) {
-    // Redirect to landing page on session expiry
-    window.location.href = '/';
+    // Only redirect to landing page if not already there (prevents infinite loop)
+    if (window.location.pathname !== '/') {
+      window.location.href = '/';
+    }
   }
 }
 
@@ -83,9 +85,18 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
       staleTime: 60 * 1000, // Data is fresh for 60 seconds (increased for better performance)
       gcTime: 30 * 60 * 1000, // Cache garbage collected after 30 minutes (increased for better caching)
-      retry: 2, // Retry failed requests twice for better resilience
+      retry: (failureCount, error) => {
+        // Don't retry on 401 (authentication) errors
+        if (error instanceof Error && error.message.startsWith('401:')) {
+          return false;
+        }
+        // Retry other errors up to 2 times
+        return failureCount < 2;
+      },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     },
     mutations: {

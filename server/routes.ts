@@ -69,6 +69,7 @@ import leaderboardRoutes from './routes/leaderboards';
 import notificationRoutes from './routes/notifications';
 import intakeRoutes from './routes/intake';
 import paymentRoutes from './routes/payments';
+import soloRoutes from './routes/solo';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup secure Replit Auth
@@ -88,6 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/notifications', secureAuth, apiRateLimit, notificationRoutes);
   app.use('/api/intake', secureAuth, apiRateLimit, intakeRoutes);
   app.use('/api/payments', secureAuth, strictRateLimit, paymentRoutes); // Payments: strict (10/min)
+  app.use('/api/solo', secureAuth, apiRateLimit, soloRoutes); // Solo user workout tracking
 
   // Contact form (public, rate-limited)
   app.post('/api/contact', strictRateLimit, async (req: Request, res: Response) => {

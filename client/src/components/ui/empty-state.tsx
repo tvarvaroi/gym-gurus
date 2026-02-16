@@ -3,6 +3,7 @@ import { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -31,6 +32,7 @@ export function EmptyState({
   className,
   animated = true,
 }: EmptyStateProps) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <Card className={cn("border-dashed border-border/50 glass-strong shadow-premium", className)}>
       <CardContent className="flex flex-col items-center justify-center py-16 space-y-6">
@@ -49,7 +51,7 @@ export function EmptyState({
             <motion.div
               className="absolute inset-0 rounded-full bg-primary/20 blur-xl"
               animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
             />
           )}
         </div>

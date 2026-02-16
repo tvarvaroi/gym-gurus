@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query"
 import { StaggerContainer, StaggerItem } from "@/components/AnimationComponents"
 import { useLocation } from "wouter"
 import { useUser } from "@/contexts/UserContext"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 import { calculateWorkoutStreak, getStreakMessage, getStreakEmoji } from "@/lib/streakCalculations"
 import { calculateAchievements, getNextAchievement, type BadgeCalculationData } from "@/lib/achievements"
 import { AchievementGrid } from "../AchievementBadge"
@@ -18,6 +19,7 @@ export default function ClientDashboard() {
   const [, navigate] = useLocation();
   const { user: currentUser } = useUser();
   const { celebration, celebrate, hide } = useCelebration();
+  const prefersReducedMotion = useReducedMotion();
 
   // Fetch client data
   const { data: clientData, isLoading: clientDataLoading } = useQuery({
@@ -147,13 +149,13 @@ export default function ClientDashboard() {
               className="absolute top-10 right-10 w-64 h-64 rounded-full blur-3xl"
               style={{ background: 'radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, rgba(6, 182, 212, 0.05) 100%)' }}
               animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
-              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 8, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
             />
             <motion.div
               className="absolute bottom-10 left-10 w-48 h-48 rounded-full blur-3xl"
               style={{ background: 'radial-gradient(circle, rgba(20, 184, 166, 0.25) 0%, rgba(20, 184, 166, 0.05) 100%)' }}
               animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.6, 0.4] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              transition={{ duration: 6, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut", delay: 1 }}
             />
           </div>
           <div className="relative h-full flex flex-col justify-center items-center text-center px-6 text-white z-10">
@@ -235,7 +237,7 @@ export default function ClientDashboard() {
               <motion.div
                 className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 10, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
               />
               {/* Shimmer effect */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
@@ -278,7 +280,7 @@ export default function ClientDashboard() {
               <motion.div
                 className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 10, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
               />
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                 <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
@@ -322,7 +324,7 @@ export default function ClientDashboard() {
               <motion.div
                 className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 10, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
               />
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                 <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
@@ -363,14 +365,14 @@ export default function ClientDashboard() {
               <motion.div
                 className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 10, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
               />
               {/* Animated fire glow for active streaks */}
               {streakData.isStreakActive && streakData.currentStreak > 0 && (
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-br from-orange-500/15 via-yellow-500/10 to-transparent"
                   animate={{ opacity: [0.4, 0.7, 0.4] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                 />
               )}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">

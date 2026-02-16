@@ -31,10 +31,11 @@ export function LuxuryCard({
 }: LuxuryCardProps) {
   const { isClient } = useUser();
 
-  // Role-specific colors
-  const roleColors = isClient
-    ? { primary: '#0d9488', secondary: '#14b8a6', gradient: 'linear-gradient(135deg, rgba(13, 148, 136, 0.10), rgba(20, 184, 166, 0.08))' }
-    : { primary: '#c9a855', secondary: '#d4af37', gradient: 'linear-gradient(135deg, rgba(201, 168, 85, 0.10), rgba(184, 147, 94, 0.08))' };
+  // Role-specific colors using CSS variables
+  const roleColors = {
+    primary: 'hsl(var(--primary))',
+    gradient: 'linear-gradient(135deg, hsl(var(--primary) / 0.10), hsl(var(--primary) / 0.08))',
+  };
 
   return (
     <motion.div
@@ -69,7 +70,7 @@ export function LuxuryCard({
                   className="text-xl font-light tracking-tight"
                   style={{
                     fontFamily: "'Playfair Display', serif",
-                    color: '#e5e4e2',
+                    color: 'hsl(var(--foreground))',
                   }}
                 >
                   {title}
@@ -79,7 +80,7 @@ export function LuxuryCard({
                     className="text-sm font-light"
                     style={{
                       fontFamily: "'Inter', sans-serif",
-                      color: '#999',
+                      color: 'hsl(var(--muted-foreground))',
                       letterSpacing: '0.02em',
                     }}
                   >
@@ -92,7 +93,7 @@ export function LuxuryCard({
                   className="p-3 rounded-xl"
                   style={{
                     background: roleColors.gradient,
-                    boxShadow: `0 8px 20px ${roleColors.primary}30`,
+                    boxShadow: `0 8px 20px hsl(var(--primary) / 0.30)`,
                   }}
                   whileHover={{ rotate: 360, scale: 1.1 }}
                   transition={{ duration: 0.6 }}
@@ -134,9 +135,10 @@ export function LuxuryStatCard({
 }: LuxuryStatCardProps) {
   const { isClient } = useUser();
 
-  const roleColors = isClient
-    ? { primary: '#0d9488', secondary: '#14b8a6' }
-    : { primary: '#c9a855', secondary: '#d4af37' };
+  // Role-specific colors using CSS variables
+  const roleColors = {
+    primary: 'hsl(var(--primary))',
+  };
 
   const changeColors = {
     positive: '#10b981',
@@ -152,7 +154,7 @@ export function LuxuryStatCard({
             className="text-sm font-light tracking-wide"
             style={{
               fontFamily: "'Inter', sans-serif",
-              color: '#b3b3b3',
+              color: 'hsl(var(--muted-foreground))',
               letterSpacing: '0.05em',
             }}
           >
@@ -164,7 +166,7 @@ export function LuxuryStatCard({
               style={{
                 fontFamily: "'Playfair Display', serif",
                 color: roleColors.primary,
-                textShadow: `0 0 20px ${roleColors.primary}30`,
+                textShadow: `0 0 20px hsl(var(--primary) / 0.30)`,
               }}
             >
               {value}
@@ -184,9 +186,9 @@ export function LuxuryStatCard({
         <motion.div
           className="p-4 rounded-2xl"
           style={{
-            background: `linear-gradient(135deg, ${roleColors.primary}20, ${roleColors.secondary}10)`,
-            border: `1px solid ${roleColors.primary}30`,
-            boxShadow: `0 8px 20px ${roleColors.primary}20`,
+            background: `linear-gradient(135deg, hsl(var(--primary) / 0.20), hsl(var(--primary) / 0.10))`,
+            border: `1px solid hsl(var(--primary) / 0.30)`,
+            boxShadow: `0 8px 20px hsl(var(--primary) / 0.20)`,
           }}
           whileHover={{ scale: 1.05, rotate: 5 }}
           transition={{ duration: 0.3 }}
@@ -194,7 +196,7 @@ export function LuxuryStatCard({
           <div
             style={{
               color: roleColors.primary,
-              filter: `drop-shadow(0 0 8px ${roleColors.primary}60)`,
+              filter: `drop-shadow(0 0 8px hsl(var(--primary) / 0.60))`,
             }}
           >
             {icon}

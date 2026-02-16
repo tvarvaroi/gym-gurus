@@ -1,68 +1,68 @@
 /**
  * GymGurus Premium Design System
- * Inspired by the luxury login page aesthetic
+ * All colors now reference CSS custom properties for proper role-based theming
+ * ✅ TICKET-11: Refactored to eliminate hardcoded hex values
  */
 
 import type { InternalRole, RoleThemeKey } from './roles';
 import { getRoleThemeKey } from './roles';
 
 export const theme = {
-  // Color Palette
+  // Color Palette - Now using CSS custom properties that update automatically based on role
   colors: {
-    // Guru (Trainer) Theme - Gold/Bronze
+    // All role themes now reference the same CSS variables
+    // The actual color values are defined in index.css with role-specific overrides
     guru: {
-      primary: '#c9a855',
-      secondary: '#d4af37',
-      tertiary: '#b8935e',
-      gradient: 'linear-gradient(135deg, #c9a855, #d4af37, #b8935e)',
-      glow: 'rgba(201, 168, 85, 0.08)',
-      glowStrong: 'rgba(201, 168, 85, 0.25)',
+      primary: 'hsl(var(--primary))',
+      accent: 'hsl(var(--accent))',
+      foreground: 'hsl(var(--primary-foreground))',
+      gradient: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))',
+      glow: 'hsl(var(--primary) / 0.08)',
+      glowStrong: 'hsl(var(--primary) / 0.25)',
     },
 
-    // Disciple (Client) Theme - Teal/Cyan
     disciple: {
-      primary: '#0d9488',
-      secondary: '#14b8a6',
-      tertiary: '#0f766e',
-      gradient: 'linear-gradient(135deg, #0d9488, #14b8a6, #0f766e)',
-      glow: 'rgba(13, 148, 136, 0.08)',
-      glowStrong: 'rgba(13, 148, 136, 0.25)',
+      primary: 'hsl(var(--primary))',
+      accent: 'hsl(var(--accent))',
+      foreground: 'hsl(var(--primary-foreground))',
+      gradient: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))',
+      glow: 'hsl(var(--primary) / 0.08)',
+      glowStrong: 'hsl(var(--primary) / 0.25)',
     },
 
-    // Ronin (Solo) Theme - Purple/Indigo
     ronin: {
-      primary: '#a855f7',
-      secondary: '#6366f1',
-      tertiary: '#8b5cf6',
-      gradient: 'linear-gradient(135deg, #a855f7, #8b5cf6, #6366f1)',
-      glow: 'rgba(168, 85, 247, 0.08)',
-      glowStrong: 'rgba(168, 85, 247, 0.25)',
+      primary: 'hsl(var(--primary))',
+      accent: 'hsl(var(--accent))',
+      foreground: 'hsl(var(--primary-foreground))',
+      gradient: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))',
+      glow: 'hsl(var(--primary) / 0.08)',
+      glowStrong: 'hsl(var(--primary) / 0.25)',
     },
 
-    // Neutral Colors
+    // Neutral Colors - Using CSS variables where applicable
     neutral: {
-      platinum: '#e5e4e2',
-      white: '#ffffff',
-      gray100: '#f5f5f5',
-      gray200: '#d4d4d4',
-      gray300: '#b3b3b3',
-      gray400: '#999999',
-      gray500: '#808080',
-      gray600: '#666666',
-      gray700: '#4a4a4a',
-      gray800: '#2a2a2a',
-      gray900: '#1a1a1a',
-      black: '#000000',
+      white: 'hsl(0 0% 100%)',
+      platinum: 'hsl(var(--muted))',
+      gray100: 'hsl(0 0% 96%)',
+      gray200: 'hsl(var(--border))',
+      gray300: 'hsl(0 0% 70%)',
+      gray400: 'hsl(0 0% 60%)',
+      gray500: 'hsl(var(--muted-foreground))',
+      gray600: 'hsl(0 0% 40%)',
+      gray700: 'hsl(0 0% 29%)',
+      gray800: 'hsl(0 0% 16%)',
+      gray900: 'hsl(0 0% 10%)',
+      black: 'hsl(0 0% 0%)',
     },
 
-    // Background Colors
+    // Background Colors - Using CSS variables
     background: {
-      primary: '#000000',
-      secondary: '#0a0a0a',
-      tertiary: '#0f0f0f',
-      elevated: 'rgba(15, 15, 15, 0.7)',
-      glass: 'rgba(10, 10, 10, 0.8)',
-      gradient: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 30%, #0f0f0f 60%, #050505 100%)',
+      primary: 'hsl(var(--background))',
+      secondary: 'hsl(var(--card))',
+      tertiary: 'hsl(var(--muted))',
+      elevated: 'hsl(var(--card) / 0.7)',
+      glass: 'hsl(var(--card) / 0.8)',
+      gradient: 'linear-gradient(135deg, hsl(var(--background)), hsl(var(--card)))',
     },
   },
 
@@ -71,7 +71,7 @@ export const theme = {
     fonts: {
       display: "'Playfair Display', serif",
       body: "'Cormorant Garamond', serif",
-      ui: "'Inter', sans-serif",
+      ui: "var(--font-sans)",
     },
 
     sizes: {
@@ -104,40 +104,40 @@ export const theme = {
   effects: {
     // Glassmorphism
     glass: {
-      light: 'backdrop-filter: blur(24px); background: rgba(15, 15, 15, 0.6);',
-      medium: 'backdrop-filter: blur(30px); background: rgba(10, 10, 10, 0.7);',
-      heavy: 'backdrop-filter: blur(40px); background: rgba(5, 5, 5, 0.8);',
+      light: 'backdrop-filter: blur(24px); background: hsl(var(--card) / 0.6);',
+      medium: 'backdrop-filter: blur(30px); background: hsl(var(--card) / 0.7);',
+      heavy: 'backdrop-filter: blur(40px); background: hsl(var(--card) / 0.8);',
     },
 
-    // Shadows
+    // Shadows - Using CSS variables for dynamic colors
     shadow: {
-      sm: '0 2px 8px rgba(0, 0, 0, 0.3)',
-      md: '0 8px 24px rgba(0, 0, 0, 0.4)',
-      lg: '0 12px 40px rgba(0, 0, 0, 0.5)',
-      xl: '0 20px 60px rgba(0, 0, 0, 0.6)',
-      '2xl': '0 30px 80px rgba(0, 0, 0, 0.7)',
+      sm: '0 2px 8px hsl(var(--foreground) / 0.1)',
+      md: '0 8px 24px hsl(var(--foreground) / 0.15)',
+      lg: '0 12px 40px hsl(var(--foreground) / 0.2)',
+      xl: '0 20px 60px hsl(var(--foreground) / 0.25)',
+      '2xl': '0 30px 80px hsl(var(--foreground) / 0.3)',
 
-      // Role-specific shadows
-      guru: '0 12px 30px rgba(201, 168, 85, 0.4)',
-      disciple: '0 12px 30px rgba(13, 148, 136, 0.4)',
-      ronin: '0 12px 30px rgba(168, 85, 247, 0.4)',
+      // Role-specific shadows use CSS variables
+      guru: '0 12px 30px hsl(var(--primary) / 0.4)',
+      disciple: '0 12px 30px hsl(var(--primary) / 0.4)',
+      ronin: '0 12px 30px hsl(var(--primary) / 0.4)',
     },
 
-    // Borders
+    // Borders - Using CSS variables
     border: {
-      subtle: '1px solid rgba(255, 255, 255, 0.06)',
-      light: '1px solid rgba(255, 255, 255, 0.08)',
-      medium: '1px solid rgba(255, 255, 255, 0.12)',
-      guru: '1px solid rgba(201, 168, 85, 0.35)',
-      disciple: '1px solid rgba(13, 148, 136, 0.35)',
-      ronin: '1px solid rgba(168, 85, 247, 0.35)',
+      subtle: '1px solid hsl(var(--border) / 0.5)',
+      light: '1px solid hsl(var(--border))',
+      medium: '1px solid hsl(var(--border) / 1.2)',
+      guru: '1px solid hsl(var(--primary) / 0.35)',
+      disciple: '1px solid hsl(var(--primary) / 0.35)',
+      ronin: '1px solid hsl(var(--primary) / 0.35)',
     },
 
     // Shine/Highlight overlays
     shine: {
-      subtle: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 60%)',
-      medium: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 60%)',
-      strong: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 60%)',
+      subtle: 'linear-gradient(135deg, hsl(0 0% 100% / 0.03) 0%, transparent 60%)',
+      medium: 'linear-gradient(135deg, hsl(0 0% 100% / 0.08) 0%, transparent 60%)',
+      strong: 'linear-gradient(135deg, hsl(0 0% 100% / 0.15) 0%, transparent 60%)',
     },
 
     // Noise texture
@@ -159,7 +159,7 @@ export const theme = {
 
   // Border Radius
   radius: {
-    sm: '0.5rem', // 8px
+    sm: 'var(--radius)', // 0.5rem / 8px
     md: '0.75rem', // 12px
     lg: '1rem', // 16px
     xl: '1.25rem', // 20px
@@ -190,6 +190,7 @@ export const theme = {
 } as const;
 
 // Helper function to get role-specific colors by theme key
+// Now all roles use the same CSS variables, which update based on body class
 export const getRoleTheme = (themeKey: RoleThemeKey) => {
   return theme.colors[themeKey];
 };
@@ -199,52 +200,35 @@ export const getRoleThemeByRole = (role: InternalRole) => {
   return theme.colors[getRoleThemeKey(role)];
 };
 
-// Helper for gradient text
-export const gradientText = (themeKey: RoleThemeKey) => ({
-  background: theme.colors[themeKey].gradient,
+// Helper for gradient text - uses CSS variables
+export const gradientText = (themeKey?: RoleThemeKey) => ({
+  background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   backgroundClip: 'text',
 });
 
-// Helper for glassmorphism card
+// Helper for glassmorphism card - uses CSS variables
 export const glassCard = (themeKey?: RoleThemeKey) => {
-  const baseStyle = {
+  return {
     backdropFilter: 'blur(30px)',
-    background: 'rgba(15, 15, 15, 0.7)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02)',
+    background: 'hsl(var(--card) / 0.7)',
+    border: '1px solid hsl(var(--border))',
+    boxShadow: '0 25px 50px -12px hsl(var(--foreground) / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.02)',
   };
-
-  if (themeKey === 'guru') {
-    return {
-      ...baseStyle,
-      background: 'linear-gradient(135deg, rgba(201, 168, 85, 0.08), rgba(184, 147, 94, 0.06))',
-      border: '1px solid rgba(201, 168, 85, 0.25)',
-      boxShadow:
-        '0 25px 50px -12px rgba(201, 168, 85, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-    };
-  }
-
-  if (themeKey === 'disciple') {
-    return {
-      ...baseStyle,
-      background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.08), rgba(20, 184, 166, 0.06))',
-      border: '1px solid rgba(13, 148, 136, 0.25)',
-      boxShadow:
-        '0 25px 50px -12px rgba(13, 148, 136, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-    };
-  }
-
-  if (themeKey === 'ronin') {
-    return {
-      ...baseStyle,
-      background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(99, 102, 241, 0.06))',
-      border: '1px solid rgba(168, 85, 247, 0.25)',
-      boxShadow:
-        '0 25px 50px -12px rgba(168, 85, 247, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-    };
-  }
-
-  return baseStyle;
 };
+
+// Helper for role-specific glow effect - uses CSS variables
+export const roleGlow = () => ({
+  boxShadow: '0 0 20px hsl(var(--primary) / 0.2), 0 0 40px hsl(var(--primary) / 0.1)',
+});
+
+// Helper for role-specific border - uses CSS variables
+export const roleBorder = () => ({
+  borderColor: 'hsl(var(--primary) / 0.3)',
+});
+
+// Helper for role-specific gradient background - uses CSS variables
+export const roleGradient = () => ({
+  background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))',
+});

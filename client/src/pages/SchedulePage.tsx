@@ -423,7 +423,7 @@ export default function SchedulePage() {
             <p className="text-base font-light text-muted-foreground/80 flex items-center gap-2">
               <motion.span
                 animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
               >
                 Loading your appointments...
               </motion.span>
@@ -443,7 +443,7 @@ export default function SchedulePage() {
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
                 animate={{ x: ['-100%', '100%'] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: i * 0.1 }}
+                transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear", delay: i * 0.1 }}
               />
             </motion.div>
           ))}
@@ -466,7 +466,7 @@ export default function SchedulePage() {
           <motion.div
             className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
             animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
           />
         </div>
         <div className="space-y-2 text-center">
@@ -1057,7 +1057,7 @@ export default function SchedulePage() {
                     <motion.div
                       className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
                       animate={{ opacity: [0.3, 0.6, 0.3] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                     />
                   </div>
                   <div className="space-y-2 text-center">

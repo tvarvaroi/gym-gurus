@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { LogOut } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,27 +17,23 @@ import { getRoleThemeByRole } from '@/lib/theme';
 import type { InternalRole } from '@/lib/roles';
 
 // Get role-specific color config for header styling
+// Now using CSS variables that work with HSL opacity syntax
 function useRoleColors() {
   const { user } = useUser();
   const role = (user?.role || 'trainer') as InternalRole;
   const roleTheme = getRoleThemeByRole(role);
 
-  // Extract RGB components for rgba() usage
-  const hexToRgbPrefix = (hex: string) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}`;
-  };
-
+  // Return CSS variable strings for use in inline styles
+  // Use format: hsl(var(--primary) / 0.15) for colors with opacity
   return {
-    primary: { rgb: hexToRgbPrefix(roleTheme.primary), hex: roleTheme.primary },
-    secondary: { rgb: hexToRgbPrefix(roleTheme.secondary), hex: roleTheme.secondary },
+    primary: roleTheme.primary,
+    accent: roleTheme.accent,
   };
 }
 
 // Premium header center text with mouse tracking gradient
 function HeaderCenterText() {
+  const prefersReducedMotion = useReducedMotion();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const textRef = useRef<HTMLDivElement>(null);
@@ -67,8 +64,8 @@ function HeaderCenterText() {
       <div
         className="relative px-6 md:px-10 py-3 md:py-3.5 rounded-2xl backdrop-blur-xl border overflow-visible group"
         style={{
-          background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.15), ${colors.secondary.rgb}, 0.15))`,
-          borderColor: `${colors.primary.rgb}, 0.3)`,
+          background: `linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--accent) / 0.15))`,
+          borderColor: `hsl(var(--primary) / 0.3)`,
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         }}
       >
@@ -85,7 +82,7 @@ function HeaderCenterText() {
         <motion.div
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
           style={{
-            background: `radial-gradient(600px circle at ${mousePosition.x}% ${mousePosition.y}%, ${colors.primary.rgb}, 0.15), transparent 50%)`,
+            background: `radial-gradient(600px circle at ${mousePosition.x}% ${mousePosition.y}%, hsl(var(--primary) / 0.15), transparent 50%)`,
           }}
         />
 
@@ -95,8 +92,8 @@ function HeaderCenterText() {
           initial={false}
           animate={{
             boxShadow: isHovering
-              ? `0 0 30px ${colors.primary.rgb}, 0.4), 0 0 60px ${colors.primary.rgb}, 0.2), 0 0 90px ${colors.secondary.rgb}, 0.1)`
-              : `0 0 0px ${colors.primary.rgb}, 0)`,
+              ? `0 0 30px hsl(var(--primary) / 0.4), 0 0 60px hsl(var(--primary) / 0.2), 0 0 90px hsl(var(--accent) / 0.1)`
+              : `0 0 0px hsl(var(--primary) / 0)`,
           }}
           transition={{ duration: 0.4 }}
         />
@@ -104,19 +101,19 @@ function HeaderCenterText() {
         {/* Decorative corner accents */}
         <div
           className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 rounded-tl-2xl opacity-40"
-          style={{ borderColor: `${colors.primary.rgb}, 0.6)` }}
+          style={{ borderColor: `hsl(var(--primary) / 0.6)` }}
         />
         <div
           className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 rounded-tr-2xl opacity-40"
-          style={{ borderColor: `${colors.secondary.rgb}, 0.6)` }}
+          style={{ borderColor: `hsl(var(--accent) / 0.6)` }}
         />
         <div
           className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 rounded-bl-2xl opacity-40"
-          style={{ borderColor: `${colors.secondary.rgb}, 0.6)` }}
+          style={{ borderColor: `hsl(var(--accent) / 0.6)` }}
         />
         <div
           className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 rounded-br-2xl opacity-40"
-          style={{ borderColor: `${colors.primary.rgb}, 0.6)` }}
+          style={{ borderColor: `hsl(var(--primary) / 0.6)` }}
         />
 
         <div className="relative flex items-center justify-center gap-3">
@@ -124,8 +121,8 @@ function HeaderCenterText() {
           <motion.div
             className="w-1.5 h-1.5 rounded-full"
             style={{
-              background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.8), ${colors.primary.rgb}, 0.5))`,
-              boxShadow: `0 0 6px ${colors.primary.rgb}, 0.6)`,
+              background: `linear-gradient(135deg, hsl(var(--primary) / 0.8), hsl(var(--primary) / 0.5))`,
+              boxShadow: `0 0 6px hsl(var(--primary) / 0.6)`,
             }}
             animate={{
               scale: isHovering ? [1, 1.3, 1] : 1,
@@ -133,7 +130,7 @@ function HeaderCenterText() {
             }}
             transition={{
               duration: 2,
-              repeat: isHovering ? Infinity : 0,
+              repeat: (isHovering && !prefersReducedMotion) ? Infinity : 0,
               ease: 'easeInOut',
             }}
           />
@@ -144,19 +141,19 @@ function HeaderCenterText() {
               fontFamily: '"Playfair Display", serif',
               letterSpacing: '0.08em',
               fontWeight: 300,
-              background: `linear-gradient(90deg, ${colors.primary.hex} 0%, ${colors.secondary.hex} 25%, #ffffff 50%, ${colors.secondary.hex} 75%, ${colors.secondary.hex} 100%)`,
+              background: `linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 25%, #ffffff 50%, hsl(var(--accent)) 75%, hsl(var(--accent)) 100%)`,
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
               backgroundSize: '200% 100%',
-              textShadow: `0 0 20px ${colors.primary.rgb}, 0.3)`,
+              textShadow: `0 0 20px hsl(var(--primary) / 0.3)`,
             }}
             animate={{
               backgroundPosition: isHovering ? ['0% 0%', '100% 0%', '0% 0%'] : '0% 0%',
             }}
             transition={{
               duration: 5,
-              repeat: isHovering ? Infinity : 0,
+              repeat: (isHovering && !prefersReducedMotion) ? Infinity : 0,
               ease: 'linear',
             }}
           >
@@ -167,8 +164,8 @@ function HeaderCenterText() {
           <motion.div
             className="w-1.5 h-1.5 rounded-full"
             style={{
-              background: `linear-gradient(135deg, ${colors.secondary.rgb}, 0.8), ${colors.secondary.rgb}, 0.5))`,
-              boxShadow: `0 0 6px ${colors.secondary.rgb}, 0.6)`,
+              background: `linear-gradient(135deg, hsl(var(--accent) / 0.8), hsl(var(--accent) / 0.5))`,
+              boxShadow: `0 0 6px hsl(var(--accent) / 0.6)`,
             }}
             animate={{
               scale: isHovering ? [1, 1.3, 1] : 1,
@@ -176,7 +173,7 @@ function HeaderCenterText() {
             }}
             transition={{
               duration: 2,
-              repeat: isHovering ? Infinity : 0,
+              repeat: (isHovering && !prefersReducedMotion) ? Infinity : 0,
               ease: 'easeInOut',
               delay: 0.5,
             }}
@@ -196,8 +193,8 @@ function HeaderCenterText() {
                   <motion.div
                     className="w-2.5 h-2.5 rounded-full"
                     style={{
-                      background: `linear-gradient(135deg, ${colors.primary.hex}, ${colors.primary.hex})`,
-                      boxShadow: `0 0 12px ${colors.primary.rgb}, 0.6), 0 0 24px ${colors.primary.rgb}, 0.3)`,
+                      background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)))`,
+                      boxShadow: `0 0 12px hsl(var(--primary) / 0.6), 0 0 24px hsl(var(--primary) / 0.3)`,
                     }}
                     animate={{
                       scale: [1, 1.5, 1],
@@ -206,7 +203,7 @@ function HeaderCenterText() {
                     }}
                     transition={{
                       duration: 3,
-                      repeat: Infinity,
+                      repeat: prefersReducedMotion ? 0 : Infinity,
                       ease: 'easeInOut',
                     }}
                   />
@@ -222,8 +219,8 @@ function HeaderCenterText() {
                   <motion.div
                     className="w-2 h-2 rounded-full"
                     style={{
-                      background: `linear-gradient(135deg, ${colors.secondary.hex}, ${colors.secondary.hex})`,
-                      boxShadow: `0 0 10px ${colors.secondary.rgb}, 0.6), 0 0 20px ${colors.secondary.rgb}, 0.3)`,
+                      background: `linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent)))`,
+                      boxShadow: `0 0 10px hsl(var(--accent) / 0.6), 0 0 20px hsl(var(--accent) / 0.3)`,
                     }}
                     animate={{
                       scale: [1, 1.4, 1],
@@ -232,7 +229,7 @@ function HeaderCenterText() {
                     }}
                     transition={{
                       duration: 3,
-                      repeat: Infinity,
+                      repeat: prefersReducedMotion ? 0 : Infinity,
                       ease: 'easeInOut',
                       delay: 1,
                     }}
@@ -249,9 +246,14 @@ function HeaderCenterText() {
 
 // User menu component for authenticated users
 function UserMenu() {
+  const prefersReducedMotion = useReducedMotion();
   const { data: user } = useQuery({
     queryKey: ['/api/auth/user'],
     retry: false,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   const colors = useRoleColors();
@@ -276,7 +278,7 @@ function UserMenu() {
           <motion.div
             className="absolute inset-0 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"
             style={{
-              background: `radial-gradient(circle, ${colors.primary.rgb}, 0.3), ${colors.secondary.rgb}, 0.3))`,
+              background: `radial-gradient(circle, hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.3))`,
             }}
             initial={false}
           />
@@ -285,10 +287,10 @@ function UserMenu() {
           <motion.div
             className="absolute inset-0 rounded-full p-[2px]"
             style={{
-              background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.4), ${colors.secondary.rgb}, 0.4))`,
+              background: `linear-gradient(135deg, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.4))`,
             }}
             animate={{ rotate: [0, 360] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 8, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
           >
             <div className="w-full h-full rounded-full bg-background" />
           </motion.div>
@@ -297,8 +299,8 @@ function UserMenu() {
           <div
             className="relative h-11 w-11 md:h-12 md:w-12 rounded-full border-2 transition-all duration-300 overflow-hidden"
             style={{
-              background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.15), ${colors.secondary.rgb}, 0.15))`,
-              borderColor: `${colors.primary.rgb}, 0.3)`,
+              background: `linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--accent) / 0.15))`,
+              borderColor: `hsl(var(--primary) / 0.3)`,
               backdropFilter: 'blur(12px)',
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
             }}
@@ -314,13 +316,13 @@ function UserMenu() {
             <div
               className="absolute inset-0"
               style={{
-                background: `radial-gradient(circle at 30% 30%, ${colors.primary.rgb}, 0.25), transparent 60%)`,
+                background: `radial-gradient(circle at 30% 30%, hsl(var(--primary) / 0.25), transparent 60%)`,
               }}
             />
             <div
               className="absolute inset-0"
               style={{
-                background: `radial-gradient(circle at 70% 70%, ${colors.secondary.rgb}, 0.25), transparent 60%)`,
+                background: `radial-gradient(circle at 70% 70%, hsl(var(--accent) / 0.25), transparent 60%)`,
               }}
             />
 
@@ -328,11 +330,11 @@ function UserMenu() {
               <motion.span
                 className="text-sm md:text-base font-semibold"
                 style={{
-                  background: `linear-gradient(135deg, ${colors.primary.hex} 0%, #e5e4e2 50%, ${colors.secondary.hex} 100%)`,
+                  background: `linear-gradient(135deg, hsl(var(--primary)) 0%, #e5e4e2 50%, hsl(var(--accent)) 100%)`,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
-                  textShadow: `0 0 10px ${colors.primary.rgb}, 0.3)`,
+                  textShadow: `0 0 10px hsl(var(--primary) / 0.3)`,
                   fontFamily: '"Inter", sans-serif',
                   letterSpacing: '0.05em',
                 }}
@@ -373,7 +375,7 @@ function UserMenu() {
                 background: 'radial-gradient(circle, rgba(16, 185, 129, 0.8), transparent)',
               }}
               animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0.9, 0.6] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
             />
           </motion.div>
         </motion.button>
@@ -478,6 +480,7 @@ function UserMenu() {
 
 // Main app header component with role-based colors
 export default function AppHeader() {
+  const prefersReducedMotion = useReducedMotion();
   const colors = useRoleColors();
 
   return (
@@ -486,7 +489,7 @@ export default function AppHeader() {
       role="banner"
       aria-label="App header"
       style={{
-        borderColor: `${colors.primary.rgb}, 0.3)`,
+        borderColor: `hsl(var(--primary) / 0.3)`,
         backdropFilter: 'blur(24px)',
         boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05)',
       }}
@@ -496,7 +499,7 @@ export default function AppHeader() {
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.15) 0%, ${colors.secondary.rgb}, 0.15) 100%)`,
+            background: `linear-gradient(135deg, hsl(var(--primary) / 0.15) 0%, hsl(var(--accent) / 0.15) 100%)`,
           }}
         />
         <div
@@ -524,18 +527,18 @@ export default function AppHeader() {
         <motion.div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(90deg, transparent 0%, ${colors.primary.rgb}, 0.06) 50%, transparent 100%)`,
+            background: `linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.06) 50%, transparent 100%)`,
             backgroundSize: '200% 100%',
           }}
           animate={{ backgroundPosition: ['0% 0%', '200% 0%'] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+          transition={{ duration: 8, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
         />
 
         {/* Premium top accent line */}
         <div
           className="absolute top-0 left-0 right-0 h-[1px]"
           style={{
-            background: `linear-gradient(90deg, transparent 0%, ${colors.primary.rgb}, 0.5) 20%, ${colors.primary.rgb}, 0.8) 50%, ${colors.secondary.rgb}, 0.8) 50%, ${colors.secondary.rgb}, 0.5) 80%, transparent 100%)`,
+            background: `linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.5) 20%, hsl(var(--primary) / 0.8) 50%, hsl(var(--accent) / 0.8) 50%, hsl(var(--accent) / 0.5) 80%, transparent 100%)`,
           }}
         />
 
@@ -564,8 +567,8 @@ export default function AppHeader() {
               aria-label="Toggle sidebar navigation"
               className="hover-elevate transition-all duration-300 rounded-xl border h-10 w-10 md:h-12 md:w-12"
               style={{
-                background: `linear-gradient(135deg, ${colors.primary.rgb}, 0.12), ${colors.secondary.rgb}, 0.12))`,
-                borderColor: `${colors.primary.rgb}, 0.25)`,
+                background: `linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--accent) / 0.12))`,
+                borderColor: `hsl(var(--primary) / 0.25)`,
                 backdropFilter: 'blur(12px)',
                 boxShadow:
                   '0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)',

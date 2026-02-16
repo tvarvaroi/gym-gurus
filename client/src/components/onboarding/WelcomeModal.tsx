@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -152,6 +153,7 @@ export function WelcomeModal({
   userName,
   userRole = 'trainer',
 }: WelcomeModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const isSolo = userRole === 'solo';
   const isTrainer = userRole === 'trainer';
 
@@ -417,7 +419,7 @@ export function WelcomeModal({
                     }}
                     transition={{
                       duration: 2,
-                      repeat: Infinity,
+                      repeat: prefersReducedMotion ? 0 : Infinity,
                       ease: 'easeInOut',
                     }}
                   />
@@ -710,7 +712,7 @@ export function WelcomeModal({
                     }}
                     transition={{
                       duration: 2,
-                      repeat: Infinity,
+                      repeat: prefersReducedMotion ? 0 : Infinity,
                       ease: 'easeInOut',
                     }}
                   />

@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { format, formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import ProgressFormModal from "@/components/ProgressFormModal";
 import { EditClientButton } from "@/components/ClientFormModal";
 import {
@@ -106,6 +107,7 @@ export default function ClientDetailsPage() {
   const clientId = params?.id;
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const prefersReducedMotion = useReducedMotion();
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showProgressOverview, setShowProgressOverview] = useState(false);
   const [availableWorkouts, setAvailableWorkouts] = useState<any[]>([]);
@@ -267,7 +269,7 @@ export default function ClientDetailsPage() {
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full blur-xl"
                       animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{ duration: 3, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                     />
                     <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/30 shadow-lg">
                       <UserCircle className="w-16 h-16 text-primary" />
@@ -285,7 +287,7 @@ export default function ClientDetailsPage() {
                         <motion.div
                           className="absolute inset-0 rounded-full bg-emerald-500"
                           animate={{ opacity: [0.5, 1, 0.5] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                         />
                       )}
                     </motion.div>

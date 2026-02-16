@@ -145,6 +145,9 @@ export function UserProvider({ children }: UserProviderProps) {
     queryKey: ['/api/auth/user'],
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Don't refetch on component mount
+    refetchOnReconnect: false, // Don't refetch on reconnect
   });
 
   // Helper to check if user has a specific permission

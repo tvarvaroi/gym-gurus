@@ -97,11 +97,11 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
 
   const typeConfig = {
     session: {
-      gradient: isClient ? 'from-cyan-500/15 via-cyan-400/8 to-transparent' : 'from-[#c9a855]/15 via-[#c9a855]/8 to-transparent',
-      border: isClient ? 'border-cyan-600/25' : 'border-[#c9a855]/25',
-      text: isClient ? 'text-cyan-700 dark:text-cyan-400' : 'text-[#c9a855] dark:text-[#d4b76a]',
-      dot: isClient ? 'bg-gradient-to-br from-cyan-500 to-cyan-600' : 'bg-gradient-to-br from-[#c9a855] to-teal-600',
-      glow: isClient ? 'shadow-md shadow-cyan-500/15' : 'shadow-md shadow-[#c9a855]/15'
+      gradient: 'from-primary/15 via-primary/8 to-transparent',
+      border: 'border-primary/25',
+      text: 'text-primary',
+      dot: 'bg-gradient-to-br from-primary to-accent',
+      glow: 'shadow-md shadow-primary/15'
     },
     consultation: {
       gradient: 'from-teal-600/15 via-teal-500/8 to-transparent',
@@ -111,11 +111,11 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
       glow: 'shadow-md shadow-teal-600/15'
     },
     "check-in": {
-      gradient: isClient ? 'from-sky-500/15 via-sky-400/8 to-transparent' : 'from-teal-500/15 via-teal-400/8 to-transparent',
-      border: isClient ? 'border-sky-600/25' : 'border-teal-600/25',
-      text: isClient ? 'text-sky-700 dark:text-sky-400' : 'text-teal-700 dark:text-teal-400',
-      dot: isClient ? 'bg-gradient-to-br from-sky-500 to-sky-600' : 'bg-gradient-to-br from-[#c9a855] to-teal-600',
-      glow: isClient ? 'shadow-md shadow-sky-500/15' : 'shadow-md shadow-teal-500/15'
+      gradient: 'from-accent/15 via-accent/8 to-transparent',
+      border: 'border-accent/25',
+      text: 'text-accent-foreground',
+      dot: 'bg-gradient-to-br from-accent to-primary',
+      glow: 'shadow-md shadow-accent/15'
     },
   };
 
@@ -127,79 +127,41 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
       >
-        <Card className={cn(
-          "relative overflow-hidden shadow-xl dark:from-background dark:via-background dark:to-background",
-          isClient
-            ? "border-cyan-900/10 dark:border-cyan-200/10 shadow-cyan-900/5 bg-gradient-to-br from-cyan-50/50 via-white to-teal-50/30"
-            : "border-[#8a7439]/10 dark:border-[#f4dea8]/10 shadow-[#8a7439]/5 bg-gradient-to-br from-[#fdf9f2]/50 via-white to-teal-50/30"
-        )}>
+        <Card className="relative overflow-hidden shadow-xl dark:from-background dark:via-background dark:to-background border-primary/10 shadow-primary/5 bg-gradient-to-br from-accent/30 via-white to-background/30">
           {/* Elegant subtle overlay */}
-          <div className={cn(
-            "absolute inset-0 bg-gradient-to-br via-transparent pointer-events-none",
-            isClient ? "from-cyan-500/3 to-teal-600/3" : "from-[#d4b76a]/3 to-teal-600/3"
-          )} />
-          <div className={cn(
-            "absolute inset-0 pointer-events-none",
-            isClient
-              ? "bg-[radial-gradient(circle_at_30%_20%,rgba(6,182,212,0.05),transparent_50%)]"
-              : "bg-[radial-gradient(circle_at_30%_20%,rgba(201,168,85,0.05),transparent_50%)]"
-          )} />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-primary/3 pointer-events-none" />
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)_/_0.05),transparent_50%)]" />
 
-          <CardHeader className={cn(
-            "relative pb-8 border-b",
-            isClient ? "border-cyan-900/5 dark:border-cyan-200/5" : "border-[#8a7439]/5 dark:border-[#f4dea8]/5"
-          )}>
+          <CardHeader className="relative pb-8 border-b border-primary/5">
             <div className="flex items-center justify-between">
               <CardTitle
-                className={cn(
-                  "text-4xl font-extralight tracking-wider flex items-baseline gap-3",
-                  isClient ? "text-cyan-900/90 dark:text-cyan-100/90" : "text-[#8a7439]/90 dark:text-[#f9ecce]/90"
-                )}
+                className="text-4xl font-extralight tracking-wider flex items-baseline gap-3 text-primary/90"
                 data-testid="text-calendar-title"
               >
                 {monthNames[currentMonth]}
-                <span className={cn(
-                  "font-thin text-2xl",
-                  isClient ? "text-cyan-900/60 dark:text-cyan-100/60" : "text-[#8a7439]/60 dark:text-[#f9ecce]/60"
-                )}>{currentYear}</span>
+                <span className="font-thin text-2xl text-primary/60">{currentYear}</span>
               </CardTitle>
               <div className="flex items-center gap-3">
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={cn(
-                      "border transition-all duration-500 rounded-xl",
-                      isClient
-                        ? "border-cyan-900/10 dark:border-cyan-200/10 hover:bg-cyan-500/5 hover:border-cyan-600/20"
-                        : "border-[#8a7439]/10 dark:border-[#f4dea8]/10 hover:bg-[#d4b76a]/5 hover:border-[#c9a855]/20"
-                    )}
+                    className="border border-primary/10 hover:bg-primary/5 hover:border-primary/20 transition-all duration-500 rounded-xl"
                     onClick={previousMonth}
                     data-testid="button-previous-month"
                   >
-                    <ChevronLeft className={cn(
-                      "h-4 w-4",
-                      isClient ? "text-cyan-800 dark:text-cyan-300" : "text-[#a08948] dark:text-[#e9d193]"
-                    )} />
+                    <ChevronLeft className="h-4 w-4 text-primary" />
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={cn(
-                      "border transition-all duration-500 rounded-xl",
-                      isClient
-                        ? "border-cyan-900/10 dark:border-cyan-200/10 hover:bg-cyan-500/5 hover:border-cyan-600/20"
-                        : "border-[#8a7439]/10 dark:border-[#f4dea8]/10 hover:bg-[#d4b76a]/5 hover:border-[#c9a855]/20"
-                    )}
+                    className="border border-primary/10 hover:bg-primary/5 hover:border-primary/20 transition-all duration-500 rounded-xl"
                     onClick={nextMonth}
                     data-testid="button-next-month"
                   >
-                    <ChevronRight className={cn(
-                      "h-4 w-4",
-                      isClient ? "text-cyan-800 dark:text-cyan-300" : "text-[#a08948] dark:text-[#e9d193]"
-                    )} />
+                    <ChevronRight className="h-4 w-4 text-primary" />
                   </Button>
                 </motion.div>
               </div>
@@ -211,10 +173,7 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
               {daysOfWeek.map((day) => (
                 <div
                   key={day}
-                  className={cn(
-                    "p-2 text-center text-xs font-light tracking-widest uppercase",
-                    isClient ? "text-cyan-900/50 dark:text-cyan-100/50" : "text-[#8a7439]/50 dark:text-[#f9ecce]/50"
-                  )}
+                  className="p-2 text-center text-xs font-light tracking-widest uppercase text-primary/50"
                 >
                   {day}
                 </div>
@@ -251,39 +210,24 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                         "relative group cursor-pointer h-[160px] p-4",
                         "border rounded-3xl transition-all duration-500",
                         "flex flex-col",
-                        isSelected && (isClient
-                          ? "ring-1 ring-cyan-600/30 ring-offset-2 ring-offset-background shadow-lg shadow-cyan-500/20 bg-gradient-to-br from-cyan-50 to-teal-50/30 dark:from-cyan-950/20 dark:to-teal-950/10"
-                          : "ring-1 ring-[#c9a855]/30 ring-offset-2 ring-offset-background shadow-lg shadow-[#d4b76a]/20 bg-gradient-to-br from-[#fdf9f2] to-teal-50/30 dark:from-[#6d5c2e]/20 dark:to-teal-950/10"),
-                        isToday && !isSelected && (isClient
-                          ? "bg-gradient-to-br from-cyan-100/40 via-cyan-50/30 to-white dark:from-cyan-900/10 dark:via-cyan-950/5 dark:to-background border-cyan-600/20 shadow-md shadow-cyan-500/10"
-                          : "bg-gradient-to-br from-[#f9ecce]/40 via-[#fdf9f2]/30 to-white dark:from-[#8a7439]/10 dark:via-[#6d5c2e]/5 dark:to-background border-[#c9a855]/20 shadow-md shadow-[#d4b76a]/10"),
-                        !isToday && !isSelected && (isClient
-                          ? "bg-white/40 dark:bg-background/40 border-cyan-900/8 dark:border-cyan-200/5 hover:border-cyan-600/15 hover:shadow-lg hover:shadow-cyan-500/8 hover:bg-gradient-to-br hover:from-cyan-50/30 hover:to-transparent"
-                          : "bg-white/40 dark:bg-background/40 border-[#8a7439]/8 dark:border-[#f4dea8]/5 hover:border-[#c9a855]/15 hover:shadow-lg hover:shadow-[#d4b76a]/8 hover:bg-gradient-to-br hover:from-[#fdf9f2]/30 hover:to-transparent")
+                        isSelected && "ring-1 ring-primary/30 ring-offset-2 ring-offset-background shadow-lg shadow-primary/20 bg-gradient-to-br from-accent/40 to-background/30 dark:from-primary/10 dark:to-background/10",
+                        isToday && !isSelected && "bg-gradient-to-br from-accent/50 via-accent/30 to-white dark:from-primary/10 dark:via-primary/5 dark:to-background border-primary/20 shadow-md shadow-primary/10",
+                        !isToday && !isSelected && "bg-white/40 dark:bg-background/40 border-primary/8 hover:border-primary/15 hover:shadow-lg hover:shadow-primary/8 hover:bg-gradient-to-br hover:from-accent/30 hover:to-transparent"
                       )}
                       data-testid={`calendar-day-${day}`}
                     >
                       {/* Elegant subtle shimmer on hover */}
                       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none rounded-3xl overflow-hidden">
-                        <div className={cn(
-                          "absolute inset-0 bg-gradient-to-r from-transparent to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1500",
-                          isClient ? "via-cyan-400/8" : "via-[#dfc47f]/8"
-                        )} />
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/8 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1500" />
                       </div>
 
                       {/* Day header */}
                       <div className="relative flex items-center justify-between mb-4">
                         <span className={cn(
                           "text-lg font-light tracking-wide",
-                          isToday ? (isClient
-                            ? "text-cyan-800 dark:text-cyan-300 font-normal"
-                            : "text-[#a08948] dark:text-[#e9d193] font-normal")
-                            : (isClient
-                              ? "text-cyan-900/70 dark:text-cyan-100/70"
-                              : "text-[#8a7439]/70 dark:text-[#f9ecce]/70"),
-                          isSelected && (isClient
-                            ? "text-cyan-800 dark:text-cyan-300"
-                            : "text-[#a08948] dark:text-[#e9d193]")
+                          isToday && "text-primary font-normal",
+                          !isToday && "text-primary/70",
+                          isSelected && "text-primary"
                         )}>
                           {day}
                         </span>
@@ -295,13 +239,8 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                             className={cn(
                               "text-[9px] font-medium px-2 py-0.5 rounded-full",
                               "border backdrop-blur-sm",
-                              isToday || isSelected
-                                ? (isClient
-                                  ? "bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border-cyan-600/30"
-                                  : "bg-[#d4b76a]/20 text-[#a08948] dark:text-[#e9d193] border-[#c9a855]/30")
-                                : (isClient
-                                  ? "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-600/20"
-                                  : "bg-[#d4b76a]/10 text-[#b69a4f] dark:text-[#dfc47f] border-[#c9a855]/20")
+                              (isToday || isSelected) && "bg-primary/20 text-primary border-primary/30",
+                              !isToday && !isSelected && "bg-primary/10 text-primary/80 border-primary/20"
                             )}
                           >
                             {dayEvents.length}
@@ -310,15 +249,7 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                       </div>
 
                       {/* Events list - scrollable if content overflows */}
-                      <div className={cn(
-                        "relative flex-1 space-y-2 overflow-y-auto overflow-x-hidden pr-3",
-                        "[&::-webkit-scrollbar]:w-[1.5px] [&::-webkit-scrollbar-track]:bg-transparent",
-                        "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-transparent",
-                        "[&::-webkit-scrollbar-thumb]:transition-all [&::-webkit-scrollbar-thumb]:duration-500",
-                        isClient
-                          ? "[&::-webkit-scrollbar-thumb]:bg-cyan-600/20 hover:[&::-webkit-scrollbar-thumb]:bg-cyan-600/30"
-                          : "[&::-webkit-scrollbar-thumb]:bg-[#c9a855]/20 hover:[&::-webkit-scrollbar-thumb]:bg-[#c9a855]/30"
-                      )}>
+                      <div className="relative flex-1 space-y-2 overflow-y-auto overflow-x-hidden pr-3 [&::-webkit-scrollbar]:w-[1.5px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:transition-all [&::-webkit-scrollbar-thumb]:duration-500 [&::-webkit-scrollbar-thumb]:bg-primary/20 hover:[&::-webkit-scrollbar-thumb]:bg-primary/30">
                         <AnimatePresence mode="popLayout">
                           {dayEvents.map((event, idx) => {
                             const config = typeConfig[event.type];
@@ -382,45 +313,21 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
             exit={{ opacity: 0, height: 0, y: -10 }}
             transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            <Card className={cn(
-              "relative overflow-hidden shadow-xl dark:from-background dark:via-background dark:to-background",
-              isClient
-                ? "border-cyan-900/10 dark:border-cyan-200/10 shadow-cyan-900/5 bg-gradient-to-br from-cyan-50/50 via-white to-teal-50/30"
-                : "border-[#8a7439]/10 dark:border-[#f4dea8]/10 shadow-[#8a7439]/5 bg-gradient-to-br from-[#fdf9f2]/50 via-white to-teal-50/30"
-            )}>
+            <Card className="relative overflow-hidden shadow-xl dark:from-background dark:via-background dark:to-background border-primary/10 shadow-primary/5 bg-gradient-to-br from-accent/30 via-white to-background/30">
               {/* Elegant subtle overlay */}
-              <div className={cn(
-                "absolute inset-0 bg-gradient-to-br via-transparent pointer-events-none",
-                isClient ? "from-cyan-500/3 to-teal-600/3" : "from-[#d4b76a]/3 to-teal-600/3"
-              )} />
-              <div className={cn(
-                "absolute inset-0 pointer-events-none",
-                isClient
-                  ? "bg-[radial-gradient(circle_at_30%_20%,rgba(6,182,212,0.05),transparent_50%)]"
-                  : "bg-[radial-gradient(circle_at_30%_20%,rgba(201,168,85,0.05),transparent_50%)]"
-              )} />
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-primary/3 pointer-events-none" />
+              <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)_/_0.05),transparent_50%)]" />
 
-              <CardHeader className={cn(
-                "relative pb-6 border-b",
-                isClient ? "border-cyan-900/5 dark:border-cyan-200/5" : "border-[#8a7439]/5 dark:border-[#f4dea8]/5"
-              )}>
+              <CardHeader className="relative pb-6 border-b border-primary/5">
                 <div className="flex items-center justify-between">
-                  <CardTitle className={cn(
-                    "text-2xl font-extralight tracking-wider",
-                    isClient ? "text-cyan-900/90 dark:text-cyan-100/90" : "text-[#8a7439]/90 dark:text-[#f9ecce]/90"
-                  )}>
+                  <CardTitle className="text-2xl font-extralight tracking-wider text-primary/90">
                     Schedule for {new Date(selectedDate).toLocaleDateString('en-US', {
                       weekday: 'long',
                       month: 'long',
                       day: 'numeric'
                     })}
                   </CardTitle>
-                  <Badge variant="outline" className={cn(
-                    "font-light px-3 py-1 tracking-wide",
-                    isClient
-                      ? "border-cyan-600/20 bg-cyan-500/10 text-cyan-800 dark:text-cyan-300"
-                      : "border-[#c9a855]/20 bg-[#d4b76a]/10 text-[#a08948] dark:text-[#e9d193]"
-                  )}>
+                  <Badge variant="outline" className="font-light px-3 py-1 tracking-wide border-primary/20 bg-primary/10 text-primary">
                     {selectedDayAppointments.length} {selectedDayAppointments.length === 1 ? 'appointment' : 'appointments'}
                   </Badge>
                 </div>

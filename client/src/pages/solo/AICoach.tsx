@@ -19,6 +19,7 @@ import {
   ChevronRight,
   MessageSquare
 } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface Message {
   id: string;
@@ -36,6 +37,7 @@ const quickPrompts = [
 ];
 
 export default function AICoach() {
+  const prefersReducedMotion = useReducedMotion();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -51,6 +53,10 @@ export default function AICoach() {
   const { data: user } = useQuery({
     queryKey: ['/api/auth/user'],
     retry: false,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   const scrollToBottom = () => {
@@ -247,17 +253,17 @@ export default function AICoach() {
                         <motion.div
                           className="w-2 h-2 rounded-full bg-purple-400"
                           animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                          transition={{ duration: 0.6, repeat: prefersReducedMotion ? 0 : Infinity, delay: 0 }}
                         />
                         <motion.div
                           className="w-2 h-2 rounded-full bg-purple-400"
                           animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                          transition={{ duration: 0.6, repeat: prefersReducedMotion ? 0 : Infinity, delay: 0.2 }}
                         />
                         <motion.div
                           className="w-2 h-2 rounded-full bg-purple-400"
                           animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                          transition={{ duration: 0.6, repeat: prefersReducedMotion ? 0 : Infinity, delay: 0.4 }}
                         />
                       </div>
                     </div>

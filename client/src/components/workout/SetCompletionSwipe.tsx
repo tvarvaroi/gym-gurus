@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { Check, ChevronRight, SkipForward, Edit2 } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface SetCompletionSwipeProps {
   setNumber: number;
@@ -24,6 +25,7 @@ export function SetCompletionSwipe({
   const [isEditing, setIsEditing] = useState(false);
   const [reps, setReps] = useState(targetReps);
   const [weight, setWeight] = useState(targetWeight || 0);
+  const prefersReducedMotion = useReducedMotion();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
@@ -225,7 +227,7 @@ export function SetCompletionSwipe({
             className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center text-muted-foreground/50"
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: [0.3, 0.6, 0.3], x: [-10, 0, -10] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity }}
           >
             <ChevronRight className="w-6 h-6" />
           </motion.div>

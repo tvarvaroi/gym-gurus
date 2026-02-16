@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Star, Zap } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface LevelBadgeProps {
   level: number;
@@ -140,6 +141,7 @@ export function LevelBadge({ level, size = 'md', showLabel = false, animated = t
 
 // Level up animation component
 export function LevelUpAnimation({ newLevel, onComplete }: { newLevel: number; onComplete?: () => void }) {
+  const prefersReducedMotion = useReducedMotion();
   const colors = getLevelColor(newLevel);
 
   return (
@@ -163,7 +165,7 @@ export function LevelUpAnimation({ newLevel, onComplete }: { newLevel: number; o
             scale: [1, 1.5, 1],
             opacity: [0.5, 0.8, 0.5],
           }}
-          transition={{ duration: 1, repeat: Infinity }}
+          transition={{ duration: 1, repeat: prefersReducedMotion ? 0 : Infinity }}
         />
 
         <motion.div
@@ -171,7 +173,7 @@ export function LevelUpAnimation({ newLevel, onComplete }: { newLevel: number; o
           animate={{
             y: [0, -10, 0],
           }}
-          transition={{ duration: 0.5, repeat: Infinity }}
+          transition={{ duration: 0.5, repeat: prefersReducedMotion ? 0 : Infinity }}
         >
           <LevelBadge level={newLevel} size="lg" animated={false} />
         </motion.div>

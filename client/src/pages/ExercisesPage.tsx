@@ -209,7 +209,7 @@ const ExercisesPage = memo(() => {
         <div>
           <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
             <span className="text-foreground">Exercise </span>
-            <span className="text-[#c9a855]">Library</span>
+            <span className="text-[hsl(var(--color-guru))]">Library</span>
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Browse and manage your exercise collection
