@@ -133,12 +133,24 @@ const HeroPage = memo(() => {
             >
               <Crown className="w-4 h-4" style={{ color: 'hsl(var(--color-guru))' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
-                PREMIUM FITNESS PLATFORM
+                FOR PERSONAL TRAINERS WHO WANT TO SCALE
               </span>
             </motion.div>
 
             {/* Oversized Magazine-Style Headline */}
             <div className="space-y-6">
+              {/* Problem statement */}
+              <p
+                className="text-base md:text-lg font-light"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  color: '#999',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                Tired of juggling spreadsheets, losing client progress, and wasting hours on admin?
+              </p>
+
               <h1
                 className="text-5xl md:text-6xl lg:text-7xl font-light pb-4"
                 style={{
@@ -151,13 +163,13 @@ const HeroPage = memo(() => {
                   lineHeight: '1.25',
                 }}
               >
-                Transform
+                Run Your
                 <br />
-                Your
-                <br />
-                <span className="font-normal">Training</span>
+                <span className="font-normal">Fitness</span>
                 <br />
                 Business
+                <br />
+                Like a Pro
               </h1>
 
               {/* Subheadline with generous spacing */}
@@ -172,8 +184,8 @@ const HeroPage = memo(() => {
                   paddingLeft: '2rem',
                 }}
               >
-                The all-in-one platform for modern personal trainers. Manage, track, and
-                grow—effortlessly.
+                Manage clients, build workouts, track progress, and grow your revenue — all
+                from one platform built for personal trainers.
               </p>
             </div>
           </motion.div>
@@ -318,8 +330,9 @@ const HeroPage = memo(() => {
             className="hidden lg:block"
           >
             <motion.div
-              animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
-              transition={{ duration: 6, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 1 }}
               className="flex items-center justify-center"
             >
               <Trophy className="w-20 h-20" style={{ color: 'hsl(var(--color-guru) / 0.15)' }} />
@@ -382,35 +395,26 @@ const HeroPage = memo(() => {
         </div>
       </motion.div>
 
-      {/* Floating luxury particles - Gold & Teal - optimized count */}
-      {[...Array(6)].map((_, i) => (
+      {/* Static accent dots */}
+      {[...Array(4)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute rounded-full pointer-events-none z-50"
           style={{
-            width: '1.5px',
-            height: '1.5px',
+            width: '1px',
+            height: '1px',
             background:
               i % 2 === 0
                 ? 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))'
                 : 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
             boxShadow:
               i % 2 === 0 ? '0 0 8px hsl(var(--color-guru) / 0.4)' : '0 0 8px hsl(var(--color-disciple) / 0.4)',
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            willChange: 'transform, opacity',
+            left: `${20 + i * 20}%`,
+            top: `${15 + i * 20}%`,
           }}
-          animate={{
-            y: [0, -150, 0],
-            opacity: [0, 0.5, 0],
-            scale: [0, 1.5, 0],
-          }}
-          transition={{
-            duration: 6 + Math.random() * 3,
-            repeat: prefersReducedMotion ? 0 : Infinity,
-            delay: Math.random() * 6,
-            ease: 'easeInOut',
-          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.3 }}
+          transition={{ duration: 1.5, delay: i * 0.3 }}
         />
       ))}
     </div>
