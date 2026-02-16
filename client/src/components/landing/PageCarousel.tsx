@@ -54,6 +54,18 @@ const PageCarousel = memo(({ pages }: PageCarouselProps) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextPage, previousPage, navigateToPage, totalPages]);
 
+  // Listen for custom navigation events from child pages (e.g., CTA buttons)
+  useEffect(() => {
+    const handleNavigateEvent = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail?.page === 'number') {
+        navigateToPage(detail.page);
+      }
+    };
+    window.addEventListener('carousel:navigate', handleNavigateEvent);
+    return () => window.removeEventListener('carousel:navigate', handleNavigateEvent);
+  }, [navigateToPage]);
+
   // Touch/swipe navigation
   useEffect(() => {
     let touchStartX = 0;

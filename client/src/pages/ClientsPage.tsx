@@ -181,7 +181,7 @@ const ClientsPageContent = memo(() => {
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
                     animate={{ x: ['-100%', '100%'] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
                   />
                 </motion.div>
               }>

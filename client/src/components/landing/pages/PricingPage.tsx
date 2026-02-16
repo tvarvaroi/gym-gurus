@@ -369,8 +369,14 @@ const PricingPage = memo(() => {
 
                     {/* CTA */}
                     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-                      <a
-                        href={plan.priceMonthly === null ? '/contact' : '/api/login?role=trainer'}
+                      <button
+                        onClick={() => {
+                          if (plan.priceMonthly === null) {
+                            window.dispatchEvent(new CustomEvent('carousel:navigate', { detail: { page: 4 } }));
+                          } else {
+                            window.dispatchEvent(new CustomEvent('carousel:navigate', { detail: { page: 5 } }));
+                          }
+                        }}
                         className="w-full inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-light transition-all text-sm"
                         style={{
                           fontFamily: "'Playfair Display', serif",
@@ -386,7 +392,7 @@ const PricingPage = memo(() => {
                         }}
                       >
                         {plan.cta}
-                      </a>
+                      </button>
                     </motion.div>
                   </div>
                 </div>

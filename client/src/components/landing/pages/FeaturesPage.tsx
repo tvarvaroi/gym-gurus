@@ -251,8 +251,8 @@ const FeaturesPage = memo(() => {
 
             {/* CTA */}
             <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.98 }}>
-              <a
-                href="/api/login?role=trainer"
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('carousel:navigate', { detail: { page: 5 } }))}
                 className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all"
                 style={{
                   fontFamily: "'Playfair Display', serif",
@@ -265,7 +265,7 @@ const FeaturesPage = memo(() => {
               >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </a>
+              </button>
             </motion.div>
 
             {/* Trust Indicators */}
