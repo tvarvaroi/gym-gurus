@@ -185,4 +185,48 @@ router.get('/leaderboard/:type', async (req: Request, res: Response) => {
   }
 });
 
+// POST /weekly-summary - Generate and send weekly summary notification
+router.post('/weekly-summary', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const profile = await getUserGamification(userId);
+    if (!profile) {
+      return res.json({ message: 'No gamification profile found' });
+    }
+
+    // Get XP earned this week
+    const transactions = await getRecentXpTransactions(userId, 50);
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const weeklyXp = transactions
+      .filter((t: any) => new Date(t.createdAt) >= oneWeekAgo)
+      .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
+    const weeklyWorkouts = transactions
+      .filter((t: any) => new Date(t.createdAt) >= oneWeekAgo && t.reason === 'workout_completed')
+      .length;
+
+    const weeklyPrs = transactions
+      .filter((t: any) => new Date(t.createdAt) >= oneWeekAgo && t.reason === 'personal_record')
+      .length;
+
+    const { notifyWeeklySummary } = await import('../services/notificationService');
+    await notifyWeeklySummary(userId, {
+      workoutsCompleted: weeklyWorkouts,
+      xpEarned: weeklyXp,
+      streakDays: profile.currentStreakDays || 0,
+      prsSet: weeklyPrs,
+    });
+
+    res.json({ message: 'Weekly summary sent', stats: { weeklyWorkouts, weeklyXp, weeklyPrs } });
+  } catch (error) {
+    console.error('Error generating weekly summary:', error);
+    res.status(500).json({ error: 'Failed to generate weekly summary' });
+  }
+});
+
 export default router;

@@ -243,6 +243,29 @@ export async function notifyStreakDanger(
   );
 }
 
+export async function notifyWeeklySummary(
+  userId: string,
+  stats: { workoutsCompleted: number; xpEarned: number; streakDays: number; prsSet: number }
+): Promise<void> {
+  const lines: string[] = [];
+  if (stats.workoutsCompleted > 0) lines.push(`${stats.workoutsCompleted} workout${stats.workoutsCompleted > 1 ? 's' : ''} completed`);
+  if (stats.xpEarned > 0) lines.push(`+${stats.xpEarned} XP earned`);
+  if (stats.streakDays > 0) lines.push(`${stats.streakDays}-day streak`);
+  if (stats.prsSet > 0) lines.push(`${stats.prsSet} personal record${stats.prsSet > 1 ? 's' : ''}`);
+
+  const message = lines.length > 0
+    ? `This week: ${lines.join(' • ')}. Keep it up!`
+    : 'No workouts logged this week. Start fresh next week!';
+
+  await createNotification(
+    userId,
+    'streak_milestone', // reuse existing type for weekly summaries
+    'Weekly Summary',
+    message,
+    { ...stats, type: 'weekly_summary' }
+  );
+}
+
 export async function notifySessionReminder(
   userId: string,
   sessionTitle: string,
