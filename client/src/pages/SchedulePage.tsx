@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Calendar as CalendarIcon, Clock, User, MapPin, Video, Edit, Trash2, ChevronLeft, ChevronRight, Dumbbell, UserCircle, ClipboardCheck, Monitor } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock, User, MapPin, Video, Edit, Trash2, ChevronLeft, ChevronRight, Dumbbell, UserCircle, ClipboardCheck, Monitor, Repeat } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
@@ -44,6 +44,9 @@ const appointmentFormSchema = z.object({
   workoutDuration: z.number().optional(),
   workoutCustomTitle: z.string().optional(),
   workoutCustomNotes: z.string().optional(),
+  // Recurring session fields
+  recurrencePattern: z.enum(["none", "weekly", "biweekly", "monthly"]).default("none"),
+  recurrenceEndDate: z.date().optional(),
 });
 
 type AppointmentFormData = z.infer<typeof appointmentFormSchema>;
@@ -61,6 +64,8 @@ interface Appointment {
   location?: string;
   meetingUrl?: string;
   status: "scheduled" | "completed" | "cancelled";
+  recurrencePattern?: string;
+  parentAppointmentId?: string;
   client?: {
     name: string;
     email: string;
@@ -190,6 +195,8 @@ export default function SchedulePage() {
       workoutDuration: 60,
       workoutCustomTitle: "",
       workoutCustomNotes: "",
+      recurrencePattern: "none" as const,
+      recurrenceEndDate: undefined,
     },
   });
 
@@ -217,6 +224,9 @@ export default function SchedulePage() {
         workoutDuration: data.workoutDuration || undefined,
         workoutCustomTitle: data.workoutCustomTitle || undefined,
         workoutCustomNotes: data.workoutCustomNotes || undefined,
+        // Recurring session fields
+        recurrencePattern: data.recurrencePattern || "none",
+        recurrenceEndDate: data.recurrenceEndDate ? format(data.recurrenceEndDate, 'yyyy-MM-dd') : undefined,
       };
       console.log('📤 [SchedulePage] Sending appointment (with workout fields):', appointmentData);
       const appointment = await apiRequest('POST', '/api/appointments', appointmentData);
@@ -224,7 +234,7 @@ export default function SchedulePage() {
 
       return appointment;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (result: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/workout-assignments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/workout-assignments/trainer'] }); // Refresh trainer's calendar
@@ -232,11 +242,14 @@ export default function SchedulePage() {
       setShowAddModal(false);
       form.reset();
       const hasWorkout = variables.workoutId && variables.workoutId.trim() !== "";
+      const recurringCount = result?.recurringCount;
       toast({
         title: "Success",
-        description: hasWorkout
-          ? "Appointment scheduled and workout assigned successfully"
-          : "Appointment scheduled successfully",
+        description: recurringCount
+          ? `${recurringCount} recurring appointments scheduled${hasWorkout ? " with workouts" : ""}`
+          : hasWorkout
+            ? "Appointment scheduled and workout assigned successfully"
+            : "Appointment scheduled successfully",
       });
     },
     onError: (error: any) => {
@@ -763,6 +776,73 @@ export default function SchedulePage() {
                     )}
                   />
 
+                  {/* Recurring Session Section */}
+                  <div className="border-t pt-4 mt-6">
+                    <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                      <Repeat className="h-4 w-4" />
+                      Recurring Session (Optional)
+                    </h3>
+
+                    <FormField
+                      control={form.control}
+                      name="recurrencePattern"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Repeat</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="No repeat" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">Does not repeat</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="biweekly">Every 2 weeks</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch("recurrencePattern") !== "none" && (
+                      <FormField
+                        control={form.control}
+                        name="recurrenceEndDate"
+                        render={({ field }) => (
+                          <FormItem className="mt-3">
+                            <FormLabel>Repeat Until</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                                  >
+                                    {field.value ? format(field.value, "PPP") : "Select end date (max 12 weeks)"}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) => date < new Date() || date > addDays(new Date(), 84)}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+
                   {/* Optional Workout Assignment Section */}
                   <div className="border-t pt-4 mt-6">
                     <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
@@ -1096,6 +1176,12 @@ export default function SchedulePage() {
                                       {appointment.status === "cancelled" && (
                                         <Badge variant="destructive" className="text-xs">
                                           Cancelled
+                                        </Badge>
+                                      )}
+                                      {appointment.recurrencePattern && appointment.recurrencePattern !== "none" && (
+                                        <Badge variant="outline" className="text-xs gap-1">
+                                          <Repeat className="h-3 w-3" />
+                                          {appointment.recurrencePattern === "weekly" ? "Weekly" : appointment.recurrencePattern === "biweekly" ? "Biweekly" : "Monthly"}
                                         </Badge>
                                       )}
                                     </div>

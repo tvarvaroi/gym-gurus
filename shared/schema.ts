@@ -245,6 +245,10 @@ export const appointments = pgTable("appointments", {
   type: text("type").notNull().default("training"), // training, consultation, check-in
   status: text("status").notNull().default("scheduled"), // scheduled, completed, cancelled
   notes: text("notes"),
+  // Recurring session fields
+  recurrencePattern: text("recurrence_pattern").default("none"), // none, weekly, biweekly, monthly
+  recurrenceEndDate: text("recurrence_end_date"), // YYYY-MM-DD, null = no end
+  parentAppointmentId: varchar("parent_appointment_id"), // links recurring instances to series
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

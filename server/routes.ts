@@ -1655,50 +1655,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const trainerId = (req.user as any).id as string;
 
-        // Extract workout assignment fields if present
+        // Extract workout assignment fields and recurrence fields if present
         const {
           workoutId,
           workoutDuration,
           workoutCustomTitle,
           workoutCustomNotes,
+          recurrencePattern,
+          recurrenceEndDate,
           ...appointmentFields
         } = req.body;
 
         const validatedData = insertAppointmentSchema.parse({ ...appointmentFields, trainerId });
-        const appointment = await storage.createAppointment(validatedData);
 
-        // If workout details are provided, also create a workout assignment
-        if (workoutId && workoutId.trim() !== '') {
-          console.log(
-            '💪 [Appointments API] Creating workout assignment for appointment:',
-            appointment.id
-          );
+        // Generate dates for recurring appointments
+        const appointmentDates: string[] = [validatedData.date];
+        const pattern = recurrencePattern || 'none';
 
-          const workoutAssignmentData = {
-            workoutId,
-            clientId: validatedData.clientId,
-            scheduledDate: validatedData.date,
-            scheduledTime: validatedData.startTime,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-            durationMinutes: workoutDuration,
-            customTitle: workoutCustomTitle || undefined,
-            customNotes: workoutCustomNotes || undefined,
-          };
+        if (pattern !== 'none' && recurrenceEndDate) {
+          const startDate = new Date(validatedData.date + 'T00:00:00');
+          const endDate = new Date(recurrenceEndDate + 'T00:00:00');
+          const intervalDays = pattern === 'weekly' ? 7 : pattern === 'biweekly' ? 14 : 0;
 
-          try {
-            const workoutAssignment = await storage.assignWorkoutToClient(workoutAssignmentData);
-            console.log('✅ [Appointments API] Workout assignment created:', workoutAssignment.id);
-          } catch (workoutError) {
-            console.error(
-              '❌ [Appointments API] Failed to create workout assignment:',
-              workoutError
-            );
-            // Don't fail the whole request if workout assignment fails
-            // The appointment is still created successfully
+          if (intervalDays > 0) {
+            let nextDate = new Date(startDate);
+            nextDate.setDate(nextDate.getDate() + intervalDays);
+            while (nextDate <= endDate) {
+              appointmentDates.push(nextDate.toISOString().split('T')[0]);
+              nextDate.setDate(nextDate.getDate() + intervalDays);
+            }
+          } else if (pattern === 'monthly') {
+            let nextDate = new Date(startDate);
+            nextDate.setMonth(nextDate.getMonth() + 1);
+            while (nextDate <= endDate) {
+              appointmentDates.push(nextDate.toISOString().split('T')[0]);
+              nextDate.setMonth(nextDate.getMonth() + 1);
+            }
           }
         }
 
-        res.status(201).json(appointment);
+        // Create first (parent) appointment
+        const parentAppointment = await storage.createAppointment({
+          ...validatedData,
+          recurrencePattern: pattern !== 'none' ? pattern : undefined,
+          recurrenceEndDate: recurrenceEndDate || undefined,
+        });
+
+        // Create child appointments for recurring series
+        for (let i = 1; i < appointmentDates.length; i++) {
+          try {
+            await storage.createAppointment({
+              ...validatedData,
+              date: appointmentDates[i],
+              recurrencePattern: pattern,
+              recurrenceEndDate: recurrenceEndDate || undefined,
+              parentAppointmentId: parentAppointment.id,
+            });
+          } catch {
+            // Continue creating remaining appointments if one fails
+          }
+        }
+
+        // If workout details are provided, create workout assignments for all dates
+        if (workoutId && workoutId.trim() !== '') {
+          for (const date of appointmentDates) {
+            const workoutAssignmentData = {
+              workoutId,
+              clientId: validatedData.clientId,
+              scheduledDate: date,
+              scheduledTime: validatedData.startTime,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+              durationMinutes: workoutDuration,
+              customTitle: workoutCustomTitle || undefined,
+              customNotes: workoutCustomNotes || undefined,
+            };
+
+            try {
+              await storage.assignWorkoutToClient(workoutAssignmentData);
+            } catch {
+              // Don't fail the whole request if workout assignment fails
+            }
+          }
+        }
+
+        const totalCreated = appointmentDates.length;
+        res.status(201).json({
+          ...parentAppointment,
+          recurringCount: totalCreated > 1 ? totalCreated : undefined,
+        });
       } catch (error) {
         if (error instanceof ZodError) {
           return res.status(400).json({ error: 'Invalid appointment data', details: error.errors });
