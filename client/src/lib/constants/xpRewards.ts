@@ -75,27 +75,50 @@ export function getXpToNextLevel(totalXp: number): { current: number; required: 
   };
 }
 
-// Gen Z Rank System (Newcomer -> GOATED)
-export const GEN_Z_RANKS = [
-  { rank: 'Newcomer', minLevel: 1, emoji: '🌟', color: 'text-gray-400', description: 'Welcome to the gym! Time to start your fitness journey!' },
-  { rank: 'Mid', minLevel: 11, emoji: '😐', color: 'text-gray-500', description: "You're showing up, but let's be real... room for improvement." },
-  { rank: 'Valid', minLevel: 26, emoji: '✓', color: 'text-green-500', description: 'Okay, we see you! Your gains are getting noticed.' },
-  { rank: 'Slay', minLevel: 46, emoji: '💅', color: 'text-pink-500', description: 'Absolutely slaying it! The gym is your runway.' },
-  { rank: 'Fire', minLevel: 71, emoji: '🔥', color: 'text-red-500', description: 'Your workouts are straight fire. Keep that energy!' },
-  { rank: 'Bussin', minLevel: 101, emoji: '💯', color: 'text-orange-500', description: "Your gains are bussin'! Everyone's asking for your routine." },
-  { rank: 'No Cap', minLevel: 151, emoji: '🧢', color: 'text-yellow-500', description: "No cap, you're elite. Respect earned." },
-  { rank: 'GOATED', minLevel: 200, emoji: '🐐', color: 'text-purple-500', description: "THE GREATEST. You've achieved legendary status." },
+// Unified Rank System (Newcomer -> GOATED)
+// Single source of truth for rank progression used by RankBadge, XPBar, etc.
+export const RANKS = [
+  { name: 'Newcomer', minLevel: 1, emoji: '🌟', color: 'text-gray-500', bgColor: 'bg-gray-100', borderColor: 'border-gray-300', description: 'Welcome to the gym! Time to start your fitness journey!' },
+  { name: 'Newbie', minLevel: 5, emoji: '🌱', color: 'text-green-500', bgColor: 'bg-green-100', borderColor: 'border-green-300', description: "You're building habits. Consistency is key!" },
+  { name: 'Rookie', minLevel: 10, emoji: '⭐', color: 'text-blue-500', bgColor: 'bg-blue-100', borderColor: 'border-blue-300', description: 'Getting into the groove. Your gains are starting to show!' },
+  { name: 'Grinder', minLevel: 20, emoji: '💪', color: 'text-yellow-500', bgColor: 'bg-yellow-100', borderColor: 'border-yellow-300', description: "Putting in the work day after day. That's the grind!" },
+  { name: 'Beast Mode', minLevel: 30, emoji: '🔥', color: 'text-orange-500', bgColor: 'bg-orange-100', borderColor: 'border-orange-300', description: 'Your workouts are straight fire. Keep that energy!' },
+  { name: 'Sigma', minLevel: 40, emoji: '🐺', color: 'text-purple-500', bgColor: 'bg-purple-100', borderColor: 'border-purple-300', description: 'On your own path. Discipline over motivation.' },
+  { name: 'Chad', minLevel: 50, emoji: '🗿', color: 'text-indigo-500', bgColor: 'bg-indigo-100', borderColor: 'border-indigo-300', description: "Everyone's asking for your routine. You're the example." },
+  { name: 'Main Character', minLevel: 60, emoji: '👑', color: 'text-pink-500', bgColor: 'bg-pink-100', borderColor: 'border-pink-300', description: 'The gym is your stage. All eyes on you.' },
+  { name: 'Built Different', minLevel: 75, emoji: '💎', color: 'text-cyan-500', bgColor: 'bg-cyan-100', borderColor: 'border-cyan-300', description: "No cap, you're elite. Respect earned." },
+  { name: 'GOATED', minLevel: 100, emoji: '🐐', color: 'text-amber-500', bgColor: 'bg-gradient-to-r from-amber-100 to-yellow-100', borderColor: 'border-amber-400', description: "THE GREATEST. You've achieved legendary status." },
 ] as const;
 
-export function getGenZRank(level: number): typeof GEN_Z_RANKS[number] {
-  // Find the highest rank the user qualifies for
-  for (let i = GEN_Z_RANKS.length - 1; i >= 0; i--) {
-    if (level >= GEN_Z_RANKS[i].minLevel) {
-      return GEN_Z_RANKS[i];
+export type Rank = typeof RANKS[number];
+
+// Backward compatibility
+export const GEN_Z_RANKS = RANKS;
+
+export function getRankForLevel(level: number): Rank {
+  for (let i = RANKS.length - 1; i >= 0; i--) {
+    if (level >= RANKS[i].minLevel) {
+      return RANKS[i];
     }
   }
-  return GEN_Z_RANKS[0];
+  return RANKS[0];
 }
+
+export function getNextRank(level: number): Rank | null {
+  const currentRankIndex = RANKS.findIndex((r, i) =>
+    level >= r.minLevel && (i === RANKS.length - 1 || level < RANKS[i + 1].minLevel)
+  );
+  return RANKS[currentRankIndex + 1] || null;
+}
+
+export function getLevelsToNextRank(level: number): number | null {
+  const nextRank = getNextRank(level);
+  if (!nextRank) return null;
+  return nextRank.minLevel - level;
+}
+
+// Backward compatibility alias
+export const getGenZRank = getRankForLevel;
 
 // Strength Classification System
 export const STRENGTH_CLASSIFICATIONS = [

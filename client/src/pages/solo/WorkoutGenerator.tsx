@@ -194,15 +194,45 @@ export default function WorkoutGenerator() {
     }
   };
 
-  const handleStartWorkout = () => {
+  const handleStartWorkout = async () => {
     if (!generatedWorkout) return;
-    // Navigate to workouts list where user can start the workout
-    // In a future iteration, this could navigate to workout execution directly
-    navigate('/workouts');
-    toast({
-      title: 'Workout Ready',
-      description: 'Find your new workout in My Workouts to start',
-    });
+    // Save the workout first, then navigate to workouts
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/workouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: generatedWorkout.name,
+          description: `AI-generated ${workoutFocus} workout`,
+          exercises: generatedWorkout.exercises.map(ex => ({
+            exerciseName: ex.name,
+            sets: ex.sets,
+            reps: ex.reps,
+            restSeconds: ex.rest,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save workout');
+      }
+
+      toast({
+        title: 'Workout Saved & Ready',
+        description: 'Your workout has been saved. Find it in My Workouts to start!',
+      });
+      navigate('/workouts');
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: err.message || 'Failed to save workout before starting',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

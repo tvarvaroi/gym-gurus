@@ -11,7 +11,7 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { initAnalytics, trackPageView } from '@/lib/analytics';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, User, LogOut, Download, Users } from 'lucide-react';
+import { Loader2, User, LogOut, Download, Users, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -552,6 +552,26 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   }, [activeCategory, isLoading, user]);
 
   // No need for complex useEffect, React will handle key change
+
+  // Show error state if auth check fails (network error, server down)
+  if (!isLoading && error && !(error instanceof Error && error.message.startsWith('401:'))) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center space-y-4 max-w-md px-6">
+          <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+            <X className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">Connection Error</h2>
+          <p className="text-sm text-muted-foreground">
+            Unable to connect to the server. Please check your internet connection and try again.
+          </p>
+          <Button onClick={() => window.location.reload()} size="lg">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Show loading state while checking authentication - Premium Theme-Aware
   if (isLoading) {

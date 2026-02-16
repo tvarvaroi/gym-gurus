@@ -1,37 +1,22 @@
 import { motion } from 'framer-motion';
-import { Crown, Star, Flame, Sparkles, Zap, Trophy } from 'lucide-react';
+import { Crown, Star, Flame, Sparkles, Zap, Trophy, type LucideIcon } from 'lucide-react';
+import { RANKS, getRankForLevel, getNextRank, getLevelsToNextRank, type Rank } from '@/lib/constants/xpRewards';
 
-// Gen Z rank system based on level
-export const RANKS = [
-  { minLevel: 1, name: 'Newcomer', emoji: '🌟', icon: null, color: 'text-gray-500', bgColor: 'bg-gray-100', borderColor: 'border-gray-300' },
-  { minLevel: 5, name: 'Newbie', emoji: '🌱', icon: null, color: 'text-green-500', bgColor: 'bg-green-100', borderColor: 'border-green-300' },
-  { minLevel: 10, name: 'Rookie', emoji: '⭐', icon: Star, color: 'text-blue-500', bgColor: 'bg-blue-100', borderColor: 'border-blue-300' },
-  { minLevel: 20, name: 'Grinder', emoji: '💪', icon: Zap, color: 'text-yellow-500', bgColor: 'bg-yellow-100', borderColor: 'border-yellow-300' },
-  { minLevel: 30, name: 'Beast Mode', emoji: '🔥', icon: Flame, color: 'text-orange-500', bgColor: 'bg-orange-100', borderColor: 'border-orange-300' },
-  { minLevel: 40, name: 'Sigma', emoji: '🐺', icon: null, color: 'text-purple-500', bgColor: 'bg-purple-100', borderColor: 'border-purple-300' },
-  { minLevel: 50, name: 'Chad', emoji: '🗿', icon: null, color: 'text-indigo-500', bgColor: 'bg-indigo-100', borderColor: 'border-indigo-300' },
-  { minLevel: 60, name: 'Main Character', emoji: '👑', icon: Crown, color: 'text-pink-500', bgColor: 'bg-pink-100', borderColor: 'border-pink-300' },
-  { minLevel: 75, name: 'Built Different', emoji: '💎', icon: Sparkles, color: 'text-cyan-500', bgColor: 'bg-cyan-100', borderColor: 'border-cyan-300' },
-  { minLevel: 100, name: 'GOATED', emoji: '🐐', icon: Trophy, color: 'text-amber-500', bgColor: 'bg-gradient-to-r from-amber-100 to-yellow-100', borderColor: 'border-amber-400' },
-] as const;
+// Re-export for consumers that imported from here
+export { RANKS, getRankForLevel, getNextRank, getLevelsToNextRank };
 
-export function getRankForLevel(level: number) {
-  // Find the highest rank that the user qualifies for
-  const rank = [...RANKS].reverse().find((r) => level >= r.minLevel);
-  return rank || RANKS[0];
-}
+// Icon mapping for ranks (kept here since these are React components)
+const RANK_ICONS: Record<string, LucideIcon | null> = {
+  'Rookie': Star,
+  'Grinder': Zap,
+  'Beast Mode': Flame,
+  'Main Character': Crown,
+  'Built Different': Sparkles,
+  'GOATED': Trophy,
+};
 
-export function getNextRank(level: number) {
-  const currentRankIndex = RANKS.findIndex((r, i) =>
-    level >= r.minLevel && (i === RANKS.length - 1 || level < RANKS[i + 1].minLevel)
-  );
-  return RANKS[currentRankIndex + 1] || null;
-}
-
-export function getLevelsToNextRank(level: number) {
-  const nextRank = getNextRank(level);
-  if (!nextRank) return null;
-  return nextRank.minLevel - level;
+function getIconForRank(rank: Rank): LucideIcon | null {
+  return RANK_ICONS[rank.name] || null;
 }
 
 interface RankBadgeProps {
@@ -52,7 +37,7 @@ export function RankBadge({
   const rank = getRankForLevel(level);
   const nextRank = getNextRank(level);
   const levelsToNext = getLevelsToNextRank(level);
-  const IconComponent = rank.icon;
+  const IconComponent = getIconForRank(rank);
 
   const sizeClasses = {
     sm: 'text-xs px-2 py-1',
@@ -220,8 +205,8 @@ export function RankProgress({ level }: RankProgressProps) {
 
 // Rank up animation/celebration
 interface RankUpAnimationProps {
-  oldRank: typeof RANKS[number];
-  newRank: typeof RANKS[number];
+  oldRank: Rank;
+  newRank: Rank;
   onComplete?: () => void;
 }
 

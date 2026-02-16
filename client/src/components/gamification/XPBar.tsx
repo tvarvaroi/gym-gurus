@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Zap } from 'lucide-react';
-import { getXpToNextLevel, getGenZRank } from '@/lib/constants/xpRewards';
+import { getXpToNextLevel, getRankForLevel } from '@/lib/constants/xpRewards';
 
 interface XPBarProps {
   totalXp: number;
@@ -18,7 +18,7 @@ export function XPBar({
   animate = true,
 }: XPBarProps) {
   const { current, required, progress } = getXpToNextLevel(totalXp);
-  const rank = getGenZRank(currentLevel);
+  const rank = getRankForLevel(currentLevel);
 
   const sizeClasses = {
     sm: { bar: 'h-2', text: 'text-xs', icon: 'w-3 h-3' },
@@ -35,7 +35,7 @@ export function XPBar({
           <div className="flex items-center gap-2">
             <span className={rank.color}>{rank.emoji}</span>
             <span className="font-bold">Level {currentLevel}</span>
-            <span className="text-muted-foreground">{rank.rank}</span>
+            <span className="text-muted-foreground">{rank.name}</span>
           </div>
           <div className="flex items-center gap-1">
             <Zap className={`${icon} text-yellow-500`} />
@@ -68,7 +68,7 @@ export function XPBar({
 
 // Compact XP display for headers/sidebars
 export function XPBadge({ totalXp, currentLevel }: { totalXp: number; currentLevel: number }) {
-  const rank = getGenZRank(currentLevel);
+  const rank = getRankForLevel(currentLevel);
   const { progress } = getXpToNextLevel(totalXp);
 
   return (
@@ -94,7 +94,7 @@ interface LevelUpCelebrationProps {
 }
 
 export function LevelUpCelebration({ newLevel, onClose }: LevelUpCelebrationProps) {
-  const rank = getGenZRank(newLevel);
+  const rank = getRankForLevel(newLevel);
 
   return (
     <motion.div
@@ -127,7 +127,7 @@ export function LevelUpCelebration({ newLevel, onClose }: LevelUpCelebrationProp
           You've reached <span className={`font-bold ${rank.color}`}>Level {newLevel}</span>
         </p>
 
-        <div className={`text-lg font-bold ${rank.color} mb-4`}>{rank.rank}</div>
+        <div className={`text-lg font-bold ${rank.color} mb-4`}>{rank.name}</div>
 
         <p className="text-sm text-muted-foreground mb-6">{rank.description}</p>
 

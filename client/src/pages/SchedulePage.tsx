@@ -82,27 +82,21 @@ export default function SchedulePage() {
   const { data: appointments = [], isLoading, error } = useQuery<Appointment[]>({
     queryKey: ['/api/appointments', isClient],
     queryFn: async () => {
-      try {
-        // Use client-specific endpoint for clients, trainer endpoint for trainers
-        // TrainerId is derived from session on the server — no ID in URL
-        const endpoint = isClient
-          ? `/api/appointments/client/${user?.id}`
-          : '/api/appointments';
+      // Use client-specific endpoint for clients, trainer endpoint for trainers
+      // TrainerId is derived from session on the server — no ID in URL
+      const endpoint = isClient
+        ? `/api/appointments/client/${user?.id}`
+        : '/api/appointments';
 
-        const response = await fetch(endpoint);
-        if (!response.ok) {
-          // Return empty array if appointments endpoint doesn't exist yet
-          if (response.status === 404) return [];
-          throw new Error('Failed to fetch appointments');
-        }
-        const data = await response.json();
-        // Ensure we always return an array
-        return Array.isArray(data) ? data : [];
-      } catch (err) {
-        console.error('Error fetching appointments:', err);
-        // Return empty array instead of throwing error
-        return [];
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        // Return empty array if appointments endpoint doesn't exist yet
+        if (response.status === 404) return [];
+        throw new Error('Failed to fetch appointments');
       }
+      const data = await response.json();
+      // Ensure we always return an array
+      return Array.isArray(data) ? data : [];
     },
     enabled: !!user?.id, // Only fetch when user is available
     retry: false, // Don't retry on error
@@ -137,19 +131,14 @@ export default function SchedulePage() {
   const { data: workoutAssignments = [] } = useQuery({
     queryKey: ['/api/workout-assignments/trainer'],
     queryFn: async () => {
-      try {
-        const response = await fetch('/api/workout-assignments/trainer', {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          if (response.status === 404) return [];
-          throw new Error('Failed to fetch workout assignments');
-        }
-        return response.json();
-      } catch (err) {
-        console.error('Error fetching workout assignments:', err);
-        return [];
+      const response = await fetch('/api/workout-assignments/trainer', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        if (response.status === 404) return [];
+        throw new Error('Failed to fetch workout assignments');
       }
+      return response.json();
     },
     enabled: isTrainer && !!user?.id,
   });
