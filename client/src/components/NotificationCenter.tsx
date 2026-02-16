@@ -101,7 +101,7 @@ export default function NotificationCenter() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
-  const { data: notifications = [] } = useQuery<Notification[]>({
+  const { data: notifications = [], isLoading, error } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
     queryFn: () => fetch('/api/notifications?limit=20').then(r => r.json()),
     refetchInterval: 30000,
@@ -193,7 +193,17 @@ export default function NotificationCenter() {
 
             {/* Notification list */}
             <div className="overflow-y-auto max-h-[calc(70vh-48px)]">
-              {notifications.length === 0 ? (
+              {isLoading ? (
+                <div className="px-4 py-8 text-center">
+                  <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-white/40">Loading notifications...</p>
+                </div>
+              ) : error ? (
+                <div className="px-4 py-8 text-center">
+                  <AlertTriangle className="w-8 h-8 text-red-400/50 mx-auto mb-2" />
+                  <p className="text-sm text-white/40">Failed to load notifications</p>
+                </div>
+              ) : notifications.length === 0 ? (
                 <div className="px-4 py-8 text-center">
                   <Bell className="w-8 h-8 text-white/20 mx-auto mb-2" />
                   <p className="text-sm text-white/40">No notifications yet</p>
