@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction, MutationCache, QueryCache } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -82,7 +83,19 @@ export const queryClient = new QueryClient({
     onError: (error) => handle401Error(error),
   }),
   mutationCache: new MutationCache({
-    onError: (error) => handle401Error(error),
+    onError: (error, _variables, _context, mutation) => {
+      handle401Error(error);
+      // Show a global error toast for mutations without their own onError handler
+      const is401 = error instanceof Error && error.message.startsWith('401:');
+      if (!is401 && !mutation.options.onError) {
+        const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: message.replace(/^\d+:\s*/, ''), // Strip HTTP status prefix
+        });
+      }
+    },
   }),
   defaultOptions: {
     queries: {

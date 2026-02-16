@@ -2,8 +2,9 @@ import { useState, useMemo, useCallback, Suspense, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Users } from "lucide-react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimationComponents";
+import { QueryErrorState } from "@/components/query-states/QueryErrorState";
 import { exportClientsToCSV } from "@/lib/exportUtils";
 import ClientCard from "@/components/ClientCard";
 import SearchInput from "@/components/SearchInput";
@@ -12,6 +13,7 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 const ClientsPageContent = memo(() => {
   const prefersReducedMotion = useReducedMotion();
+  const queryClient = useQueryClient();
 
   // Get the authenticated user's ID from the auth system
   const { data: user } = useQuery({
@@ -123,12 +125,11 @@ const ClientsPageContent = memo(() => {
     return (
       <PageTransition>
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-light tracking-tight">My Clients</h1>
-              <p className="text-sm font-light text-red-500">Error loading clients. Please try again.</p>
-            </div>
-          </div>
+          <QueryErrorState
+            error={error}
+            title="Failed to load clients"
+            onRetry={() => queryClient.invalidateQueries({ queryKey: ['/api/clients', trainerId] })}
+          />
         </div>
       </PageTransition>
     );

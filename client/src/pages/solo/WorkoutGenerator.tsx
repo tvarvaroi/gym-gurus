@@ -576,6 +576,7 @@ export default function WorkoutGenerator() {
                         variant="outline"
                         className="flex-1 border-border/50"
                         onClick={handleRegenerate}
+                        disabled={isSaving}
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Regenerate
@@ -583,9 +584,19 @@ export default function WorkoutGenerator() {
                       <Button
                         className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
                         onClick={handleStartWorkout}
+                        disabled={isSaving}
                       >
-                        <Play className="h-4 w-4 mr-2" />
-                        Start Workout
+                        {isSaving ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Start Workout
+                          </>
+                        )}
                       </Button>
                     </div>
                     <Button

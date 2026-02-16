@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/contexts/UserContext";
 import WeeklyWorkoutView from "@/components/WeeklyWorkoutView";
+import { QueryErrorState } from "@/components/query-states/QueryErrorState";
 
 // Memoized PageTransition component
 const PageTransition = memo(({ children }: { children: React.ReactNode }) => (
@@ -476,25 +477,14 @@ const WorkoutPlans = memo(() => {
   if (error) {
     return (
       <PageTransition>
-        <motion.div
-          className="flex flex-col items-center justify-center py-20 space-y-6"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        >
-          <div className="relative">
-            <div className="absolute inset-0 bg-destructive/20 blur-2xl rounded-full" />
-            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-destructive/20 to-destructive/5 backdrop-blur-sm border border-destructive/20 flex items-center justify-center">
-              <Target className="w-10 h-10 text-destructive" />
-            </div>
-          </div>
-          <div className="text-center space-y-3">
-            <h2 className="text-2xl font-extralight tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Unable to load workout plans
-            </h2>
-            <p className="text-muted-foreground/80 font-light">Please try again later</p>
-          </div>
-        </motion.div>
+        <QueryErrorState
+          error={error}
+          title="Unable to load workout plans"
+          onRetry={() => queryClient.invalidateQueries({ queryKey: isClient
+            ? [`/api/clients/${clientProfile?.id}/workouts`]
+            : ['/api/workouts']
+          })}
+        />
       </PageTransition>
     );
   }
