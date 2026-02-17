@@ -1,114 +1,26 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Calendar, TrendingUp, Target, Plus, Download, Dumbbell, Award, Zap, TrendingDown, Flame, Star, AlertCircle } from "lucide-react"
-import AnimatedButton from "./AnimatedButton"
+import { Users, Calendar, TrendingDown, Dumbbell, Award, Flame, Star, Target, Plus, Download, AlertCircle } from "lucide-react"
 import { NewClientButton, ClientFormModal } from "./ClientFormModal"
 import { motion, AnimatePresence } from "framer-motion"
 import { useReducedMotion } from "../hooks/use-reduced-motion"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
-import { StaggerContainer, StaggerItem } from "@/components/AnimationComponents"
-import { memo, useState, useEffect, useMemo, useCallback } from "react"
+import { memo, useState, useMemo, useCallback } from "react"
 import { useLocation } from "wouter"
 import { exportClientsToCSV, exportWorkoutsToCSV } from "@/lib/exportUtils"
 import { useToast } from "@/hooks/use-toast"
-import { AreaChart, BarChart, LineChart, Area, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { useWebSocket } from "../hooks/useWebSocket"
 import { WelcomeModal } from "./onboarding/WelcomeModal"
 import { SetupChecklist, type ChecklistItem } from "./onboarding/SetupChecklist"
 import { useUser } from "@/contexts/UserContext"
 import { LoginPage } from "./LoginPage"
-import { CelebrationOverlay, useCelebration } from "./CelebrationOverlay"
-import ClientDashboard from "./dashboard/ClientDashboard"
 import { DashboardSkeleton } from "./skeletons/DashboardSkeleton"
-
-
-// Shimmer loading component
-const ShimmerCard = () => (
-  <Card className="overflow-hidden">
-    <div className="animate-shimmer bg-gradient-to-r from-muted via-muted-foreground/10 to-muted bg-[length:200%_100%] h-32" />
-  </Card>
-);
-
-// Progress Ring Component
-const ProgressRing = memo(({ progress, size = 60, strokeWidth = 4, color = "text-primary" }: {
-  progress: number;
-  size?: number;
-  strokeWidth?: number;
-  color?: string;
-}) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (progress / 100) * circumference;
-
-  return (
-    <div className="relative inline-flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          fill="none"
-          className="text-muted"
-        />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className={color}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1, ease: "easeOut" }}
-        />
-      </svg>
-      <span className="absolute text-xs font-semibold">{Math.round(progress)}%</span>
-    </div>
-  );
-});
-ProgressRing.displayName = 'ProgressRing';
-
-// Achievement Badge Component
-const AchievementBadge = memo(({ icon: Icon, title, description, unlocked = false, glow = false }: {
-  icon: any;
-  title: string;
-  description: string;
-  unlocked?: boolean;
-  glow?: boolean;
-}) => (
-  <motion.div
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    className="relative"
-  >
-    <Card className={`
-      transition-all duration-300 cursor-pointer
-      ${unlocked ? 'bg-gradient-to-br from-primary/20 to-purple-500/20 border-primary/50' : 'bg-muted/30 border-muted'}
-      ${glow ? 'shadow-[0_0_20px_rgba(139,92,246,0.5)] animate-pulse-glow' : ''}
-    `}>
-      <CardContent className="p-4 text-center space-y-2">
-        <div className={`
-          mx-auto w-12 h-12 rounded-full flex items-center justify-center
-          ${unlocked ? 'bg-gradient-to-br from-primary to-purple-500' : 'bg-muted'}
-        `}>
-          <Icon className={`h-6 w-6 ${unlocked ? 'text-white' : 'text-muted-foreground'}`} />
-        </div>
-        <div>
-          <p className={`font-semibold text-sm ${unlocked ? '' : 'text-muted-foreground'}`}>{title}</p>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-      </CardContent>
-    </Card>
-  </motion.div>
-));
-AchievementBadge.displayName = 'AchievementBadge';
+import ClientDashboard from "./dashboard/ClientDashboard"
+import DashboardHero from "./dashboard/DashboardHero"
+import DashboardStatCards from "./dashboard/DashboardStatCards"
+import DashboardQuickActions from "./dashboard/DashboardQuickActions"
+import DashboardCharts from "./dashboard/DashboardCharts"
 
 // Needs Attention Card — shows clients requiring follow-up
 const NeedsAttentionCard = memo(() => {
@@ -168,15 +80,12 @@ const Dashboard = memo(() => {
   const queryClient = useQueryClient();
   const { isClient, isTrainer, user: currentUser } = useUser();
   const [showClientModal, setShowClientModal] = useState(false);
-  const { celebration, celebrate, hide } = useCelebration();
 
   // Fetch authenticated user
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ['/api/auth/user'],
     queryFn: async () => {
-      const response = await fetch('/api/auth/user', {
-        credentials: 'include'
-      });
+      const response = await fetch('/api/auth/user', { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch user');
       return response.json();
     },
@@ -196,9 +105,7 @@ const Dashboard = memo(() => {
   const { data: onboardingProgress } = useQuery({
     queryKey: ['/api/onboarding/progress'],
     queryFn: async () => {
-      const response = await fetch('/api/onboarding/progress', {
-        credentials: 'include'
-      });
+      const response = await fetch('/api/onboarding/progress', { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch onboarding progress');
       return response.json();
     },
@@ -222,42 +129,28 @@ const Dashboard = memo(() => {
     },
   });
 
-  // Handle welcome modal completion - close immediately, persist in background
   const handleWelcomeComplete = async (selectedGoal: string) => {
-    // Persist to localStorage immediately so modal doesn't reappear on page reload
     localStorage.setItem('gymgurus_welcome_completed', 'true');
     try {
-      await updateOnboardingMutation.mutateAsync({
-        welcomeModalCompleted: true,
-        selectedGoal,
-      });
+      await updateOnboardingMutation.mutateAsync({ welcomeModalCompleted: true, selectedGoal });
     } catch {
       // Modal is already dismissed via localStorage even if API fails
     }
   };
 
-  // Handle checklist dismissal
   const handleChecklistDismiss = async () => {
     try {
-      await updateOnboardingMutation.mutateAsync({
-        onboardingCompletedAt: new Date().toISOString(),
-      });
-      // Refresh the page to hide the checklist
+      await updateOnboardingMutation.mutateAsync({ onboardingCompletedAt: new Date().toISOString() });
       queryClient.invalidateQueries({ queryKey: ['/api/onboarding/progress'] });
     } catch (error) {
       console.error('Failed to dismiss checklist:', error);
-      toast({
-        title: "Error",
-        description: "Failed to dismiss checklist. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to dismiss checklist. Please try again.", variant: "destructive" });
     }
   };
 
   // Real-time updates via WebSocket
   const { isConnected } = useWebSocket({
     onMessage: useCallback((message: any) => {
-      // Invalidate relevant queries when data changes
       switch (message.type) {
         case 'client_updated':
         case 'client_created':
@@ -283,17 +176,16 @@ const Dashboard = memo(() => {
     }, [queryClient, user?.id, toast]),
   });
 
-  // Fetch real client data for stats with automatic refetching
+  // Fetch data
   const { data: clients, isLoading: loadingClients, error: clientsError } = useQuery({
     queryKey: ['/api/clients', user?.id, 'noPagination'],
     queryFn: () => fetch(`/api/clients/${user?.id}?noPagination=true`).then(res => res.json()),
-    staleTime: 30 * 1000, // Consider data fresh for 30 seconds
-    refetchInterval: 30 * 1000, // Auto-refetch every 30 seconds
-    refetchOnWindowFocus: true, // Refetch when user focuses window
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchOnWindowFocus: true,
     enabled: !!user?.id,
   });
 
-  // Fetch workouts for stats with automatic refetching
   const { data: workouts } = useQuery({
     queryKey: ['/api/workouts'],
     queryFn: () => fetch('/api/workouts').then(res => res.json()),
@@ -303,17 +195,15 @@ const Dashboard = memo(() => {
     enabled: !!user?.id,
   });
 
-  // Fetch comprehensive dashboard stats with automatic refetching
   const { data: dashboardStats, isLoading: loadingStats, error: statsError } = useQuery({
     queryKey: ['/api/dashboard/stats'],
     queryFn: () => fetch('/api/dashboard/stats').then(res => res.json()),
-    staleTime: 10 * 1000, // Fresh for 10 seconds
-    refetchInterval: 15 * 1000, // Auto-refetch every 15 seconds
+    staleTime: 10 * 1000,
+    refetchInterval: 15 * 1000,
     refetchOnWindowFocus: true,
     enabled: !!user?.id,
   });
 
-  // Fetch real chart data from backend
   const { data: chartData } = useQuery({
     queryKey: ['/api/dashboard/charts'],
     queryFn: () => fetch('/api/dashboard/charts').then(res => res.json()),
@@ -323,12 +213,11 @@ const Dashboard = memo(() => {
     enabled: !!user?.id,
   });
 
-  // Real streak from chart data
+  // Derived state
   const currentStreak = chartData?.trainerStreak || 0;
-  const weeklyGoal = 10; // Sessions
+  const weeklyGoal = 10;
   const weeklyProgress = ((dashboardStats?.completedSessionsThisWeek || 0) / weeklyGoal) * 100;
 
-  // Trainer achievements - computed from real data
   const totalSessionsCompleted = useMemo(() => {
     const sessionsData = chartData?.sessionsData || [];
     return sessionsData.reduce((sum: number, w: any) => sum + (w.completed || 0), 0);
@@ -341,7 +230,7 @@ const Dashboard = memo(() => {
     { icon: Award, title: "100 Workouts", description: "Create 100 workout plans", unlocked: (dashboardStats?.totalWorkouts || 0) >= 100 },
   ], [currentStreak, dashboardStats?.activeClients, dashboardStats?.totalWorkouts, totalSessionsCompleted]);
 
-  const stats = [
+  const stats = useMemo(() => [
     {
       label: "Active Clients",
       value: loadingStats ? "--" : (dashboardStats?.activeClients || 0).toString(),
@@ -372,40 +261,16 @@ const Dashboard = memo(() => {
       color: "text-purple-600",
       bgGlow: "from-purple-500/20 to-purple-500/5"
     },
-  ]
+  ], [loadingStats, dashboardStats, workouts]);
 
-  const quickActions = [
-    {
-      label: "Add Client",
-      icon: Users,
-      action: "add-client",
-      color: "bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800",
-      description: "Register new client"
-    },
-    {
-      label: "Create Workout",
-      icon: Plus,
-      action: "create-workout",
-      color: "bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800",
-      description: "Design new plan"
-    },
-    {
-      label: "Export Data",
-      icon: Download,
-      action: "export",
-      color: "bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800",
-      description: "Download CSV files"
-    },
-    {
-      label: "View Schedule",
-      icon: Calendar,
-      action: "schedule",
-      color: "bg-gradient-to-br from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800",
-      description: "Today's sessions"
-    },
-  ]
+  const quickActions = useMemo(() => [
+    { label: "Add Client", icon: Users, action: "add-client", color: "bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800", description: "Register new client" },
+    { label: "Create Workout", icon: Plus, action: "create-workout", color: "bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800", description: "Design new plan" },
+    { label: "Export Data", icon: Download, action: "export", color: "bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800", description: "Download CSV files" },
+    { label: "View Schedule", icon: Calendar, action: "schedule", color: "bg-gradient-to-br from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800", description: "Today's sessions" },
+  ], []);
 
-  const handleQuickAction = (action: string) => {
+  const handleQuickAction = useCallback((action: string) => {
     switch (action) {
       case 'create-workout':
         navigate('/workouts');
@@ -413,24 +278,18 @@ const Dashboard = memo(() => {
       case 'export':
         if (clients?.length) {
           exportClientsToCSV(clients);
-          toast({
-            title: "Clients Exported",
-            description: `Exported ${clients.length} clients to CSV`,
-          });
+          toast({ title: "Clients Exported", description: `Exported ${clients.length} clients to CSV` });
         }
         if (workouts?.length) {
           exportWorkoutsToCSV(workouts);
-          toast({
-            title: "Workouts Exported",
-            description: `Exported ${workouts.length} workout plans to CSV`,
-          });
+          toast({ title: "Workouts Exported", description: `Exported ${workouts.length} workout plans to CSV` });
         }
         break;
       case 'schedule':
         navigate('/schedule');
         break;
     }
-  }
+  }, [clients, workouts, navigate, toast]);
 
   const formatTimeAgo = useCallback((date: string | Date) => {
     const now = new Date();
@@ -439,7 +298,6 @@ const Dashboard = memo(() => {
     const diffMins = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
     if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
     if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
     return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
@@ -454,9 +312,8 @@ const Dashboard = memo(() => {
     })) || [
       { client: "Welcome!", action: "Start by adding your first client", time: "Just now", icon: Users },
     ]
-  }, [dashboardStats?.recentActivity, formatTimeAgo])
+  }, [dashboardStats?.recentActivity, formatTimeAgo]);
 
-  // Greeting based on time of day
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -464,62 +321,21 @@ const Dashboard = memo(() => {
     return "Good evening";
   }, []);
 
-  // Setup checklist items based on onboarding progress
   const checklistItems: ChecklistItem[] = useMemo(() => [
-    {
-      id: 'add-client',
-      title: 'Add your first client',
-      description: 'Start by adding a client to your roster',
-      completed: onboardingProgress?.addedFirstClient || false,
-      action: () => setShowClientModal(true),
-      actionLabel: 'Add Client',
-    },
-    {
-      id: 'create-workout',
-      title: 'Create a workout plan',
-      description: 'Design your first custom workout',
-      completed: onboardingProgress?.createdFirstWorkout || false,
-      action: () => navigate('/workouts'),
-      actionLabel: 'Create',
-    },
-    {
-      id: 'assign-workout',
-      title: 'Assign a workout to a client',
-      description: 'Connect a workout plan with a client',
-      completed: onboardingProgress?.assignedFirstWorkout || false,
-      action: () => navigate('/clients'),
-      actionLabel: 'Go to Clients',
-    },
-    {
-      id: 'schedule-session',
-      title: 'Schedule your first session',
-      description: 'Book a training session with a client',
-      completed: onboardingProgress?.scheduledFirstSession || false,
-      action: () => navigate('/schedule'),
-      actionLabel: 'Schedule',
-    },
+    { id: 'add-client', title: 'Add your first client', description: 'Start by adding a client to your roster', completed: onboardingProgress?.addedFirstClient || false, action: () => setShowClientModal(true), actionLabel: 'Add Client' },
+    { id: 'create-workout', title: 'Create a workout plan', description: 'Design your first custom workout', completed: onboardingProgress?.createdFirstWorkout || false, action: () => navigate('/workouts'), actionLabel: 'Create' },
+    { id: 'assign-workout', title: 'Assign a workout to a client', description: 'Connect a workout plan with a client', completed: onboardingProgress?.assignedFirstWorkout || false, action: () => navigate('/clients'), actionLabel: 'Go to Clients' },
+    { id: 'schedule-session', title: 'Schedule your first session', description: 'Book a training session with a client', completed: onboardingProgress?.scheduledFirstSession || false, action: () => navigate('/schedule'), actionLabel: 'Schedule' },
   ], [onboardingProgress, navigate]);
 
-  // Show welcome modal if not completed (check both API and localStorage)
   const welcomeDismissedLocally = localStorage.getItem('gymgurus_welcome_completed') === 'true';
   const showWelcomeModal = onboardingProgress && !onboardingProgress.welcomeModalCompleted && !welcomeDismissedLocally;
+  const showChecklist = onboardingProgress?.welcomeModalCompleted && !onboardingProgress?.onboardingCompletedAt && checklistItems.some(item => !item.completed);
 
-  // Show checklist if welcome modal completed but onboarding not finished
-  const showChecklist = onboardingProgress?.welcomeModalCompleted &&
-                        !onboardingProgress?.onboardingCompletedAt &&
-                        checklistItems.some(item => !item.completed);
+  // Early returns
+  if (!userLoading && !user) return <LoginPage />;
+  if (loadingStats || loadingClients) return <DashboardSkeleton />;
 
-  // Show premium login page if not authenticated
-  if (!userLoading && !user) {
-    return <LoginPage />;
-  }
-
-  // Show loading skeleton while initial data loads
-  if (loadingStats || loadingClients) {
-    return <DashboardSkeleton />;
-  }
-
-  // Show error state if critical data failed to load
   if (clientsError || statsError) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -541,694 +357,37 @@ const Dashboard = memo(() => {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Modal - First time user onboarding */}
-      <WelcomeModal
-        open={showWelcomeModal || false}
-        onComplete={handleWelcomeComplete}
-        userName={user?.firstName}
+      <WelcomeModal open={showWelcomeModal || false} onComplete={handleWelcomeComplete} userName={user?.firstName} />
+      {showChecklist && <SetupChecklist items={checklistItems} onDismiss={handleChecklistDismiss} />}
+      <ClientFormModal mode="create" trainerId={user?.id || ''} open={showClientModal} onOpenChange={setShowClientModal} />
+
+      <DashboardHero
+        isTrainer={isTrainer}
+        prefersReducedMotion={prefersReducedMotion}
+        user={user}
+        isConnected={isConnected}
+        greeting={greeting}
+        activeClients={dashboardStats?.activeClients || 0}
+        onNavigate={navigate}
       />
 
-      {/* Setup Checklist - Show after welcome modal */}
-      {showChecklist && (
-        <SetupChecklist
-          items={checklistItems}
-          onDismiss={handleChecklistDismiss}
-        />
-      )}
+      <DashboardStatCards stats={stats} prefersReducedMotion={prefersReducedMotion} onNavigate={navigate} />
 
-      {/* Client Form Modal - Controlled for checklist action */}
-      <ClientFormModal
-        mode="create"
-        trainerId={user?.id || ''}
-        open={showClientModal}
-        onOpenChange={setShowClientModal}
-      />
-
-      {/* Personalized Hero Section - Ultra Premium Luxury Design */}
-      <motion.div
-        className={`relative h-80 sm:h-96 md:h-[28rem] rounded-3xl overflow-hidden group ${isTrainer ? 'trainer-border' : 'client-border'}`}
-        style={{
-          background: 'linear-gradient(135deg, rgba(201, 168, 85, 0.25) 0%, rgba(207, 176, 95, 0.28) 25%, rgba(13, 148, 136, 0.28) 75%, rgba(13, 148, 136, 0.25) 100%)',
-          willChange: 'transform',
-          backdropFilter: 'blur(24px)',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-        }}
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-        whileHover={{ scale: 1.005 }}
-      >
-        {/* Premium metallic gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/50 group-hover:from-black/30 transition-all duration-700" />
-
-        {/* Elegant top accent line */}
-        <div
-          className="absolute top-0 left-0 right-0 h-[2px]"
-          style={{
-            background: 'linear-gradient(90deg, transparent 0%, rgba(201, 168, 85, 0.8) 20%, rgba(201, 168, 85, 1) 50%, rgba(13, 148, 136, 1) 50%, rgba(13, 148, 136, 0.8) 80%, transparent 100%)',
-          }}
-        />
-
-        {/* Corner ornamental accents */}
-        <div className="absolute top-0 left-0 w-32 h-32 opacity-20">
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <path d="M0,0 L100,0 L100,20 Q50,20 20,50 Q20,50 20,100 L0,100 Z" fill="url(#cornerGradient)" />
-            <defs>
-              <linearGradient id="cornerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="rgba(201, 168, 85, 0.6)" />
-                <stop offset="100%" stopColor="transparent" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-
-        <div className="absolute bottom-0 right-0 w-32 h-32 opacity-20 rotate-180">
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <path d="M0,0 L100,0 L100,20 Q50,20 20,50 Q20,50 20,100 L0,100 Z" fill="url(#cornerGradient2)" />
-            <defs>
-              <linearGradient id="cornerGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="rgba(13, 148, 136, 0.6)" />
-                <stop offset="100%" stopColor="transparent" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-
-        {/* Luxury noise texture overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.015] mix-blend-overlay pointer-events-none"
-          style={{
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")',
-          }}
-        />
-
-        {/* Premium radial gradient lighting */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 50%)',
-          }}
-        />
-
-        {/* Bottom elegant accent line */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[2px]"
-          style={{
-            background: 'linear-gradient(90deg, transparent 0%, rgba(201, 168, 85, 0.6) 30%, rgba(201, 168, 85, 0.8) 50%, rgba(13, 148, 136, 0.8) 50%, rgba(13, 148, 136, 0.6) 70%, transparent 100%)',
-          }}
-        />
-
-        {/* Premium inner glow border */}
-        <div
-          className="absolute inset-0 rounded-3xl pointer-events-none"
-          style={{
-            boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.08), inset 0 -1px 2px rgba(0, 0, 0, 0.2)',
-          }}
-        />
-
-        {/* Static gradient orbs (entrance-only, no infinite animations) */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Primary gold/teal orb - top right */}
-          <motion.div
-            className="absolute top-10 right-10 w-64 h-64 rounded-full blur-3xl"
-            style={{
-              background: isTrainer
-                ? 'radial-gradient(circle, rgba(201, 168, 85, 0.35) 0%, rgba(212, 184, 106, 0.15) 50%, transparent 100%)'
-                : 'radial-gradient(circle, rgba(13, 148, 136, 0.35) 0%, rgba(20, 184, 166, 0.15) 50%, transparent 100%)',
-              filter: 'blur(40px)',
-            }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 0.5, scale: 1 }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
-          />
-
-          {/* Secondary orb - bottom left */}
-          <motion.div
-            className="absolute bottom-10 left-10 w-80 h-80 rounded-full blur-3xl"
-            style={{
-              background: isTrainer
-                ? 'radial-gradient(circle, rgba(212, 184, 106, 0.3) 0%, rgba(201, 168, 85, 0.1) 50%, transparent 100%)'
-                : 'radial-gradient(circle, rgba(20, 184, 166, 0.3) 0%, rgba(13, 148, 136, 0.1) 50%, transparent 100%)',
-              filter: 'blur(50px)',
-            }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 0.4, scale: 1 }}
-            transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
-          />
-
-          {/* Center accent orb */}
-          <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full blur-3xl"
-            style={{
-              background: isTrainer
-                ? 'radial-gradient(circle, rgba(201, 168, 85, 0.25) 0%, rgba(201, 168, 85, 0.08) 50%, transparent 100%)'
-                : 'radial-gradient(circle, rgba(13, 148, 136, 0.25) 0%, rgba(13, 148, 136, 0.08) 50%, transparent 100%)',
-              filter: 'blur(45px)',
-            }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 0.3, scale: 1 }}
-            transition={{ duration: 1.5, ease: "easeOut", delay: 0.6 }}
-          />
-        </div>
-
-        <div className="relative h-full flex flex-col justify-center items-center text-center px-4 sm:px-6 md:px-8 text-white z-10">
-          {/* Premium badge - Elite Status */}
-          <motion.div
-            className="absolute top-6 left-6 flex items-center gap-2 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.8 }}
-            style={{
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <div className="w-2 h-2 rounded-full bg-gradient-to-r from-primary to-accent" />
-            <span className="text-xs font-medium tracking-wider uppercase" style={{ letterSpacing: '0.15em' }}>
-              Elite Trainer
-            </span>
-          </motion.div>
-
-          {/* Real-time connection status */}
-          <motion.div
-            className="absolute top-6 right-6 flex items-center gap-2 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.8 }}
-            style={{
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-            }}
-            title={isConnected ? 'Real-time sync active' : 'Reconnecting to server...'}
-          >
-            <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} style={{
-              boxShadow: isConnected ? '0 0 8px rgba(52, 211, 153, 0.6)' : 'none',
-            }} />
-            <span className="text-xs font-medium text-white/90 tracking-wider uppercase" style={{ letterSpacing: '0.1em' }}>
-              {isConnected ? 'Synced' : 'Reconnecting'}
-            </span>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
-            className="space-y-6"
-          >
-            {/* Luxury greeting with ornamental line */}
-            <div className="flex flex-col items-center gap-3">
-              <motion.div
-                className="flex items-center gap-3"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                <div className="h-[1px] w-8 bg-gradient-to-r from-transparent via-white/40 to-white/60" />
-                <motion.p
-                  className="text-sm sm:text-base font-light text-white/90 tracking-widest uppercase"
-                  style={{ letterSpacing: '0.2em' }}
-                >
-                  {greeting}, <span className="font-normal bg-gradient-to-r from-primary via-white to-accent bg-clip-text text-transparent">{user?.firstName || 'Trainer'}</span>
-                </motion.p>
-                <div className="h-[1px] w-8 bg-gradient-to-l from-transparent via-white/40 to-white/60" />
-              </motion.div>
-            </div>
-
-            {/* Premium title with metallic effect */}
-            <motion.h1
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extralight leading-none"
-              data-testid="text-dashboard-title"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.7 }}
-              style={{
-                letterSpacing: '-0.02em',
-                textShadow: '0 2px 20px rgba(0, 0, 0, 0.3)',
-              }}
-            >
-              <span className="block" style={{ fontFamily: "'Playfair Display', serif" }}>Your</span>
-              <span
-                className="block font-light bg-gradient-to-r from-primary via-muted to-accent bg-clip-text text-transparent"
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  letterSpacing: '0.05em',
-                }}
-              >
-                Fitness Studio
-              </span>
-            </motion.h1>
-
-            {/* Decorative divider */}
-            <motion.div
-              className="flex items-center justify-center gap-3 py-2"
-              initial={{ opacity: 0, scaleX: 0 }}
-              animate={{ opacity: 1, scaleX: 1 }}
-              transition={{ delay: 0.7, duration: 0.6 }}
-            >
-              <div className="h-[1px] w-16 bg-gradient-to-r from-transparent via-primary to-transparent" />
-              <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-primary to-accent" style={{
-                boxShadow: '0 0 8px hsl(var(--primary) / 0.6)',
-              }} />
-              <div className="h-[1px] w-16 bg-gradient-to-r from-transparent via-accent to-transparent" />
-            </motion.div>
-
-            <motion.p
-              className="text-base sm:text-lg md:text-xl font-light text-white/95 max-w-3xl mx-auto leading-relaxed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.75 }}
-              style={{
-                letterSpacing: '0.02em',
-                textShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
-              }}
-            >
-              You're doing <span className="font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">exceptional</span> work! {dashboardStats?.activeClients || 0} clients trust your expertise this week.
-            </motion.p>
-          </motion.div>
-          {prefersReducedMotion ? (
-            <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              <NewClientButton
-                trainerId={user?.id}
-                className="relative bg-gradient-to-r from-white via-white to-white/95 text-primary hover:from-white hover:to-white font-medium px-8 sm:px-10 h-12 rounded-xl tracking-wide uppercase text-sm overflow-hidden group"
-                style={{
-                  boxShadow: '0 4px 20px rgba(255, 255, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
-                  letterSpacing: '0.1em',
-                }}
-              />
-              <AnimatedButton
-                variant="outline"
-                size="lg"
-                className="relative bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-md border border-white/30 text-white hover:from-white/10 hover:to-white/5 font-medium px-8 sm:px-10 h-12 rounded-xl tracking-wide uppercase text-sm"
-                data-testid="button-create-workout"
-                onClick={() => navigate('/workouts')}
-                style={{
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                Create Workout
-              </AnimatedButton>
-            </div>
-          ) : (
-            <motion.div
-              className="flex flex-col sm:flex-row gap-4 mt-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8, duration: 0.5 }}
-            >
-              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
-                <NewClientButton
-                  trainerId={user?.id}
-                  className="relative bg-gradient-to-r from-white via-white to-white/95 text-primary hover:from-white hover:to-white font-medium px-8 sm:px-10 h-12 rounded-xl tracking-wide uppercase text-sm overflow-hidden group"
-                  style={{
-                    boxShadow: '0 4px 20px rgba(255, 255, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4)',
-                    letterSpacing: '0.1em',
-                  }}
-                />
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
-                <AnimatedButton
-                  variant="outline"
-                  size="lg"
-                  className="relative bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-md border border-white/30 text-white hover:from-white/10 hover:to-white/5 font-medium px-8 sm:px-10 h-12 rounded-xl tracking-wide uppercase text-sm"
-                  data-testid="button-create-workout"
-                  onClick={() => navigate('/workouts')}
-                  style={{
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-                    letterSpacing: '0.1em',
-                  }}
-                >
-                  Create Workout
-                </AnimatedButton>
-              </motion.div>
-            </motion.div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Stats Grid - 2 columns per row */}
-      <StaggerContainer delay={0.1}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {stats.map((stat, index) => (
-                <StaggerItem key={stat.label} index={index}>
-                <motion.div
-                  whileHover={{ y: -6, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <Card
-                    className={`
-                      relative overflow-hidden cursor-pointer
-                      bg-gradient-to-br ${stat.bgGlow}
-                      glass border-border/40
-                      hover:shadow-premium-lg hover:border-primary/30
-                      transition-all duration-500 group
-                    `}
-                    onClick={() => {
-                      if (stat.label === "Active Clients") navigate('/clients');
-                      if (stat.label === "Workout Plans") navigate('/workouts');
-                      if (stat.label === "Sessions This Week") navigate('/schedule');
-                    }}
-                    data-testid={`card-stat-${index}`}
-                  >
-                    {/* Enhanced glow effect on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                    {/* Animated border glow */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
-
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                      <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-                        {stat.label}
-                      </CardTitle>
-                      <div className="relative">
-                        <div className="p-2 rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-all duration-300">
-                          <stat.icon className={`h-5 w-5 ${stat.color} transition-all duration-500 group-hover:scale-125 group-hover:rotate-12`} />
-                        </div>
-                        {stat.changeType === "increase" && (
-                          <motion.div
-                            className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full"
-                            animate={{
-                              scale: [1, 1.2, 1],
-                              opacity: [1, 0.6, 1]
-                            }}
-                            transition={{
-                              duration: 2,
-                              repeat: prefersReducedMotion ? 0 : Infinity,
-                              ease: "easeInOut"
-                            }}
-                          />
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-baseline justify-between">
-                        <motion.div
-                          className="text-4xl font-extralight tracking-tight"
-                          data-testid={`stat-${stat.label.toLowerCase().replace(' ', '-')}`}
-                          initial={{ scale: 0.9 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.3 + index * 0.1, duration: 0.5, type: "spring" }}
-                        >
-                          {stat.value}
-                        </motion.div>
-                        {stat.change && (
-                          <Badge variant="secondary" className="text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/25 transition-colors duration-300">
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            {stat.change}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-3 font-light group-hover:text-foreground/70 transition-colors duration-300">
-                        {stat.trend}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-                </StaggerItem>
-              ))}
-        </div>
-      </StaggerContainer>
-
-      {/* Needs Attention Alerts */}
       <NeedsAttentionCard />
 
-      {/* Two-Column Layout: Quick Actions + Progress Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left: Quick Actions + Achievements (3/5 width) */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Quick Actions - Enhanced Premium Design */}
-          <Card className="glass-strong border-border/40 hover:border-primary/20 transition-all duration-500">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-light tracking-tight">Quick Actions</CardTitle>
-                <Badge variant="secondary" className="font-light text-xs bg-primary/10 text-primary border-primary/20">
-                  <Zap className="h-3 w-3 mr-1" />
-                  Shortcuts
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {quickActions.map((action, index) => (
-                  action.action === 'add-client' ? (
-                    <motion.div
-                      key={action.action}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05, duration: 0.3 }}
-                    >
-                      <NewClientButton
-                        trainerId={user?.id}
-                        className="w-full h-full p-0"
-                      />
-                    </motion.div>
-                  ) : (
-                    <motion.button
-                      key={action.action}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05, duration: 0.3 }}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleQuickAction(action.action)}
-                      className={`
-                        relative overflow-hidden
-                        ${action.color}
-                        text-white rounded-xl p-4
-                        shadow-lg hover:shadow-2xl
-                        transition-all duration-300
-                        flex flex-col items-center justify-center gap-2
-                        group
-                      `}
-                      data-testid={`quick-action-${action.action}`}
-                    >
-                      {/* Shine effect on hover */}
-                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+      <DashboardQuickActions
+        quickActions={quickActions}
+        onQuickAction={handleQuickAction}
+        user={user}
+        trainerAchievements={trainerAchievements}
+        currentStreak={currentStreak}
+        weeklyProgress={weeklyProgress}
+        weeklyGoal={weeklyGoal}
+        completedSessionsThisWeek={dashboardStats?.completedSessionsThisWeek || 0}
+        performanceInsight={chartData?.performanceInsight}
+      />
 
-                      <action.icon className="h-6 w-6 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 relative z-10" />
-                      <span className="text-xs font-medium leading-tight text-center relative z-10">{action.label}</span>
-                    </motion.button>
-                  )
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Achievements - Compact */}
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-light">Achievements</CardTitle>
-                <Badge variant="outline" className="font-light text-xs">
-                  {trainerAchievements.filter(a => a.unlocked).length} / {trainerAchievements.length}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {trainerAchievements.map((achievement, index) => (
-                  <AchievementBadge key={index} {...achievement} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right: Compact Progress Widgets (2/5 width) */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Streak Counter Card - More Compact */}
-          <Card className="bg-gradient-to-br from-orange-500/10 to-red-500/10 backdrop-blur-sm border-orange-500/30">
-            <CardContent className="p-4 text-center space-y-2">
-              <div className="flex justify-center">
-                <div className="relative">
-                  <Flame className="h-12 w-12 text-orange-500" />
-                  <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                    {currentStreak}
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold">{currentStreak}-Day Streak!</h3>
-                <p className="text-xs text-muted-foreground">Keep it up</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Weekly Goal Progress - Compact */}
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-light">Weekly Goal</CardTitle>
-              <CardDescription className="text-xs">
-                {dashboardStats?.completedSessionsThisWeek || 0} / {weeklyGoal} sessions
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-center">
-                <ProgressRing progress={weeklyProgress} size={60} strokeWidth={5} color="text-primary" />
-              </div>
-              <p className="text-[10px] text-center text-muted-foreground">
-                {weeklyProgress >= 100 ? "🎉 Goal achieved!" : `${Math.round(weeklyGoal - (dashboardStats?.completedSessionsThisWeek || 0))} to go`}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Performance Insight - Compact */}
-          <Card className="bg-gradient-to-br from-emerald-500/10 to-green-500/10 backdrop-blur-sm border-emerald-500/30">
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-emerald-600" />
-                <h3 className="text-sm font-semibold text-emerald-600">Performance Insight</h3>
-              </div>
-              <p className="text-xs leading-relaxed">
-                {chartData?.performanceInsight?.label || 'Start completing sessions to see performance insights.'}
-                {(chartData?.performanceInsight?.value || 0) > 0 && ' Your personalized approach is working!'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Analytics Charts - 2 Column Layout for Better Space Usage */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Client Weight Progress */}
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-light">Client Progress</CardTitle>
-            <CardDescription className="text-xs">Average weight trend</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {(chartData?.weightProgressData?.length || 0) > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={chartData.weightProgressData}>
-                    <defs>
-                      <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} domain={['dataMin - 5', 'dataMax + 5']} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
-                      formatter={(value: any) => [`${value} lbs`, 'Weight']}
-                    />
-                    <Area type="monotone" dataKey="weight" stroke="#10b981" strokeWidth={2} fill="url(#colorWeight)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Total Progress</span>
-                  {(() => {
-                    const data = chartData.weightProgressData;
-                    const diff = data.length >= 2 ? data[data.length - 1].weight - data[0].weight : 0;
-                    return (
-                      <Badge variant="secondary" className={`${diff <= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-orange-500/10 text-orange-600'} border-none`}>
-                        {diff <= 0 ? <TrendingDown className="h-3 w-3 mr-1" /> : <TrendingUp className="h-3 w-3 mr-1" />}
-                        {diff <= 0 ? '' : '+'}{diff} lbs
-                      </Badge>
-                    );
-                  })()}
-                </div>
-              </>
-            ) : (
-              <div className="h-[200px] flex flex-col items-center justify-center space-y-2">
-                <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">Log client weight progress to see trends</p>
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/clients')}>
-                  Go to Clients
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Weekly Sessions */}
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-light">Weekly Sessions</CardTitle>
-            <CardDescription className="text-xs">Scheduled vs completed</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {(chartData?.sessionsData?.length || 0) > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={chartData.sessionsData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                    <XAxis dataKey="week" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
-                    <Legend wrapperStyle={{ fontSize: '12px' }} formatter={(value) => value === 'sessions' ? 'Scheduled' : 'Completed'} />
-                    <Bar dataKey="sessions" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Completion Rate</span>
-                  <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none">
-                    {chartData?.completionRate || 0}%
-                  </Badge>
-                </div>
-              </>
-            ) : (
-              <div className="h-[200px] flex flex-col items-center justify-center space-y-2">
-                <Calendar className="h-8 w-8 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">Schedule sessions to see weekly trends</p>
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/schedule')}>
-                  Go to Schedule
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Client Growth - Spans 2 columns for better visibility */}
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50 lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-light">Client Growth</CardTitle>
-            <CardDescription className="text-xs">Cumulative clients by month</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {(chartData?.clientGrowthData?.length || 0) > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={chartData.clientGrowthData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} domain={[0, 'dataMax + 2']} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
-                      formatter={(value: any) => [`${value}`, 'Clients']}
-                    />
-                    <Line type="monotone" dataKey="clients" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ fill: 'hsl(var(--primary))', r: 4 }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Growth Rate</span>
-                  {(() => {
-                    const data = chartData.clientGrowthData;
-                    const first = data.length >= 2 ? data[0].clients : 0;
-                    const last = data.length >= 2 ? data[data.length - 1].clients : 0;
-                    const growthRate = first > 0 ? Math.round(((last - first) / first) * 100) : (last > 0 ? 100 : 0);
-                    return (
-                      <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-none">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        {growthRate >= 0 ? '+' : ''}{growthRate}%
-                      </Badge>
-                    );
-                  })()}
-                </div>
-              </>
-            ) : (
-              <div className="h-[200px] flex flex-col items-center justify-center space-y-2">
-                <Users className="h-8 w-8 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">Add clients to see growth trends</p>
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/clients')}>
-                  Go to Clients
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardCharts chartData={chartData} onNavigate={navigate} />
 
       {/* Recent Activity */}
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
@@ -1236,9 +395,6 @@ const Dashboard = memo(() => {
           <CardTitle className="text-2xl font-light" data-testid="text-recent-activity-title">
             Recent Activity
           </CardTitle>
-          <CardDescription className="text-base font-light">
-            Latest updates from your studio
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-1">
@@ -1259,17 +415,11 @@ const Dashboard = memo(() => {
                       {activity.icon && <activity.icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />}
                     </div>
                     <div className="space-y-1">
-                      <p className="font-medium" data-testid={`text-client-${index}`}>
-                        {activity.client}
-                      </p>
-                      <p className="text-sm text-muted-foreground font-light">
-                        {activity.action}
-                      </p>
+                      <p className="font-medium" data-testid={`text-client-${index}`}>{activity.client}</p>
+                      <p className="text-sm text-muted-foreground font-light">{activity.action}</p>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="text-xs font-light bg-muted/50">
-                    {activity.time}
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs font-light bg-muted/50">{activity.time}</Badge>
                 </motion.div>
               ))}
             </AnimatePresence>
