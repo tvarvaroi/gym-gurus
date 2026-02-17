@@ -315,7 +315,7 @@ export function SetupChecklist({ items, onDismiss, className }: SetupChecklistPr
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={onDismiss}
-            className="absolute top-6 right-6 z-50 rounded-full p-2.5 bg-background/80 hover:bg-background border border-border/50 hover:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-premium group"
+            className="absolute top-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-background/80 hover:bg-background border border-border/50 hover:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-premium group"
             aria-label="Dismiss checklist"
           >
             <X className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />

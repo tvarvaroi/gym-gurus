@@ -50,7 +50,7 @@ export function QuickSetInput({
           setSwipeDirection(null);
         }, 200);
       } else if (info.offset.x < -threshold) {
-        // Swipe left - Failed set
+        // Swipe left - Missed set
         setSwipeDirection('left');
         if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
         setTimeout(() => {

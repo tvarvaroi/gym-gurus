@@ -104,7 +104,7 @@ export function AchievementUnlockModal({
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute -top-2 -right-2 z-20 p-3 bg-background rounded-full shadow-lg hover:bg-muted transition-colors"
+              className="absolute -top-2 -right-2 z-20 flex h-11 w-11 items-center justify-center bg-background rounded-full shadow-lg hover:bg-muted transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -304,7 +304,7 @@ export function AchievementToast({ achievement, onClose }: AchievementToastProps
         </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-muted rounded-full transition-colors"
+          className="flex h-11 w-11 items-center justify-center hover:bg-muted rounded-full transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
