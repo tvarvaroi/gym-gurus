@@ -63,6 +63,7 @@ import {
 // New feature route imports
 import gamificationRoutes from './routes/gamification';
 import calculatorRoutes from './routes/calculators';
+import calculatorResultsRoutes from './routes/calculatorResults';
 import strengthRoutes from './routes/strength';
 import recoveryRoutes from './routes/recovery';
 import aiRoutes from './routes/ai';
@@ -83,6 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register new feature routes with tiered rate limiting
   app.use('/api/gamification', secureAuth, apiRateLimit, gamificationRoutes);
   app.use('/api/calculators', calculatorRoutes); // Calculators are public — covered by generalRateLimit (60/min)
+  app.use('/api', secureAuth, apiRateLimit, calculatorResultsRoutes); // Premium calculator results — authenticated only
   app.use('/api/strength', secureAuth, apiRateLimit, strengthRoutes);
   app.use('/api/recovery', secureAuth, apiRateLimit, recoveryRoutes);
   app.use('/api/ai', secureAuth, aiRateLimit, aiRoutes); // AI: 10/min (expensive API calls)

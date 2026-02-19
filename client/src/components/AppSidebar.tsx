@@ -55,7 +55,7 @@ const trainerMenuItems = [
   },
   {
     title: 'Calculators',
-    url: '/calculators',
+    url: '/dashboard/calculators',
     icon: Calculator,
   },
   {
@@ -94,7 +94,7 @@ const clientMenuItems = [
   },
   {
     title: 'Calculators',
-    url: '/calculators',
+    url: '/dashboard/calculators',
     icon: Calculator,
   },
   {
@@ -143,7 +143,7 @@ const soloMenuItems = [
   },
   {
     title: 'Calculators',
-    url: '/calculators',
+    url: '/dashboard/calculators',
     icon: Calculator,
   },
   {
@@ -347,7 +347,8 @@ const AppSidebar = memo(() => {
                     transition={{ type: 'spring', damping: 20, stiffness: 300 }}
                     style={{
                       fontFamily: "'Playfair Display', serif",
-                      background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
+                      background:
+                        'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       letterSpacing: '0.2em',
