@@ -19,7 +19,7 @@ const BASE_URL = process.env.BASE_URL ?? 'http://localhost:5000';
 // ---------------------------------------------------------------------------
 
 async function loginAsSolo(page: Page) {
-  await page.goto(`${BASE_URL}/preview-login`);
+  await page.goto(`${BASE_URL}/test-login`);
   await page.waitForLoadState('networkidle');
 
   // The dev login page provides role-selection buttons.

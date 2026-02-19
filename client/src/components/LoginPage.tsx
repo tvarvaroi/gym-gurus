@@ -29,7 +29,9 @@ const ShimmerParticle = ({
           ? 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--muted)), hsl(var(--color-guru)))'
           : 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--muted)), hsl(var(--color-disciple)))',
       boxShadow:
-        variant === 'gold' ? '0 0 8px hsl(var(--color-guru) / 0.5)' : '0 0 8px hsl(var(--color-disciple) / 0.5)',
+        variant === 'gold'
+          ? '0 0 8px hsl(var(--color-guru) / 0.5)'
+          : '0 0 8px hsl(var(--color-disciple) / 0.5)',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
     animate={{
@@ -89,9 +91,18 @@ const ParallaxCard = ({
   return (
     <motion.div
       ref={cardRef}
+      role="button"
+      tabIndex={0}
+      aria-label={`Select ${role} role`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       style={{
         rotateX,
         rotateY,
@@ -231,7 +242,8 @@ export function LoginPage() {
         <motion.div
           className="absolute w-[700px] h-[700px] rounded-full pointer-events-none z-30"
           style={{
-            background: 'radial-gradient(circle, hsl(var(--color-guru) / 0.08) 0%, transparent 70%)',
+            background:
+              'radial-gradient(circle, hsl(var(--color-guru) / 0.08) 0%, transparent 70%)',
             top: '15%',
             left: '15%',
             filter: 'blur(140px)',
@@ -248,7 +260,8 @@ export function LoginPage() {
         <motion.div
           className="absolute w-[700px] h-[700px] rounded-full pointer-events-none z-30"
           style={{
-            background: 'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
+            background:
+              'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
             bottom: '15%',
             right: '15%',
             filter: 'blur(140px)',
@@ -324,7 +337,8 @@ export function LoginPage() {
                   className="text-3xl lg:text-4xl font-extralight tracking-[0.4em] mb-2"
                   style={{
                     fontFamily: "'Playfair Display', serif",
-                    background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, hsl(var(--muted)) 50%, hsl(var(--color-disciple)) 100%)',
+                    background:
+                      'linear-gradient(90deg, hsl(var(--color-guru)) 0%, hsl(var(--muted)) 50%, hsl(var(--color-disciple)) 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     letterSpacing: '0.25em',
@@ -375,7 +389,10 @@ export function LoginPage() {
                 }}
               >
                 <Crown className="w-4 h-4" style={{ color: 'hsl(var(--color-guru))' }} />
-                <span className="text-sm font-light tracking-wider" style={{ color: 'hsl(var(--border))' }}>
+                <span
+                  className="text-sm font-light tracking-wider"
+                  style={{ color: 'hsl(var(--border))' }}
+                >
                   PREMIUM EXPERIENCE
                 </span>
               </motion.div>
@@ -436,7 +453,12 @@ export function LoginPage() {
                     {/* Dual-tone shimmer particles */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       {[...Array(2)].map((_, j) => (
-                        <ShimmerParticle key={j} delay={i * 0.4 + j * 0.3} variant={stat.variant} prefersReducedMotion={prefersReducedMotion} />
+                        <ShimmerParticle
+                          key={j}
+                          delay={i * 0.4 + j * 0.3}
+                          variant={stat.variant}
+                          prefersReducedMotion={prefersReducedMotion}
+                        />
                       ))}
                     </div>
                     <div
@@ -490,7 +512,8 @@ export function LoginPage() {
                 className="text-4xl lg:text-5xl font-light mb-4"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #ffffff 50%, hsl(var(--color-disciple)) 100%)',
+                  background:
+                    'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #ffffff 50%, hsl(var(--color-disciple)) 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   letterSpacing: '-0.02em',
@@ -498,7 +521,10 @@ export function LoginPage() {
               >
                 Choose Your Path
               </h3>
-              <p style={{ color: 'hsl(var(--muted-foreground))', letterSpacing: '0.05em' }} className="font-light text-sm">
+              <p
+                style={{ color: 'hsl(var(--muted-foreground))', letterSpacing: '0.05em' }}
+                className="font-light text-sm"
+              >
                 Select your role to begin your journey
               </p>
             </div>
@@ -554,7 +580,8 @@ export function LoginPage() {
                       <div
                         className="w-11 h-11 rounded-full flex items-center justify-center"
                         style={{
-                          background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))',
+                          background:
+                            'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))',
                           boxShadow: '0 10px 20px hsl(var(--color-guru) / 0.4)',
                         }}
                       >
@@ -567,7 +594,8 @@ export function LoginPage() {
                   <motion.div
                     className="absolute top-6 left-6 w-16 h-16 rounded-full flex items-center justify-center z-10"
                     style={{
-                      background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-accent)))',
+                      background:
+                        'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-accent)))',
                       boxShadow:
                         '0 12px 30px hsl(var(--color-guru) / 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
                     }}
@@ -629,7 +657,8 @@ export function LoginPage() {
                           <div
                             className="w-1.5 h-1.5 rounded-full"
                             style={{
-                              background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))',
+                              background:
+                                'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))',
                               boxShadow: '0 0 8px hsl(var(--color-guru) / 0.5)',
                             }}
                           />
@@ -699,7 +728,8 @@ export function LoginPage() {
                       <div
                         className="w-11 h-11 rounded-full flex items-center justify-center"
                         style={{
-                          background: 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
+                          background:
+                            'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
                           boxShadow: '0 10px 20px hsl(var(--color-disciple) / 0.4)',
                         }}
                       >
@@ -712,7 +742,8 @@ export function LoginPage() {
                   <motion.div
                     className="absolute top-6 left-6 w-16 h-16 rounded-full flex items-center justify-center z-10"
                     style={{
-                      background: 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
+                      background:
+                        'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
                       boxShadow:
                         '0 12px 30px hsl(var(--color-disciple) / 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
                     }}
@@ -740,7 +771,8 @@ export function LoginPage() {
                         className="text-4xl font-light mb-3"
                         style={{
                           fontFamily: "'Playfair Display', serif",
-                          background: 'linear-gradient(135deg, #ffffff, hsl(var(--color-disciple)))',
+                          background:
+                            'linear-gradient(135deg, #ffffff, hsl(var(--color-disciple)))',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                         }}
@@ -774,7 +806,8 @@ export function LoginPage() {
                           <div
                             className="w-1.5 h-1.5 rounded-full"
                             style={{
-                              background: 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
+                              background:
+                                'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
                               boxShadow: '0 0 8px hsl(var(--color-disciple) / 0.5)',
                             }}
                           />
@@ -844,7 +877,8 @@ export function LoginPage() {
                       <div
                         className="w-11 h-11 rounded-full flex items-center justify-center"
                         style={{
-                          background: 'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)))',
+                          background:
+                            'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)))',
                           boxShadow: '0 10px 20px hsl(var(--color-ronin) / 0.4)',
                         }}
                       >
@@ -857,7 +891,8 @@ export function LoginPage() {
                   <motion.div
                     className="absolute top-6 left-6 w-16 h-16 rounded-full flex items-center justify-center z-10"
                     style={{
-                      background: 'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)))',
+                      background:
+                        'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)))',
                       boxShadow:
                         '0 12px 30px hsl(var(--color-ronin) / 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
                     }}
@@ -919,7 +954,8 @@ export function LoginPage() {
                           <div
                             className="w-1.5 h-1.5 rounded-full"
                             style={{
-                              background: 'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)))',
+                              background:
+                                'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)))',
                               boxShadow: '0 0 8px hsl(var(--color-ronin) / 0.5)',
                             }}
                           />
@@ -955,20 +991,23 @@ export function LoginPage() {
                   selectedRole
                     ? selectedRole === 'trainer'
                       ? {
-                          background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
+                          background:
+                            'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
                           boxShadow:
                             '0 20px 40px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                           color: '#000000',
                         }
                       : selectedRole === 'client'
                         ? {
-                            background: 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)), hsl(var(--color-disciple-accent)))',
+                            background:
+                              'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)), hsl(var(--color-disciple-accent)))',
                             boxShadow:
                               '0 20px 40px hsl(var(--color-disciple) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                             color: '#ffffff',
                           }
                         : {
-                            background: 'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)), hsl(var(--color-ronin-accent)))',
+                            background:
+                              'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)), hsl(var(--color-ronin-accent)))',
                             boxShadow:
                               '0 20px 40px hsl(var(--color-ronin) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                             color: '#ffffff',

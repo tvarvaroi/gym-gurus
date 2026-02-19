@@ -20,7 +20,7 @@ const BASE_URL = process.env.BASE_URL ?? 'http://localhost:5000';
 // ---------------------------------------------------------------------------
 
 async function loginAsSolo(page: Page) {
-  await page.goto(`${BASE_URL}/preview-login`);
+  await page.goto(`${BASE_URL}/test-login`);
   await page.waitForLoadState('networkidle');
   const soloButton = page.getByRole('button', { name: /solo/i });
   if (await soloButton.isVisible({ timeout: 10_000 }).catch(() => false)) {
@@ -30,7 +30,7 @@ async function loginAsSolo(page: Page) {
 }
 
 async function loginAsTrainer(page: Page) {
-  await page.goto(`${BASE_URL}/preview-login`);
+  await page.goto(`${BASE_URL}/test-login`);
   await page.waitForLoadState('networkidle');
   const trainerButton = page.getByRole('button', { name: /trainer/i });
   if (await trainerButton.isVisible({ timeout: 10_000 }).catch(() => false)) {

@@ -1,5 +1,5 @@
-import { QueryClient, QueryFunction, MutationCache, QueryCache } from "@tanstack/react-query";
-import { toast } from "@/hooks/use-toast";
+import { QueryClient, QueryFunction, MutationCache, QueryCache } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -19,11 +19,11 @@ function getCsrfToken(): string | null {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown | undefined
 ): Promise<Response> {
   const headers: Record<string, string> = {};
   if (data) {
-    headers["Content-Type"] = "application/json";
+    headers['Content-Type'] = 'application/json';
   }
 
   // Include CSRF token on state-changing requests
@@ -31,7 +31,7 @@ export async function apiRequest(
   if (stateChangingMethods.includes(method.toUpperCase())) {
     const csrfToken = getCsrfToken();
     if (csrfToken) {
-      headers["x-csrf-token"] = csrfToken;
+      headers['x-csrf-token'] = csrfToken;
     }
   }
 
@@ -39,24 +39,22 @@ export async function apiRequest(
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: 'include',
   });
 
   await throwIfResNotOk(res);
   return res;
 }
 
-type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
+type UnauthorizedBehavior = 'returnNull' | 'throw';
+export const getQueryFn: <T>(options: { on401: UnauthorizedBehavior }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
+    const res = await fetch(queryKey.join('/') as string, {
+      credentials: 'include',
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+    if (unauthorizedBehavior === 'returnNull' && res.status === 401) {
       return null;
     }
 
@@ -68,11 +66,16 @@ export const getQueryFn: <T>(options: {
 let redirecting401 = false;
 function handle401Error(error: unknown) {
   if (error instanceof Error && error.message.startsWith('401:')) {
-    // Only redirect once and only if not already on the landing page
-    if (!redirecting401 && window.location.pathname !== '/') {
+    const pathname = window.location.pathname;
+    // Don't redirect if already on landing page or login pages
+    const isLoginPage =
+      pathname === '/' || pathname === '/preview-login' || pathname === '/test-login';
+
+    // Only redirect once and only if not on a login page
+    if (!redirecting401 && !isLoginPage) {
       redirecting401 = true;
       // Store the current URL so user can return after re-login
-      sessionStorage.setItem('returnUrl', window.location.pathname + window.location.search);
+      sessionStorage.setItem('returnUrl', pathname + window.location.search);
       window.location.href = '/';
     }
   }
@@ -99,7 +102,7 @@ export const queryClient = new QueryClient({
   }),
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: getQueryFn({ on401: 'throw' }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
       refetchOnMount: false,

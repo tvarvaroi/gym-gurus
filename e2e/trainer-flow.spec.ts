@@ -21,7 +21,7 @@ const BASE_URL = process.env.BASE_URL ?? 'http://localhost:5000';
 
 /** Authenticate as a trainer via the Replit Auth mock / dev login page. */
 async function loginAsTrainer(page: Page) {
-  await page.goto(`${BASE_URL}/preview-login`);
+  await page.goto(`${BASE_URL}/test-login`);
   await page.waitForLoadState('networkidle');
 
   // The dev login page shows role-selection buttons.

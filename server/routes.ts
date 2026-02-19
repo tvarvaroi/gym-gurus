@@ -194,40 +194,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Solo User Onboarding - Save fitness profile
-  app.post('/api/users/onboarding', secureAuth, writeRateLimit, async (req: Request, res: Response) => {
-    try {
-      const userId = (req.user as any).id as string;
-      const { primaryGoal, experienceLevel, workoutEnvironment, availableEquipment, workoutFrequencyPerWeek } = req.body;
+  app.post(
+    '/api/users/onboarding',
+    secureAuth,
+    writeRateLimit,
+    async (req: Request, res: Response) => {
+      try {
+        const userId = (req.user as any).id as string;
+        const {
+          primaryGoal,
+          experienceLevel,
+          workoutEnvironment,
+          availableEquipment,
+          workoutFrequencyPerWeek,
+        } = req.body;
 
-      if (!primaryGoal || !experienceLevel || !workoutEnvironment || !availableEquipment || !workoutFrequencyPerWeek) {
-        return res.status(400).json({ error: 'All onboarding fields are required' });
-      }
+        if (
+          !primaryGoal ||
+          !experienceLevel ||
+          !workoutEnvironment ||
+          !availableEquipment ||
+          !workoutFrequencyPerWeek
+        ) {
+          return res.status(400).json({ error: 'All onboarding fields are required' });
+        }
 
-      const database = await getDb();
+        const database = await getDb();
 
-      // Upsert fitness profile
-      const existing = await database
-        .select()
-        .from(userFitnessProfile)
-        .where(eq(userFitnessProfile.userId, userId))
-        .limit(1);
+        // Upsert fitness profile
+        const existing = await database
+          .select()
+          .from(userFitnessProfile)
+          .where(eq(userFitnessProfile.userId, userId))
+          .limit(1);
 
-      if (existing.length > 0) {
-        await database
-          .update(userFitnessProfile)
-          .set({
-            primaryGoal,
-            experienceLevel,
-            workoutEnvironment,
-            availableEquipment,
-            workoutFrequencyPerWeek,
-            updatedAt: new Date(),
-          })
-          .where(eq(userFitnessProfile.userId, userId));
-      } else {
-        await database
-          .insert(userFitnessProfile)
-          .values({
+        if (existing.length > 0) {
+          await database
+            .update(userFitnessProfile)
+            .set({
+              primaryGoal,
+              experienceLevel,
+              workoutEnvironment,
+              availableEquipment,
+              workoutFrequencyPerWeek,
+              updatedAt: new Date(),
+            })
+            .where(eq(userFitnessProfile.userId, userId));
+        } else {
+          await database.insert(userFitnessProfile).values({
             userId,
             primaryGoal,
             experienceLevel,
@@ -235,20 +249,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             availableEquipment,
             workoutFrequencyPerWeek,
           });
+        }
+
+        // Mark onboarding as completed on user record
+        await database.update(users).set({ onboardingCompleted: true }).where(eq(users.id, userId));
+
+        res.json({ success: true });
+      } catch (error) {
+        console.error('Error saving onboarding data:', error);
+        res.status(500).json({ error: 'Failed to save onboarding data' });
       }
-
-      // Mark onboarding as completed on user record
-      await database
-        .update(users)
-        .set({ onboardingCompleted: true })
-        .where(eq(users.id, userId));
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error saving onboarding data:', error);
-      res.status(500).json({ error: 'Failed to save onboarding data' });
     }
-  });
+  );
 
   // Onboarding Progress Routes
 
@@ -494,7 +506,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const { clientId } = req.params;
-        const client = await storage.getClient(clientId);
+        const trainerId = (req.user as any).id as string;
+        const client = await storage.getClient(clientId, trainerId);
         if (!client) {
           return res.status(404).json({ error: 'Client not found' });
         }
@@ -546,13 +559,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const { clientId } = req.params;
+        const trainerId = (req.user as any).id as string;
         // Prevent trainerId changes by omitting it from the validation schema
         const validatedUpdates = insertClientSchema
           .omit({ trainerId: true })
           .partial()
           .parse(req.body);
 
-        const client = await storage.updateClient(clientId, validatedUpdates);
+        const client = await storage.updateClient(clientId, validatedUpdates, trainerId);
         if (!client) {
           return res.status(404).json({ error: 'Client not found' });
         }
@@ -576,7 +590,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const { clientId } = req.params;
-        const success = await storage.deleteClient(clientId);
+        const trainerId = (req.user as any).id as string;
+        const success = await storage.deleteClient(clientId, trainerId);
         if (!success) {
           return res.status(404).json({ error: 'Client not found' });
         }
@@ -944,7 +959,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const { clientId } = req.params;
-        const assignments = await storage.getClientWorkouts(clientId);
+        const trainerId = (req.user as any).id as string;
+        const assignments = await storage.getClientWorkouts(clientId, trainerId);
         res.json(assignments);
       } catch (error) {
         // Error logged internally
@@ -994,7 +1010,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
 
       // Fetch workouts for this week
-      const workouts = await storage.getClientWorkoutsByWeek(client.id, weekStartStr, weekEndStr);
+      const workouts = await storage.getClientWorkoutsByWeek(
+        client.id,
+        weekStartStr,
+        weekEndStr,
+        client.trainerId
+      );
 
       console.log(`[Client Weekly Workouts]`);
       console.log(`  User Email: ${user.email}`);
@@ -1038,7 +1059,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
 
         // Fetch workouts for this week
-        const workouts = await storage.getClientWorkoutsByWeek(clientId, weekStartStr, weekEndStr);
+        const trainerId = (req.user as any).id as string;
+        const workouts = await storage.getClientWorkoutsByWeek(
+          clientId,
+          weekStartStr,
+          weekEndStr,
+          trainerId
+        );
 
         console.log(`[Weekly Workouts Debug]`);
         console.log(`  Client ID: ${clientId}`);
@@ -1113,46 +1140,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         assignmentData.status = assignmentData.status || 'scheduled';
         assignmentData.isCustomized = assignmentData.isCustomized ?? false;
 
+        // SECURITY: Verify client belongs to authenticated trainer
+        const trainerId = (req.user as any).id as string;
+        const client = await storage.getClient(validatedData.clientId, trainerId);
+        if (!client) {
+          return res.status(403).json({ error: 'Access denied to this client' });
+        }
+
         const assignment = await storage.assignWorkoutToClient(assignmentData);
 
         // Automatic milestone tracking: Mark first workout assigned
         try {
-          // Get the client to find the trainer ID
-          const client = await storage.getClient(validatedData.clientId);
-          if (client) {
-            await storage.updateUserOnboardingProgress(client.trainerId, {
-              assignedFirstWorkout: true,
-            });
+          await storage.updateUserOnboardingProgress(trainerId, {
+            assignedFirstWorkout: true,
+          });
 
-            // Send notification to client (if they have a user account)
-            try {
-              const { notifyWorkoutAssigned } = await import('./services/notificationService');
-              const workout = await storage.getWorkout(validatedData.workoutId);
-              const user = (req as any).user;
-              const trainerName = user?.firstName
-                ? `${user.firstName} ${user.lastName || ''}`.trim()
-                : 'Your trainer';
-              if (client.email) {
-                // Find client's user account by email to send notification
-                const database = await getDb();
-                const { users: usersTable } = await import('@shared/schema');
-                const clientUser = await database
-                  .select()
-                  .from(usersTable)
-                  .where(eq(usersTable.email, client.email))
-                  .limit(1);
-                if (clientUser.length > 0) {
-                  await notifyWorkoutAssigned(
-                    clientUser[0].id,
-                    trainerName,
-                    workout?.title || 'New Workout',
-                    assignment.id
-                  );
-                }
+          // Send notification to client (if they have a user account)
+          try {
+            const { notifyWorkoutAssigned } = await import('./services/notificationService');
+            const workout = await storage.getWorkout(validatedData.workoutId, trainerId);
+            const user = (req as any).user;
+            const trainerName = user?.firstName
+              ? `${user.firstName} ${user.lastName || ''}`.trim()
+              : 'Your trainer';
+            if (client.email) {
+              // Find client's user account by email to send notification
+              const database = await getDb();
+              const { users: usersTable } = await import('@shared/schema');
+              const clientUser = await database
+                .select()
+                .from(usersTable)
+                .where(eq(usersTable.email, client.email))
+                .limit(1);
+              if (clientUser.length > 0) {
+                await notifyWorkoutAssigned(
+                  clientUser[0].id,
+                  trainerName,
+                  workout?.title || 'New Workout',
+                  assignment.id
+                );
               }
-            } catch (notifError) {
-              // Non-critical: don't fail assignment if notification fails
             }
+          } catch (notifError) {
+            // Non-critical: don't fail assignment if notification fails
           }
         } catch (onboardingError) {
           // Don't fail assignment if onboarding update fails
@@ -1339,16 +1369,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { notes, durationMinutes, volumeKg, totalReps, totalSets, hadPersonalRecord } =
           req.body;
 
-        // First get the assignment to verify ownership
-        const assignments = await storage.getClientWorkouts(''); // We'll verify ownership differently
+        // SECURITY: Verify ownership by checking all assignments across trainer's clients
+        const trainerId = (req.user as any).id as string;
+        const assignments = await storage.getClientWorkouts(''); // TODO: Need better method to get assignment by ID
         const assignment = assignments.find((a) => a.id === id);
         if (!assignment) {
           return res.status(404).json({ error: 'Assignment not found' });
         }
 
         // Verify the client belongs to authenticated trainer
-        const client = await storage.getClient(assignment.clientId);
-        if (!client || client.trainerId !== (req.user as any).id) {
+        const client = await storage.getClient(assignment.clientId, trainerId);
+        if (!client) {
           return res.status(403).json({ error: 'Access denied to this assignment' });
         }
 
@@ -1432,7 +1463,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const { clientId } = req.params;
-        const clientWorkouts = await storage.getClientWorkouts(clientId);
+        const trainerId = (req.user as any).id as string;
+        const clientWorkouts = await storage.getClientWorkouts(clientId, trainerId);
 
         const calcRate = (days: number) => {
           const cutoff = new Date();
@@ -1471,7 +1503,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const { clientId } = req.params;
-        const progress = await storage.getClientProgress(clientId);
+        const trainerId = (req.user as any).id as string;
+        const progress = await storage.getClientProgress(clientId, trainerId);
         res.json(progress);
       } catch (error) {
         // Error logged internally
@@ -1488,7 +1521,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const { clientId } = req.params;
-        const progress = await storage.getClientProgress(clientId);
+        const trainerId = (req.user as any).id as string;
+        const progress = await storage.getClientProgress(clientId, trainerId);
         res.json(progress);
       } catch (error) {
         // Return mock data when database is unavailable
@@ -1508,9 +1542,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const validatedData = insertProgressEntrySchema.parse(req.body);
 
-        // Verify client belongs to authenticated trainer
-        const client = await storage.getClient(validatedData.clientId);
-        if (!client || client.trainerId !== (req.user as any).id) {
+        // SECURITY: Verify client belongs to authenticated trainer
+        const trainerId = (req.user as any).id as string;
+        const client = await storage.getClient(validatedData.clientId, trainerId);
+        if (!client) {
           return res.status(403).json({ error: 'Access denied to this client' });
         }
 
@@ -1536,7 +1571,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: Request, res: Response) => {
       try {
         const { clientId } = req.params;
-        const sessions = await storage.getClientSessions(clientId);
+        const trainerId = (req.user as any).id as string;
+        const sessions = await storage.getClientSessions(clientId, trainerId);
         res.json(sessions);
       } catch (error) {
         console.error('Failed to fetch client sessions:', error);
@@ -1555,9 +1591,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const trainerId = (req.user as any).id as string;
         const validatedData = insertTrainingSessionSchema.parse({ ...req.body, trainerId });
 
-        // Verify client belongs to authenticated trainer
-        const client = await storage.getClient(validatedData.clientId);
-        if (!client || client.trainerId !== trainerId) {
+        // SECURITY: Verify client belongs to authenticated trainer
+        const client = await storage.getClient(validatedData.clientId, trainerId);
+        if (!client) {
           return res.status(403).json({ error: 'Access denied to this client' });
         }
 
@@ -1909,9 +1945,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return;
               }
 
-              // Verify client belongs to authenticated trainer (server-side verification)
-              const client = await storage.getClient(clientId);
-              if (!client || client.trainerId !== authenticatedUserId) {
+              // SECURITY: Verify client belongs to authenticated trainer (server-side verification)
+              const client = await storage.getClient(clientId, authenticatedUserId);
+              if (!client) {
                 ws.send(
                   JSON.stringify({
                     type: 'error',

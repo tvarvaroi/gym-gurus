@@ -4,6 +4,7 @@ import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Footer } from '@/components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { lazy, Suspense, useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
@@ -35,6 +36,7 @@ import NotFound from '@/pages/not-found';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { NewClientButton } from '@/components/ClientFormModal';
 import { LoginPage } from '@/components/LoginPage';
+import { TestLoginPage } from '@/components/TestLoginPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import NotificationCenter from '@/components/NotificationCenter';
 import ClientsPageContent from '@/pages/ClientsPage';
@@ -99,13 +101,21 @@ const LoadingFallback = memo(() => {
           <motion.div
             className="absolute inset-0 rounded-full bg-primary/20 blur-xl"
             animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+            transition={{
+              duration: 2,
+              repeat: prefersReducedMotion ? 0 : Infinity,
+              ease: 'easeInOut',
+            }}
           />
         </motion.div>
         <motion.p
           className="text-base font-light text-muted-foreground/80"
           animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+          transition={{
+            duration: 1.5,
+            repeat: prefersReducedMotion ? 0 : Infinity,
+            ease: 'easeInOut',
+          }}
           aria-live="polite"
         >
           Loading...
@@ -250,6 +260,7 @@ function Router() {
 
   // Track page views on route change
   useEffect(() => {
+    console.log('[Router] location changed to:', location);
     trackPageView(location);
   }, [location]);
 
@@ -258,13 +269,19 @@ function Router() {
       <motion.div key={location} className="w-full">
         <Suspense fallback={<LoadingFallback />}>
           <Switch>
-            {/* Public landing page at root */}
-            <Route path="/">
-              {() => (
-                <Suspense fallback={<LoadingFallback />}>
-                  <LandingPage />
-                </Suspense>
-              )}
+            {/* Test login page (simple dev/test login, no redirects) */}
+            <Route path="/test-login">{() => <TestLoginPage />}</Route>
+
+            {/* Preview login page (public, must come before / route) */}
+            <Route path="/preview-login">
+              {(params) => {
+                console.log('[Router] /preview-login route matched with params:', params);
+                return (
+                  <Suspense fallback={<LoadingFallback />}>
+                    <LoginPage />
+                  </Suspense>
+                );
+              }}
             </Route>
 
             {/* Legal pages (public) */}
@@ -283,9 +300,18 @@ function Router() {
               )}
             </Route>
 
+            {/* Public landing page at root (must come after specific routes) */}
+            {/* TEMPORARILY DISABLED FOR TESTING */}
+            {/*<Route path="/">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <LandingPage />
+                </Suspense>
+              )}
+            </Route>*/}
+
             {/* Authenticated routes */}
             <Route path="/dashboard" component={HomePage} />
-            <Route path="/preview-login" component={LoginPage} />
             <Route path="/clients/:id" component={ClientDetailsPage} />
             <Route path="/clients" component={ClientsPage} />
             <Route path="/workouts" component={WorkoutsPage} />
@@ -587,14 +613,22 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
           <div className="relative inline-block">
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
+              transition={{
+                duration: 2,
+                repeat: prefersReducedMotion ? 0 : Infinity,
+                ease: 'linear',
+              }}
             >
               <Loader2 className="h-16 w-16 text-primary mx-auto" />
             </motion.div>
             <motion.div
               className="absolute inset-0 rounded-full bg-primary/30 blur-2xl"
               animate={{ opacity: [0.3, 0.7, 0.3], scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+              transition={{
+                duration: 2,
+                repeat: prefersReducedMotion ? 0 : Infinity,
+                ease: 'easeInOut',
+              }}
             />
           </div>
 
@@ -602,24 +636,43 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
           <motion.div
             className="space-y-2"
             animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.8, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+            transition={{
+              duration: 1.8,
+              repeat: prefersReducedMotion ? 0 : Infinity,
+              ease: 'easeInOut',
+            }}
           >
             <p className="text-lg font-light text-foreground">Checking authentication</p>
             <div className="flex items-center justify-center gap-1">
               <motion.span
                 className="w-2 h-2 rounded-full bg-primary"
                 animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut', delay: 0 }}
+                transition={{
+                  duration: 1.5,
+                  repeat: prefersReducedMotion ? 0 : Infinity,
+                  ease: 'easeInOut',
+                  delay: 0,
+                }}
               />
               <motion.span
                 className="w-2 h-2 rounded-full bg-primary"
                 animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut', delay: 0.2 }}
+                transition={{
+                  duration: 1.5,
+                  repeat: prefersReducedMotion ? 0 : Infinity,
+                  ease: 'easeInOut',
+                  delay: 0.2,
+                }}
               />
               <motion.span
                 className="w-2 h-2 rounded-full bg-primary"
                 animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut', delay: 0.4 }}
+                transition={{
+                  duration: 1.5,
+                  repeat: prefersReducedMotion ? 0 : Infinity,
+                  ease: 'easeInOut',
+                  delay: 0.4,
+                }}
               />
             </div>
           </motion.div>
@@ -632,7 +685,11 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   if (user) {
     // Redirect solo users to onboarding if not completed
     const u = user as any;
-    if (u.role === 'solo' && !u.onboardingCompleted && !window.location.pathname.startsWith('/solo/onboarding')) {
+    if (
+      u.role === 'solo' &&
+      !u.onboardingCompleted &&
+      !window.location.pathname.startsWith('/solo/onboarding')
+    ) {
       return <Redirect to="/solo/onboarding" />;
     }
 
@@ -675,7 +732,18 @@ function AppLayout() {
 
   const [defaultOpen] = useState(getSidebarState);
   const [location] = useLocation();
-  const isPublicPage = location === '/' || location === '/terms' || location === '/privacy' || location.startsWith('/calculators');
+  const isPublicPage =
+    location === '/' ||
+    location === '/terms' ||
+    location === '/privacy' ||
+    location.startsWith('/calculators') ||
+    location === '/preview-login' ||
+    location === '/test-login';
+
+  // DEBUG: Log location and isPublicPage
+  useEffect(() => {
+    console.log('[AppLayout] location:', location, 'isPublicPage:', isPublicPage);
+  }, [location, isPublicPage]);
 
   return (
     <>
@@ -708,6 +776,7 @@ function AppLayout() {
                       </ErrorBoundary>
                     </div>
                   </div>
+                  <Footer />
                 </main>
               </div>
             </div>
