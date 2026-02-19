@@ -1,8 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ClipboardCheck, AlertTriangle, Heart, Shield, Dumbbell, Target, Phone, Check } from 'lucide-react';
+import {
+  ClipboardCheck,
+  AlertTriangle,
+  Heart,
+  Shield,
+  Dumbbell,
+  Target,
+  Phone,
+  Check,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -61,13 +70,34 @@ const defaultIntake: IntakeData = {
 };
 
 const PAR_Q_QUESTIONS = [
-  { key: 'parqHeartCondition' as const, text: 'Has your doctor ever said that you have a heart condition and that you should only do physical activity recommended by a doctor?' },
-  { key: 'parqChestPainActivity' as const, text: 'Do you feel pain in your chest when you do physical activity?' },
-  { key: 'parqChestPainRest' as const, text: 'In the past month, have you had chest pain when you were not doing physical activity?' },
-  { key: 'parqDizziness' as const, text: 'Do you lose your balance because of dizziness or do you ever lose consciousness?' },
-  { key: 'parqBoneJoint' as const, text: 'Do you have a bone or joint problem that could be made worse by a change in your physical activity?' },
-  { key: 'parqBloodPressureMeds' as const, text: 'Is your doctor currently prescribing drugs for your blood pressure or heart condition?' },
-  { key: 'parqOtherReason' as const, text: 'Do you know of any other reason why you should not do physical activity?' },
+  {
+    key: 'parqHeartCondition' as const,
+    text: 'Has your doctor ever said that you have a heart condition and that you should only do physical activity recommended by a doctor?',
+  },
+  {
+    key: 'parqChestPainActivity' as const,
+    text: 'Do you feel pain in your chest when you do physical activity?',
+  },
+  {
+    key: 'parqChestPainRest' as const,
+    text: 'In the past month, have you had chest pain when you were not doing physical activity?',
+  },
+  {
+    key: 'parqDizziness' as const,
+    text: 'Do you lose your balance because of dizziness or do you ever lose consciousness?',
+  },
+  {
+    key: 'parqBoneJoint' as const,
+    text: 'Do you have a bone or joint problem that could be made worse by a change in your physical activity?',
+  },
+  {
+    key: 'parqBloodPressureMeds' as const,
+    text: 'Is your doctor currently prescribing drugs for your blood pressure or heart condition?',
+  },
+  {
+    key: 'parqOtherReason' as const,
+    text: 'Do you know of any other reason why you should not do physical activity?',
+  },
 ];
 
 const EXPERIENCE_LEVELS = [
@@ -79,11 +109,25 @@ const EXPERIENCE_LEVELS = [
 ];
 
 const GOALS = [
-  'Lose Weight', 'Build Muscle', 'Get Stronger', 'Improve Endurance',
-  'Improve Flexibility', 'General Fitness', 'Sport Performance', 'Rehabilitation',
+  'Lose Weight',
+  'Build Muscle',
+  'Get Stronger',
+  'Improve Endurance',
+  'Improve Flexibility',
+  'General Fitness',
+  'Sport Performance',
+  'Rehabilitation',
 ];
 
-const TRAINING_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const TRAINING_DAYS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
 
 export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
   const { toast } = useToast();
@@ -92,13 +136,13 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
 
   const { data: existingIntake, isLoading } = useQuery({
     queryKey: [`/api/intake/${clientId}`],
-    queryFn: () => fetch(`/api/intake/${clientId}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/intake/${clientId}`).then((r) => r.json()),
   });
 
   const [formData, setFormData] = useState<IntakeData>(defaultIntake);
 
   // Initialize form with existing data when loaded
-  useState(() => {
+  useEffect(() => {
     if (existingIntake && existingIntake.id) {
       setFormData({
         ...defaultIntake,
@@ -107,12 +151,15 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
         preferredTrainingDays: existingIntake.preferredTrainingDays || [],
       });
     }
-  });
+  }, [existingIntake]);
 
   const submitMutation = useMutation({
     mutationFn: () => apiRequest('POST', `/api/intake/${clientId}`, formData),
     onSuccess: () => {
-      toast({ title: 'Intake form saved', description: 'Client intake questionnaire has been saved.' });
+      toast({
+        title: 'Intake form saved',
+        description: 'Client intake questionnaire has been saved.',
+      });
       queryClient.invalidateQueries({ queryKey: [`/api/intake/${clientId}`] });
     },
     onError: () => {
@@ -121,19 +168,25 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
   });
 
   const updateField = <K extends keyof IntakeData>(key: K, value: IntakeData[K]) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+    setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
   const toggleArrayItem = (key: 'secondaryGoals' | 'preferredTrainingDays', item: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [key]: prev[key].includes(item)
-        ? prev[key].filter(i => i !== item)
-        : [...prev[key], item],
+      [key]: prev[key].includes(item) ? prev[key].filter((i) => i !== item) : [...prev[key], item],
     }));
   };
 
-  const hasParqConcerns = PAR_Q_QUESTIONS.some(q => formData[q.key]);
+  const hasParqConcerns = PAR_Q_QUESTIONS.some((q) => formData[q.key]);
+
+  // Phone number validation (simple format check)
+  const isPhoneValid = (phone: string) => {
+    // Accept formats: (123) 456-7890, 123-456-7890, 1234567890, +1 123 456 7890
+    const phoneRegex = /^[\d\s()+-]+$/;
+    const digitsOnly = phone.replace(/\D/g, '');
+    return phone.trim() !== '' && phoneRegex.test(phone) && digitsOnly.length >= 10;
+  };
 
   // Form validation - ensure required fields are filled
   const isStepValid = (stepIndex: number) => {
@@ -147,7 +200,7 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
       case 3: // Emergency Contact & Consent
         return (
           formData.emergencyContactName.trim() !== '' &&
-          formData.emergencyContactPhone.trim() !== '' &&
+          isPhoneValid(formData.emergencyContactPhone) &&
           formData.emergencyContactRelation.trim() !== '' &&
           formData.consentSigned
         );
@@ -197,7 +250,8 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
               <div>
                 <p className="text-sm font-medium text-yellow-400">PAR-Q Flags Detected</p>
                 <p className="text-xs text-white/60 mt-1">
-                  This client answered "Yes" to one or more PAR-Q questions. Medical clearance may be required.
+                  This client answered "Yes" to one or more PAR-Q questions. Medical clearance may
+                  be required.
                 </p>
               </div>
             </div>
@@ -218,7 +272,9 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
             </div>
             <div>
               <p className="text-white/50">Emergency Contact</p>
-              <p className="text-white/90">{existingIntake.emergencyContactName || 'Not provided'}</p>
+              <p className="text-white/90">
+                {existingIntake.emergencyContactName || 'Not provided'}
+              </p>
             </div>
           </div>
 
@@ -272,7 +328,8 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
             <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
               <Heart className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-white/70">
-                The PAR-Q (Physical Activity Readiness Questionnaire) helps identify individuals who may need medical clearance before starting an exercise program.
+                The PAR-Q (Physical Activity Readiness Questionnaire) helps identify individuals who
+                may need medical clearance before starting an exercise program.
               </p>
             </div>
 
@@ -288,7 +345,10 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
                 >
                   {formData[q.key] && <Check className="w-3 h-3 text-white" />}
                 </div>
-                <span className="text-sm text-white/80" onClick={() => updateField(q.key, !formData[q.key])}>
+                <span
+                  className="text-sm text-white/80"
+                  onClick={() => updateField(q.key, !formData[q.key])}
+                >
                   {q.text}
                 </span>
               </label>
@@ -308,7 +368,8 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
               <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-yellow-300">
-                  One or more "Yes" answers detected. This client should consult a physician before beginning a physical activity program.
+                  One or more "Yes" answers detected. This client should consult a physician before
+                  beginning a physical activity program.
                 </p>
               </div>
             )}
@@ -319,7 +380,9 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
         {step === 1 && (
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-white/60 mb-1.5 block">Fitness Experience</label>
+              <label className="text-sm text-white/60 mb-1.5 block">
+                Fitness Experience<span className="text-destructive ml-0.5">*</span>
+              </label>
               <div className="flex flex-wrap gap-2">
                 {EXPERIENCE_LEVELS.map((lvl) => (
                   <button
@@ -335,6 +398,9 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
                   </button>
                 ))}
               </div>
+              {step === 1 && formData.fitnessExperience === '' && (
+                <p className="text-xs text-destructive mt-1">Please select your experience level</p>
+              )}
             </div>
 
             <div>
@@ -376,7 +442,9 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
         {step === 2 && (
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-white/60 mb-1.5 block">Primary Goal</label>
+              <label className="text-sm text-white/60 mb-1.5 block">
+                Primary Goal<span className="text-destructive ml-0.5">*</span>
+              </label>
               <div className="flex flex-wrap gap-2">
                 {GOALS.map((goal) => (
                   <button
@@ -392,12 +460,19 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
                   </button>
                 ))}
               </div>
+              {step === 2 && formData.primaryGoal === '' && (
+                <p className="text-xs text-destructive mt-1">
+                  Please select your primary fitness goal
+                </p>
+              )}
             </div>
 
             <div>
-              <label className="text-sm text-white/60 mb-1.5 block">Secondary Goals (select multiple)</label>
+              <label className="text-sm text-white/60 mb-1.5 block">
+                Secondary Goals (select multiple)
+              </label>
               <div className="flex flex-wrap gap-2">
-                {GOALS.filter(g => g !== formData.primaryGoal).map((goal) => (
+                {GOALS.filter((g) => g !== formData.primaryGoal).map((goal) => (
                   <button
                     key={goal}
                     onClick={() => toggleArrayItem('secondaryGoals', goal)}
@@ -433,7 +508,9 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
             </div>
 
             <div>
-              <label className="text-sm text-white/60 mb-1.5 block">Preferred Session Duration</label>
+              <label className="text-sm text-white/60 mb-1.5 block">
+                Preferred Session Duration
+              </label>
               <div className="flex gap-2">
                 {[30, 45, 60, 75, 90].map((mins) => (
                   <button
@@ -476,57 +553,108 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-white/60 mb-1.5 block">Contact Name</label>
+                <label className="text-sm text-white/60 mb-1.5 block">
+                  Contact Name<span className="text-destructive ml-0.5">*</span>
+                </label>
                 <input
                   type="text"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/30"
+                  className={`w-full bg-white/5 border rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/30 ${
+                    step === 3 && formData.emergencyContactName.trim() === ''
+                      ? 'border-destructive'
+                      : 'border-white/10'
+                  }`}
                   placeholder="Full name..."
                   value={formData.emergencyContactName}
                   onChange={(e) => updateField('emergencyContactName', e.target.value)}
                 />
+                {step === 3 && formData.emergencyContactName.trim() === '' && (
+                  <p className="text-xs text-destructive mt-1">
+                    Emergency contact name is required
+                  </p>
+                )}
               </div>
               <div>
-                <label className="text-sm text-white/60 mb-1.5 block">Contact Phone</label>
+                <label className="text-sm text-white/60 mb-1.5 block">
+                  Contact Phone<span className="text-destructive ml-0.5">*</span>
+                </label>
                 <input
                   type="tel"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/30"
-                  placeholder="Phone number..."
+                  className={`w-full bg-white/5 border rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/30 ${
+                    step === 3 &&
+                    formData.emergencyContactPhone !== '' &&
+                    !isPhoneValid(formData.emergencyContactPhone)
+                      ? 'border-destructive'
+                      : 'border-white/10'
+                  }`}
+                  placeholder="(555) 123-4567"
                   value={formData.emergencyContactPhone}
                   onChange={(e) => updateField('emergencyContactPhone', e.target.value)}
                 />
+                {step === 3 && formData.emergencyContactPhone.trim() === '' && (
+                  <p className="text-xs text-destructive mt-1">
+                    Emergency contact phone is required
+                  </p>
+                )}
+                {step === 3 &&
+                  formData.emergencyContactPhone !== '' &&
+                  !isPhoneValid(formData.emergencyContactPhone) && (
+                    <p className="text-xs text-destructive mt-1">
+                      Please enter a valid phone number (at least 10 digits)
+                    </p>
+                  )}
               </div>
             </div>
 
             <div>
-              <label className="text-sm text-white/60 mb-1.5 block">Relationship</label>
+              <label className="text-sm text-white/60 mb-1.5 block">
+                Relationship<span className="text-destructive ml-0.5">*</span>
+              </label>
               <input
                 type="text"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/30"
+                className={`w-full bg-white/5 border rounded-lg px-3 py-2 text-sm text-white/90 placeholder:text-white/30 ${
+                  step === 3 && formData.emergencyContactRelation.trim() === ''
+                    ? 'border-destructive'
+                    : 'border-white/10'
+                }`}
                 placeholder="e.g., Spouse, Parent, Friend..."
                 value={formData.emergencyContactRelation}
                 onChange={(e) => updateField('emergencyContactRelation', e.target.value)}
               />
+              {step === 3 && formData.emergencyContactRelation.trim() === '' && (
+                <p className="text-xs text-destructive mt-1">Relationship is required</p>
+              )}
             </div>
 
-            <div className="mt-6 p-4 bg-white/5 border border-white/10 rounded-lg">
+            <div
+              className={`mt-6 p-4 bg-white/5 border rounded-lg ${
+                step === 3 && !formData.consentSigned ? 'border-destructive' : 'border-white/10'
+              }`}
+            >
               <label className="flex items-start gap-3 cursor-pointer">
                 <div
                   className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                    formData.consentSigned
-                      ? 'bg-green-500 border-green-500'
-                      : 'border-white/30'
+                    formData.consentSigned ? 'bg-green-500 border-green-500' : 'border-white/30'
                   }`}
                   onClick={() => updateField('consentSigned', !formData.consentSigned)}
                 >
                   {formData.consentSigned && <Check className="w-3 h-3 text-white" />}
                 </div>
                 <div onClick={() => updateField('consentSigned', !formData.consentSigned)}>
-                  <p className="text-sm text-white/90 font-medium">Informed Consent</p>
+                  <p className="text-sm text-white/90 font-medium">
+                    Informed Consent<span className="text-destructive ml-1">*</span>
+                  </p>
                   <p className="text-xs text-white/50 mt-1">
-                    I acknowledge that the information provided is accurate. I understand the risks associated with physical activity and consent to participate in an exercise program designed by my trainer.
+                    I acknowledge that the information provided is accurate. I understand the risks
+                    associated with physical activity and consent to participate in an exercise
+                    program designed by my trainer.
                   </p>
                 </div>
               </label>
+              {step === 3 && !formData.consentSigned && (
+                <p className="text-xs text-destructive mt-2">
+                  You must provide consent to submit the form
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -543,11 +671,7 @@ export default function ClientIntakeForm({ clientId }: ClientIntakeFormProps) {
           </Button>
 
           {step < steps.length - 1 ? (
-            <Button
-              size="sm"
-              onClick={() => setStep(step + 1)}
-              disabled={!isStepValid(step)}
-            >
+            <Button size="sm" onClick={() => setStep(step + 1)} disabled={!isStepValid(step)}>
               Next
             </Button>
           ) : (
