@@ -30,7 +30,9 @@
       "Bash(git reset:*)",
       "Bash(git commit:*)",
       "Bash(npx eslint:*)",
-      "Bash(npx prettier:*)"
+      "Bash(npx prettier:*)",
+      "Bash(node run.js:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

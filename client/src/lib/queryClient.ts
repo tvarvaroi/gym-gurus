@@ -67,12 +67,17 @@ let redirecting401 = false;
 function handle401Error(error: unknown) {
   if (error instanceof Error && error.message.startsWith('401:')) {
     const pathname = window.location.pathname;
-    // Don't redirect if already on landing page or login pages
-    const isLoginPage =
-      pathname === '/' || pathname === '/preview-login' || pathname === '/test-login';
+    // Don't redirect if already on a public page (landing, legal, calculators, login pages)
+    const isPublicPage =
+      pathname === '/' ||
+      pathname === '/terms' ||
+      pathname === '/privacy' ||
+      pathname.startsWith('/calculators') ||
+      pathname === '/preview-login' ||
+      pathname === '/test-login';
 
-    // Only redirect once and only if not on a login page
-    if (!redirecting401 && !isLoginPage) {
+    // Only redirect once and only if not on a public page
+    if (!redirecting401 && !isPublicPage) {
       redirecting401 = true;
       // Store the current URL so user can return after re-login
       sessionStorage.setItem('returnUrl', pathname + window.location.search);
