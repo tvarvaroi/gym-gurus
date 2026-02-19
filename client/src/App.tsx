@@ -29,7 +29,6 @@ import type { InternalRole } from '@/lib/roles';
 // Import critical components directly (not lazy loaded)
 import AppSidebar from '@/components/AppSidebar';
 // Theme toggle removed - app now uses dark theme only
-import Dashboard from '@/components/Dashboard';
 import ClientCard from '@/components/ClientCard';
 import SearchInput from '@/components/SearchInput';
 import NotFound from '@/pages/not-found';
@@ -39,11 +38,12 @@ import { LoginPage } from '@/components/LoginPage';
 import { TestLoginPage } from '@/components/TestLoginPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import NotificationCenter from '@/components/NotificationCenter';
-import ClientsPageContent from '@/pages/ClientsPage';
 import AppHeaderComponent from '@/components/layout/AppHeader';
 
 // Lazy load only secondary pages for code splitting
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const Dashboard = lazy(() => import('@/components/Dashboard'));
+const ClientsPageContent = lazy(() => import('@/pages/ClientsPage'));
 const WorkoutPlans = lazy(() => import('@/pages/WorkoutPlans'));
 const WorkoutBuilder = lazy(() => import('@/pages/WorkoutBuilder'));
 const WorkoutExecution = lazy(() => import('@/pages/WorkoutExecution'));
