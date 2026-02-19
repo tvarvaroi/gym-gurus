@@ -3,6 +3,7 @@ import { logger } from '../logger';
 import { isProduction } from '../env';
 import { AppError, ValidationError } from './errors';
 import { getRequestId } from './requestLogger';
+import * as Sentry from '@sentry/node';
 
 /**
  * Structured error context suitable for Sentry or any error-tracking service.
@@ -211,17 +212,19 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
     );
   }
 
-  // --- Sentry integration point ---
-  // Uncomment when Sentry is configured:
-  // if (statusCode >= 500) {
-  //   Sentry.withScope((scope) => {
-  //     scope.setContext('request', context);
-  //     scope.setTag('status_code', String(statusCode));
-  //     scope.setTag('error_code', errorCode);
-  //     if (context.userId) scope.setUser({ id: context.userId });
-  //     Sentry.captureException(err);
-  //   });
-  // }
+  // --- Sentry integration ---
+  // Capture 5xx errors in production when Sentry is configured
+  if (statusCode >= 500 && isProduction) {
+    Sentry.withScope((scope) => {
+      scope.setContext('request', context);
+      scope.setTag('status_code', String(statusCode));
+      scope.setTag('error_code', errorCode);
+      if (context.userId) {
+        scope.setUser({ id: context.userId });
+      }
+      Sentry.captureException(err);
+    });
+  }
 
   // --- Build response body ---
   const body: Record<string, any> = {
