@@ -11,3 +11,15 @@ gym-gurus/
 .local/
 cookies.txt
 nul
+
+# Playwright test artifacts
+e2e/screenshots/
+playwright-report/
+test-results/
+
+# Temporary test files
+test-app.cjs
+full-app-browser-test.cjs
+
+# Local Claude settings
+.claude/settings.local.json
