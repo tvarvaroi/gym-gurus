@@ -581,8 +581,7 @@
   --chart-1: 43 54% 55%;
 }
 
-.role-guru.dark,
-.dark .role-guru {
+.dark.role-guru {
   --primary: 43 54% 55%;
   --primary-foreground: 0 0% 98%;
   --accent: 43 40% 20%;
@@ -607,8 +606,7 @@
   --chart-1: 174 82% 29%;
 }
 
-.role-disciple.dark,
-.dark .role-disciple {
+.dark.role-disciple {
   --primary: 170 78% 40%;
   --primary-foreground: 0 0% 98%;
   --accent: 174 50% 18%;
@@ -633,8 +631,7 @@
   --chart-1: 271 81% 56%;
 }
 
-.role-ronin.dark,
-.dark .role-ronin {
+.dark.role-ronin {
   --primary: 271 81% 60%;
   --primary-foreground: 0 0% 98%;
   --accent: 271 50% 22%;
@@ -644,6 +641,208 @@
   --sidebar-primary-foreground: 0 0% 98%;
   --sidebar-ring: 271 81% 60%;
   --chart-1: 271 81% 60%;
+}
+
+/* ================================================
+   PREMIUM CALCULATOR UTILITIES
+   Luxury design elements for authenticated users
+   ================================================ */
+
+/* Premium Glassmorphism */
+.premium-glass {
+  backdrop-filter: blur(30px);
+  background: hsl(var(--card) / 0.7);
+  border: 1px solid hsl(var(--border));
+  box-shadow:
+    0 25px 50px -12px hsl(var(--foreground) / 0.25),
+    inset 0 1px 0 hsl(0 0% 100% / 0.03);
+}
+
+.premium-glass-light {
+  backdrop-filter: blur(24px);
+  background: hsl(var(--card) / 0.6);
+}
+
+.premium-glass-heavy {
+  backdrop-filter: blur(40px);
+  background: hsl(var(--card) / 0.8);
+}
+
+/* Premium Glow Effects */
+.premium-glow {
+  box-shadow:
+    0 0 20px hsl(var(--primary) / 0.2),
+    0 0 40px hsl(var(--primary) / 0.1),
+    0 0 60px hsl(var(--primary) / 0.05);
+}
+
+.premium-glow-strong {
+  box-shadow:
+    0 0 30px hsl(var(--primary) / 0.3),
+    0 0 60px hsl(var(--primary) / 0.15),
+    0 0 90px hsl(var(--primary) / 0.08);
+}
+
+/* Premium Gradient Backgrounds */
+.premium-gradient-bg {
+  background: linear-gradient(135deg,
+    hsl(var(--primary) / 0.10),
+    hsl(var(--accent) / 0.08)
+  );
+}
+
+.premium-gradient-bg-strong {
+  background: linear-gradient(135deg,
+    hsl(var(--primary) / 0.15),
+    hsl(var(--accent) / 0.12)
+  );
+}
+
+/* Premium Borders */
+.premium-border {
+  border: 1px solid hsl(var(--primary) / 0.25);
+}
+
+.premium-border-subtle {
+  border: 1px solid hsl(var(--primary) / 0.15);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg,
+    hsl(var(--primary)),
+    hsl(var(--accent))
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Premium Input Styling */
+.premium-input {
+  background: hsl(var(--background) / 0.5);
+  border: 1px solid hsl(var(--primary) / 0.20);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-input:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.10);
+  outline: none;
+  background: hsl(var(--background));
+}
+
+.premium-input:hover:not(:focus) {
+  border-color: hsl(var(--primary) / 0.30);
+}
+
+/* Premium Slider */
+.premium-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 9999px;
+  outline: none;
+  background: hsl(var(--muted));
+}
+
+.premium-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  cursor: pointer;
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.40);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.60);
+}
+
+.premium-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.40);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.60);
+}
+
+/* Premium Button */
+.premium-button {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.25);
+}
+
+.premium-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px hsl(var(--primary) / 0.35);
+}
+
+.premium-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.25);
+}
+
+/* Premium Card */
+.premium-card {
+  background: linear-gradient(135deg,
+    hsl(var(--card)),
+    hsl(var(--background))
+  );
+  border: 1px solid hsl(var(--border));
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px hsl(var(--foreground) / 0.10);
+}
+
+/* Metallic Shine Overlay */
+.premium-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    hsl(0 0% 100% / 0.08) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.premium-shine-strong::before {
+  background: linear-gradient(135deg,
+    hsl(0 0% 100% / 0.15) 0%,
+    transparent 60%
+  );
 }
 
 /* ================================================

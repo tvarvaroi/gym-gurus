@@ -1,21 +1,40 @@
 import {
-  users, clients, exercises, workouts, workoutExercises, workoutAssignments,
-  progressEntries, trainingSessions,
-  userOnboardingProgress, appointments,
-  type User, type InsertUser, type UpsertUser,
-  type Client, type InsertClient,
-  type Exercise, type InsertExercise,
-  type Workout, type InsertWorkout,
-  type WorkoutExercise, type InsertWorkoutExercise,
-  type WorkoutAssignment, type InsertWorkoutAssignment,
-  type ProgressEntry, type InsertProgressEntry,
-  type TrainingSession, type InsertTrainingSession,
-  type UserOnboardingProgress, type InsertUserOnboardingProgress,
-  type Appointment, type InsertAppointment
-} from "@shared/schema";
-import { getDb } from "./db";
-import { eq, desc, and, gte, lte, sql, isNotNull } from "drizzle-orm";
-import { MemoryStorage } from "./memoryStorage";
+  users,
+  clients,
+  exercises,
+  workouts,
+  workoutExercises,
+  workoutAssignments,
+  progressEntries,
+  calculatorResults,
+  trainingSessions,
+  userOnboardingProgress,
+  appointments,
+  type User,
+  type InsertUser,
+  type UpsertUser,
+  type Client,
+  type InsertClient,
+  type Exercise,
+  type InsertExercise,
+  type Workout,
+  type InsertWorkout,
+  type WorkoutExercise,
+  type InsertWorkoutExercise,
+  type WorkoutAssignment,
+  type InsertWorkoutAssignment,
+  type ProgressEntry,
+  type InsertProgressEntry,
+  type TrainingSession,
+  type InsertTrainingSession,
+  type UserOnboardingProgress,
+  type InsertUserOnboardingProgress,
+  type Appointment,
+  type InsertAppointment,
+} from '@shared/schema';
+import { getDb } from './db';
+import { eq, desc, and, gte, lte, sql, isNotNull } from 'drizzle-orm';
+import { MemoryStorage } from './memoryStorage';
 
 /**
  * Storage interface for database operations
@@ -92,7 +111,11 @@ export interface IStorage {
   getWorkoutExercises(workoutId: string): Promise<WorkoutExercise[]>;
   addExerciseToWorkout(workoutExercise: InsertWorkoutExercise): Promise<WorkoutExercise>;
   removeExerciseFromWorkout(workoutId: string, exerciseId: string): Promise<boolean>;
-  reorderWorkoutExercises(workoutId: string, exerciseId: string, direction: 'up' | 'down'): Promise<boolean>;
+  reorderWorkoutExercises(
+    workoutId: string,
+    exerciseId: string,
+    direction: 'up' | 'down'
+  ): Promise<boolean>;
 
   // Workout Assignments
   getClientWorkouts(clientId: string): Promise<WorkoutAssignment[]>;
@@ -109,13 +132,19 @@ export interface IStorage {
   getTrainerSessions(trainerId: string): Promise<TrainingSession[]>;
   getClientSessions(clientId: string): Promise<TrainingSession[]>;
   createTrainingSession(session: InsertTrainingSession): Promise<TrainingSession>;
-  updateTrainingSession(id: string, updates: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined>;
+  updateTrainingSession(
+    id: string,
+    updates: Partial<InsertTrainingSession>
+  ): Promise<TrainingSession | undefined>;
 
   // Appointments
   getAppointmentsByTrainer(trainerId: string): Promise<Appointment[]>;
   getAppointmentsByClient(clientId: string): Promise<Appointment[]>;
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
-  updateAppointment(id: string, updates: Partial<InsertAppointment>): Promise<Appointment | undefined>;
+  updateAppointment(
+    id: string,
+    updates: Partial<InsertAppointment>
+  ): Promise<Appointment | undefined>;
   deleteAppointment(id: string): Promise<boolean>;
 
   // Enhanced Features
@@ -123,7 +152,12 @@ export interface IStorage {
   getWorkoutTemplates(): Promise<any[]>;
   getDashboardStats(trainerId: string): Promise<any>;
   getClientNotes(clientId: string): Promise<any[]>;
-  addClientNote(clientId: string, trainerId: string, content: string, category: string): Promise<any>;
+  addClientNote(
+    clientId: string,
+    trainerId: string,
+    content: string,
+    category: string
+  ): Promise<any>;
 
   // Dashboard Charts & Analytics
   getDashboardCharts(trainerId: string): Promise<{
@@ -132,21 +166,46 @@ export interface IStorage {
     clientGrowthData: { month: string; clients: number }[];
     trainerStreak: number;
     completionRate: number;
-    clientComplianceRates: { clientId: string; clientName: string; rate7d: number; rate30d: number; rate90d: number }[];
+    clientComplianceRates: {
+      clientId: string;
+      clientName: string;
+      rate7d: number;
+      rate30d: number;
+      rate90d: number;
+    }[];
     performanceInsight: { metric: string; value: number; label: string };
   }>;
 
   // Real Analytics
   getTrainerAnalytics(trainerId: string): Promise<{
-    overview: { totalClients: number; activeClients: number; inactiveClients: number; totalSessions: number; completedThisMonth: number; completionRate: number };
-    clientMetrics: { newClientsThisMonth: number; clientRetentionRate: number; averageSessionsPerClient: number; topPerformers: { name: string; sessionsCompleted: number }[] };
-    workoutMetrics: { totalWorkoutPlans: number; averageWorkoutDuration: number; completionRate: number };
+    overview: {
+      totalClients: number;
+      activeClients: number;
+      inactiveClients: number;
+      totalSessions: number;
+      completedThisMonth: number;
+      completionRate: number;
+    };
+    clientMetrics: {
+      newClientsThisMonth: number;
+      clientRetentionRate: number;
+      averageSessionsPerClient: number;
+      topPerformers: { name: string; sessionsCompleted: number }[];
+    };
+    workoutMetrics: {
+      totalWorkoutPlans: number;
+      averageWorkoutDuration: number;
+      completionRate: number;
+    };
     timeAnalytics: { totalHoursThisMonth: number };
   }>;
 
   // User Onboarding Progress
   getUserOnboardingProgress(userId: string): Promise<UserOnboardingProgress | undefined>;
-  updateUserOnboardingProgress(userId: string, updates: Partial<InsertUserOnboardingProgress>): Promise<UserOnboardingProgress>;
+  updateUserOnboardingProgress(
+    userId: string,
+    updates: Partial<InsertUserOnboardingProgress>
+  ): Promise<UserOnboardingProgress>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -254,30 +313,46 @@ export class DatabaseStorage implements IStorage {
   // Workout Exercises
   async getWorkoutExercises(workoutId: string): Promise<WorkoutExercise[]> {
     const db = await getDb();
-    return await db.select().from(workoutExercises).where(eq(workoutExercises.workoutId, workoutId));
+    return await db
+      .select()
+      .from(workoutExercises)
+      .where(eq(workoutExercises.workoutId, workoutId));
   }
 
-  async addExerciseToWorkout(insertWorkoutExercise: InsertWorkoutExercise): Promise<WorkoutExercise> {
+  async addExerciseToWorkout(
+    insertWorkoutExercise: InsertWorkoutExercise
+  ): Promise<WorkoutExercise> {
     const db = await getDb();
-    const [workoutExercise] = await db.insert(workoutExercises).values(insertWorkoutExercise).returning();
+    const [workoutExercise] = await db
+      .insert(workoutExercises)
+      .values(insertWorkoutExercise)
+      .returning();
     return workoutExercise;
   }
 
   async removeExerciseFromWorkout(workoutId: string, exerciseId: string): Promise<boolean> {
     const db = await getDb();
-    const result = await db.delete(workoutExercises)
-      .where(and(eq(workoutExercises.workoutId, workoutId), eq(workoutExercises.exerciseId, exerciseId)));
+    const result = await db
+      .delete(workoutExercises)
+      .where(
+        and(eq(workoutExercises.workoutId, workoutId), eq(workoutExercises.exerciseId, exerciseId))
+      );
     return result.rowCount !== null && result.rowCount > 0;
   }
 
-  async reorderWorkoutExercises(workoutId: string, exerciseId: string, direction: 'up' | 'down'): Promise<boolean> {
+  async reorderWorkoutExercises(
+    workoutId: string,
+    exerciseId: string,
+    direction: 'up' | 'down'
+  ): Promise<boolean> {
     const db = await getDb();
-    const exercises = await db.select()
+    const exercises = await db
+      .select()
       .from(workoutExercises)
       .where(eq(workoutExercises.workoutId, workoutId))
       .orderBy(workoutExercises.sortOrder);
 
-    const currentIndex = exercises.findIndex(e => e.exerciseId === exerciseId);
+    const currentIndex = exercises.findIndex((e) => e.exerciseId === exerciseId);
     if (currentIndex === -1) return false;
 
     const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
@@ -287,10 +362,12 @@ export class DatabaseStorage implements IStorage {
     const swap = exercises[swapIndex];
 
     // Swap sortOrder values
-    await db.update(workoutExercises)
+    await db
+      .update(workoutExercises)
       .set({ sortOrder: swap.sortOrder })
       .where(eq(workoutExercises.id, current.id));
-    await db.update(workoutExercises)
+    await db
+      .update(workoutExercises)
       .set({ sortOrder: current.sortOrder })
       .where(eq(workoutExercises.id, swap.id));
 
@@ -300,46 +377,47 @@ export class DatabaseStorage implements IStorage {
   // Workout Assignments
   async getClientWorkouts(clientId: string): Promise<WorkoutAssignment[]> {
     const db = await getDb();
-    const results = await db.select({
-      id: workoutAssignments.id,
-      workoutId: workoutAssignments.workoutId,
-      clientId: workoutAssignments.clientId,
-      assignedAt: workoutAssignments.assignedAt,
-      completedAt: workoutAssignments.completedAt,
-      notes: workoutAssignments.notes,
-      // Scheduling fields
-      scheduledDate: workoutAssignments.scheduledDate,
-      scheduledTime: workoutAssignments.scheduledTime,
-      timezone: workoutAssignments.timezone,
-      dayOfWeek: workoutAssignments.dayOfWeek,
-      weekNumber: workoutAssignments.weekNumber,
-      weekYear: workoutAssignments.weekYear,
-      durationMinutes: workoutAssignments.durationMinutes,
-      // Customization fields
-      isCustomized: workoutAssignments.isCustomized,
-      customTitle: workoutAssignments.customTitle,
-      customNotes: workoutAssignments.customNotes,
-      // Status tracking
-      status: workoutAssignments.status,
-      cancelledAt: workoutAssignments.cancelledAt,
-      cancellationReason: workoutAssignments.cancellationReason,
-      notificationsSent: workoutAssignments.notificationsSent,
-      workout: {
-        id: workouts.id,
-        title: workouts.title,
-        description: workouts.description,
-        duration: workouts.duration,
-        difficulty: workouts.difficulty,
-        category: workouts.category,
-      }
-    })
+    const results = await db
+      .select({
+        id: workoutAssignments.id,
+        workoutId: workoutAssignments.workoutId,
+        clientId: workoutAssignments.clientId,
+        assignedAt: workoutAssignments.assignedAt,
+        completedAt: workoutAssignments.completedAt,
+        notes: workoutAssignments.notes,
+        // Scheduling fields
+        scheduledDate: workoutAssignments.scheduledDate,
+        scheduledTime: workoutAssignments.scheduledTime,
+        timezone: workoutAssignments.timezone,
+        dayOfWeek: workoutAssignments.dayOfWeek,
+        weekNumber: workoutAssignments.weekNumber,
+        weekYear: workoutAssignments.weekYear,
+        durationMinutes: workoutAssignments.durationMinutes,
+        // Customization fields
+        isCustomized: workoutAssignments.isCustomized,
+        customTitle: workoutAssignments.customTitle,
+        customNotes: workoutAssignments.customNotes,
+        // Status tracking
+        status: workoutAssignments.status,
+        cancelledAt: workoutAssignments.cancelledAt,
+        cancellationReason: workoutAssignments.cancellationReason,
+        notificationsSent: workoutAssignments.notificationsSent,
+        workout: {
+          id: workouts.id,
+          title: workouts.title,
+          description: workouts.description,
+          duration: workouts.duration,
+          difficulty: workouts.difficulty,
+          category: workouts.category,
+        },
+      })
       .from(workoutAssignments)
       .leftJoin(workouts, eq(workoutAssignments.workoutId, workouts.id))
       .where(eq(workoutAssignments.clientId, clientId))
       .orderBy(desc(workoutAssignments.assignedAt));
 
     // Flatten workout data to top level for easier frontend consumption
-    return results.map(result => ({
+    return results.map((result) => ({
       id: result.id,
       workoutId: result.workoutId,
       clientId: result.clientId,
@@ -379,38 +457,43 @@ export class DatabaseStorage implements IStorage {
   ): Promise<any[]> {
     const db = await getDb();
 
-    console.log(`[Storage] getClientWorkoutsByWeek query params:`, { clientId, weekStart, weekEnd });
+    console.log(`[Storage] getClientWorkoutsByWeek query params:`, {
+      clientId,
+      weekStart,
+      weekEnd,
+    });
 
     // Fetch workout assignments for the specified week with workout details
-    const assignmentResults = await db.select({
-      id: workoutAssignments.id,
-      workoutId: workoutAssignments.workoutId,
-      clientId: workoutAssignments.clientId,
-      assignedAt: workoutAssignments.assignedAt,
-      completedAt: workoutAssignments.completedAt,
-      notes: workoutAssignments.notes,
-      scheduledDate: workoutAssignments.scheduledDate,
-      scheduledTime: workoutAssignments.scheduledTime,
-      timezone: workoutAssignments.timezone,
-      dayOfWeek: workoutAssignments.dayOfWeek,
-      weekNumber: workoutAssignments.weekNumber,
-      weekYear: workoutAssignments.weekYear,
-      durationMinutes: workoutAssignments.durationMinutes,
-      isCustomized: workoutAssignments.isCustomized,
-      customTitle: workoutAssignments.customTitle,
-      customNotes: workoutAssignments.customNotes,
-      status: workoutAssignments.status,
-      cancelledAt: workoutAssignments.cancelledAt,
-      cancellationReason: workoutAssignments.cancellationReason,
-      workout: {
-        id: workouts.id,
-        title: workouts.title,
-        description: workouts.description,
-        duration: workouts.duration,
-        difficulty: workouts.difficulty,
-        category: workouts.category,
-      }
-    })
+    const assignmentResults = await db
+      .select({
+        id: workoutAssignments.id,
+        workoutId: workoutAssignments.workoutId,
+        clientId: workoutAssignments.clientId,
+        assignedAt: workoutAssignments.assignedAt,
+        completedAt: workoutAssignments.completedAt,
+        notes: workoutAssignments.notes,
+        scheduledDate: workoutAssignments.scheduledDate,
+        scheduledTime: workoutAssignments.scheduledTime,
+        timezone: workoutAssignments.timezone,
+        dayOfWeek: workoutAssignments.dayOfWeek,
+        weekNumber: workoutAssignments.weekNumber,
+        weekYear: workoutAssignments.weekYear,
+        durationMinutes: workoutAssignments.durationMinutes,
+        isCustomized: workoutAssignments.isCustomized,
+        customTitle: workoutAssignments.customTitle,
+        customNotes: workoutAssignments.customNotes,
+        status: workoutAssignments.status,
+        cancelledAt: workoutAssignments.cancelledAt,
+        cancellationReason: workoutAssignments.cancellationReason,
+        workout: {
+          id: workouts.id,
+          title: workouts.title,
+          description: workouts.description,
+          duration: workouts.duration,
+          difficulty: workouts.difficulty,
+          category: workouts.category,
+        },
+      })
       .from(workoutAssignments)
       .leftJoin(workouts, eq(workoutAssignments.workoutId, workouts.id))
       .where(
@@ -426,7 +509,8 @@ export class DatabaseStorage implements IStorage {
     console.log(`[Storage] Assignment results count: ${assignmentResults.length}`);
 
     // Fetch all appointments for this client in the week range
-    const appointmentsInWeek = await db.select()
+    const appointmentsInWeek = await db
+      .select()
       .from(appointments)
       .where(
         and(
@@ -437,7 +521,7 @@ export class DatabaseStorage implements IStorage {
       );
 
     // Create a map of date -> appointment data
-    const appointmentsByDate = new Map<string, typeof appointmentsInWeek[0]>();
+    const appointmentsByDate = new Map<string, (typeof appointmentsInWeek)[0]>();
     appointmentsInWeek.forEach((apt: any) => {
       if (apt.date) {
         appointmentsByDate.set(apt.date, apt);
@@ -470,12 +554,13 @@ export class DatabaseStorage implements IStorage {
             duration: assignment.workout?.duration || 0,
             difficulty: assignment.workout?.difficulty || 'beginner',
             category: assignment.workout?.category || '',
-            exercises: []
+            exercises: [],
           };
         }
 
         // Fetch exercises for this workout
-        const exerciseResults = await db.select()
+        const exerciseResults = await db
+          .select()
           .from(workoutExercises)
           .leftJoin(exercises, eq(workoutExercises.exerciseId, exercises.id))
           .where(eq(workoutExercises.workoutId, assignment.workoutId))
@@ -518,7 +603,7 @@ export class DatabaseStorage implements IStorage {
             weight: ex.workout_exercises?.weight || null,
             restTime: ex.workout_exercises?.restTime || 60,
             sortOrder: ex.workout_exercises?.sortOrder || 0,
-          }))
+          })),
         };
       })
     );
@@ -563,15 +648,16 @@ export class DatabaseStorage implements IStorage {
           duration: duration,
           difficulty: 'intermediate',
           category: apt.type || 'training',
-          exercises: []
+          exercises: [],
         };
       });
 
     console.log(`[Storage] Adding ${standaloneAppointments.length} standalone appointments`);
 
     // Combine workout assignments and standalone appointments, then sort by date
-    const allItems = [...workoutsWithExercises, ...standaloneAppointments]
-      .sort((a, b) => (a.scheduledDate || '').localeCompare(b.scheduledDate || ''));
+    const allItems = [...workoutsWithExercises, ...standaloneAppointments].sort((a, b) =>
+      (a.scheduledDate || '').localeCompare(b.scheduledDate || '')
+    );
 
     return allItems;
   }
@@ -582,50 +668,48 @@ export class DatabaseStorage implements IStorage {
     console.log(`[Storage] getTrainerWorkoutAssignments for trainer:`, trainerId);
 
     // Get all workout assignments for this trainer's clients with scheduledDate
-    const assignmentResults = await db.select({
-      id: workoutAssignments.id,
-      workoutId: workoutAssignments.workoutId,
-      clientId: workoutAssignments.clientId,
-      assignedAt: workoutAssignments.assignedAt,
-      completedAt: workoutAssignments.completedAt,
-      notes: workoutAssignments.notes,
-      scheduledDate: workoutAssignments.scheduledDate,
-      scheduledTime: workoutAssignments.scheduledTime,
-      timezone: workoutAssignments.timezone,
-      dayOfWeek: workoutAssignments.dayOfWeek,
-      durationMinutes: workoutAssignments.durationMinutes,
-      customTitle: workoutAssignments.customTitle,
-      customNotes: workoutAssignments.customNotes,
-      status: workoutAssignments.status,
-      workout: {
-        id: workouts.id,
-        title: workouts.title,
-        description: workouts.description,
-        duration: workouts.duration,
-        difficulty: workouts.difficulty,
-        category: workouts.category,
-      },
-      client: {
-        id: clients.id,
-        name: clients.name,
-        email: clients.email,
-      }
-    })
+    const assignmentResults = await db
+      .select({
+        id: workoutAssignments.id,
+        workoutId: workoutAssignments.workoutId,
+        clientId: workoutAssignments.clientId,
+        assignedAt: workoutAssignments.assignedAt,
+        completedAt: workoutAssignments.completedAt,
+        notes: workoutAssignments.notes,
+        scheduledDate: workoutAssignments.scheduledDate,
+        scheduledTime: workoutAssignments.scheduledTime,
+        timezone: workoutAssignments.timezone,
+        dayOfWeek: workoutAssignments.dayOfWeek,
+        durationMinutes: workoutAssignments.durationMinutes,
+        customTitle: workoutAssignments.customTitle,
+        customNotes: workoutAssignments.customNotes,
+        status: workoutAssignments.status,
+        workout: {
+          id: workouts.id,
+          title: workouts.title,
+          description: workouts.description,
+          duration: workouts.duration,
+          difficulty: workouts.difficulty,
+          category: workouts.category,
+        },
+        client: {
+          id: clients.id,
+          name: clients.name,
+          email: clients.email,
+        },
+      })
       .from(workoutAssignments)
       .leftJoin(workouts, eq(workoutAssignments.workoutId, workouts.id))
       .leftJoin(clients, eq(workoutAssignments.clientId, clients.id))
-      .where(
-        and(
-          eq(clients.trainerId, trainerId),
-          isNotNull(workoutAssignments.scheduledDate)
-        )
-      )
+      .where(and(eq(clients.trainerId, trainerId), isNotNull(workoutAssignments.scheduledDate)))
       .orderBy(workoutAssignments.scheduledDate);
 
-    console.log(`[Storage] Found ${assignmentResults.length} scheduled workout assignments for trainer ${trainerId}`);
+    console.log(
+      `[Storage] Found ${assignmentResults.length} scheduled workout assignments for trainer ${trainerId}`
+    );
 
     // Map to simpler format for calendar display
-    return assignmentResults.map(result => ({
+    return assignmentResults.map((result) => ({
       id: result.id,
       workoutId: result.workoutId,
       clientId: result.clientId,
@@ -641,15 +725,21 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async assignWorkoutToClient(insertAssignment: InsertWorkoutAssignment): Promise<WorkoutAssignment> {
+  async assignWorkoutToClient(
+    insertAssignment: InsertWorkoutAssignment
+  ): Promise<WorkoutAssignment> {
     const db = await getDb();
     const [assignment] = await db.insert(workoutAssignments).values(insertAssignment).returning();
     return assignment;
   }
 
-  async completeWorkoutAssignment(id: string, notes?: string): Promise<WorkoutAssignment | undefined> {
+  async completeWorkoutAssignment(
+    id: string,
+    notes?: string
+  ): Promise<WorkoutAssignment | undefined> {
     const db = await getDb();
-    const [assignment] = await db.update(workoutAssignments)
+    const [assignment] = await db
+      .update(workoutAssignments)
       .set({ completedAt: new Date(), notes })
       .where(eq(workoutAssignments.id, id))
       .returning();
@@ -659,7 +749,9 @@ export class DatabaseStorage implements IStorage {
   // Progress Entries
   async getClientProgress(clientId: string): Promise<ProgressEntry[]> {
     const db = await getDb();
-    return await db.select().from(progressEntries)
+    return await db
+      .select()
+      .from(progressEntries)
       .where(eq(progressEntries.clientId, clientId))
       .orderBy(desc(progressEntries.recordedAt));
   }
@@ -673,14 +765,18 @@ export class DatabaseStorage implements IStorage {
   // Training Sessions
   async getTrainerSessions(trainerId: string): Promise<TrainingSession[]> {
     const db = await getDb();
-    return await db.select().from(trainingSessions)
+    return await db
+      .select()
+      .from(trainingSessions)
       .where(eq(trainingSessions.trainerId, trainerId))
       .orderBy(desc(trainingSessions.scheduledAt));
   }
 
   async getClientSessions(clientId: string): Promise<TrainingSession[]> {
     const db = await getDb();
-    return await db.select().from(trainingSessions)
+    return await db
+      .select()
+      .from(trainingSessions)
       .where(eq(trainingSessions.clientId, clientId))
       .orderBy(desc(trainingSessions.scheduledAt));
   }
@@ -691,67 +787,76 @@ export class DatabaseStorage implements IStorage {
     return session;
   }
 
-  async updateTrainingSession(id: string, updates: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined> {
+  async updateTrainingSession(
+    id: string,
+    updates: Partial<InsertTrainingSession>
+  ): Promise<TrainingSession | undefined> {
     const db = await getDb();
-    const [session] = await db.update(trainingSessions).set(updates).where(eq(trainingSessions.id, id)).returning();
+    const [session] = await db
+      .update(trainingSessions)
+      .set(updates)
+      .where(eq(trainingSessions.id, id))
+      .returning();
     return session || undefined;
   }
 
   // Appointments
   async getAppointmentsByTrainer(trainerId: string): Promise<Appointment[]> {
     const db = await getDb();
-    const results = await db.select({
-      id: appointments.id,
-      trainerId: appointments.trainerId,
-      clientId: appointments.clientId,
-      title: appointments.title,
-      date: appointments.date,
-      startTime: appointments.startTime,
-      endTime: appointments.endTime,
-      type: appointments.type,
-      status: appointments.status,
-      notes: appointments.notes,
-      createdAt: appointments.createdAt,
-      updatedAt: appointments.updatedAt,
-      client: clients
-    })
-    .from(appointments)
-    .leftJoin(clients, eq(appointments.clientId, clients.id))
-    .where(eq(appointments.trainerId, trainerId))
-    .orderBy(desc(appointments.date));
+    const results = await db
+      .select({
+        id: appointments.id,
+        trainerId: appointments.trainerId,
+        clientId: appointments.clientId,
+        title: appointments.title,
+        date: appointments.date,
+        startTime: appointments.startTime,
+        endTime: appointments.endTime,
+        type: appointments.type,
+        status: appointments.status,
+        notes: appointments.notes,
+        createdAt: appointments.createdAt,
+        updatedAt: appointments.updatedAt,
+        client: clients,
+      })
+      .from(appointments)
+      .leftJoin(clients, eq(appointments.clientId, clients.id))
+      .where(eq(appointments.trainerId, trainerId))
+      .orderBy(desc(appointments.date));
 
     // Transform results to include client name
-    return results.map(result => ({
+    return results.map((result) => ({
       ...result,
-      client: result.client ? { name: result.client.name } : undefined
+      client: result.client ? { name: result.client.name } : undefined,
     })) as any;
   }
 
   async getAppointmentsByClient(clientId: string): Promise<Appointment[]> {
     const db = await getDb();
-    const results = await db.select({
-      id: appointments.id,
-      trainerId: appointments.trainerId,
-      clientId: appointments.clientId,
-      title: appointments.title,
-      date: appointments.date,
-      startTime: appointments.startTime,
-      endTime: appointments.endTime,
-      type: appointments.type,
-      status: appointments.status,
-      notes: appointments.notes,
-      createdAt: appointments.createdAt,
-      updatedAt: appointments.updatedAt,
-      client: clients
-    })
-    .from(appointments)
-    .leftJoin(clients, eq(appointments.clientId, clients.id))
-    .where(eq(appointments.clientId, clientId))
-    .orderBy(desc(appointments.date));
+    const results = await db
+      .select({
+        id: appointments.id,
+        trainerId: appointments.trainerId,
+        clientId: appointments.clientId,
+        title: appointments.title,
+        date: appointments.date,
+        startTime: appointments.startTime,
+        endTime: appointments.endTime,
+        type: appointments.type,
+        status: appointments.status,
+        notes: appointments.notes,
+        createdAt: appointments.createdAt,
+        updatedAt: appointments.updatedAt,
+        client: clients,
+      })
+      .from(appointments)
+      .leftJoin(clients, eq(appointments.clientId, clients.id))
+      .where(eq(appointments.clientId, clientId))
+      .orderBy(desc(appointments.date));
 
-    return results.map(result => ({
+    return results.map((result) => ({
       ...result,
-      client: result.client ? { name: result.client.name } : undefined
+      client: result.client ? { name: result.client.name } : undefined,
     })) as any;
   }
 
@@ -761,9 +866,13 @@ export class DatabaseStorage implements IStorage {
     return appointment;
   }
 
-  async updateAppointment(id: string, updates: Partial<InsertAppointment>): Promise<Appointment | undefined> {
+  async updateAppointment(
+    id: string,
+    updates: Partial<InsertAppointment>
+  ): Promise<Appointment | undefined> {
     const db = await getDb();
-    const [appointment] = await db.update(appointments)
+    const [appointment] = await db
+      .update(appointments)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(appointments.id, id))
       .returning();
@@ -898,28 +1007,28 @@ export class DatabaseStorage implements IStorage {
       } catch (error) {
         console.warn('Failed to get clients for dashboard stats:', error);
       }
-      
-      const activeClients = allClients.filter(c => c.status === 'active');
-      const pausedClients = allClients.filter(c => c.status === 'paused');
-      
+
+      const activeClients = allClients.filter((c) => c.status === 'active');
+      const pausedClients = allClients.filter((c) => c.status === 'paused');
+
       let allWorkouts: Workout[] = [];
       try {
         allWorkouts = await this.getWorkoutsByTrainer(trainerId);
       } catch (error) {
         console.warn('Failed to get workouts for dashboard stats:', error);
       }
-      
+
       let sessions: TrainingSession[] = [];
       try {
         sessions = await this.getTrainerSessions(trainerId);
       } catch (error) {
         console.warn('Failed to get trainer sessions for dashboard stats:', error);
       }
-      
-      const upcomingSessions = sessions.filter(s => 
-        new Date(s.scheduledAt) > new Date() && s.status === 'scheduled'
+
+      const upcomingSessions = sessions.filter(
+        (s) => new Date(s.scheduledAt) > new Date() && s.status === 'scheduled'
       );
-      const completedThisWeek = sessions.filter(s => {
+      const completedThisWeek = sessions.filter((s) => {
         const sessionDate = new Date(s.scheduledAt);
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -929,15 +1038,15 @@ export class DatabaseStorage implements IStorage {
       // Calculate client growth
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const newClientsThisMonth = allClients.filter(c =>
-        new Date(c.createdAt) > thirtyDaysAgo
+      const newClientsThisMonth = allClients.filter(
+        (c) => new Date(c.createdAt) > thirtyDaysAgo
       ).length;
 
       // Build recent activity list
-      const recentActivity: Array<{type: string, description: string, time: Date}> = [];
+      const recentActivity: Array<{ type: string; description: string; time: Date }> = [];
 
       // Add upcoming sessions to activity
-      upcomingSessions.slice(0, 3).forEach(s => {
+      upcomingSessions.slice(0, 3).forEach((s) => {
         recentActivity.push({
           type: 'session',
           description: `Upcoming session scheduled`,
@@ -989,7 +1098,7 @@ export class DatabaseStorage implements IStorage {
       const now = new Date();
       for (let i = 4; i >= 0; i--) {
         const weekStart = new Date(now);
-        weekStart.setDate(weekStart.getDate() - (i * 7));
+        weekStart.setDate(weekStart.getDate() - i * 7);
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 7);
 
@@ -997,13 +1106,16 @@ export class DatabaseStorage implements IStorage {
         let weightCount = 0;
         for (const client of allClients) {
           const progress = await this.getClientProgress(client.id);
-          const weightEntries = progress.filter(p =>
-            p.type === 'weight' &&
-            new Date(p.recordedAt) >= weekStart &&
-            new Date(p.recordedAt) < weekEnd
+          const weightEntries = progress.filter(
+            (p) =>
+              p.type === 'weight' &&
+              new Date(p.recordedAt) >= weekStart &&
+              new Date(p.recordedAt) < weekEnd
           );
           if (weightEntries.length > 0) {
-            totalWeight += weightEntries.reduce((sum, e) => sum + parseFloat(String(e.value)), 0) / weightEntries.length;
+            totalWeight +=
+              weightEntries.reduce((sum, e) => sum + parseFloat(String(e.value)), 0) /
+              weightEntries.length;
             weightCount++;
           }
         }
@@ -1018,12 +1130,12 @@ export class DatabaseStorage implements IStorage {
       const sessionsData: { week: string; sessions: number; completed: number }[] = [];
       for (let i = 3; i >= 0; i--) {
         const weekStart = new Date(now);
-        weekStart.setDate(weekStart.getDate() - (i * 7) - now.getDay());
+        weekStart.setDate(weekStart.getDate() - i * 7 - now.getDay());
         weekStart.setHours(0, 0, 0, 0);
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 7);
 
-        const weekSessions = sessions.filter(s => {
+        const weekSessions = sessions.filter((s) => {
           const d = new Date(s.scheduledAt);
           return d >= weekStart && d < weekEnd;
         });
@@ -1031,17 +1143,30 @@ export class DatabaseStorage implements IStorage {
         sessionsData.push({
           week: `Week ${4 - i}`,
           sessions: weekSessions.length,
-          completed: weekSessions.filter(s => s.status === 'completed').length,
+          completed: weekSessions.filter((s) => s.status === 'completed').length,
         });
       }
 
       // --- Client Growth Data (last 5 months) ---
       const clientGrowthData: { month: string; clients: number }[] = [];
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNames = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       for (let i = 4; i >= 0; i--) {
         const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-        const clientsUpToMonth = allClients.filter(c => new Date(c.createdAt) <= monthEnd);
+        const clientsUpToMonth = allClients.filter((c) => new Date(c.createdAt) <= monthEnd);
         clientGrowthData.push({
           month: monthNames[monthDate.getMonth()],
           clients: clientsUpToMonth.length,
@@ -1052,8 +1177,8 @@ export class DatabaseStorage implements IStorage {
       // Count consecutive days (going back from today) where at least one session was completed
       let trainerStreak = 0;
       const completedSessions = sessions
-        .filter(s => s.status === 'completed')
-        .map(s => new Date(s.scheduledAt).toDateString())
+        .filter((s) => s.status === 'completed')
+        .map((s) => new Date(s.scheduledAt).toDateString())
         .filter((v, i, a) => a.indexOf(v) === i); // unique dates
       const today = new Date();
       for (let i = 0; i < 365; i++) {
@@ -1069,19 +1194,22 @@ export class DatabaseStorage implements IStorage {
 
       // --- Completion Rate ---
       const totalSessions = sessions.length;
-      const completedCount = sessions.filter(s => s.status === 'completed').length;
-      const completionRate = totalSessions > 0 ? Math.round((completedCount / totalSessions) * 100) : 0;
+      const completedCount = sessions.filter((s) => s.status === 'completed').length;
+      const completionRate =
+        totalSessions > 0 ? Math.round((completedCount / totalSessions) * 100) : 0;
 
       // --- Client Compliance Rates (7/30/90 day windows) ---
       const clientComplianceRates = [];
-      for (const client of allClients.filter(c => c.status === 'active')) {
+      for (const client of allClients.filter((c) => c.status === 'active')) {
         const clientWorkouts = await this.getClientWorkouts(client.id);
         const calcRate = (days: number) => {
           const cutoff = new Date();
           cutoff.setDate(cutoff.getDate() - days);
-          const assigned = clientWorkouts.filter(w => new Date(w.assignedAt) >= cutoff);
+          const assigned = clientWorkouts.filter((w) => new Date(w.assignedAt) >= cutoff);
           if (assigned.length === 0) return 0;
-          const completed = assigned.filter(w => w.completedAt != null || w.status === 'completed');
+          const completed = assigned.filter(
+            (w) => w.completedAt != null || w.status === 'completed'
+          );
           return Math.round((completed.length / assigned.length) * 100);
         };
         clientComplianceRates.push({
@@ -1098,26 +1226,31 @@ export class DatabaseStorage implements IStorage {
       const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
       const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const lastMonthCompleted = sessions.filter(s =>
-        s.status === 'completed' &&
-        new Date(s.scheduledAt) >= lastMonthStart &&
-        new Date(s.scheduledAt) <= lastMonthEnd
+      const lastMonthCompleted = sessions.filter(
+        (s) =>
+          s.status === 'completed' &&
+          new Date(s.scheduledAt) >= lastMonthStart &&
+          new Date(s.scheduledAt) <= lastMonthEnd
       ).length;
 
-      const thisMonthCompleted = sessions.filter(s =>
-        s.status === 'completed' &&
-        new Date(s.scheduledAt) >= thisMonthStart &&
-        new Date(s.scheduledAt) <= now
+      const thisMonthCompleted = sessions.filter(
+        (s) =>
+          s.status === 'completed' &&
+          new Date(s.scheduledAt) >= thisMonthStart &&
+          new Date(s.scheduledAt) <= now
       ).length;
 
       // Adjust for partial month by projecting
       const dayOfMonth = now.getDate();
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-      const projectedThisMonth = dayOfMonth > 0 ? Math.round((thisMonthCompleted / dayOfMonth) * daysInMonth) : 0;
+      const projectedThisMonth =
+        dayOfMonth > 0 ? Math.round((thisMonthCompleted / dayOfMonth) * daysInMonth) : 0;
 
       let changePercent = 0;
       if (lastMonthCompleted > 0) {
-        changePercent = Math.round(((projectedThisMonth - lastMonthCompleted) / lastMonthCompleted) * 100);
+        changePercent = Math.round(
+          ((projectedThisMonth - lastMonthCompleted) / lastMonthCompleted) * 100
+        );
       }
 
       return {
@@ -1130,9 +1263,10 @@ export class DatabaseStorage implements IStorage {
         performanceInsight: {
           metric: 'session_completion',
           value: changePercent,
-          label: changePercent >= 0
-            ? `+${changePercent}% session completion vs last month`
-            : `${changePercent}% session completion vs last month`,
+          label:
+            changePercent >= 0
+              ? `+${changePercent}% session completion vs last month`
+              : `${changePercent}% session completion vs last month`,
         },
       };
     } catch (error) {
@@ -1155,36 +1289,53 @@ export class DatabaseStorage implements IStorage {
 
       // Get all clients for this trainer
       const allClients = await db.select().from(clients).where(eq(clients.trainerId, trainerId));
-      const activeClients = allClients.filter(c => c.status === 'active');
-      const inactiveClients = allClients.filter(c => c.status !== 'active');
+      const activeClients = allClients.filter((c) => c.status === 'active');
+      const inactiveClients = allClients.filter((c) => c.status !== 'active');
 
       // New clients this month
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
-      const newClientsThisMonth = allClients.filter(c => new Date(c.createdAt) >= startOfMonth).length;
+      const newClientsThisMonth = allClients.filter(
+        (c) => new Date(c.createdAt) >= startOfMonth
+      ).length;
 
       // Get all workout assignments for this trainer's clients
-      const clientIds = allClients.map(c => c.id);
+      const clientIds = allClients.map((c) => c.id);
       let allAssignments: any[] = [];
       for (const cid of clientIds) {
         const assigns = await this.getClientWorkouts(cid);
         allAssignments.push(...assigns);
       }
 
-      const completedAssignments = allAssignments.filter(a => a.completedAt != null || a.status === 'completed');
-      const thisMonthAssignments = allAssignments.filter(a => new Date(a.assignedAt) >= startOfMonth);
-      const thisMonthCompleted = thisMonthAssignments.filter(a => a.completedAt != null || a.status === 'completed');
+      const completedAssignments = allAssignments.filter(
+        (a) => a.completedAt != null || a.status === 'completed'
+      );
+      const thisMonthAssignments = allAssignments.filter(
+        (a) => new Date(a.assignedAt) >= startOfMonth
+      );
+      const thisMonthCompleted = thisMonthAssignments.filter(
+        (a) => a.completedAt != null || a.status === 'completed'
+      );
 
       // Training sessions
-      const trainerSessions = await db.select().from(trainingSessions).where(eq(trainingSessions.trainerId, trainerId));
-      const completedSessions = trainerSessions.filter(s => s.status === 'completed');
+      const trainerSessions = await db
+        .select()
+        .from(trainingSessions)
+        .where(eq(trainingSessions.trainerId, trainerId));
+      const completedSessions = trainerSessions.filter((s) => s.status === 'completed');
 
       // Workout metrics
-      const trainerWorkouts = await db.select().from(workouts).where(eq(workouts.trainerId, trainerId));
-      const avgDuration = trainerWorkouts.length > 0
-        ? Math.round(trainerWorkouts.reduce((sum, w) => sum + w.duration, 0) / trainerWorkouts.length)
-        : 0;
+      const trainerWorkouts = await db
+        .select()
+        .from(workouts)
+        .where(eq(workouts.trainerId, trainerId));
+      const avgDuration =
+        trainerWorkouts.length > 0
+          ? Math.round(
+              trainerWorkouts.reduce((sum, w) => sum + w.duration, 0) / trainerWorkouts.length
+            )
+          : 0;
 
       // Top performers (clients with most completed workouts)
       const clientCompletionCounts = new Map<string, number>();
@@ -1196,26 +1347,31 @@ export class DatabaseStorage implements IStorage {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([cid, count]) => {
-          const client = allClients.find(c => c.id === cid);
+          const client = allClients.find((c) => c.id === cid);
           return { name: client?.name || 'Unknown', sessionsCompleted: count };
         });
 
       // Retention rate (active / total * 100)
-      const retentionRate = allClients.length > 0 ? Math.round((activeClients.length / allClients.length) * 100) : 0;
+      const retentionRate =
+        allClients.length > 0 ? Math.round((activeClients.length / allClients.length) * 100) : 0;
 
       // Average sessions per client
-      const avgSessionsPerClient = activeClients.length > 0
-        ? Math.round((completedAssignments.length / activeClients.length) * 10) / 10
-        : 0;
+      const avgSessionsPerClient =
+        activeClients.length > 0
+          ? Math.round((completedAssignments.length / activeClients.length) * 10) / 10
+          : 0;
 
       // Completion rate
-      const completionRate = allAssignments.length > 0
-        ? Math.round((completedAssignments.length / allAssignments.length) * 100)
-        : 0;
+      const completionRate =
+        allAssignments.length > 0
+          ? Math.round((completedAssignments.length / allAssignments.length) * 100)
+          : 0;
 
       // Total hours this month (from completed sessions with known duration)
-      const thisMonthSessions = completedSessions.filter(s => new Date(s.scheduledDate) >= startOfMonth);
-      const totalHoursThisMonth = Math.round(thisMonthSessions.length * (avgDuration || 60) / 60);
+      const thisMonthSessions = completedSessions.filter(
+        (s) => new Date(s.scheduledDate) >= startOfMonth
+      );
+      const totalHoursThisMonth = Math.round((thisMonthSessions.length * (avgDuration || 60)) / 60);
 
       return {
         overview: {
@@ -1244,8 +1400,20 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error in getTrainerAnalytics:', error);
       return {
-        overview: { totalClients: 0, activeClients: 0, inactiveClients: 0, totalSessions: 0, completedThisMonth: 0, completionRate: 0 },
-        clientMetrics: { newClientsThisMonth: 0, clientRetentionRate: 0, averageSessionsPerClient: 0, topPerformers: [] },
+        overview: {
+          totalClients: 0,
+          activeClients: 0,
+          inactiveClients: 0,
+          totalSessions: 0,
+          completedThisMonth: 0,
+          completionRate: 0,
+        },
+        clientMetrics: {
+          newClientsThisMonth: 0,
+          clientRetentionRate: 0,
+          averageSessionsPerClient: 0,
+          topPerformers: [],
+        },
         workoutMetrics: { totalWorkoutPlans: 0, averageWorkoutDuration: 0, completionRate: 0 },
         timeAnalytics: { totalHoursThisMonth: 0 },
       };
@@ -1257,7 +1425,7 @@ export class DatabaseStorage implements IStorage {
     // In a real app, you'd have a separate notes table
     const client = await this.getClient(clientId);
     if (!client) return [];
-    
+
     return [
       {
         id: '1',
@@ -1268,7 +1436,12 @@ export class DatabaseStorage implements IStorage {
     ];
   }
 
-  async addClientNote(clientId: string, trainerId: string, content: string, category: string): Promise<any> {
+  async addClientNote(
+    clientId: string,
+    trainerId: string,
+    content: string,
+    category: string
+  ): Promise<any> {
     // For now, append to client's goal field
     // In a real app, you'd have a separate notes table
     const client = await this.getClient(clientId);
@@ -1323,6 +1496,53 @@ export class DatabaseStorage implements IStorage {
       return progress;
     }
   }
+
+  // Calculator Results methods
+  async getCalculatorResults(userId: string) {
+    return await this.db
+      .select()
+      .from(calculatorResults)
+      .where(eq(calculatorResults.userId, userId))
+      .orderBy(desc(calculatorResults.createdAt));
+  }
+
+  async getCalculatorResultsByType(userId: string, calculatorType: string) {
+    return await this.db
+      .select()
+      .from(calculatorResults)
+      .where(
+        and(
+          eq(calculatorResults.userId, userId),
+          eq(calculatorResults.calculatorType, calculatorType)
+        )
+      )
+      .orderBy(desc(calculatorResults.createdAt));
+  }
+
+  async createCalculatorResult(data: {
+    userId: string;
+    calculatorType: string;
+    inputs: any;
+    results: any;
+    notes?: string;
+    isFavorite?: boolean;
+  }) {
+    const [result] = await this.db.insert(calculatorResults).values(data).returning();
+    return result;
+  }
+
+  async updateCalculatorResult(id: string, data: { notes?: string; isFavorite?: boolean }) {
+    const [updated] = await this.db
+      .update(calculatorResults)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(calculatorResults.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCalculatorResult(id: string) {
+    await this.db.delete(calculatorResults).where(eq(calculatorResults.id, id));
+  }
 }
 
 // Create singleton instances
@@ -1361,7 +1581,7 @@ export const storage: IStorage = new Proxy({} as IStorage, {
   get(target, prop: keyof IStorage) {
     const actualStorage = getStorage();
     return actualStorage[prop].bind(actualStorage);
-  }
+  },
 });
 
 // Check database availability on startup

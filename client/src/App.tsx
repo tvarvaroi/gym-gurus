@@ -66,6 +66,33 @@ const CaloriesBurnedCalc = lazy(() => import('@/pages/calculators/CaloriesBurned
 const IdealWeightCalc = lazy(() => import('@/pages/calculators/IdealWeightCalc'));
 const WaterIntakeCalc = lazy(() => import('@/pages/calculators/WaterIntakeCalc'));
 
+// Premium calculator pages (authenticated only)
+const PremiumCalculatorsHub = lazy(
+  () => import('@/pages/premium-calculators/PremiumCalculatorsHub')
+);
+const PremiumTDEECalc = lazy(() => import('@/pages/premium-calculators/PremiumTDEECalc'));
+const PremiumBMICalc = lazy(() => import('@/pages/premium-calculators/PremiumBMICalc'));
+const PremiumBodyFatCalc = lazy(() => import('@/pages/premium-calculators/PremiumBodyFatCalc'));
+const PremiumMacroCalc = lazy(() => import('@/pages/premium-calculators/PremiumMacroCalc'));
+const Premium1RMCalc = lazy(() => import('@/pages/premium-calculators/Premium1RMCalc'));
+const PremiumPlatesCalc = lazy(() => import('@/pages/premium-calculators/PremiumPlatesCalc'));
+const PremiumStrengthStandardsCalc = lazy(
+  () => import('@/pages/premium-calculators/PremiumStrengthStandardsCalc')
+);
+const PremiumVO2MaxCalc = lazy(() => import('@/pages/premium-calculators/PremiumVO2MaxCalc'));
+const PremiumHeartRateZonesCalc = lazy(
+  () => import('@/pages/premium-calculators/PremiumHeartRateZonesCalc')
+);
+const PremiumCaloriesBurnedCalc = lazy(
+  () => import('@/pages/premium-calculators/PremiumCaloriesBurnedCalc')
+);
+const PremiumIdealWeightCalc = lazy(
+  () => import('@/pages/premium-calculators/PremiumIdealWeightCalc')
+);
+const PremiumWaterIntakeCalc = lazy(
+  () => import('@/pages/premium-calculators/PremiumWaterIntakeCalc')
+);
+
 // Legal pages
 const TermsPage = lazy(() => import('@/pages/TermsPage'));
 const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
@@ -430,6 +457,151 @@ function Router() {
               )}
             </Route>
 
+            {/* Premium calculator routes (authenticated only) */}
+            <Route path="/dashboard/calculators">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumCalculatorsHub />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/tdee">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumTDEECalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/bmi">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumBMICalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/body-fat">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumBodyFatCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/macros">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumMacroCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/1rm">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <Premium1RMCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/plates">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumPlatesCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/strength-standards">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumStrengthStandardsCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/vo2max">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumVO2MaxCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/heart-rate-zones">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumHeartRateZonesCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/calories-burned">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumCaloriesBurnedCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/ideal-weight">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumIdealWeightCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+            <Route path="/dashboard/calculators/water-intake">
+              {() => (
+                <ProtectedRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <PageTransition>
+                      <PremiumWaterIntakeCalc />
+                    </PageTransition>
+                  </Suspense>
+                </ProtectedRoute>
+              )}
+            </Route>
+
             {/* Solo user routes */}
             <Route path="/solo">
               {() => (
@@ -531,12 +703,13 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
     localStorage.setItem('theme', 'dark');
   }, []);
 
-  // Apply role-specific CSS class to body for theming
+  // Apply role-specific CSS class to html element for theming
+  // (must be on same element as .dark for CSS variables to work correctly)
   useEffect(() => {
-    document.body.classList.remove(...ALL_ROLE_CSS_CLASSES);
+    document.documentElement.classList.remove(...ALL_ROLE_CSS_CLASSES);
     if (user && (user as { role?: InternalRole }).role) {
       const role = (user as { role: InternalRole }).role;
-      document.body.classList.add(getRoleCssClass(role));
+      document.documentElement.classList.add(getRoleCssClass(role));
     }
   }, [user]);
 
