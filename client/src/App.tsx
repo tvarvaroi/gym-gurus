@@ -301,14 +301,13 @@ function Router() {
             </Route>
 
             {/* Public landing page at root (must come after specific routes) */}
-            {/* TEMPORARILY DISABLED FOR TESTING */}
-            {/*<Route path="/">
+            <Route path="/">
               {() => (
                 <Suspense fallback={<LoadingFallback />}>
                   <LandingPage />
                 </Suspense>
               )}
-            </Route>*/}
+            </Route>
 
             {/* Authenticated routes */}
             <Route path="/dashboard" component={HomePage} />
