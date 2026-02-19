@@ -300,15 +300,6 @@ function Router() {
               )}
             </Route>
 
-            {/* Public landing page at root (must come after specific routes) */}
-            <Route path="/">
-              {() => (
-                <Suspense fallback={<LoadingFallback />}>
-                  <LandingPage />
-                </Suspense>
-              )}
-            </Route>
-
             {/* Authenticated routes */}
             <Route path="/dashboard" component={HomePage} />
             <Route path="/clients/:id" component={ClientDetailsPage} />
@@ -491,6 +482,15 @@ function Router() {
                   <PageTransition>
                     <WorkoutGenerator />
                   </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+
+            {/* Public landing page at root (must come LAST before 404) */}
+            <Route path="/">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <LandingPage />
                 </Suspense>
               )}
             </Route>
