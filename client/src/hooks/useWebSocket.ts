@@ -1,3 +1,4 @@
+/* global WebSocket */
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 interface WebSocketMessage {
@@ -32,7 +33,9 @@ interface UseWebSocketOptions {
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+  const [connectionState, setConnectionState] = useState<
+    'connecting' | 'connected' | 'disconnected'
+  >('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
@@ -71,9 +74,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     setConnectionState('connecting');
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host || `${window.location.hostname}:${window.location.port || '5000'}`;
-    const wsUrl = `${protocol}//${host}/ws`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    // In development, Vite proxy will forward /ws to backend on port 5000
+    // In production, use the same host as the web server
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
 
     try {
       wsRef.current = new WebSocket(wsUrl);
@@ -155,48 +159,60 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         }, currentReconnectIntervalRef.current);
       }
     }
-  }, [autoReconnect, maxReconnectAttempts, reconnectInterval, maxReconnectInterval, onConnect, onDisconnect, onMessage, flushMessageQueue]);
+  }, [
+    autoReconnect,
+    maxReconnectAttempts,
+    reconnectInterval,
+    maxReconnectInterval,
+    onConnect,
+    onDisconnect,
+    onMessage,
+    flushMessageQueue,
+  ]);
 
   const disconnect = () => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    
+
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
-    
+
     setIsConnected(false);
     setConnectionState('disconnected');
   };
 
-  const sendMessage = useCallback((message: WebSocketMessage) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
-    } else {
-      // Queue message for sending when connection is restored
-      messageQueueRef.current.push(message);
+  const sendMessage = useCallback(
+    (message: WebSocketMessage) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify(message));
+      } else {
+        // Queue message for sending when connection is restored
+        messageQueueRef.current.push(message);
 
-      // Attempt to reconnect if disconnected
-      if (connectionState === 'disconnected' && autoReconnect) {
-        connect();
+        // Attempt to reconnect if disconnected
+        if (connectionState === 'disconnected' && autoReconnect) {
+          connect();
+        }
       }
-    }
-  }, [connectionState, autoReconnect, connect]);
+    },
+    [connectionState, autoReconnect, connect]
+  );
 
   const joinRoom = (clientId: string) => {
     sendMessage({
       type: 'join_room',
-      data: { clientId }
+      data: { clientId },
     });
   };
 
   const sendTyping = (isTyping: boolean, clientId: string) => {
     sendMessage({
       type: 'typing',
-      data: { isTyping, clientId }
+      data: { isTyping, clientId },
     });
   };
 
