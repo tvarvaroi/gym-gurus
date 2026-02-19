@@ -1,14 +1,22 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation, useParams } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { apiRequest } from "@/lib/queryClient";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation, useParams } from 'wouter';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { apiRequest } from '@/lib/queryClient';
 import {
   ArrowLeft,
   Check,
@@ -26,10 +34,13 @@ import {
   RotateCcw,
   Edit3,
   X,
-  Zap
-} from "lucide-react";
-import { ProgressiveOverloadIndicator, PRIndicator } from "@/components/workout/ProgressiveOverloadIndicator";
-import { WorkoutProgressOverview } from "@/components/workout/ExerciseProgressBar";
+  Zap,
+} from 'lucide-react';
+import {
+  ProgressiveOverloadIndicator,
+  PRIndicator,
+} from '@/components/workout/ProgressiveOverloadIndicator';
+import { WorkoutProgressOverview } from '@/components/workout/ExerciseProgressBar';
 
 // Types
 interface SetLog {
@@ -65,12 +76,26 @@ type WeightUnit = 'kg' | 'lbs';
 
 // Conversion helpers
 const kgToLbs = (kg: number) => Math.round(kg * 2.20462 * 10) / 10;
-const lbsToKg = (lbs: number) => Math.round(lbs / 2.20462 * 10) / 10;
+const lbsToKg = (lbs: number) => Math.round((lbs / 2.20462) * 10) / 10;
 
 export default function WorkoutExecution() {
   const params = useParams();
   const workoutId = params.id as string;
-  const [, setLocation] = useLocation();
+  const [, setLocationOriginal] = useLocation();
+
+  // Custom navigation guard
+  const setLocation = useCallback(
+    (path: string) => {
+      const hasProgress = session?.exercises.some((ex) => ex.sets.some((s) => s.completed));
+      if (hasProgress && !showCompletion && path !== `/workout-execution/${workoutId}`) {
+        // Show confirmation before leaving
+        setPendingNavigation(path);
+      } else {
+        setLocationOriginal(path);
+      }
+    },
+    [session, showCompletion, workoutId, setLocationOriginal]
+  );
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const prefersReducedMotion = useReducedMotion();
@@ -84,16 +109,22 @@ export default function WorkoutExecution() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showCompletion, setShowCompletion] = useState(false);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('lbs');
-  const [newPR, setNewPR] = useState<{ type: 'weight' | 'reps' | 'volume'; value: number; previousBest: number } | null>(null);
+  const [newPR, setNewPR] = useState<{
+    type: 'weight' | 'reps' | 'volume';
+    value: number;
+    previousBest: number;
+  } | null>(null);
   const [showProgressOverview, setShowProgressOverview] = useState(false);
-
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [savedSessionData, setSavedSessionData] = useState<any>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
   // Persist session state to sessionStorage for recovery on refresh
   const storageKey = `workout-session-${workoutId}`;
 
   useEffect(() => {
     if (!session || showCompletion) return;
-    const hasProgress = session.exercises.some(ex => ex.sets.some(s => s.completed));
+    const hasProgress = session.exercises.some((ex) => ex.sets.some((s) => s.completed));
     if (!hasProgress) return;
     sessionStorage.setItem(storageKey, JSON.stringify({ session, currentExerciseIndex }));
   }, [session, currentExerciseIndex, showCompletion, storageKey]);
@@ -105,30 +136,22 @@ export default function WorkoutExecution() {
     }
   }, [showCompletion, storageKey]);
 
-  // Warn before closing/refreshing if workout is in progress
-  useEffect(() => {
-    const hasProgress = session?.exercises.some(ex =>
-      ex.sets.some(s => s.completed)
-    );
-    if (!hasProgress || showCompletion) return;
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [session, showCompletion]);
+  // Note: beforeunload navigation guard is implemented further down (see ~line 215)
 
   // Fetch workout assignment details
-  const { data: workout, isLoading, error: workoutError } = useQuery({
+  const {
+    data: workout,
+    isLoading,
+    error: workoutError,
+  } = useQuery({
     queryKey: [`/api/workout-assignments/${workoutId}`],
     queryFn: async () => {
       const response = await fetch(`/api/workout-assignments/${workoutId}`, {
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch workout');
       return response.json();
-    }
+    },
   });
 
   // Initialize session when workout loads — restore from sessionStorage if available
@@ -140,8 +163,9 @@ export default function WorkoutExecution() {
         try {
           const { session: savedSession, currentExerciseIndex: savedIndex } = JSON.parse(saved);
           if (savedSession?.workoutId === workoutId) {
-            setSession(savedSession);
-            setCurrentExerciseIndex(savedIndex || 0);
+            // Show resume/discard dialog instead of auto-restoring
+            setSavedSessionData({ session: savedSession, currentExerciseIndex: savedIndex || 0 });
+            setShowResumeDialog(true);
             return;
           }
         } catch {
@@ -149,21 +173,23 @@ export default function WorkoutExecution() {
         }
       }
 
-      const exercises: ExerciseSession[] = (workout.exercises || []).map((ex: any, index: number) => ({
-        exerciseId: ex.exerciseId || ex.id || `exercise-${index}`,
-        exerciseName: ex.name || 'Exercise',
-        muscleGroup: ex.muscleGroup || 'General',
-        targetSets: ex.sets || 3,
-        targetReps: ex.reps || '10',
-        sets: Array.from({ length: ex.sets || 3 }, (_, i) => ({
-          setNumber: i + 1,
-          weight: 0,
-          reps: 0,
-          completed: false
-        })),
-        status: index === 0 ? 'in_progress' : 'pending',
-        notes: ex.notes
-      }));
+      const exercises: ExerciseSession[] = (workout.exercises || []).map(
+        (ex: any, index: number) => ({
+          exerciseId: ex.exerciseId || ex.id || `exercise-${index}`,
+          exerciseName: ex.name || 'Exercise',
+          muscleGroup: ex.muscleGroup || 'General',
+          targetSets: ex.sets || 3,
+          targetReps: ex.reps || '10',
+          sets: Array.from({ length: ex.sets || 3 }, (_, i) => ({
+            setNumber: i + 1,
+            weight: 0,
+            reps: 0,
+            completed: false,
+          })),
+          status: index === 0 ? 'in_progress' : 'pending',
+          notes: ex.notes,
+        })
+      );
 
       setSession({
         workoutId,
@@ -172,7 +198,7 @@ export default function WorkoutExecution() {
         exercises,
         currentExerciseIndex: 0,
         totalDuration: 0,
-        status: 'active'
+        status: 'active',
       });
     }
   }, [workout, session, workoutId, workoutStartTime]);
@@ -181,7 +207,7 @@ export default function WorkoutExecution() {
   useEffect(() => {
     if (isResting && restTimeLeft > 0) {
       const timer = setInterval(() => {
-        setRestTimeLeft(prev => {
+        setRestTimeLeft((prev) => {
           if (prev <= 1) {
             setIsResting(false);
             if (soundEnabled) {
@@ -199,8 +225,9 @@ export default function WorkoutExecution() {
   // Navigation guard - prevent accidental data loss during active workout
   useEffect(() => {
     if (session && !showCompletion) {
-      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const handleBeforeUnload = (e: Event) => {
         e.preventDefault();
+        // @ts-expect-error - returnValue exists on BeforeUnloadEvent
         e.returnValue = ''; // Chrome requires returnValue to be set
         return ''; // Some browsers show this message
       };
@@ -230,7 +257,12 @@ export default function WorkoutExecution() {
   };
 
   // Update set data
-  const updateSet = (exerciseIndex: number, setIndex: number, field: 'weight' | 'reps', value: number) => {
+  const updateSet = (
+    exerciseIndex: number,
+    setIndex: number,
+    field: 'weight' | 'reps',
+    value: number
+  ) => {
     if (!session) return;
 
     const newSession = { ...session };
@@ -247,9 +279,9 @@ export default function WorkoutExecution() {
 
     if (!currentSet.weight || !currentSet.reps) {
       toast({
-        title: "Missing Data",
-        description: "Please enter weight and reps before completing the set",
-        variant: "destructive"
+        title: 'Missing Data',
+        description: 'Please enter weight and reps before completing the set',
+        variant: 'destructive',
       });
       return;
     }
@@ -266,7 +298,7 @@ export default function WorkoutExecution() {
     }
 
     // Check if exercise is complete
-    const allSetsComplete = newSession.exercises[exerciseIndex].sets.every(s => s.completed);
+    const allSetsComplete = newSession.exercises[exerciseIndex].sets.every((s) => s.completed);
     if (allSetsComplete) {
       newSession.exercises[exerciseIndex].status = 'completed';
 
@@ -275,8 +307,8 @@ export default function WorkoutExecution() {
         newSession.exercises[exerciseIndex + 1].status = 'in_progress';
         setCurrentExerciseIndex(exerciseIndex + 1);
         toast({
-          title: "Exercise Complete! 💪",
-          description: "Moving to next exercise..."
+          title: 'Exercise Complete! 💪',
+          description: 'Moving to next exercise...',
         });
       } else {
         // Workout complete!
@@ -300,7 +332,7 @@ export default function WorkoutExecution() {
 
   // Adjust rest timer
   const adjustRestTime = (seconds: number) => {
-    setRestTimeLeft(prev => Math.max(0, prev + seconds));
+    setRestTimeLeft((prev) => Math.max(0, prev + seconds));
   };
 
   // Finish workout
@@ -323,13 +355,13 @@ export default function WorkoutExecution() {
       if (!session) return;
 
       return apiRequest('PUT', `/api/workout-assignments/${workoutId}/complete`, {
-        notes: 'Workout completed via execution interface'
+        notes: 'Workout completed via execution interface',
       });
     },
     onSuccess: () => {
       toast({
-        title: "Workout Saved! 🎉",
-        description: "Great job completing your workout!"
+        title: 'Workout Saved! 🎉',
+        description: 'Great job completing your workout!',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/client/profile'] });
       setTimeout(() => {
@@ -338,11 +370,11 @@ export default function WorkoutExecution() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to save workout",
-        variant: "destructive"
+        title: 'Error',
+        description: error.message || 'Failed to save workout',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   if (workoutError) {
@@ -369,7 +401,11 @@ export default function WorkoutExecution() {
         <div className="text-center">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
+            transition={{
+              duration: 1,
+              repeat: prefersReducedMotion ? 0 : Infinity,
+              ease: 'linear',
+            }}
             className="w-16 h-16 border-[3px] border-primary/20 border-t-primary rounded-full mx-auto mb-4"
           />
           <p className="text-muted-foreground font-light">Loading workout...</p>
@@ -379,11 +415,15 @@ export default function WorkoutExecution() {
   }
 
   const currentExercise = session.exercises[currentExerciseIndex];
-  const currentSetIndex = currentExercise.sets.findIndex(s => !s.completed);
-  const completedSets = currentExercise.sets.filter(s => s.completed).length;
+  const currentSetIndex = currentExercise.sets.findIndex((s) => !s.completed);
+  const completedSets = currentExercise.sets.filter((s) => s.completed).length;
   const totalSets = currentExercise.sets.length;
-  const workoutProgress = ((session.exercises.filter(e => e.status === 'completed').length) / session.exercises.length) * 100;
-  const workoutDuration = Math.floor((new Date().getTime() - session.startedAt.getTime()) / 1000 / 60);
+  const workoutProgress =
+    (session.exercises.filter((e) => e.status === 'completed').length / session.exercises.length) *
+    100;
+  const workoutDuration = Math.floor(
+    (new Date().getTime() - session.startedAt.getTime()) / 1000 / 60
+  );
 
   // Get current set for input
   const currentSet = currentSetIndex >= 0 ? currentExercise.sets[currentSetIndex] : null;
@@ -396,7 +436,8 @@ export default function WorkoutExecution() {
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.03) 0%, transparent 50%, rgba(20, 184, 166, 0.03) 100%)',
+            background:
+              'linear-gradient(135deg, rgba(6, 182, 212, 0.03) 0%, transparent 50%, rgba(20, 184, 166, 0.03) 100%)',
           }}
         />
 
@@ -404,7 +445,8 @@ export default function WorkoutExecution() {
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(125deg, transparent 0%, transparent 40%, rgba(255, 255, 255, 0.02) 50%, transparent 60%, transparent 100%)',
+            background:
+              'linear-gradient(125deg, transparent 0%, transparent 40%, rgba(255, 255, 255, 0.02) 50%, transparent 60%, transparent 100%)',
             backgroundSize: '300% 300%',
             animation: 'glass-shine-1 12s ease-in-out infinite',
           }}
@@ -413,7 +455,8 @@ export default function WorkoutExecution() {
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(65deg, transparent 0%, transparent 35%, rgba(6, 182, 212, 0.04) 50%, transparent 65%, transparent 100%)',
+            background:
+              'linear-gradient(65deg, transparent 0%, transparent 35%, rgba(6, 182, 212, 0.04) 50%, transparent 65%, transparent 100%)',
             backgroundSize: '250% 250%',
             animation: 'glass-shine-2 15s ease-in-out infinite',
             animationDelay: '2s',
@@ -424,7 +467,8 @@ export default function WorkoutExecution() {
         <div
           className="absolute top-0 left-0 w-full h-full"
           style={{
-            background: 'radial-gradient(circle at 30% 40%, rgba(6, 182, 212, 0.06) 0%, transparent 50%)',
+            background:
+              'radial-gradient(circle at 30% 40%, rgba(6, 182, 212, 0.06) 0%, transparent 50%)',
             animation: 'glass-glow-1 20s ease-in-out infinite',
           }}
         />
@@ -432,7 +476,8 @@ export default function WorkoutExecution() {
         <div
           className="absolute top-0 left-0 w-full h-full"
           style={{
-            background: 'radial-gradient(circle at 70% 60%, rgba(20, 184, 166, 0.05) 0%, transparent 50%)',
+            background:
+              'radial-gradient(circle at 70% 60%, rgba(20, 184, 166, 0.05) 0%, transparent 50%)',
             animation: 'glass-glow-2 18s ease-in-out infinite',
             animationDelay: '5s',
           }}
@@ -442,7 +487,8 @@ export default function WorkoutExecution() {
         <div
           className="absolute inset-0 opacity-30"
           style={{
-            background: 'repeating-linear-gradient(0deg, transparent, transparent 100px, rgba(255, 255, 255, 0.01) 100px, rgba(255, 255, 255, 0.01) 102px)',
+            background:
+              'repeating-linear-gradient(0deg, transparent, transparent 100px, rgba(255, 255, 255, 0.01) 100px, rgba(255, 255, 255, 0.01) 102px)',
           }}
         />
 
@@ -450,7 +496,8 @@ export default function WorkoutExecution() {
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.025) 50%, transparent 70%)',
+            background:
+              'linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.025) 50%, transparent 70%)',
             backgroundSize: '200% 100%',
             animation: 'premium-shimmer 10s linear infinite',
           }}
@@ -581,13 +628,13 @@ export default function WorkoutExecution() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1, type: "spring", damping: 20 }}
+              transition={{ delay: 0.1, type: 'spring', damping: 20 }}
               className="max-w-sm mx-4 text-center"
             >
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.3, type: "spring", damping: 15 }}
+                transition={{ delay: 0.3, type: 'spring', damping: 15 }}
                 className="mb-8"
               >
                 <div className="relative inline-block">
@@ -620,7 +667,10 @@ export default function WorkoutExecution() {
                 >
                   <Dumbbell className="w-6 h-6 mb-3 text-[#00D4FF] mx-auto" />
                   <p className="text-3xl font-extralight mb-1 tabular-nums">
-                    {session.exercises.reduce((sum, ex) => sum + ex.sets.filter(s => s.completed).length, 0)}
+                    {session.exercises.reduce(
+                      (sum, ex) => sum + ex.sets.filter((s) => s.completed).length,
+                      0
+                    )}
                   </p>
                   <p className="text-xs text-muted-foreground font-light">Sets</p>
                 </motion.div>
@@ -634,13 +684,20 @@ export default function WorkoutExecution() {
                 className="w-full mb-6"
               >
                 <WorkoutProgressOverview
-                  exercises={session.exercises.map(ex => ({
+                  exercises={session.exercises.map((ex) => ({
                     name: ex.exerciseName,
-                    completedSets: ex.sets.filter(s => s.completed).length,
+                    completedSets: ex.sets.filter((s) => s.completed).length,
                     totalSets: ex.sets.length,
-                    status: ex.status === 'completed' ? 'completed' : ex.status === 'in_progress' ? 'active' : 'pending' as const,
+                    status:
+                      ex.status === 'completed'
+                        ? 'completed'
+                        : ex.status === 'in_progress'
+                          ? 'active'
+                          : ('pending' as const),
                   }))}
-                  currentExerciseIndex={session.exercises.findIndex(ex => ex.status === 'in_progress')}
+                  currentExerciseIndex={session.exercises.findIndex(
+                    (ex) => ex.status === 'in_progress'
+                  )}
                 />
               </motion.div>
 
@@ -673,7 +730,7 @@ export default function WorkoutExecution() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", damping: 25 }}
+              transition={{ type: 'spring', damping: 25 }}
               onClick={(e) => e.stopPropagation()}
               className="text-center"
             >
@@ -807,7 +864,11 @@ export default function WorkoutExecution() {
                 whileTap={{ scale: 0.95 }}
                 className="w-11 h-11 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/30 flex items-center justify-center transition-all backdrop-blur-xl"
               >
-                {soundEnabled ? <Volume2 className="w-5 h-5 text-cyan-400" /> : <VolumeX className="w-5 h-5 text-cyan-400" />}
+                {soundEnabled ? (
+                  <Volume2 className="w-5 h-5 text-cyan-400" />
+                ) : (
+                  <VolumeX className="w-5 h-5 text-cyan-400" />
+                )}
               </motion.button>
             </div>
 
@@ -820,9 +881,14 @@ export default function WorkoutExecution() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Timer className="w-5 h-5 text-cyan-400" />
-                    <span className="text-sm font-light text-muted-foreground uppercase tracking-wider">Duration</span>
+                    <span className="text-sm font-light text-muted-foreground uppercase tracking-wider">
+                      Duration
+                    </span>
                   </div>
-                  <span className="text-2xl font-extralight tabular-nums">{workoutDuration}<span className="text-sm text-muted-foreground">m</span></span>
+                  <span className="text-2xl font-extralight tabular-nums">
+                    {workoutDuration}
+                    <span className="text-sm text-muted-foreground">m</span>
+                  </span>
                 </div>
 
                 {/* Progress Bar */}
@@ -842,7 +908,11 @@ export default function WorkoutExecution() {
                       <motion.div
                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
                         animate={{ x: ['-100%', '200%'] }}
-                        transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
+                        transition={{
+                          duration: 2,
+                          repeat: prefersReducedMotion ? 0 : Infinity,
+                          ease: 'linear',
+                        }}
                       />
                     </motion.div>
                   </div>
@@ -867,11 +937,12 @@ export default function WorkoutExecution() {
               {/* Triple border effect */}
               <div className="p-[2px] rounded-2xl bg-gradient-to-br from-cyan-500/50 via-teal-500/30 to-cyan-500/50">
                 <div className="p-5 rounded-2xl bg-gradient-to-br from-cyan-950/40 via-[#0F0F0F] to-teal-950/40 backdrop-blur-xl border border-cyan-500/20">
-
                   {/* Exercise badges */}
                   <div className="flex items-center justify-center gap-2 mb-4">
                     <Badge className="px-2.5 py-0.5 bg-cyan-500/20 border-cyan-400/40 text-cyan-300 backdrop-blur-sm text-xs">
-                      <span className="tracking-wide">{currentExerciseIndex + 1}/{session.exercises.length}</span>
+                      <span className="tracking-wide">
+                        {currentExerciseIndex + 1}/{session.exercises.length}
+                      </span>
                     </Badge>
                     <Badge className="px-2.5 py-0.5 capitalize bg-gradient-to-r from-teal-600 to-emerald-600 border-0 text-xs">
                       <span className="tracking-wide">{currentExercise.muscleGroup}</span>
@@ -879,7 +950,10 @@ export default function WorkoutExecution() {
                   </div>
 
                   {/* Exercise name with dramatic typography */}
-                  <h2 className="text-2xl lg:text-3xl font-extralight text-center mb-4 tracking-tight leading-tight" style={{ letterSpacing: '0.02em' }}>
+                  <h2
+                    className="text-2xl lg:text-3xl font-extralight text-center mb-4 tracking-tight leading-tight"
+                    style={{ letterSpacing: '0.02em' }}
+                  >
                     {currentExercise.exerciseName}
                   </h2>
 
@@ -893,7 +967,9 @@ export default function WorkoutExecution() {
                     <div className="w-px h-12 bg-gradient-to-b from-transparent via-cyan-500/30 to-transparent" />
                     <div className="flex flex-col items-center gap-2">
                       <TrendingUp className="w-5 h-5 text-teal-400" />
-                      <span className="text-lg font-light tabular-nums">{currentExercise.targetReps}</span>
+                      <span className="text-lg font-light tabular-nums">
+                        {currentExercise.targetReps}
+                      </span>
                       <span className="text-xs uppercase tracking-wider">Reps</span>
                     </div>
                   </div>
@@ -909,8 +985,8 @@ export default function WorkoutExecution() {
             currentReps={currentSet?.reps || 0}
             targetReps={parseInt(currentExercise.targetReps) || 10}
             history={currentExercise.sets
-              .filter(s => s.completed)
-              .map(s => ({
+              .filter((s) => s.completed)
+              .map((s) => ({
                 date: s.completedAt?.toISOString() || new Date().toISOString(),
                 weight: s.weight,
                 reps: s.reps,
@@ -951,14 +1027,17 @@ export default function WorkoutExecution() {
                     <Check className="w-4 h-4" />
                     Completed Sets
                   </h3>
-                  <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                  >
                     {completedSets}/{totalSets}
                   </Badge>
                 </div>
 
                 <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
                   {currentExercise.sets
-                    .filter(set => set.completed)
+                    .filter((set) => set.completed)
                     .map((set) => (
                       <motion.div
                         key={set.setNumber}
@@ -973,7 +1052,8 @@ export default function WorkoutExecution() {
                           <span className="text-sm font-light">Set {set.setNumber}</span>
                         </div>
                         <span className="text-sm tabular-nums text-muted-foreground font-light">
-                          {weightUnit === 'kg' ? lbsToKg(set.weight) : set.weight}{weightUnit} × {set.reps}
+                          {weightUnit === 'kg' ? lbsToKg(set.weight) : set.weight}
+                          {weightUnit} × {set.reps}
                         </span>
                       </motion.div>
                     ))}
@@ -1033,7 +1113,9 @@ export default function WorkoutExecution() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-white shadow-lg"></span>
                   </span>
-                  <span className="text-sm font-semibold text-white uppercase tracking-wider relative">Active</span>
+                  <span className="text-sm font-semibold text-white uppercase tracking-wider relative">
+                    Active
+                  </span>
                 </div>
 
                 {/* Unit Toggle - Premium */}
@@ -1053,7 +1135,11 @@ export default function WorkoutExecution() {
                         <motion.div
                           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                           animate={{ x: ['-100%', '200%'] }}
-                          transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
+                          transition={{
+                            duration: 2,
+                            repeat: prefersReducedMotion ? 0 : Infinity,
+                            ease: 'linear',
+                          }}
                         />
                       )}
                       <span className="relative">KG</span>
@@ -1072,7 +1158,11 @@ export default function WorkoutExecution() {
                         <motion.div
                           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                           animate={{ x: ['-100%', '200%'] }}
-                          transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
+                          transition={{
+                            duration: 2,
+                            repeat: prefersReducedMotion ? 0 : Infinity,
+                            ease: 'linear',
+                          }}
                         />
                       )}
                       <span className="relative">LBS</span>
@@ -1099,7 +1189,8 @@ export default function WorkoutExecution() {
                   style={{
                     bottom: '20%',
                     right: '15%',
-                    background: 'radial-gradient(circle, rgba(20, 184, 166, 0.15), transparent 70%)',
+                    background:
+                      'radial-gradient(circle, rgba(20, 184, 166, 0.15), transparent 70%)',
                     animation: 'float-orb-2 12s ease-in-out infinite',
                     willChange: 'transform',
                     transform: 'translateZ(0)',
@@ -1135,12 +1226,12 @@ export default function WorkoutExecution() {
                   <div className="relative p-[3px] rounded-[1.5rem] bg-gradient-to-br from-cyan-400/60 via-cyan-400/40 to-cyan-400/60">
                     <div className="p-[2px] rounded-[1.5rem] bg-gradient-to-br from-[#0A0A0A] via-[#0F0F0F] to-[#0A0A0A]">
                       <div className="h-full p-6 lg:p-8 rounded-[1.5rem] bg-gradient-to-br from-cyan-950/30 via-[#0F0F0F]/90 to-cyan-950/20 backdrop-blur-2xl border border-cyan-500/20 relative overflow-hidden">
-
                         {/* Optimized Shimmer - CSS only */}
                         <div
                           className="absolute inset-0 opacity-20 pointer-events-none"
                           style={{
-                            background: 'linear-gradient(120deg, transparent 30%, rgba(6, 182, 212, 0.15) 50%, transparent 70%)',
+                            background:
+                              'linear-gradient(120deg, transparent 30%, rgba(6, 182, 212, 0.15) 50%, transparent 70%)',
                             backgroundSize: '200% 100%',
                             animation: 'card-shimmer 8s linear infinite',
                             willChange: 'background-position',
@@ -1192,10 +1283,17 @@ export default function WorkoutExecution() {
 
                           <div className="flex items-center gap-3 flex-1">
                             <motion.button
-                              onClick={() => updateSet(currentExerciseIndex, currentSetIndex, 'weight', Math.max(0, currentSet.weight - (weightUnit === 'kg' ? 2.5 : 5)))}
+                              onClick={() =>
+                                updateSet(
+                                  currentExerciseIndex,
+                                  currentSetIndex,
+                                  'weight',
+                                  Math.max(0, currentSet.weight - (weightUnit === 'kg' ? 2.5 : 5))
+                                )
+                              }
                               whileHover={{ scale: 1.15, rotate: -5 }}
                               whileTap={{ scale: 0.85 }}
-                              transition={{ duration: 0.15, ease: "easeOut" }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
                               className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-900/60 to-cyan-950/60 hover:from-cyan-800/80 hover:to-cyan-900/80 border-2 border-cyan-400/40 hover:border-cyan-300/60 flex items-center justify-center transition-colors shadow-lg shadow-cyan-500/20 hover:shadow-xl hover:shadow-cyan-500/40"
                             >
                               <Minus className="w-5 h-5 text-cyan-300" />
@@ -1204,10 +1302,19 @@ export default function WorkoutExecution() {
                             <div className="flex-1 relative group/input">
                               <motion.input
                                 type="number"
-                                value={weightUnit === 'kg' && currentSet.weight > 0 ? lbsToKg(currentSet.weight) : currentSet.weight || ''}
+                                value={
+                                  weightUnit === 'kg' && currentSet.weight > 0
+                                    ? lbsToKg(currentSet.weight)
+                                    : currentSet.weight || ''
+                                }
                                 onChange={(e) => {
                                   const value = Number(e.target.value);
-                                  updateSet(currentExerciseIndex, currentSetIndex, 'weight', weightUnit === 'kg' ? kgToLbs(value) : value);
+                                  updateSet(
+                                    currentExerciseIndex,
+                                    currentSetIndex,
+                                    'weight',
+                                    weightUnit === 'kg' ? kgToLbs(value) : value
+                                  );
                                 }}
                                 whileFocus={{ scale: 1.05 }}
                                 className="w-full h-20 text-center text-5xl lg:text-6xl font-extralight bg-transparent border-b-4 border-cyan-400/40 focus:border-cyan-300 hover:border-cyan-400/60 outline-none tabular-nums text-white transition-all"
@@ -1222,10 +1329,17 @@ export default function WorkoutExecution() {
                             </div>
 
                             <motion.button
-                              onClick={() => updateSet(currentExerciseIndex, currentSetIndex, 'weight', currentSet.weight + (weightUnit === 'kg' ? 2.5 : 5))}
+                              onClick={() =>
+                                updateSet(
+                                  currentExerciseIndex,
+                                  currentSetIndex,
+                                  'weight',
+                                  currentSet.weight + (weightUnit === 'kg' ? 2.5 : 5)
+                                )
+                              }
                               whileHover={{ scale: 1.15, rotate: 5 }}
                               whileTap={{ scale: 0.85 }}
-                              transition={{ duration: 0.15, ease: "easeOut" }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
                               className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-900/60 to-cyan-950/60 hover:from-cyan-800/80 hover:to-cyan-900/80 border-2 border-cyan-400/40 hover:border-cyan-300/60 flex items-center justify-center transition-colors shadow-lg shadow-cyan-500/20 hover:shadow-xl hover:shadow-cyan-500/40"
                             >
                               <Plus className="w-5 h-5 text-cyan-300" />
@@ -1241,14 +1355,19 @@ export default function WorkoutExecution() {
                           >
                             {currentSetIndex > 0 ? (
                               <div className="text-xs text-cyan-400/60 font-light">
-                                Previous: {weightUnit === 'kg' ? lbsToKg(currentExercise.sets[currentSetIndex - 1].weight) : currentExercise.sets[currentSetIndex - 1].weight}{weightUnit}
+                                Previous:{' '}
+                                {weightUnit === 'kg'
+                                  ? lbsToKg(currentExercise.sets[currentSetIndex - 1].weight)
+                                  : currentExercise.sets[currentSetIndex - 1].weight}
+                                {weightUnit}
                               </div>
                             ) : (
-                              <div className="text-xs text-cyan-400/40 font-light">First set - go strong!</div>
+                              <div className="text-xs text-cyan-400/40 font-light">
+                                First set - go strong!
+                              </div>
                             )}
                           </motion.div>
                         </div>
-
                       </div>
                     </div>
                   </div>
@@ -1269,12 +1388,12 @@ export default function WorkoutExecution() {
                   <div className="relative p-[3px] rounded-[1.5rem] bg-gradient-to-br from-teal-400/60 via-teal-400/40 to-teal-400/60">
                     <div className="p-[2px] rounded-[1.5rem] bg-gradient-to-br from-[#0A0A0A] via-[#0F0F0F] to-[#0A0A0A]">
                       <div className="h-full p-6 lg:p-8 rounded-[1.5rem] bg-gradient-to-br from-teal-950/30 via-[#0F0F0F]/90 to-teal-950/20 backdrop-blur-2xl border border-teal-500/20 relative overflow-hidden">
-
                         {/* Optimized Shimmer - CSS only */}
                         <div
                           className="absolute inset-0 opacity-20 pointer-events-none"
                           style={{
-                            background: 'linear-gradient(120deg, transparent 30%, rgba(20, 184, 166, 0.15) 50%, transparent 70%)',
+                            background:
+                              'linear-gradient(120deg, transparent 30%, rgba(20, 184, 166, 0.15) 50%, transparent 70%)',
                             backgroundSize: '200% 100%',
                             animation: 'card-shimmer-teal 8s linear infinite',
                             willChange: 'background-position',
@@ -1326,10 +1445,17 @@ export default function WorkoutExecution() {
 
                           <div className="flex items-center gap-3 flex-1">
                             <motion.button
-                              onClick={() => updateSet(currentExerciseIndex, currentSetIndex, 'reps', Math.max(0, currentSet.reps - 1))}
+                              onClick={() =>
+                                updateSet(
+                                  currentExerciseIndex,
+                                  currentSetIndex,
+                                  'reps',
+                                  Math.max(0, currentSet.reps - 1)
+                                )
+                              }
                               whileHover={{ scale: 1.15, rotate: -5 }}
                               whileTap={{ scale: 0.85 }}
-                              transition={{ duration: 0.15, ease: "easeOut" }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
                               className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-teal-900/60 to-teal-950/60 hover:from-teal-800/80 hover:to-teal-900/80 border-2 border-teal-400/40 hover:border-teal-300/60 flex items-center justify-center transition-colors shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/40"
                             >
                               <Minus className="w-5 h-5 text-teal-300" />
@@ -1339,7 +1465,14 @@ export default function WorkoutExecution() {
                               <motion.input
                                 type="number"
                                 value={currentSet.reps || ''}
-                                onChange={(e) => updateSet(currentExerciseIndex, currentSetIndex, 'reps', Number(e.target.value))}
+                                onChange={(e) =>
+                                  updateSet(
+                                    currentExerciseIndex,
+                                    currentSetIndex,
+                                    'reps',
+                                    Number(e.target.value)
+                                  )
+                                }
                                 whileFocus={{ scale: 1.05 }}
                                 className="w-full h-20 text-center text-5xl lg:text-6xl font-extralight bg-transparent border-b-4 border-teal-400/40 focus:border-teal-300 hover:border-teal-400/60 outline-none tabular-nums text-white transition-all"
                                 placeholder="0"
@@ -1353,10 +1486,17 @@ export default function WorkoutExecution() {
                             </div>
 
                             <motion.button
-                              onClick={() => updateSet(currentExerciseIndex, currentSetIndex, 'reps', currentSet.reps + 1)}
+                              onClick={() =>
+                                updateSet(
+                                  currentExerciseIndex,
+                                  currentSetIndex,
+                                  'reps',
+                                  currentSet.reps + 1
+                                )
+                              }
                               whileHover={{ scale: 1.15, rotate: 5 }}
                               whileTap={{ scale: 0.85 }}
-                              transition={{ duration: 0.15, ease: "easeOut" }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
                               className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-teal-900/60 to-teal-950/60 hover:from-teal-800/80 hover:to-teal-900/80 border-2 border-teal-400/40 hover:border-teal-300/60 flex items-center justify-center transition-colors shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/40"
                             >
                               <Plus className="w-5 h-5 text-teal-300" />
@@ -1373,7 +1513,6 @@ export default function WorkoutExecution() {
                             Target: {currentExercise.targetReps} reps
                           </motion.div>
                         </div>
-
                       </div>
                     </div>
                   </div>
@@ -1402,9 +1541,13 @@ export default function WorkoutExecution() {
                   <div className="relative">
                     <div className="flex items-center gap-2 mb-2">
                       <Timer className="w-4 h-4 text-cyan-400" />
-                      <span className="text-xs font-light text-muted-foreground uppercase tracking-wider">Rest</span>
+                      <span className="text-xs font-light text-muted-foreground uppercase tracking-wider">
+                        Rest
+                      </span>
                     </div>
-                    <div className="text-2xl font-extralight tabular-nums text-cyan-300">60<span className="text-sm text-muted-foreground">s</span></div>
+                    <div className="text-2xl font-extralight tabular-nums text-cyan-300">
+                      60<span className="text-sm text-muted-foreground">s</span>
+                    </div>
                   </div>
                 </motion.div>
 
@@ -1428,9 +1571,14 @@ export default function WorkoutExecution() {
                   <div className="relative">
                     <div className="flex items-center gap-2 mb-2">
                       <Target className="w-4 h-4 text-teal-400" />
-                      <span className="text-xs font-light text-muted-foreground uppercase tracking-wider">Progress</span>
+                      <span className="text-xs font-light text-muted-foreground uppercase tracking-wider">
+                        Progress
+                      </span>
                     </div>
-                    <div className="text-2xl font-extralight tabular-nums text-teal-300">{completedSets}<span className="text-sm text-muted-foreground">/{totalSets}</span></div>
+                    <div className="text-2xl font-extralight tabular-nums text-teal-300">
+                      {completedSets}
+                      <span className="text-sm text-muted-foreground">/{totalSets}</span>
+                    </div>
                   </div>
                 </motion.div>
 
@@ -1454,10 +1602,13 @@ export default function WorkoutExecution() {
                   <div className="relative">
                     <div className="flex items-center gap-2 mb-2">
                       <TrendingUp className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs font-light text-muted-foreground uppercase tracking-wider">Volume</span>
+                      <span className="text-xs font-light text-muted-foreground uppercase tracking-wider">
+                        Volume
+                      </span>
                     </div>
                     <div className="text-2xl font-extralight tabular-nums text-emerald-300">
-                      {((currentSet.weight || 0) * (currentSet.reps || 0)).toLocaleString()}<span className="text-sm text-muted-foreground">{weightUnit}</span>
+                      {((currentSet.weight || 0) * (currentSet.reps || 0)).toLocaleString()}
+                      <span className="text-sm text-muted-foreground">{weightUnit}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -1482,13 +1633,17 @@ export default function WorkoutExecution() {
                   <div className="relative">
                     <div className="flex items-center gap-2 mb-2">
                       <Trophy className="w-4 h-4 text-amber-400" />
-                      <span className="text-xs font-light text-muted-foreground uppercase tracking-wider">Est. 1RM</span>
+                      <span className="text-xs font-light text-muted-foreground uppercase tracking-wider">
+                        Est. 1RM
+                      </span>
                     </div>
                     <div className="text-2xl font-extralight tabular-nums text-amber-300">
                       {currentSet.reps && currentSet.reps > 0 && currentSet.weight > 0
-                        ? Math.round((currentSet.weight * (1 + currentSet.reps / 30))).toLocaleString()
-                        : '0'
-                      }<span className="text-sm text-muted-foreground">{weightUnit}</span>
+                        ? Math.round(
+                            currentSet.weight * (1 + currentSet.reps / 30)
+                          ).toLocaleString()
+                        : '0'}
+                      <span className="text-sm text-muted-foreground">{weightUnit}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -1514,14 +1669,18 @@ export default function WorkoutExecution() {
                 transition={{
                   duration: 3,
                   repeat: prefersReducedMotion ? 0 : Infinity,
-                  ease: "linear",
+                  ease: 'linear',
                 }}
               >
                 {/* Shimmer effect */}
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
                   animate={{ x: ['-100%', '200%'] }}
-                  transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear" }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: prefersReducedMotion ? 0 : Infinity,
+                    ease: 'linear',
+                  }}
                 />
                 <Check className="w-5 h-5 relative" />
                 <span className="relative">Complete Set</span>
@@ -1542,17 +1701,92 @@ export default function WorkoutExecution() {
                 transition={{
                   duration: 2,
                   repeat: prefersReducedMotion ? 0 : Infinity,
-                  ease: "easeInOut",
+                  ease: 'easeInOut',
                 }}
               >
                 <Trophy className="w-32 h-32 mx-auto mb-8 text-yellow-500" />
               </motion.div>
-              <h3 className="text-4xl font-extralight text-cyan-300 mb-4" style={{ letterSpacing: '0.05em' }}>Exercise Complete</h3>
-              <p className="text-lg text-muted-foreground font-light">All sets finished for this exercise</p>
+              <h3
+                className="text-4xl font-extralight text-cyan-300 mb-4"
+                style={{ letterSpacing: '0.05em' }}
+              >
+                Exercise Complete
+              </h3>
+              <p className="text-lg text-muted-foreground font-light">
+                All sets finished for this exercise
+              </p>
             </motion.div>
           )}
         </motion.div>
       </div>
+
+      {/* Resume/Discard Dialog */}
+      <Dialog open={showResumeDialog} onOpenChange={setShowResumeDialog}>
+        <DialogContent className="glass-strong border-border/50">
+          <DialogHeader>
+            <DialogTitle>Resume Previous Workout?</DialogTitle>
+            <DialogDescription>
+              You have an unfinished workout session. Would you like to continue where you left off
+              or start fresh?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                sessionStorage.removeItem(storageKey);
+                setSavedSessionData(null);
+                setShowResumeDialog(false);
+              }}
+            >
+              Start Fresh
+            </Button>
+            <Button
+              onClick={() => {
+                if (savedSessionData) {
+                  setSession(savedSessionData.session);
+                  setCurrentExerciseIndex(savedSessionData.currentExerciseIndex);
+                }
+                setShowResumeDialog(false);
+              }}
+            >
+              Resume Workout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Navigation Confirmation Dialog */}
+      <Dialog
+        open={!!pendingNavigation}
+        onOpenChange={(open) => !open && setPendingNavigation(null)}
+      >
+        <DialogContent className="glass-strong border-border/50">
+          <DialogHeader>
+            <DialogTitle>Leave Workout?</DialogTitle>
+            <DialogDescription>
+              You have an active workout in progress. Your progress is automatically saved, but are
+              you sure you want to leave?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPendingNavigation(null)}>
+              Stay Here
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (pendingNavigation) {
+                  setLocationOriginal(pendingNavigation);
+                  setPendingNavigation(null);
+                }
+              }}
+            >
+              Leave Workout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
