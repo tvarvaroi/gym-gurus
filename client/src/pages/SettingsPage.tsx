@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
@@ -32,6 +32,7 @@ import {
   Dumbbell,
   Loader2,
   Camera,
+  Scale,
 } from 'lucide-react';
 import { useRef } from 'react';
 // Inline subscription helpers (mirrors server/services/subscription.ts logic)
@@ -74,6 +75,252 @@ const DEFAULT_PREFS = {
   inAppAchievements: true,
   inAppSystemUpdates: true,
 };
+
+// ─────────────────────────────────────────────
+// Body Stats Card
+// ─────────────────────────────────────────────
+function BodyStatsCard() {
+  const { toast } = useToast();
+  const [unit, setUnit] = useState<'metric' | 'imperial'>('metric');
+  const [weight, setWeight] = useState('');
+  const [heightCm, setHeightCm] = useState('');
+  const [heightFt, setHeightFt] = useState('');
+  const [heightIn, setHeightIn] = useState('');
+  const [bodyFat, setBodyFat] = useState('');
+  const [initialized, setInitialized] = useState(false);
+
+  const { data: profile } = useQuery<{
+    weightKg?: string | null;
+    heightCm?: string | null;
+    bodyFatPercentage?: string | null;
+  }>({
+    queryKey: ['/api/users/fitness-profile'],
+    staleTime: 60_000,
+  });
+
+  // Populate inputs from fetched profile (runs once)
+  useEffect(() => {
+    if (!profile || initialized) return;
+    if (profile.weightKg) {
+      const kg = parseFloat(profile.weightKg);
+      setWeight(String(Math.round(kg * 10) / 10));
+    }
+    if (profile.heightCm) {
+      setHeightCm(String(Math.round(parseFloat(profile.heightCm))));
+    }
+    if (profile.bodyFatPercentage) {
+      setBodyFat(String(Math.round(parseFloat(profile.bodyFatPercentage) * 10) / 10));
+    }
+    setInitialized(true);
+  }, [profile, initialized]);
+
+  function switchUnit(newUnit: 'metric' | 'imperial') {
+    if (newUnit === unit) return;
+
+    // Convert weight
+    const w = parseFloat(weight);
+    if (Number.isFinite(w)) {
+      setWeight(
+        newUnit === 'imperial'
+          ? String(Math.round(w * 2.2046 * 10) / 10) // kg → lbs
+          : String(Math.round((w / 2.2046) * 10) / 10) // lbs → kg
+      );
+    }
+
+    // Convert height
+    if (newUnit === 'imperial') {
+      const cm = parseFloat(heightCm);
+      if (Number.isFinite(cm) && cm > 0) {
+        const totalIn = cm / 2.54;
+        setHeightFt(String(Math.floor(totalIn / 12)));
+        setHeightIn(String(Math.round(totalIn % 12)));
+      }
+      setHeightCm('');
+    } else {
+      const ft = parseFloat(heightFt) || 0;
+      const inches = parseFloat(heightIn) || 0;
+      const cm = (ft * 12 + inches) * 2.54;
+      if (cm > 0) setHeightCm(String(Math.round(cm)));
+      setHeightFt('');
+      setHeightIn('');
+    }
+
+    setUnit(newUnit);
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      // Convert all values to metric before sending
+      let weightKg: number | null = null;
+      let heightCmVal: number | null = null;
+
+      const w = parseFloat(weight);
+      if (Number.isFinite(w)) {
+        weightKg = unit === 'metric' ? w : Math.round((w / 2.2046) * 10) / 10;
+      }
+
+      if (unit === 'metric') {
+        const cm = parseFloat(heightCm);
+        if (Number.isFinite(cm)) heightCmVal = cm;
+      } else {
+        const ft = parseFloat(heightFt) || 0;
+        const inches = parseFloat(heightIn) || 0;
+        const cm = (ft * 12 + inches) * 2.54;
+        if (cm > 0) heightCmVal = Math.round(cm * 10) / 10;
+      }
+
+      const bodyFatVal = bodyFat ? parseFloat(bodyFat) : null;
+
+      const res = await fetch('/api/users/fitness-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          weightKg: weightKg != null && Number.isFinite(weightKg) ? weightKg : null,
+          heightCm: heightCmVal != null && Number.isFinite(heightCmVal) ? heightCmVal : null,
+          bodyFatPercentage: bodyFatVal != null && Number.isFinite(bodyFatVal) ? bodyFatVal : null,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error ?? 'Failed to save body stats');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Body stats saved', description: 'Your physical stats have been updated.' });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Save failed', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Scale className="h-5 w-5" />
+          Body Stats
+        </CardTitle>
+        <CardDescription>
+          Your physical measurements help the AI coach give personalised advice.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {/* Unit toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => switchUnit('metric')}
+            className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+              unit === 'metric'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-transparent text-muted-foreground border-border hover:border-primary/50'
+            }`}
+          >
+            Metric (kg, cm)
+          </button>
+          <button
+            type="button"
+            onClick={() => switchUnit('imperial')}
+            className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+              unit === 'imperial'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-transparent text-muted-foreground border-border hover:border-primary/50'
+            }`}
+          >
+            Imperial (lbs, ft/in)
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Weight */}
+          <div className="space-y-2">
+            <Label htmlFor="bodyWeight">Weight ({unit === 'metric' ? 'kg' : 'lbs'})</Label>
+            <Input
+              id="bodyWeight"
+              type="number"
+              min="20"
+              max={unit === 'metric' ? '300' : '660'}
+              step="0.1"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder={unit === 'metric' ? 'e.g. 75' : 'e.g. 165'}
+            />
+          </div>
+
+          {/* Height — metric */}
+          {unit === 'metric' ? (
+            <div className="space-y-2">
+              <Label htmlFor="heightCm">Height (cm)</Label>
+              <Input
+                id="heightCm"
+                type="number"
+                min="100"
+                max="250"
+                step="1"
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value)}
+                placeholder="e.g. 175"
+              />
+            </div>
+          ) : (
+            /* Height — imperial */
+            <div className="space-y-2">
+              <Label>Height (ft / in)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="3"
+                  max="8"
+                  step="1"
+                  value={heightFt}
+                  onChange={(e) => setHeightFt(e.target.value)}
+                  placeholder="5"
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">ft</span>
+                <Input
+                  type="number"
+                  min="0"
+                  max="11"
+                  step="1"
+                  value={heightIn}
+                  onChange={(e) => setHeightIn(e.target.value)}
+                  placeholder="9"
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">in</span>
+              </div>
+            </div>
+          )}
+
+          {/* Body fat % */}
+          <div className="space-y-2">
+            <Label htmlFor="bodyFat">
+              Body Fat %{' '}
+              <span className="text-muted-foreground font-normal text-xs">(optional)</span>
+            </Label>
+            <Input
+              id="bodyFat"
+              type="number"
+              min="3"
+              max="60"
+              step="0.1"
+              value={bodyFat}
+              onChange={(e) => setBodyFat(e.target.value)}
+              placeholder="e.g. 18"
+            />
+          </div>
+        </div>
+
+        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+          {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Body Stats
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
 
 // ─────────────────────────────────────────────
 // Profile Tab
@@ -154,6 +401,7 @@ function ProfileTab() {
 
   return (
     <div className="space-y-6">
+      <BodyStatsCard />
       <Card>
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>

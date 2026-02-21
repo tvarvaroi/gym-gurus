@@ -238,6 +238,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // GET /api/users/fitness-profile - Fetch current user's fitness profile
+  app.get(
+    '/api/users/fitness-profile',
+    secureAuth,
+    apiRateLimit,
+    async (req: Request, res: Response) => {
+      try {
+        const userId = (req.user as any).id as string;
+        const database = await getDb();
+        const [profile] = await database
+          .select()
+          .from(userFitnessProfile)
+          .where(eq(userFitnessProfile.userId, userId))
+          .limit(1);
+        res.json(profile ?? {});
+      } catch (error) {
+        console.error('Error fetching fitness profile:', error);
+        res.status(500).json({ error: 'Failed to fetch fitness profile' });
+      }
+    }
+  );
+
+  // PATCH /api/users/fitness-profile - Update physical stats (weight, height, body fat)
+  app.patch(
+    '/api/users/fitness-profile',
+    secureAuth,
+    writeRateLimit,
+    async (req: Request, res: Response) => {
+      try {
+        const userId = (req.user as any).id as string;
+        const { weightKg, heightCm, bodyFatPercentage } = req.body;
+        const database = await getDb();
+
+        const updates: Record<string, unknown> = { updatedAt: new Date() };
+        if (weightKg != null && Number.isFinite(Number(weightKg)))
+          updates.weightKg = String(weightKg);
+        if (heightCm != null && Number.isFinite(Number(heightCm)))
+          updates.heightCm = String(heightCm);
+        if (bodyFatPercentage != null && Number.isFinite(Number(bodyFatPercentage)))
+          updates.bodyFatPercentage = String(bodyFatPercentage);
+        else if (bodyFatPercentage === null) updates.bodyFatPercentage = null;
+
+        const existing = await database
+          .select()
+          .from(userFitnessProfile)
+          .where(eq(userFitnessProfile.userId, userId))
+          .limit(1);
+
+        if (existing.length > 0) {
+          await database
+            .update(userFitnessProfile)
+            .set(updates as any)
+            .where(eq(userFitnessProfile.userId, userId));
+        } else {
+          await database.insert(userFitnessProfile).values({ userId, ...(updates as any) });
+        }
+
+        const [updated] = await database
+          .select()
+          .from(userFitnessProfile)
+          .where(eq(userFitnessProfile.userId, userId))
+          .limit(1);
+        res.json(updated ?? {});
+      } catch (error) {
+        console.error('Error updating fitness profile:', error);
+        res.status(500).json({ error: 'Failed to update fitness profile' });
+      }
+    }
+  );
+
   // Onboarding Progress Routes
 
   // GET /api/onboarding/progress - Get user's onboarding progress
