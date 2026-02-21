@@ -27,6 +27,9 @@ COPY . .
 # Build client (Vite) and server (esbuild)
 RUN npm run build
 
+# Ensure migrations dir exists (project uses drizzle push, may have no files)
+RUN mkdir -p migrations
+
 # ---------------------------------------------------------------------------
 # Stage 2: Production
 # ---------------------------------------------------------------------------
