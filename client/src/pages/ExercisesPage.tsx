@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useEffect, memo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,15 @@ import {
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search, Play, BookmarkPlus, Dumbbell, Target, ChevronRight } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  BookmarkPlus,
+  Dumbbell,
+  Target,
+  ChevronRight,
+  ChevronLeft,
+} from 'lucide-react';
 import ExerciseDetailModal from '@/components/exercises/ExerciseDetailModal';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
@@ -56,6 +64,8 @@ const exerciseFormSchema = z.object({
 
 type ExerciseFormData = z.infer<typeof exerciseFormSchema>;
 
+const PAGE_SIZE = 24;
+
 interface Exercise {
   id: string;
   name: string;
@@ -66,7 +76,8 @@ interface Exercise {
   equipment: string[];
   instructions: string[];
   youtubeUrl?: string;
-  imageUrl?: string;
+  thumbnailUrl?: string | null;
+  imageUrl?: string | null;
 }
 
 const ExercisesPage = memo(() => {
@@ -76,6 +87,7 @@ const ExercisesPage = memo(() => {
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const prefersReducedMotion = useReducedMotion();
 
@@ -90,17 +102,9 @@ const ExercisesPage = memo(() => {
       const response = await fetch('/api/exercises');
       if (!response.ok) throw new Error('Failed to fetch exercises');
       const data = await response.json();
-
-      // Add image URLs to exercises based on their names
-      const exerciseImages: Record<string, string> = {
-        Squat: '/attached_assets/generated_images/Exercise_demonstration_squat_7251d7fb.png',
-        'Push-up': '/attached_assets/generated_images/Exercise_demonstration_pushup_b45f3658.png',
-        Deadlift: '/attached_assets/generated_images/Exercise_demonstration_deadlift_3c7319dc.png',
-      };
-
       return data.map((exercise: any) => ({
         ...exercise,
-        imageUrl: exerciseImages[exercise.name] || null,
+        imageUrl: exercise.thumbnailUrl ?? null,
       }));
     },
     staleTime: 5 * 60 * 1000, // Fresh for 5 minutes
@@ -128,13 +132,25 @@ const ExercisesPage = memo(() => {
     });
   }, [exercises, searchQuery, selectedCategory, selectedDifficulty, selectedMuscleGroup]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedDifficulty, selectedMuscleGroup]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredExercises.length / PAGE_SIZE));
+  const pagedExercises = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredExercises.slice(start, start + PAGE_SIZE);
+  }, [filteredExercises, currentPage]);
+
   // Memoized categories and muscle groups
   const categories = useMemo(
-    () => Array.from(new Set(exercises.map((e) => e.category))),
+    () => Array.from(new Set(exercises.map((e) => e.category))).sort(),
     [exercises]
   );
   const muscleGroups = useMemo(
-    () => Array.from(new Set(exercises.flatMap((e) => e.muscleGroups))),
+    () => Array.from(new Set(exercises.flatMap((e) => e.muscleGroups))).sort(),
     [exercises]
   );
 
@@ -514,7 +530,10 @@ const ExercisesPage = memo(() => {
       {/* Results count */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {filteredExercises.length} of {exercises.length} exercises
+          {filteredExercises.length === exercises.length
+            ? `${exercises.length} exercises`
+            : `${filteredExercises.length} of ${exercises.length} exercises`}
+          {totalPages > 1 && ` — page ${currentPage} of ${totalPages}`}
         </p>
       </div>
 
@@ -544,7 +563,7 @@ const ExercisesPage = memo(() => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredExercises.map((exercise, index) => (
+          {pagedExercises.map((exercise, index) => (
             <StaggerItem key={exercise.id} index={index}>
               <Card
                 className="hover-elevate h-full overflow-hidden cursor-pointer"
@@ -653,6 +672,73 @@ const ExercisesPage = memo(() => {
               </Card>
             </StaggerItem>
           ))}
+        </div>
+      )}
+
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Prev
+          </Button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+              // Show first, last, current ±1, with ellipsis
+              let page: number | null = null;
+              if (totalPages <= 7) {
+                page = i + 1;
+              } else if (i === 0) {
+                page = 1;
+              } else if (i === 6) {
+                page = totalPages;
+              } else if (currentPage <= 3 || currentPage >= totalPages - 2) {
+                page = i === 1 ? 2 : i === 2 ? 3 : i === 4 ? totalPages - 2 : totalPages - 1;
+              } else {
+                page =
+                  i === 1
+                    ? null
+                    : i === 2
+                      ? currentPage - 1
+                      : i === 3
+                        ? currentPage
+                        : i === 4
+                          ? currentPage + 1
+                          : null;
+              }
+              if (page === null)
+                return (
+                  <span key={i} className="px-1 text-muted-foreground text-sm">
+                    …
+                  </span>
+                );
+              return (
+                <Button
+                  key={i}
+                  variant={page === currentPage ? 'default' : 'outline'}
+                  size="sm"
+                  className="w-8 h-8 p-0"
+                  onClick={() => setCurrentPage(page!)}
+                >
+                  {page}
+                </Button>
+              );
+            })}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
         </div>
       )}
 

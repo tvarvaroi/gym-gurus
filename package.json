@@ -14,7 +14,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "seed:exercises": "tsx --env-file=.env server/seeds/exercises.ts"
+    "seed:exercises": "tsx --env-file=.env server/seeds/exercisesSeed.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.44",
