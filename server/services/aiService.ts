@@ -4,6 +4,9 @@
 import { generateText, generateObject, streamText, tool } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
+import { db } from '../db';
+import { userFitnessProfile, workouts } from '../../shared/schema';
+import { eq, desc } from 'drizzle-orm';
 
 // ---------- Provider Setup ----------
 
@@ -21,29 +24,132 @@ function getModel(modelId = 'claude-sonnet-4-6') {
 
 // ---------- System Prompts ----------
 
-const CHAT_SYSTEM_PROMPT = `You are GymGurus AI Coach — an expert, evidence-based fitness coach built into the GymGurus personal training platform. You help users with workouts, nutrition, recovery, and general fitness questions.
+const CHAT_SYSTEM_PROMPT = `You are GymGurus AI Coach — an expert personal trainer, strength coach, and sports nutritionist built into the GymGurus platform. You combine deep exercise science with the user's real training data to give personalized, actionable advice.
 
-Guidelines:
-- Be concise and actionable. Prefer bullet points over long paragraphs.
-- Use a supportive, motivating tone. Celebrate wins, encourage consistency.
-- Cite general fitness science principles when relevant (e.g., progressive overload, SAID principle).
-- Never provide medical diagnoses or prescribe medication. If asked about injuries or medical conditions, recommend consulting a healthcare professional.
-- When unsure, say so rather than guessing.
-- Use metric and imperial units based on user preference (default: both).
-- For exercise recommendations, include sets, reps, rest periods, and form cues.
-- For nutrition advice, provide specific macro targets when possible.`;
+TRAINING SPLITS & METHODOLOGIES:
+- Push/Pull/Legs (PPL): 3-day and 6-day variations
+- Upper/Lower: 4-day frequency
+- Bro Split: classic 5-day bodypart split
+- Full Body: 3x/week for beginners and intermediates
+- Arnold Split: chest+back, shoulders+arms, legs
+- Powerlifting: Squat/Bench/Deadlift focus with accessories
+- Hybrid/Powerbuilding: strength + hypertrophy combined
 
-function buildUserContext(context?: UserContext): string {
-  if (!context) return '';
-  const parts: string[] = ['\n\nUser profile:'];
-  if (context.goals) parts.push(`- Goals: ${context.goals}`);
-  if (context.experience) parts.push(`- Experience level: ${context.experience}`);
-  if (context.equipment?.length) parts.push(`- Equipment: ${context.equipment.join(', ')}`);
-  if (context.bodyWeight) parts.push(`- Body weight: ${context.bodyWeight} kg`);
-  if (context.recentWorkouts) parts.push(`- Recent workouts: ${context.recentWorkouts}`);
-  if (context.recentPRs?.length) parts.push(`- Recent PRs: ${context.recentPRs.join(', ')}`);
-  if (context.injuries) parts.push(`- Known injuries/limitations: ${context.injuries}`);
-  return parts.join('\n');
+FAMOUS PROGRAMS & ATHLETE APPROACHES:
+- Chris Bumstead: high-volume PPL, classic physique focus, moderate weight with strict form, emphasis on incline pressing and vacuum poses
+- Sam Sulek: extremely high volume and intensity, trains to failure, unconventional exercise selection, massive caloric intake
+- Jeff Nippard: science-based training, evidence-backed exercise selection, periodized programming, great for intermediates
+- Mike Israetel / Renaissance Periodization: MEV/MAV/MRV volume landmarks, mesocycle periodization, systematic deload protocols
+- Athlean-X (Jeff Cavaliere): corrective exercise focus, injury prevention, functional training mixed with hypertrophy
+- Greg Doucette: moderate volume, progressive overload focus, "train harder than last time" philosophy
+- nSuns 5/3/1 LP: linear progression based on Wendler's 5/3/1, high volume
+- Starting Strength (Rippetoe): barbell-only, 3x5, linear progression
+- StrongLifts 5x5: beginner, A/B alternating
+- PHUL/PHAT: power-hypertrophy combinations
+- Wendler's 5/3/1: percentage-based, 4-week cycles
+- German Volume Training: 10x10 for hypertrophy
+- Dorian Yates HIT: low volume, maximum intensity, one working set to failure
+
+EXERCISE SCIENCE:
+- Hypertrophy: 10-20 sets/muscle/week, RPE 7-9, 6-30 rep range
+- Strength: 3-6 sets of 1-5 reps at 80-95% 1RM
+- Progressive overload: weight, reps, sets, or reduced rest
+- Compound first, isolation after
+- Rest: 60-90s hypertrophy, 2-5min strength
+
+NUTRITION:
+- Surplus for gain: +250-500 kcal/day
+- Deficit for loss: -300-500 kcal/day
+- Protein: 1.6-2.2g/kg bodyweight
+- Carbs: 3-7g/kg depending on activity
+- Fats: minimum 0.5g/kg for hormonal health
+- Supplements with evidence: creatine 3-5g/day, protein powder, caffeine, vitamin D, omega-3
+- Supplements that are mostly marketing: BCAAs (if protein adequate), testosterone boosters, fat burners
+
+REALISTIC TIMELINES:
+- Beginner muscle gain: 1-2 lbs/month
+- Intermediate: 0.5-1 lb/month
+- Fat loss: 0.5-1% bodyweight per week is sustainable
+
+PERSONALITY & TONE:
+- Motivating but not fake — like a knowledgeable training partner
+- Use gym vernacular: "working sets", "RPE", "progressive overload"
+- Be direct: "Do X" not "You might consider perhaps doing X"
+- When asked about influencer programs, explain accurately but note that enhanced athletes' programs may need adjusting for natural trainees
+- For exercise recommendations, include sets, reps, rest, and form cues
+
+RULES:
+- NEVER give medical advice. For injuries/pain, say "see a doctor or physio"
+- NEVER recommend PEDs or controlled substances
+- If asked about steroids, acknowledge they exist but decline usage advice
+- When uncertain, say so honestly
+- Cite reasoning: "This works because..." not just "Do this"
+- Use metric and imperial units based on user preference (default: both)`;
+
+async function buildUserContext(userId?: string, context?: UserContext): Promise<string> {
+  const parts: string[] = ['\n\nUSER PROFILE:'];
+
+  // Basic context passed from client (may be partial or missing)
+  if (context?.goals) parts.push(`Goals: ${context.goals}`);
+  if (context?.experience) parts.push(`Experience: ${context.experience}`);
+  if (context?.equipment?.length) parts.push(`Equipment: ${context.equipment.join(', ')}`);
+  if (context?.bodyWeight) parts.push(`Body weight: ${context.bodyWeight} kg`);
+  if (context?.recentWorkouts) parts.push(`Recent workouts: ${context.recentWorkouts}`);
+  if (context?.recentPRs?.length) parts.push(`Recent PRs: ${context.recentPRs.join(', ')}`);
+  if (context?.injuries) parts.push(`Limitations: ${context.injuries}`);
+
+  // Enrich with real data from the database
+  if (userId) {
+    try {
+      // Fitness profile: weight, body fat, goal, experience, equipment, injuries, macro targets
+      const [profile] = await db
+        .select()
+        .from(userFitnessProfile)
+        .where(eq(userFitnessProfile.userId, userId))
+        .limit(1);
+
+      if (profile) {
+        if (profile.weightKg && !context?.bodyWeight)
+          parts.push(`Current weight: ${profile.weightKg} kg`);
+        if (profile.bodyFatPercentage) parts.push(`Body fat: ${profile.bodyFatPercentage}%`);
+        if (profile.primaryGoal && !context?.goals)
+          parts.push(`Primary goal: ${String(profile.primaryGoal).replace(/_/g, ' ')}`);
+        if (profile.experienceLevel && !context?.experience)
+          parts.push(`Experience: ${profile.experienceLevel}`);
+        if (profile.workoutFrequencyPerWeek)
+          parts.push(`Training frequency: ${profile.workoutFrequencyPerWeek}x/week`);
+        const equip = profile.availableEquipment as string[] | null;
+        if (Array.isArray(equip) && equip.length && !context?.equipment?.length)
+          parts.push(`Equipment: ${equip.join(', ')}`);
+        const injuries = profile.injuries as Array<{ bodyPart: string }> | null;
+        if (Array.isArray(injuries) && injuries.length && !context?.injuries)
+          parts.push(`Injuries/limitations: ${injuries.map((i) => i.bodyPart).join(', ')}`);
+        if (profile.dailyCalorieTarget)
+          parts.push(`Daily calorie target: ${profile.dailyCalorieTarget} kcal`);
+        if (profile.proteinTargetGrams)
+          parts.push(`Protein target: ${profile.proteinTargetGrams}g`);
+      }
+
+      // Recent workouts created by this user (trainer or solo)
+      const recentWorkouts = await db
+        .select({ title: workouts.title, createdAt: workouts.createdAt })
+        .from(workouts)
+        .where(eq(workouts.trainerId, userId))
+        .orderBy(desc(workouts.createdAt))
+        .limit(5);
+
+      if (recentWorkouts.length > 0) {
+        parts.push(`\nRECENT WORKOUTS:`);
+        for (const w of recentWorkouts) {
+          parts.push(`- ${w.title} (${new Date(w.createdAt).toLocaleDateString()})`);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch user context for AI:', err);
+    }
+  }
+
+  return parts.length > 1 ? parts.join('\n') : '';
 }
 
 // ---------- Types ----------
@@ -380,7 +486,11 @@ const fitnessTools = {
 
 // ---------- AI Chat (streaming) ----------
 
-export async function aiChat(messages: ChatMessage[], userContext?: UserContext): Promise<string> {
+export async function aiChat(
+  messages: ChatMessage[],
+  userContext?: UserContext,
+  userId?: string
+): Promise<string> {
   const model = getModel();
   if (!model) {
     return generateFallbackChatResponse(messages[messages.length - 1]?.content || '');
@@ -389,7 +499,7 @@ export async function aiChat(messages: ChatMessage[], userContext?: UserContext)
   try {
     const result = await generateText({
       model,
-      system: CHAT_SYSTEM_PROMPT + buildUserContext(userContext),
+      system: CHAT_SYSTEM_PROMPT + (await buildUserContext(userId, userContext)),
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       tools: fitnessTools,
       maxSteps: 3,
@@ -403,13 +513,17 @@ export async function aiChat(messages: ChatMessage[], userContext?: UserContext)
 }
 
 // Streaming version for SSE endpoints
-export function aiChatStream(messages: ChatMessage[], userContext?: UserContext) {
+export async function aiChatStream(
+  messages: ChatMessage[],
+  userContext?: UserContext,
+  userId?: string
+) {
   const model = getModel();
   if (!model) return null;
 
   return streamText({
     model,
-    system: CHAT_SYSTEM_PROMPT + buildUserContext(userContext),
+    system: CHAT_SYSTEM_PROMPT + (await buildUserContext(userId, userContext)),
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
     tools: fitnessTools,
     maxSteps: 3,
@@ -501,7 +615,7 @@ export async function aiGenerateWorkout(params: {
       model,
       schema: workoutSchema,
       system:
-        "You are an expert strength and conditioning coach. Design safe, effective workout programs tailored to the user's exact specifications.",
+        "You are an expert strength and conditioning coach with deep knowledge of training methodologies including PPL, Upper/Lower, 5/3/1, Starting Strength, PHUL, GVT, and programs associated with athletes like Chris Bumstead, Jeff Nippard, Mike Israetel, and Dorian Yates. Apply appropriate volume landmarks (MEV/MAV/MRV) by experience level: beginners 10 sets/muscle/week, intermediates 12-16, advanced 16-20. Design safe, periodized programs tailored to the user's exact specifications.",
       prompt: `Generate a ${params.duration}-minute workout for a ${params.experienceLevel} lifter.
 
 Goal: ${params.goal}

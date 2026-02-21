@@ -116,7 +116,7 @@ router.post('/chat', async (req: Request, res: Response) => {
 
     messages.push({ role: 'user', content: message });
 
-    const response = await aiChat(messages, context);
+    const response = await aiChat(messages, context, user.id);
     // Estimate tokens: ~4 chars per token for input + output combined
     tokensUsed = Math.ceil(
       (messages.reduce((n, m) => n + m.content.length, 0) + response.length) / 4
@@ -211,10 +211,10 @@ router.post('/chat/stream', async (req: Request, res: Response) => {
     }
     messages.push({ role: 'user', content: message });
 
-    const stream = aiChatStream(messages, context);
+    const stream = await aiChatStream(messages, context, user.id);
     if (!stream) {
       // No API key — return non-streamed fallback
-      const fallback = await aiChat(messages, context);
+      const fallback = await aiChat(messages, context, user.id);
       tokensUsed = Math.ceil(
         (messages.reduce((n, m) => n + m.content.length, 0) + fallback.length) / 4
       );
@@ -234,9 +234,8 @@ router.post('/chat/stream', async (req: Request, res: Response) => {
     });
 
     let fullResponse = '';
-    const result = await stream;
 
-    for await (const chunk of result.textStream) {
+    for await (const chunk of stream.textStream) {
       fullResponse += chunk;
       res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
     }
