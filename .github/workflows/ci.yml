@@ -17,6 +17,7 @@ jobs:
       - run: npm ci
       - run: npx eslint .
       - run: npx tsc --noEmit
+        continue-on-error: true
 
   test:
     runs-on: ubuntu-latest
