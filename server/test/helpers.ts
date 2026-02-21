@@ -101,7 +101,10 @@ let _requestCounter = 0;
 export function createMockRequest(options: MockRequestOptions = {}): MockRequest {
   _requestCounter += 1;
 
-  const defaultUser = options.user ?? createTestUser();
+  // Use `'user' in options` so explicitly passing `user: undefined` is preserved
+  // (otherwise `?? createTestUser()` would replace it with a real user).
+  const userExplicit = Object.prototype.hasOwnProperty.call(options, 'user');
+  const defaultUser = userExplicit ? options.user : createTestUser();
 
   return {
     user: defaultUser,
@@ -110,7 +113,7 @@ export function createMockRequest(options: MockRequestOptions = {}): MockRequest
     body: options.body ?? {},
     headers: options.headers ?? { 'content-type': 'application/json' },
     session: {
-      userId: defaultUser.id,
+      userId: defaultUser?.id,
       ...options.session,
     },
     method: options.method ?? 'GET',
