@@ -56,7 +56,6 @@ import { getMessageDeliveryStatuses } from './middleware/deliveredTracking';
 import {
   getMockClients,
   getMockProgress,
-  getMockSettings,
   getMockAnalytics,
   getMockDashboardStats,
 } from './mockData';
@@ -1666,23 +1665,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   );
-
-  // Settings Routes
-
-  // GET /api/settings - Get application settings (secured)
-  app.get('/api/settings', secureAuth, apiRateLimit, async (req: Request, res: Response) => {
-    try {
-      // In a real app, you might fetch settings from database
-      // For now, we'll always return mock settings
-      const settings = getMockSettings();
-      res.json(settings);
-    } catch (error) {
-      // Return mock data even on error
-      console.warn('Returning mock settings:', error);
-      const settings = getMockSettings();
-      res.json(settings);
-    }
-  });
 
   // Analytics Routes
 

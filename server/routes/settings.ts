@@ -6,6 +6,27 @@ import { getUserById } from '../auth';
 
 const router = Router();
 
+// GET /api/settings — return real user data merged with static defaults
+router.get('/', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  res.json({
+    general: {
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      email: user.email,
+      role: user.role,
+    },
+    billing: {
+      plan: user.subscriptionTier ?? 'free',
+      status: user.subscriptionStatus ?? 'none',
+      trialEndsAt: user.trialEndsAt ?? null,
+    },
+    notifications: user.notificationPreferences ?? { email: true, push: true, sms: false },
+    appearance: { theme: 'dark', language: 'en' },
+    privacy: { profileVisibility: 'private' },
+  });
+});
+
 // GET /api/settings/stats — usage statistics for the authenticated user
 router.get('/stats', async (req: Request, res: Response) => {
   try {
