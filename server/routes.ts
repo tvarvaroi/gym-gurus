@@ -150,6 +150,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           workoutEnvironment,
           availableEquipment,
           workoutFrequencyPerWeek,
+          // New physical & health fields (all optional for backwards compatibility)
+          gender,
+          age,
+          weightKg,
+          heightCm,
+          bodyFatPercentage,
+          injuries,
+          dietaryRestrictions,
         } = req.body;
 
         if (
@@ -164,6 +172,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const database = await getDb();
 
+        // Compute dateOfBirth from age (Jan 1st of birth year — approximation)
+        const dateOfBirth =
+          age && Number.isFinite(age)
+            ? new Date(new Date().getFullYear() - Math.round(age), 0, 1)
+            : undefined;
+
+        // Convert injuries array (strings) to schema format
+        const injuriesFormatted =
+          Array.isArray(injuries) && !injuries.includes('none')
+            ? injuries.map((bodyPart: string) => ({ bodyPart, severity: 'unknown', notes: '' }))
+            : [];
+
+        // Dietary restrictions: filter out 'none' sentinel
+        const dietaryPreferences =
+          Array.isArray(dietaryRestrictions) && !dietaryRestrictions.includes('none')
+            ? dietaryRestrictions
+            : [];
+
+        // Build the profile update payload — only include defined optional fields
+        const profileFields: Record<string, unknown> = {
+          primaryGoal,
+          experienceLevel,
+          workoutEnvironment,
+          availableEquipment,
+          workoutFrequencyPerWeek,
+          updatedAt: new Date(),
+        };
+        if (gender) profileFields.gender = gender;
+        if (dateOfBirth) profileFields.dateOfBirth = dateOfBirth;
+        if (weightKg != null) profileFields.weightKg = String(weightKg);
+        if (heightCm != null) profileFields.heightCm = String(heightCm);
+        if (bodyFatPercentage != null) profileFields.bodyFatPercentage = String(bodyFatPercentage);
+        if (injuries !== undefined) profileFields.injuries = injuriesFormatted;
+        if (dietaryRestrictions !== undefined)
+          profileFields.dietaryPreferences = dietaryPreferences;
+
         // Upsert fitness profile
         const existing = await database
           .select()
@@ -174,23 +218,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existing.length > 0) {
           await database
             .update(userFitnessProfile)
-            .set({
-              primaryGoal,
-              experienceLevel,
-              workoutEnvironment,
-              availableEquipment,
-              workoutFrequencyPerWeek,
-              updatedAt: new Date(),
-            })
+            .set(profileFields as any)
             .where(eq(userFitnessProfile.userId, userId));
         } else {
           await database.insert(userFitnessProfile).values({
             userId,
-            primaryGoal,
-            experienceLevel,
-            workoutEnvironment,
-            availableEquipment,
-            workoutFrequencyPerWeek,
+            ...(profileFields as any),
           });
         }
 

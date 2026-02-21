@@ -111,7 +111,16 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
       if (profile) {
         if (profile.weightKg && !context?.bodyWeight)
           parts.push(`Current weight: ${profile.weightKg} kg`);
+        if (profile.heightCm) parts.push(`Height: ${profile.heightCm} cm`);
         if (profile.bodyFatPercentage) parts.push(`Body fat: ${profile.bodyFatPercentage}%`);
+        if (profile.gender && profile.gender !== 'prefer_not_to_say')
+          parts.push(`Gender: ${profile.gender}`);
+        if (profile.dateOfBirth) {
+          const ageYears = Math.floor(
+            (Date.now() - new Date(profile.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+          );
+          if (ageYears > 0 && ageYears < 120) parts.push(`Age: ${ageYears}`);
+        }
         if (profile.primaryGoal && !context?.goals)
           parts.push(`Primary goal: ${String(profile.primaryGoal).replace(/_/g, ' ')}`);
         if (profile.experienceLevel && !context?.experience)
@@ -122,8 +131,17 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
         if (Array.isArray(equip) && equip.length && !context?.equipment?.length)
           parts.push(`Equipment: ${equip.join(', ')}`);
         const injuries = profile.injuries as Array<{ bodyPart: string }> | null;
-        if (Array.isArray(injuries) && injuries.length && !context?.injuries)
-          parts.push(`Injuries/limitations: ${injuries.map((i) => i.bodyPart).join(', ')}`);
+        if (Array.isArray(injuries) && injuries.length && !context?.injuries) {
+          const injuryList = injuries.map((i) => i.bodyPart).join(', ');
+          parts.push(
+            `Injuries/limitations: ${injuryList} — NEVER suggest exercises that aggravate these areas`
+          );
+        }
+        const dietary = profile.dietaryPreferences as string[] | null;
+        if (Array.isArray(dietary) && dietary.length)
+          parts.push(
+            `Dietary restrictions: ${dietary.join(', ')} — ALL meal suggestions must respect these`
+          );
         if (profile.dailyCalorieTarget)
           parts.push(`Daily calorie target: ${profile.dailyCalorieTarget} kcal`);
         if (profile.proteinTargetGrams)
