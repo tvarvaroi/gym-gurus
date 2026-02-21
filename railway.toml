@@ -21,9 +21,9 @@ builder = "nixpacks"
 buildCommand = "npm run build"
 
 [deploy]
-# Sync DB schema then start the server.
 # NODE_ENV must be set to "production" in Railway environment variables.
-startCommand = "NODE_TLS_REJECT_UNAUTHORIZED=0 npm run db:push && npm run start:prod"
+# Note: db:push removed from start command — run manually if schema changes are needed.
+startCommand = "NODE_TLS_REJECT_UNAUTHORIZED=0 npm run start:prod"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
