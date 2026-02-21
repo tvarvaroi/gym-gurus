@@ -10,8 +10,5 @@ export default defineConfig({
   dialect: 'postgresql',
   dbCredentials: {
     url: process.env.DATABASE_URL,
-    // Railway Postgres requires SSL but uses a private CA.
-    // Passing ssl object directly is more reliable than URL sslmode params.
-    ssl: { rejectUnauthorized: false },
   },
 });
