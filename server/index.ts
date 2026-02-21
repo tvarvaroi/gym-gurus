@@ -5,9 +5,9 @@ import { join } from 'path';
 try {
   const envPath = join(process.cwd(), '.env');
   const envFile = readFileSync(envPath, 'utf-8');
-  const envVars = envFile.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+  const envVars = envFile.split('\n').filter((line) => line.trim() && !line.startsWith('#'));
 
-  envVars.forEach(line => {
+  envVars.forEach((line) => {
     const [key, ...valueParts] = line.split('=');
     const value = valueParts.join('=').trim();
     if (key && value && !process.env[key.trim()]) {
@@ -23,60 +23,94 @@ try {
   }
 }
 
-import express, { type Request, Response, NextFunction } from "express";
-import compression from "compression";
-import helmet from "helmet";
-import cookieParser from "cookie-parser";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { env, isDevelopment, isProduction } from "./env";
-import { initSentry } from "./sentry";
-import { csrfCookieSetter, csrfProtection } from "./middleware/csrf";
-import { sanitizeInput } from "./middleware/sanitize";
-import { globalErrorHandler } from "./middleware/errors";
-import webhookRoutes from "./routes/webhooks";
+import express, { type Request, Response, NextFunction } from 'express';
+import compression from 'compression';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import pg from 'pg';
+import { registerRoutes } from './routes';
+import { setupVite, serveStatic, log } from './vite';
+import { env, isDevelopment, isProduction } from './env';
+import { initSentry } from './sentry';
+import { csrfCookieSetter, csrfProtection } from './middleware/csrf';
+import { sanitizeInput } from './middleware/sanitize';
+import { globalErrorHandler } from './middleware/errors';
+import webhookRoutes from './routes/webhooks';
 
 // Initialize Sentry error monitoring (production only)
 initSentry();
 
 const app = express();
 
-// Security headers with Helmet
-app.use(helmet({
-  contentSecurityPolicy: isDevelopment ? false : {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
-  crossOriginEmbedderPolicy: !isDevelopment,
-  hsts: isProduction ? {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true,
-  } : false,
-}));
+// Skip middleware for WebSocket connections (Vite HMR)
+const skipForWebSocket = (middleware: any) => (req: Request, res: Response, next: NextFunction) => {
+  if (req.headers.upgrade === 'websocket') {
+    console.log('[WebSocket] Bypassing middleware for WebSocket connection');
+    return next();
+  }
+  return middleware(req, res, next);
+};
+
+// Debug: Log all requests to see WebSocket upgrades
+app.use((req, res, next) => {
+  if (req.headers.upgrade) {
+    console.log('[WebSocket] Upgrade request detected:', {
+      upgrade: req.headers.upgrade,
+      connection: req.headers.connection,
+      url: req.url,
+    });
+  }
+  next();
+});
+
+// Security headers with Helmet (skip for WebSocket connections)
+app.use(
+  skipForWebSocket(
+    helmet({
+      contentSecurityPolicy: isDevelopment
+        ? false
+        : {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: ["'self'", 'data:', 'https:'],
+              connectSrc: ["'self'"],
+              fontSrc: ["'self'"],
+              objectSrc: ["'none'"],
+              mediaSrc: ["'self'"],
+              frameSrc: ["'none'"],
+            },
+          },
+      crossOriginEmbedderPolicy: !isDevelopment,
+      hsts: isProduction
+        ? {
+            maxAge: 31536000,
+            includeSubDomains: true,
+            preload: true,
+          }
+        : false,
+    })
+  )
+);
 
 // Add compression middleware for all responses
-app.use(compression({
-  filter: (req, res) => {
-    // Don't compress responses that are already compressed
-    if (req.headers['x-no-compression']) {
-      return false;
-    }
-    // Use default filter function
-    return compression.filter(req, res);
-  },
-  level: 6, // Compression level (0-9, higher = more compression)
-  threshold: 1024, // Only compress responses larger than 1KB
-}));
+app.use(
+  compression({
+    filter: (req, res) => {
+      // Don't compress responses that are already compressed
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      // Use default filter function
+      return compression.filter(req, res);
+    },
+    level: 6, // Compression level (0-9, higher = more compression)
+    threshold: 1024, // Only compress responses larger than 1KB
+  })
+);
 
 // Stripe webhooks need raw body for signature verification — mount BEFORE express.json()
 app.use('/api/webhooks', express.raw({ type: 'application/json' }), webhookRoutes);
@@ -85,14 +119,43 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+// Session management with PostgreSQL store
+const PgSession = connectPgSimple(session);
+const sessionPool = new pg.Pool({
+  connectionString: env.DATABASE_URL || process.env.DATABASE_URL,
+});
+
+app.use(
+  skipForWebSocket(
+    session({
+      store: new PgSession({
+        pool: sessionPool,
+        tableName: 'session', // Default table name
+        createTableIfMissing: true, // Auto-create on first run
+        pruneSessionInterval: false, // Disable automatic cleanup to avoid index conflicts
+      }),
+      secret: env.SESSION_SECRET || process.env.SESSION_SECRET || 'fallback-secret-for-dev',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: isProduction, // HTTPS only in production
+        httpOnly: true, // Prevent XSS access to cookie
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        sameSite: 'lax', // CSRF protection
+      },
+      name: 'gymgurus.sid', // Custom cookie name
+    })
+  )
+);
+
 // Server-side input sanitization — strips XSS payloads from all request bodies
-app.use(sanitizeInput);
+app.use(skipForWebSocket(sanitizeInput));
 
 // CSRF protection — Double Submit Cookie pattern
 // Set CSRF cookie on every response
-app.use(csrfCookieSetter);
+app.use(skipForWebSocket(csrfCookieSetter));
 // Validate CSRF token on state-changing requests (exclude Stripe webhooks)
-app.use('/api', csrfProtection(['/api/webhooks/stripe', '/api/callback']));
+app.use('/api', skipForWebSocket(csrfProtection(['/api/webhooks/stripe', '/api/callback'])));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -105,16 +168,16 @@ app.use((req, res, next) => {
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
 
-  res.on("finish", () => {
+  res.on('finish', () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
+    if (path.startsWith('/api')) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
       if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+        logLine = logLine.slice(0, 79) + '…';
       }
 
       log(logLine);
@@ -133,8 +196,8 @@ app.use((req, res, next) => {
   // Serve static files from client/public in development too
   // This needs to be before setupVite to avoid catch-all route interference
   if (isDevelopment) {
-    const path = await import("path");
-    app.use(express.static(path.resolve(import.meta.dirname, "..", "client", "public")));
+    const path = await import('path');
+    app.use(express.static(path.resolve(import.meta.dirname, '..', 'client', 'public')));
     await setupVite(app, server);
   } else {
     serveStatic(app);
@@ -147,7 +210,7 @@ app.use((req, res, next) => {
   const port = env.PORT;
   const listenOptions: any = {
     port,
-    host: "0.0.0.0",
+    host: '0.0.0.0',
   };
 
   // reusePort is not supported on Windows

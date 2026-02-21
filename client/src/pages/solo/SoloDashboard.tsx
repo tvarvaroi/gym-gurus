@@ -318,12 +318,7 @@ function RecoveryStatusCard() {
         return {
           name: m.muscleGroup.charAt(0).toUpperCase() + m.muscleGroup.slice(1),
           recovery,
-          color:
-            recovery >= 80
-              ? 'bg-green-500'
-              : recovery >= 50
-                ? 'bg-yellow-500'
-                : 'bg-red-500',
+          color: recovery >= 80 ? 'bg-green-500' : recovery >= 50 ? 'bg-yellow-500' : 'bg-red-500',
         };
       }) || [];
 
@@ -478,11 +473,12 @@ function AICoachSuggestion() {
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
+  const rawInsight = aiInsights?.insights ?? aiInsights?.message ?? null;
   const suggestion = {
     message:
-      aiInsights?.insights ||
-      aiInsights?.message ||
-      "Keep up the great work! Consistency is key to reaching your fitness goals.",
+      typeof rawInsight === 'string'
+        ? rawInsight
+        : 'Keep up the great work! Consistency is key to reaching your fitness goals.',
     action: 'Chat with AI Coach',
     actionHref: '/solo/coach',
   };
@@ -558,11 +554,7 @@ export function SoloDashboard() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Welcome Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-2"
-      >
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-2">
         <h1 className="text-2xl font-bold">
           Welcome back{user?.firstName ? `, ${user.firstName}` : ''}! 💪
         </h1>

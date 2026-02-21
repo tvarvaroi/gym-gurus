@@ -1,19 +1,17 @@
 /**
  * RoninIcon - Ronin (Solo) role
- * Uses the detailed samurai SVG illustration from public/icons/ronin-samurai.svg
- * with CSS filters for color theming.
+ * Lone warrior with kasa hat and katana — served from /icons/ronin-samurai.svg via CSS filter coloring.
  */
+
+const WHITE_FILTER = 'brightness(0) invert(1)';
+const PURPLE_FILTER =
+  'brightness(0) saturate(100%) invert(42%) sepia(97%) saturate(2500%) hue-rotate(220deg) brightness(103%) contrast(93%)';
 
 interface RoninIconProps {
   className?: string;
   size?: number;
   variant?: 'default' | 'white';
 }
-
-// CSS filter to convert black SVG to purple (#a855f7)
-const PURPLE_FILTER =
-  'invert(40%) sepia(90%) saturate(2500%) hue-rotate(252deg) brightness(100%) contrast(96%)';
-const WHITE_FILTER = 'brightness(0) invert(1)';
 
 export function RoninIcon({ className = '', size = 28, variant = 'default' }: RoninIconProps) {
   const isWhite = variant === 'white';
@@ -29,6 +27,7 @@ export function RoninIcon({ className = '', size = 28, variant = 'default' }: Ro
         maxWidth: 'none',
         filter: isWhite ? WHITE_FILTER : PURPLE_FILTER,
         display: 'block',
+        flexShrink: 0,
       }}
       draggable={false}
     />

@@ -11,6 +11,7 @@ import {
   Heart,
   Wand2,
   CreditCard,
+  Settings,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -73,6 +74,11 @@ const trainerMenuItems = [
     url: '/payments',
     icon: CreditCard,
   },
+  {
+    title: 'Settings',
+    url: '/settings',
+    icon: Settings,
+  },
 ];
 
 // Client menu items - Focused on personal training
@@ -101,6 +107,11 @@ const clientMenuItems = [
     title: 'Schedule',
     url: '/schedule',
     icon: Calendar,
+  },
+  {
+    title: 'Settings',
+    url: '/settings',
+    icon: Settings,
   },
 ];
 
@@ -150,6 +161,11 @@ const soloMenuItems = [
     title: 'Schedule',
     url: '/schedule',
     icon: Calendar,
+  },
+  {
+    title: 'Settings',
+    url: '/settings',
+    icon: Settings,
   },
 ];
 

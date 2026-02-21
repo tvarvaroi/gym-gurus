@@ -11,7 +11,7 @@ async function throwIfResNotOk(res: Response) {
 /**
  * Read CSRF token from cookie for state-changing requests.
  */
-function getCsrfToken(): string | null {
+export function getCsrfToken(): string | null {
   const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
   return match ? decodeURIComponent(match[1]) : null;
 }
@@ -74,7 +74,9 @@ function handle401Error(error: unknown) {
       pathname === '/privacy' ||
       pathname.startsWith('/calculators') ||
       pathname === '/preview-login' ||
-      pathname === '/test-login';
+      pathname === '/test-login' ||
+      pathname === '/test-auth-login' ||
+      pathname.startsWith('/auth/');
 
     // Only redirect once and only if not on a public page
     if (!redirecting401 && !isPublicPage) {

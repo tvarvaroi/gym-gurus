@@ -124,7 +124,13 @@ const LoginCarouselPage = memo(() => {
 
   const handleSignIn = () => {
     if (selectedRole) {
-      window.location.href = `/api/login?role=${selectedRole}`;
+      window.location.href = `/auth/login?role=${selectedRole}`;
+    }
+  };
+
+  const handleRegister = () => {
+    if (selectedRole) {
+      window.location.href = `/auth/register?role=${selectedRole}`;
     }
   };
 
@@ -636,7 +642,8 @@ const LoginCarouselPage = memo(() => {
                         'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-accent)))',
                       boxShadow:
                         '0 12px 30px hsl(var(--color-disciple) / 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
-                      clipPath: 'path("M -16,-16 L 80,-16 L 80,32 A 32,32 0 0,1 0,32 L 0,-16 Z")',
+                      clipPath:
+                        "path('M -200 -200 L 264 -200 L 264 38 L 64 38 A 32 32 0 0 1 0 38 L -200 38 Z')",
                     }}
                     whileHover={{ rotate: 360, scale: 1.15 }}
                     transition={{ duration: 0.7 }}
@@ -651,7 +658,7 @@ const LoginCarouselPage = memo(() => {
                     />
                     <DiscipleIcon
                       size={110}
-                      className="relative z-10 shrink-0 mt-10"
+                      className="relative z-10 shrink-0 mt-4"
                       variant="white"
                     />
                   </motion.div>
@@ -879,89 +886,189 @@ const LoginCarouselPage = memo(() => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
+              className="space-y-4"
             >
-              <Button
-                onClick={handleSignIn}
-                disabled={!selectedRole}
-                className="w-full h-16 rounded-2xl text-lg font-semibold transition-all duration-500 relative overflow-hidden border-0"
-                style={
-                  selectedRole
-                    ? selectedRole === 'trainer'
-                      ? {
-                          background:
-                            'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
-                          boxShadow:
-                            '0 20px 40px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                          color: '#000000',
-                        }
-                      : selectedRole === 'client'
-                        ? {
-                            background:
-                              'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)), hsl(var(--color-disciple-accent)))',
-                            boxShadow:
-                              '0 20px 40px hsl(var(--color-disciple) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                            color: '#ffffff',
-                          }
-                        : {
-                            background:
-                              'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)), hsl(var(--color-ronin-accent)))',
-                            boxShadow:
-                              '0 20px 40px hsl(var(--color-ronin) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                            color: '#ffffff',
-                          }
-                    : {
-                        background:
-                          'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: 'hsl(var(--muted-foreground))',
-                      }
-                }
-              >
-                {selectedRole && (
-                  <>
-                    {/* Role-specific animated shine */}
-                    <motion.div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent)',
-                      }}
-                      animate={{ x: ['-100%', '200%'] }}
-                      transition={{
-                        duration: 2.5,
-                        repeat: prefersReducedMotion ? 0 : Infinity,
-                        ease: 'linear',
-                      }}
-                    />
-                    {/* Premium top highlight */}
-                    <div
-                      className="absolute inset-0 rounded-2xl"
-                      style={{
-                        background:
-                          'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%)',
-                      }}
-                    />
-                  </>
-                )}
-                <span
-                  className="relative z-10 flex items-center justify-center gap-3 font-light"
+              {selectedRole === 'client' ? (
+                /* Disciple: single ACCESS WITH CODE button */
+                <Button
+                  onClick={() => {
+                    window.location.href = '/disciple-login';
+                  }}
+                  className="w-full h-16 rounded-2xl text-lg font-semibold transition-all duration-500 relative overflow-hidden border-0"
                   style={{
-                    fontFamily: 'Inter, sans-serif',
-                    letterSpacing: '0.08em',
+                    background:
+                      'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)), hsl(var(--color-disciple-accent)))',
+                    boxShadow:
+                      '0 20px 40px hsl(var(--color-disciple) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    color: '#ffffff',
                   }}
                 >
-                  CONTINUE
-                  <ArrowRight className="w-5 h-5" />
-                </span>
-              </Button>
+                  <motion.div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent)',
+                    }}
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{
+                      duration: 2.5,
+                      repeat: prefersReducedMotion ? 0 : Infinity,
+                      ease: 'linear',
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 rounded-2xl"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%)',
+                    }}
+                  />
+                  <span
+                    className="relative z-10 flex items-center justify-center gap-3 font-light"
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
+                    ACCESS WITH CODE
+                    <ArrowRight className="w-5 h-5" />
+                  </span>
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleSignIn}
+                    disabled={!selectedRole}
+                    className="w-full h-16 rounded-2xl text-lg font-semibold transition-all duration-500 relative overflow-hidden border-0"
+                    style={
+                      selectedRole
+                        ? selectedRole === 'trainer'
+                          ? {
+                              background:
+                                'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
+                              boxShadow:
+                                '0 20px 40px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                              color: '#000000',
+                            }
+                          : {
+                              background:
+                                'linear-gradient(135deg, hsl(var(--color-ronin)), hsl(var(--color-ronin-secondary)), hsl(var(--color-ronin-accent)))',
+                              boxShadow:
+                                '0 20px 40px hsl(var(--color-ronin) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                              color: '#ffffff',
+                            }
+                        : {
+                            background:
+                              'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            color: 'hsl(var(--muted-foreground))',
+                          }
+                    }
+                  >
+                    {selectedRole && (
+                      <>
+                        {/* Role-specific animated shine */}
+                        <motion.div
+                          className="absolute inset-0"
+                          style={{
+                            background:
+                              'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent)',
+                          }}
+                          animate={{ x: ['-100%', '200%'] }}
+                          transition={{
+                            duration: 2.5,
+                            repeat: prefersReducedMotion ? 0 : Infinity,
+                            ease: 'linear',
+                          }}
+                        />
+                        {/* Premium top highlight */}
+                        <div
+                          className="absolute inset-0 rounded-2xl"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%)',
+                          }}
+                        />
+                      </>
+                    )}
+                    <span
+                      className="relative z-10 flex items-center justify-center gap-3 font-light"
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        letterSpacing: '0.08em',
+                      }}
+                    >
+                      SIGN IN
+                      <ArrowRight className="w-5 h-5" />
+                    </span>
+                  </Button>
+
+                  {/* Register Button - Ghost variant */}
+                  <Button
+                    onClick={handleRegister}
+                    disabled={!selectedRole}
+                    variant="ghost"
+                    className="w-full h-14 rounded-2xl text-base font-light transition-all duration-500 relative overflow-hidden"
+                    style={
+                      selectedRole
+                        ? {
+                            border:
+                              selectedRole === 'trainer'
+                                ? '1px solid hsl(var(--color-guru) / 0.3)'
+                                : '1px solid hsl(var(--color-ronin) / 0.3)',
+                            color:
+                              selectedRole === 'trainer'
+                                ? 'hsl(var(--color-guru))'
+                                : selectedRole === 'client'
+                                  ? 'hsl(var(--color-disciple))'
+                                  : 'hsl(var(--color-ronin))',
+                          }
+                        : {
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            color: 'hsl(var(--muted-foreground))',
+                          }
+                    }
+                  >
+                    <span
+                      className="relative z-10 flex items-center justify-center gap-3 font-light"
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        letterSpacing: '0.08em',
+                      }}
+                    >
+                      CREATE ACCOUNT
+                    </span>
+                  </Button>
+                </>
+              )}
             </motion.div>
+
+            {/* Disciple access code link - only shown when a non-disciple role is selected or none */}
+            {selectedRole !== 'client' && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.1 }}
+                className="text-center text-xs mt-4"
+                style={{ color: 'hsl(0 0% 40%)', fontFamily: 'Inter, sans-serif' }}
+              >
+                Are you a client?{' '}
+                <a
+                  href="/disciple-login"
+                  className="font-medium hover:underline transition-colors"
+                  style={{ color: 'hsl(var(--color-disciple))' }}
+                >
+                  Access with your code →
+                </a>
+              </motion.p>
+            )}
 
             {/* Footer */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.2 }}
-              className="text-center text-xs mt-8 flex items-center justify-center gap-2"
+              className="text-center text-xs mt-4 flex items-center justify-center gap-2"
               style={{ color: 'hsl(var(--muted-foreground))' }}
             >
               <Shield className="w-3.5 h-3.5" />

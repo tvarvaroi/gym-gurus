@@ -1,36 +1,57 @@
-import { useState, useMemo, useCallback, memo } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, Play, BookmarkPlus, Dumbbell, Target, Clock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { TruncatedText } from "@/components/TruncatedText";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Skeleton } from "@/components/ui/skeleton";
-import LazyImage from "@/components/LazyImage";
+import { useState, useMemo, useCallback, memo } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Search, Play, BookmarkPlus, Dumbbell, Target, ChevronRight } from 'lucide-react';
+import ExerciseDetailModal from '@/components/exercises/ExerciseDetailModal';
+import { useToast } from '@/hooks/use-toast';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { TruncatedText } from '@/components/TruncatedText';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Skeleton } from '@/components/ui/skeleton';
+import LazyImage from '@/components/LazyImage';
 
 // Exercise form schema
 const exerciseFormSchema = z.object({
-  name: z.string().min(1, "Exercise name is required"),
-  description: z.string().min(1, "Description is required"),
-  category: z.string().min(1, "Category is required"),
-  difficulty: z.enum(["beginner", "intermediate", "advanced"]),
-  muscleGroups: z.string().min(1, "At least one muscle group is required"),
+  name: z.string().min(1, 'Exercise name is required'),
+  description: z.string().min(1, 'Description is required'),
+  category: z.string().min(1, 'Category is required'),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
+  muscleGroups: z.string().min(1, 'At least one muscle group is required'),
   equipment: z.string().optional(),
-  instructions: z.string().min(1, "Instructions are required"),
-  youtubeUrl: z.string().url().optional().or(z.literal("")),
+  instructions: z.string().min(1, 'Instructions are required'),
+  youtubeUrl: z.string().url().optional().or(z.literal('')),
 });
 
 type ExerciseFormData = z.infer<typeof exerciseFormSchema>;
@@ -40,7 +61,7 @@ interface Exercise {
   name: string;
   description: string;
   category: string;
-  difficulty: "beginner" | "intermediate" | "advanced";
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
   muscleGroups: string[];
   equipment: string[];
   instructions: string[];
@@ -49,32 +70,37 @@ interface Exercise {
 }
 
 const ExercisesPage = memo(() => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedDifficulty, setSelectedDifficulty] = useState("all");
-  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState("all");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const { toast } = useToast();
   const prefersReducedMotion = useReducedMotion();
 
   // Fetch exercises
-  const { data: exercises = [], isLoading, error } = useQuery<Exercise[]>({
+  const {
+    data: exercises = [],
+    isLoading,
+    error,
+  } = useQuery<Exercise[]>({
     queryKey: ['/api/exercises'],
     queryFn: async () => {
       const response = await fetch('/api/exercises');
       if (!response.ok) throw new Error('Failed to fetch exercises');
       const data = await response.json();
-      
+
       // Add image URLs to exercises based on their names
       const exerciseImages: Record<string, string> = {
-        'Squat': '/attached_assets/generated_images/Exercise_demonstration_squat_7251d7fb.png',
+        Squat: '/attached_assets/generated_images/Exercise_demonstration_squat_7251d7fb.png',
         'Push-up': '/attached_assets/generated_images/Exercise_demonstration_pushup_b45f3658.png',
-        'Deadlift': '/attached_assets/generated_images/Exercise_demonstration_deadlift_3c7319dc.png',
+        Deadlift: '/attached_assets/generated_images/Exercise_demonstration_deadlift_3c7319dc.png',
       };
-      
+
       return data.map((exercise: any) => ({
         ...exercise,
-        imageUrl: exerciseImages[exercise.name] || null
+        imageUrl: exerciseImages[exercise.name] || null,
       }));
     },
     staleTime: 5 * 60 * 1000, // Fresh for 5 minutes
@@ -84,39 +110,46 @@ const ExercisesPage = memo(() => {
   // Memoized filter function
   const filteredExercises = useMemo(() => {
     if (!exercises) return [];
-    
+
     const query = searchQuery.toLowerCase();
     return exercises.filter((exercise) => {
-      const matchesSearch = !query || 
-                           exercise.name.toLowerCase().includes(query) ||
-                           exercise.description.toLowerCase().includes(query);
-      const matchesCategory = selectedCategory === "all" || exercise.category === selectedCategory;
-      const matchesDifficulty = selectedDifficulty === "all" || exercise.difficulty === selectedDifficulty;
-      const matchesMuscleGroup = selectedMuscleGroup === "all" || 
-                                 exercise.muscleGroups.some(mg => mg.toLowerCase() === selectedMuscleGroup.toLowerCase());
-      
+      const matchesSearch =
+        !query ||
+        exercise.name.toLowerCase().includes(query) ||
+        exercise.description.toLowerCase().includes(query);
+      const matchesCategory = selectedCategory === 'all' || exercise.category === selectedCategory;
+      const matchesDifficulty =
+        selectedDifficulty === 'all' || exercise.difficulty === selectedDifficulty;
+      const matchesMuscleGroup =
+        selectedMuscleGroup === 'all' ||
+        exercise.muscleGroups.some((mg) => mg.toLowerCase() === selectedMuscleGroup.toLowerCase());
+
       return matchesSearch && matchesCategory && matchesDifficulty && matchesMuscleGroup;
     });
   }, [exercises, searchQuery, selectedCategory, selectedDifficulty, selectedMuscleGroup]);
 
   // Memoized categories and muscle groups
-  const categories = useMemo(() => 
-    Array.from(new Set(exercises.map(e => e.category))), [exercises]);
-  const muscleGroups = useMemo(() => 
-    Array.from(new Set(exercises.flatMap(e => e.muscleGroups))), [exercises]);
+  const categories = useMemo(
+    () => Array.from(new Set(exercises.map((e) => e.category))),
+    [exercises]
+  );
+  const muscleGroups = useMemo(
+    () => Array.from(new Set(exercises.flatMap((e) => e.muscleGroups))),
+    [exercises]
+  );
 
   const form = useForm<ExerciseFormData>({
-    mode: "onTouched",
+    mode: 'onTouched',
     resolver: zodResolver(exerciseFormSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      category: "",
-      difficulty: "beginner",
-      muscleGroups: "",
-      equipment: "",
-      instructions: "",
-      youtubeUrl: "",
+      name: '',
+      description: '',
+      category: '',
+      difficulty: 'beginner',
+      muscleGroups: '',
+      equipment: '',
+      instructions: '',
+      youtubeUrl: '',
     },
   });
 
@@ -125,9 +158,12 @@ const ExercisesPage = memo(() => {
     mutationFn: async (data: ExerciseFormData) => {
       const formattedData = {
         ...data,
-        muscleGroups: data.muscleGroups.split(',').map(mg => mg.trim()),
-        equipment: data.equipment ? data.equipment.split(',').map(eq => eq.trim()) : [],
-        instructions: data.instructions.split('\n').map(inst => inst.trim()).filter(inst => inst),
+        muscleGroups: data.muscleGroups.split(',').map((mg) => mg.trim()),
+        equipment: data.equipment ? data.equipment.split(',').map((eq) => eq.trim()) : [],
+        instructions: data.instructions
+          .split('\n')
+          .map((inst) => inst.trim())
+          .filter((inst) => inst),
       };
       return apiRequest('POST', '/api/exercises', formattedData);
     },
@@ -136,15 +172,15 @@ const ExercisesPage = memo(() => {
       setShowAddModal(false);
       form.reset();
       toast({
-        title: "Success",
-        description: "Exercise added successfully",
+        title: 'Success',
+        description: 'Exercise added successfully',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to add exercise",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to add exercise',
+        variant: 'destructive',
       });
     },
   });
@@ -165,7 +201,7 @@ const ExercisesPage = memo(() => {
         transition={{
           delay: index * 0.05,
           duration: 0.3,
-          ease: "easeOut"
+          ease: 'easeOut',
         }}
       >
         {children}
@@ -219,7 +255,10 @@ const ExercisesPage = memo(() => {
         </div>
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto" data-testid="button-add-exercise">
+            <Button
+              className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
+              data-testid="button-add-exercise"
+            >
               <Plus className="mr-2 h-4 w-4" />
               <span className="text-sm">Add Exercise</span>
             </Button>
@@ -227,9 +266,7 @@ const ExercisesPage = memo(() => {
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Exercise</DialogTitle>
-              <DialogDescription>
-                Add a new exercise to your library
-              </DialogDescription>
+              <DialogDescription>Add a new exercise to your library</DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -238,9 +275,15 @@ const ExercisesPage = memo(() => {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Exercise Name<span className="text-destructive ml-0.5">*</span></FormLabel>
+                      <FormLabel>
+                        Exercise Name<span className="text-destructive ml-0.5">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., Barbell Squat" {...field} data-testid="input-exercise-name" />
+                        <Input
+                          placeholder="e.g., Barbell Squat"
+                          {...field}
+                          data-testid="input-exercise-name"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -252,11 +295,13 @@ const ExercisesPage = memo(() => {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description<span className="text-destructive ml-0.5">*</span></FormLabel>
+                      <FormLabel>
+                        Description<span className="text-destructive ml-0.5">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Brief description of the exercise" 
-                          {...field} 
+                        <Textarea
+                          placeholder="Brief description of the exercise"
+                          {...field}
                           data-testid="input-exercise-description"
                         />
                       </FormControl>
@@ -271,9 +316,15 @@ const ExercisesPage = memo(() => {
                     name="category"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Category<span className="text-destructive ml-0.5">*</span></FormLabel>
+                        <FormLabel>
+                          Category<span className="text-destructive ml-0.5">*</span>
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Strength, Cardio" {...field} data-testid="input-category" />
+                          <Input
+                            placeholder="e.g., Strength, Cardio"
+                            {...field}
+                            data-testid="input-category"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -285,7 +336,9 @@ const ExercisesPage = memo(() => {
                     name="difficulty"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Difficulty<span className="text-destructive ml-0.5">*</span></FormLabel>
+                        <FormLabel>
+                          Difficulty<span className="text-destructive ml-0.5">*</span>
+                        </FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-difficulty">
@@ -309,11 +362,13 @@ const ExercisesPage = memo(() => {
                   name="muscleGroups"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Muscle Groups<span className="text-destructive ml-0.5">*</span></FormLabel>
+                      <FormLabel>
+                        Muscle Groups<span className="text-destructive ml-0.5">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="e.g., Chest, Triceps, Shoulders (comma-separated)" 
-                          {...field} 
+                        <Input
+                          placeholder="e.g., Chest, Triceps, Shoulders (comma-separated)"
+                          {...field}
                           data-testid="input-muscle-groups"
                         />
                       </FormControl>
@@ -329,9 +384,9 @@ const ExercisesPage = memo(() => {
                     <FormItem>
                       <FormLabel>Equipment (Optional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="e.g., Barbell, Dumbbells (comma-separated)" 
-                          {...field} 
+                        <Input
+                          placeholder="e.g., Barbell, Dumbbells (comma-separated)"
+                          {...field}
                           data-testid="input-equipment"
                         />
                       </FormControl>
@@ -345,11 +400,13 @@ const ExercisesPage = memo(() => {
                   name="instructions"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Instructions<span className="text-destructive ml-0.5">*</span></FormLabel>
+                      <FormLabel>
+                        Instructions<span className="text-destructive ml-0.5">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Enter step-by-step instructions (one per line)" 
-                          {...field} 
+                        <Textarea
+                          placeholder="Enter step-by-step instructions (one per line)"
+                          {...field}
                           rows={5}
                           data-testid="input-instructions"
                         />
@@ -366,9 +423,9 @@ const ExercisesPage = memo(() => {
                     <FormItem>
                       <FormLabel>YouTube URL (Optional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="https://www.youtube.com/watch?v=..." 
-                          {...field} 
+                        <Input
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          {...field}
                           data-testid="input-youtube-url"
                         />
                       </FormControl>
@@ -381,8 +438,12 @@ const ExercisesPage = memo(() => {
                   <Button type="button" variant="outline" onClick={() => setShowAddModal(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={addExerciseMutation.isPending} data-testid="button-submit-exercise">
-                    {addExerciseMutation.isPending ? "Adding..." : "Add Exercise"}
+                  <Button
+                    type="submit"
+                    disabled={addExerciseMutation.isPending}
+                    data-testid="button-submit-exercise"
+                  >
+                    {addExerciseMutation.isPending ? 'Adding...' : 'Add Exercise'}
                   </Button>
                 </div>
               </form>
@@ -412,8 +473,10 @@ const ExercisesPage = memo(() => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -436,8 +499,10 @@ const ExercisesPage = memo(() => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Muscles</SelectItem>
-                  {muscleGroups.map(mg => (
-                    <SelectItem key={mg} value={mg.toLowerCase()}>{mg}</SelectItem>
+                  {muscleGroups.map((mg) => (
+                    <SelectItem key={mg} value={mg.toLowerCase()}>
+                      {mg}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -461,9 +526,12 @@ const ExercisesPage = memo(() => {
             <div className="text-center space-y-2">
               <h3 className="font-medium text-lg">No exercises found</h3>
               <p className="text-sm text-muted-foreground">
-                {searchQuery || selectedCategory !== "all" || selectedDifficulty !== "all" || selectedMuscleGroup !== "all"
-                  ? "Try adjusting your filters or search query"
-                  : "Start by adding your first exercise to the library"}
+                {searchQuery ||
+                selectedCategory !== 'all' ||
+                selectedDifficulty !== 'all' ||
+                selectedMuscleGroup !== 'all'
+                  ? 'Try adjusting your filters or search query'
+                  : 'Start by adding your first exercise to the library'}
               </p>
             </div>
             {exercises.length === 0 && (
@@ -478,7 +546,11 @@ const ExercisesPage = memo(() => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredExercises.map((exercise, index) => (
             <StaggerItem key={exercise.id} index={index}>
-              <Card className="hover-elevate h-full overflow-hidden" data-testid={`card-exercise-${exercise.id}`}>
+              <Card
+                className="hover-elevate h-full overflow-hidden cursor-pointer"
+                data-testid={`card-exercise-${exercise.id}`}
+                onClick={() => setDetailExercise(exercise)}
+              >
                 {exercise.imageUrl ? (
                   <div className="relative h-48 bg-muted">
                     <LazyImage
@@ -496,14 +568,22 @@ const ExercisesPage = memo(() => {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 flex-1 min-w-0">
-                      <CardTitle className="text-lg" data-testid={`text-exercise-name-${exercise.id}`}>
+                      <CardTitle
+                        className="text-lg"
+                        data-testid={`text-exercise-name-${exercise.id}`}
+                      >
                         <TruncatedText text={exercise.name} />
                       </CardTitle>
                       <CardDescription className="line-clamp-2">
                         {exercise.description}
                       </CardDescription>
                     </div>
-                    <Button variant="ghost" size="icon" className="ml-2" data-testid={`button-bookmark-${exercise.id}`}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="ml-2"
+                      data-testid={`button-bookmark-${exercise.id}`}
+                    >
                       <BookmarkPlus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -511,11 +591,13 @@ const ExercisesPage = memo(() => {
                     <Badge variant="outline" className="text-xs">
                       {exercise.category}
                     </Badge>
-                    <Badge 
+                    <Badge
                       variant={
-                        exercise.difficulty === "beginner" ? "secondary" :
-                        exercise.difficulty === "intermediate" ? "default" : 
-                        "destructive"
+                        exercise.difficulty === 'beginner'
+                          ? 'secondary'
+                          : exercise.difficulty === 'intermediate'
+                            ? 'default'
+                            : 'destructive'
                       }
                       className="text-xs"
                     >
@@ -530,7 +612,7 @@ const ExercisesPage = memo(() => {
                       <span className="font-medium">Muscle Groups:</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {exercise.muscleGroups.map(mg => (
+                      {exercise.muscleGroups.map((mg) => (
                         <Badge key={mg} variant="secondary" className="text-xs">
                           {mg}
                         </Badge>
@@ -545,7 +627,7 @@ const ExercisesPage = memo(() => {
                         <span className="font-medium">Equipment:</span>
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        {exercise.equipment.map(eq => (
+                        {exercise.equipment.map((eq) => (
                           <Badge key={eq} variant="outline" className="text-xs">
                             {eq}
                           </Badge>
@@ -554,24 +636,28 @@ const ExercisesPage = memo(() => {
                     </div>
                   )}
 
-                  {exercise.youtubeUrl && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => window.open(exercise.youtubeUrl, '_blank')}
-                      data-testid={`button-watch-video-${exercise.id}`}
-                    >
-                      <Play className="mr-2 h-4 w-4" />
-                      Watch Demo
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDetailExercise(exercise);
+                    }}
+                    data-testid={`button-view-details-${exercise.id}`}
+                  >
+                    <ChevronRight className="mr-2 h-4 w-4" />
+                    View Details
+                  </Button>
                 </CardContent>
               </Card>
             </StaggerItem>
           ))}
         </div>
       )}
+
+      {/* Exercise Detail Modal */}
+      <ExerciseDetailModal exercise={detailExercise} onClose={() => setDetailExercise(null)} />
     </div>
   );
 });

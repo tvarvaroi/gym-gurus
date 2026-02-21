@@ -1,15 +1,18 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
-import { LogOut } from 'lucide-react';
+import { LogOut, Crown, Zap, CreditCard } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useUser } from '@/contexts/UserContext';
 import NotificationCenter from '@/components/NotificationCenter';
@@ -131,7 +134,7 @@ function HeaderCenterText() {
             }}
             transition={{
               duration: 2,
-              repeat: (isHovering && !prefersReducedMotion) ? Infinity : 0,
+              repeat: isHovering && !prefersReducedMotion ? Infinity : 0,
               ease: 'easeInOut',
             }}
           />
@@ -154,7 +157,7 @@ function HeaderCenterText() {
             }}
             transition={{
               duration: 5,
-              repeat: (isHovering && !prefersReducedMotion) ? Infinity : 0,
+              repeat: isHovering && !prefersReducedMotion ? Infinity : 0,
               ease: 'linear',
             }}
           >
@@ -174,7 +177,7 @@ function HeaderCenterText() {
             }}
             transition={{
               duration: 2,
-              repeat: (isHovering && !prefersReducedMotion) ? Infinity : 0,
+              repeat: isHovering && !prefersReducedMotion ? Infinity : 0,
               ease: 'easeInOut',
               delay: 0.5,
             }}
@@ -248,6 +251,7 @@ function HeaderCenterText() {
 // User menu component for authenticated users
 function UserMenu() {
   const prefersReducedMotion = useReducedMotion();
+  const [, navigate] = useLocation();
   const { data: user } = useQuery({
     queryKey: ['/api/auth/user'],
     retry: false,
@@ -264,6 +268,40 @@ function UserMenu() {
   const userData = user as any;
   const initials =
     `${userData.firstName?.[0] || ''}${userData.lastName?.[0] || ''}`.toUpperCase() || 'U';
+
+  // Subscription display helpers
+  const isActive =
+    userData.subscriptionStatus === 'active' || userData.subscriptionStatus === 'trialing';
+  const trialEndsAt = userData.trialEndsAt ? new Date(userData.trialEndsAt) : null;
+  const now = new Date();
+  const isInTrial = trialEndsAt ? trialEndsAt > now && !isActive : false;
+  const trialDaysRemaining = trialEndsAt
+    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+  const isClient = userData.role === 'client';
+
+  function SubscriptionBadge() {
+    if (isClient) return null;
+    if (isActive && userData.subscriptionTier) {
+      const tierLabel =
+        userData.subscriptionTier.charAt(0).toUpperCase() + userData.subscriptionTier.slice(1);
+      return (
+        <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+          <Crown className="w-2.5 h-2.5 mr-1" />
+          {tierLabel}
+        </Badge>
+      );
+    }
+    if (isInTrial) {
+      return (
+        <Badge className="text-[10px] px-1.5 py-0 bg-blue-500/20 text-blue-400 border border-blue-500/30">
+          <Zap className="w-2.5 h-2.5 mr-1" />
+          Trial · {trialDaysRemaining}d
+        </Badge>
+      );
+    }
+    return null;
+  }
 
   return (
     <DropdownMenu>
@@ -291,7 +329,11 @@ function UserMenu() {
               background: `linear-gradient(135deg, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.4))`,
             }}
             animate={{ rotate: [0, 360] }}
-            transition={{ duration: 8, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
+            transition={{
+              duration: 8,
+              repeat: prefersReducedMotion ? 0 : Infinity,
+              ease: 'linear',
+            }}
           >
             <div className="w-full h-full rounded-full bg-background" />
           </motion.div>
@@ -376,7 +418,11 @@ function UserMenu() {
                 background: 'radial-gradient(circle, rgba(16, 185, 129, 0.8), transparent)',
               }}
               animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0.9, 0.6] }}
-              transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+              transition={{
+                duration: 2,
+                repeat: prefersReducedMotion ? 0 : Infinity,
+                ease: 'easeInOut',
+              }}
             />
           </motion.div>
         </motion.button>
@@ -413,7 +459,9 @@ function UserMenu() {
                       {userData.firstName} {userData.lastName}
                     </motion.p>
                   </TooltipTrigger>
-                  <TooltipContent>{userData.firstName} {userData.lastName}</TooltipContent>
+                  <TooltipContent>
+                    {userData.firstName} {userData.lastName}
+                  </TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -436,6 +484,7 @@ function UserMenu() {
                 >
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="font-medium">Active</span>
+                  <SubscriptionBadge />
                 </motion.div>
               </div>
             </div>
@@ -443,6 +492,38 @@ function UserMenu() {
 
           {/* Menu items */}
           <div className="p-2">
+            {/* Subscription action — hidden for disciples */}
+            {!isClient && (
+              <>
+                <DropdownMenuItem
+                  onClick={() => navigate('/pricing')}
+                  className="group relative cursor-pointer rounded-xl px-3 py-2.5 hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200 overflow-hidden"
+                >
+                  <div className="relative flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors duration-200">
+                      {isActive ? (
+                        <CreditCard className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Zap className="h-4 w-4 text-yellow-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {isActive ? 'Manage Subscription' : 'Upgrade Plan'}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-light">
+                        {isActive
+                          ? `${userData.subscriptionTier ? userData.subscriptionTier.charAt(0).toUpperCase() + userData.subscriptionTier.slice(1) : 'Active'} plan`
+                          : isInTrial
+                            ? `${trialDaysRemaining} days left in trial`
+                            : 'Subscribe to continue'}
+                      </p>
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+              </>
+            )}
             <DropdownMenuItem
               onClick={async () => {
                 try {

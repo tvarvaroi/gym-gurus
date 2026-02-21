@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 
 // User type with role
 export interface User {
@@ -13,6 +14,12 @@ export interface User {
   isIndependent?: boolean; // For solo users
   onboardingCompleted?: boolean; // For solo users
   onboardingStep?: number; // For solo users
+  // Subscription fields
+  stripeCustomerId?: string | null;
+  subscriptionStatus?: 'trialing' | 'active' | 'canceled' | 'past_due' | null;
+  subscriptionTier?: 'solo' | 'trainer' | 'pro' | null;
+  subscriptionCurrentPeriodEnd?: string | null;
+  trialEndsAt?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,16 +32,16 @@ export type Permission =
   | 'clients:edit'
   | 'clients:delete'
   // Workout management
-  | 'workouts:view_all'     // Trainers can see all templates
+  | 'workouts:view_all' // Trainers can see all templates
   | 'workouts:view_assigned' // Clients can see assigned workouts
   | 'workouts:create'
   | 'workouts:edit'
   | 'workouts:delete'
   | 'workouts:assign'
-  | 'workouts:log'           // Clients can log workout completion
+  | 'workouts:log' // Clients can log workout completion
   // Progress tracking
-  | 'progress:view_all'      // Trainers can view all client progress
-  | 'progress:view_own'      // Clients can view their own progress
+  | 'progress:view_all' // Trainers can view all client progress
+  | 'progress:view_own' // Clients can view their own progress
   | 'progress:add'
   | 'progress:edit'
   | 'progress:delete'
@@ -47,8 +54,8 @@ export type Permission =
   | 'messages:view'
   | 'messages:send'
   // Schedule
-  | 'schedule:view_all'      // Trainers can see all sessions
-  | 'schedule:view_own'      // Clients can see their sessions
+  | 'schedule:view_all' // Trainers can see all sessions
+  | 'schedule:view_own' // Clients can see their sessions
   | 'schedule:create'
   | 'schedule:edit'
   | 'schedule:delete'
@@ -140,9 +147,35 @@ interface UserProviderProps {
 }
 
 export function UserProvider({ children }: UserProviderProps) {
-  // Fetch current user
-  const { data: user, isLoading, refetch } = useQuery<User>({
+  // Get current location to check if we're on a public page
+  const [location] = useLocation();
+
+  // CRITICAL FIX: Use window.location.pathname as fallback for initial render
+  // to prevent race condition where query runs before location is determined
+  const currentPath = location || window.location.pathname;
+
+  // Check if current page is public (no auth needed) - updates reactively with location changes
+  const isPublicPage =
+    currentPath === '/' ||
+    currentPath === '/terms' ||
+    currentPath === '/privacy' ||
+    currentPath.startsWith('/calculators') ||
+    currentPath.startsWith('/auth/') ||
+    currentPath === '/preview-login' ||
+    currentPath === '/test-login' ||
+    currentPath === '/test-auth-login';
+
+  // DEBUG: Log to verify public page detection
+  console.log('[UserContext] currentPath:', currentPath, 'isPublicPage:', isPublicPage);
+
+  // Fetch current user (disabled on public pages to prevent unnecessary requests)
+  const {
+    data: user,
+    isLoading,
+    refetch,
+  } = useQuery<User>({
     queryKey: ['/api/auth/user'],
+    enabled: !isPublicPage, // Only run query on non-public pages
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false, // Don't refetch on window focus

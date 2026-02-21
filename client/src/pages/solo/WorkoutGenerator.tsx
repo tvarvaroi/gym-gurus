@@ -31,14 +31,24 @@ import {
   Settings2,
   CheckCircle2,
   Timer,
-  TrendingUp
+  TrendingUp,
+  Crown,
+  AlertCircle,
 } from 'lucide-react';
 
 // Workout focus options
 const workoutFocusOptions = [
-  { value: 'full_body', label: 'Full Body', description: 'Complete workout hitting all muscle groups' },
+  {
+    value: 'full_body',
+    label: 'Full Body',
+    description: 'Complete workout hitting all muscle groups',
+  },
   { value: 'upper_body', label: 'Upper Body', description: 'Chest, back, shoulders, and arms' },
-  { value: 'lower_body', label: 'Lower Body', description: 'Quads, hamstrings, glutes, and calves' },
+  {
+    value: 'lower_body',
+    label: 'Lower Body',
+    description: 'Quads, hamstrings, glutes, and calves',
+  },
   { value: 'push', label: 'Push Day', description: 'Chest, shoulders, and triceps' },
   { value: 'pull', label: 'Pull Day', description: 'Back and biceps' },
   { value: 'legs', label: 'Leg Day', description: 'Complete lower body workout' },
@@ -80,6 +90,7 @@ export default function WorkoutGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedWorkout, setGeneratedWorkout] = useState<GeneratedWorkout | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Form state
@@ -94,6 +105,7 @@ export default function WorkoutGenerator() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGenerateError(null);
+    setLimitReached(false);
 
     try {
       // Map equipment UI value to API format
@@ -106,6 +118,18 @@ export default function WorkoutGenerator() {
         resistance_bands: ['resistance bands'],
       };
 
+      // Map UI focus values to explicit muscle group lists so Claude knows
+      // exactly which muscles to include and which to exclude
+      const focusMuscleMap: Record<string, string[]> = {
+        upper_body: ['chest', 'back', 'shoulders', 'biceps', 'triceps'],
+        lower_body: ['quads', 'hamstrings', 'glutes', 'calves'],
+        push: ['chest', 'shoulders', 'triceps'],
+        pull: ['back', 'biceps', 'rear delts'],
+        legs: ['quads', 'hamstrings', 'glutes', 'calves'],
+        core: ['abs', 'obliques', 'lower back'],
+        cardio: ['cardiovascular system', 'full body conditioning'],
+      };
+
       const response = await fetch('/api/ai/generate-workout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -114,19 +138,45 @@ export default function WorkoutGenerator() {
           experienceLevel: difficulty,
           availableEquipment: equipmentMap[equipment] || ['barbell', 'dumbbells'],
           duration: duration[0],
-          focusMuscles: workoutFocus === 'full_body' ? undefined : [workoutFocus],
+          focusMuscles: workoutFocus === 'full_body' ? undefined : focusMuscleMap[workoutFocus],
         }),
       });
 
       const data = await response.json();
+
+      if (response.status === 402) {
+        setLimitReached(true);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to generate workout');
       }
 
       const workout = data.workout;
+
+      // Normalize a warmup/cooldown/tips item to a string regardless of what the AI returns
+      const toStr = (item: any): string => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          // Common shapes the AI might return
+          if (item.exercise && item.duration) return `${item.exercise} — ${item.duration}`;
+          if (item.exercise) return item.exercise;
+          if (item.name && item.duration) return `${item.name} — ${item.duration}`;
+          if (item.name) return item.name;
+          if (item.description) return item.description;
+          if (item.tip) return item.tip;
+          // Fallback: join all string values
+          const vals = Object.values(item).filter((v) => typeof v === 'string');
+          if (vals.length) return vals.join(' — ');
+        }
+        return String(item);
+      };
+
       setGeneratedWorkout({
-        name: workout.name || `${workoutFocusOptions.find(o => o.value === workoutFocus)?.label || 'Custom'} Workout`,
+        name:
+          workout.name ||
+          `${workoutFocusOptions.find((o) => o.value === workoutFocus)?.label || 'Custom'} Workout`,
         duration: workout.estimatedDuration || duration[0],
         exercises: (workout.exercises || []).map((ex: any) => ({
           name: ex.name,
@@ -135,9 +185,15 @@ export default function WorkoutGenerator() {
           rest: ex.restSeconds || 60,
           muscleGroup: ex.targetMuscle || ex.muscleGroup || '',
         })),
-        warmup: includeWarmup ? (workout.warmup || ['5 min light cardio', 'Dynamic stretching']) : [],
-        cooldown: includeCooldown ? (workout.cooldown || ['Static stretching', 'Deep breathing']) : [],
-        tips: workout.tips || workout.notes || ['Focus on proper form', 'Stay hydrated'],
+        warmup: includeWarmup
+          ? (workout.warmup || ['5 min light cardio', 'Dynamic stretching']).map(toStr)
+          : [],
+        cooldown: includeCooldown
+          ? (workout.cooldown || ['Static stretching', 'Deep breathing']).map(toStr)
+          : [],
+        tips: (workout.tips || workout.notes || ['Focus on proper form', 'Stay hydrated']).map(
+          toStr
+        ),
       });
     } catch (err: any) {
       setGenerateError(err.message || 'Failed to generate workout');
@@ -163,7 +219,7 @@ export default function WorkoutGenerator() {
         body: JSON.stringify({
           name: generatedWorkout.name,
           description: `AI-generated ${workoutFocus} workout`,
-          exercises: generatedWorkout.exercises.map(ex => ({
+          exercises: generatedWorkout.exercises.map((ex) => ({
             exerciseName: ex.name,
             sets: ex.sets,
             reps: ex.reps,
@@ -206,7 +262,7 @@ export default function WorkoutGenerator() {
         body: JSON.stringify({
           name: generatedWorkout.name,
           description: `AI-generated ${workoutFocus} workout`,
-          exercises: generatedWorkout.exercises.map(ex => ({
+          exercises: generatedWorkout.exercises.map((ex) => ({
             exerciseName: ex.name,
             sets: ex.sets,
             reps: ex.reps,
@@ -248,9 +304,14 @@ export default function WorkoutGenerator() {
             <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
               <Brain className="h-8 w-8 text-purple-400" />
             </div>
-            AI Workout <span className="font-light bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Generator</span>
+            AI Workout{' '}
+            <span className="font-light bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+              Generator
+            </span>
           </h1>
-          <p className="text-muted-foreground font-light">Create personalized workouts powered by AI</p>
+          <p className="text-muted-foreground font-light">
+            Create personalized workouts powered by AI
+          </p>
         </div>
         <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-400">
           <Sparkles className="h-3 w-3 mr-1" />
@@ -282,11 +343,13 @@ export default function WorkoutGenerator() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {workoutFocusOptions.map(option => (
+                    {workoutFocusOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         <div className="flex flex-col">
                           <span>{option.label}</span>
-                          <span className="text-xs text-muted-foreground">{option.description}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {option.description}
+                          </span>
                         </div>
                       </SelectItem>
                     ))}
@@ -298,15 +361,16 @@ export default function WorkoutGenerator() {
               <div className="space-y-2">
                 <Label>Primary Goal</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  {goalOptions.map(option => (
+                  {goalOptions.map((option) => (
                     <Button
                       key={option.value}
                       variant={goal === option.value ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setGoal(option.value)}
-                      className={goal === option.value
-                        ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
-                        : 'border-border/50'
+                      className={
+                        goal === option.value
+                          ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
+                          : 'border-border/50'
                       }
                     >
                       <option.icon className="h-4 w-4 mr-2" />
@@ -344,7 +408,7 @@ export default function WorkoutGenerator() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {equipmentOptions.map(option => (
+                    {equipmentOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -357,7 +421,7 @@ export default function WorkoutGenerator() {
               <div className="space-y-2">
                 <Label>Difficulty Level</Label>
                 <div className="flex gap-2">
-                  {['beginner', 'intermediate', 'advanced'].map(level => (
+                  {['beginner', 'intermediate', 'advanced'].map((level) => (
                     <Button
                       key={level}
                       variant={difficulty === level ? 'default' : 'outline'}
@@ -378,15 +442,15 @@ export default function WorkoutGenerator() {
               {/* Options */}
               <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="warmup" className="font-normal">Include Warm-up</Label>
-                  <Switch
-                    id="warmup"
-                    checked={includeWarmup}
-                    onCheckedChange={setIncludeWarmup}
-                  />
+                  <Label htmlFor="warmup" className="font-normal">
+                    Include Warm-up
+                  </Label>
+                  <Switch id="warmup" checked={includeWarmup} onCheckedChange={setIncludeWarmup} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="cooldown" className="font-normal">Include Cool-down</Label>
+                  <Label htmlFor="cooldown" className="font-normal">
+                    Include Cool-down
+                  </Label>
                   <Switch
                     id="cooldown"
                     checked={includeCooldown}
@@ -414,7 +478,25 @@ export default function WorkoutGenerator() {
                 )}
               </Button>
 
-              {generateError && (
+              {limitReached && (
+                <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <div className="flex items-center gap-2 text-amber-400">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">Daily AI limit reached</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Upgrade your plan for more daily AI requests.
+                  </p>
+                  <a
+                    href="/pricing"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-medium hover:from-purple-600 hover:to-indigo-600 transition-all"
+                  >
+                    <Crown className="h-3 w-3" />
+                    Upgrade Plan
+                  </a>
+                </div>
+              )}
+              {generateError && !limitReached && (
                 <p className="text-sm text-red-400 text-center">{generateError}</p>
               )}
             </CardContent>
@@ -439,7 +521,11 @@ export default function WorkoutGenerator() {
                   <div className="text-center space-y-4">
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
+                      transition={{
+                        duration: 2,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
+                        ease: 'linear',
+                      }}
                     >
                       <Brain className="h-16 w-16 text-purple-400 mx-auto" />
                     </motion.div>
@@ -451,17 +537,29 @@ export default function WorkoutGenerator() {
                       <motion.div
                         className="w-2 h-2 rounded-full bg-purple-400"
                         animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ duration: 0.6, repeat: prefersReducedMotion ? 0 : Infinity, delay: 0 }}
+                        transition={{
+                          duration: 0.6,
+                          repeat: prefersReducedMotion ? 0 : Infinity,
+                          delay: 0,
+                        }}
                       />
                       <motion.div
                         className="w-2 h-2 rounded-full bg-purple-400"
                         animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ duration: 0.6, repeat: prefersReducedMotion ? 0 : Infinity, delay: 0.2 }}
+                        transition={{
+                          duration: 0.6,
+                          repeat: prefersReducedMotion ? 0 : Infinity,
+                          delay: 0.2,
+                        }}
                       />
                       <motion.div
                         className="w-2 h-2 rounded-full bg-purple-400"
                         animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ duration: 0.6, repeat: prefersReducedMotion ? 0 : Infinity, delay: 0.4 }}
+                        transition={{
+                          duration: 0.6,
+                          repeat: prefersReducedMotion ? 0 : Infinity,
+                          delay: 0.4,
+                        }}
                       />
                     </div>
                   </div>
@@ -531,11 +629,15 @@ export default function WorkoutGenerator() {
                             </div>
                             <div>
                               <p className="font-medium text-sm">{exercise.name}</p>
-                              <p className="text-xs text-muted-foreground">{exercise.muscleGroup}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {exercise.muscleGroup}
+                              </p>
                             </div>
                           </div>
                           <div className="text-right text-sm">
-                            <p className="font-medium">{exercise.sets} × {exercise.reps}</p>
+                            <p className="font-medium">
+                              {exercise.sets} × {exercise.reps}
+                            </p>
                             <p className="text-xs text-muted-foreground">{exercise.rest}s rest</p>
                           </div>
                         </motion.div>
@@ -626,7 +728,8 @@ export default function WorkoutGenerator() {
                     <div className="space-y-2">
                       <h3 className="text-lg font-light">Ready to Generate</h3>
                       <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        Configure your preferences and click "Generate Workout" to create a personalized routine
+                        Configure your preferences and click "Generate Workout" to create a
+                        personalized routine
                       </p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-2">

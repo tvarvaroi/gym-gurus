@@ -66,6 +66,13 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{ts,tsx}', '../server/**/*.{test,spec}.{ts,tsx}'],
   },
   server: {
+    port: 5000,
+    strictPort: false,
+    hmr: {
+      port: 5000,
+      protocol: 'ws',
+      host: 'localhost',
+    },
     fs: {
       strict: true,
       deny: ['**/.*'],

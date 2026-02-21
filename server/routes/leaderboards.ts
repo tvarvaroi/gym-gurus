@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { leaderboards, leaderboardEntries, userGamification, users } from '@shared/schema';
+import { userGamification, users } from '@shared/schema';
+// Note: leaderboards and leaderboardEntries tables were archived (never used).
+// Current leaderboards query userGamification directly for simpler, real-time rankings.
 import { eq, desc, and, gte, sql } from 'drizzle-orm';
 
 const router = Router();
@@ -27,11 +29,12 @@ router.get('/:type/:period', async (req, res) => {
       case 'daily':
         startDate = new Date(now.setHours(0, 0, 0, 0));
         break;
-      case 'weekly':
+      case 'weekly': {
         const dayOfWeek = now.getDay();
         startDate = new Date(now.setDate(now.getDate() - dayOfWeek));
         startDate.setHours(0, 0, 0, 0);
         break;
+      }
       case 'monthly':
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
@@ -175,9 +178,7 @@ router.get('/:type/:period/user/:userId', async (req, res) => {
     const rank = (rankResult?.count || 0) + 1;
 
     // Get total participants
-    const [totalResult] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(userGamification);
+    const [totalResult] = await db.select({ count: sql<number>`COUNT(*)` }).from(userGamification);
 
     res.json({
       userId,
@@ -293,10 +294,30 @@ router.get('/types', async (_req, res) => {
   res.json({
     types: [
       { id: 'xp', name: 'XP Leaders', description: 'Most experience points earned', icon: '⭐' },
-      { id: 'streak', name: 'Streak Champions', description: 'Longest workout streaks', icon: '🔥' },
-      { id: 'workouts', name: 'Workout Warriors', description: 'Most workouts completed', icon: '💪' },
-      { id: 'volume', name: 'Volume Kings', description: 'Highest total training volume', icon: '📊' },
-      { id: 'strength', name: 'Strength Masters', description: 'Highest strength scores', icon: '🏋️' },
+      {
+        id: 'streak',
+        name: 'Streak Champions',
+        description: 'Longest workout streaks',
+        icon: '🔥',
+      },
+      {
+        id: 'workouts',
+        name: 'Workout Warriors',
+        description: 'Most workouts completed',
+        icon: '💪',
+      },
+      {
+        id: 'volume',
+        name: 'Volume Kings',
+        description: 'Highest total training volume',
+        icon: '📊',
+      },
+      {
+        id: 'strength',
+        name: 'Strength Masters',
+        description: 'Highest strength scores',
+        icon: '🏋️',
+      },
     ],
     periods: [
       { id: 'daily', name: 'Today', description: 'Resets daily at midnight' },

@@ -1,8 +1,14 @@
 // Payment Routes - Stripe Integration
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
-import { paymentPlans, payments, clients } from '../../shared/schema';
+import { paymentPlans, payments, clients, users } from '../../shared/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
+import {
+  isInTrial,
+  isTrialExpired,
+  trialDaysRemaining,
+  getOrCreateStripeCustomer,
+} from '../services/subscription';
 
 const router = Router();
 
@@ -74,16 +80,19 @@ router.post('/plans', async (req: Request, res: Response) => {
       }
     }
 
-    const result = await database.insert(paymentPlans).values({
-      trainerId: userId,
-      name,
-      description: description || null,
-      priceInCents,
-      currency: currency || 'usd',
-      billingInterval: billingInterval || 'monthly',
-      sessionCount: sessionCount || null,
-      stripePriceId,
-    }).returning();
+    const result = await database
+      .insert(paymentPlans)
+      .values({
+        trainerId: userId,
+        name,
+        description: description || null,
+        priceInCents,
+        currency: currency || 'usd',
+        billingInterval: billingInterval || 'monthly',
+        sessionCount: sessionCount || null,
+        stripePriceId,
+      })
+      .returning();
 
     res.status(201).json(result[0]);
   } catch (error) {
@@ -169,11 +178,13 @@ router.get('/', async (req: Request, res: Response) => {
       .orderBy(desc(payments.createdAt))
       .limit(limit);
 
-    res.json(result.map(r => ({
-      ...r.payment,
-      clientName: r.clientName,
-      planName: r.planName,
-    })));
+    res.json(
+      result.map((r) => ({
+        ...r.payment,
+        clientName: r.clientName,
+        planName: r.planName,
+      }))
+    );
   } catch (error) {
     console.error('Error getting payments:', error);
     res.status(500).json({ error: 'Failed to get payments' });
@@ -194,16 +205,19 @@ router.post('/record', async (req: Request, res: Response) => {
 
     const database = await db;
 
-    const result = await database.insert(payments).values({
-      trainerId: userId,
-      clientId,
-      planId: planId || null,
-      amountInCents,
-      currency: currency || 'usd',
-      status: 'completed',
-      description: description || null,
-      paidAt: new Date(),
-    }).returning();
+    const result = await database
+      .insert(payments)
+      .values({
+        trainerId: userId,
+        clientId,
+        planId: planId || null,
+        amountInCents,
+        currency: currency || 'usd',
+        status: 'completed',
+        description: description || null,
+        paidAt: new Date(),
+      })
+      .returning();
 
     // Send notification to trainer
     try {
@@ -242,23 +256,30 @@ router.get('/summary', async (req: Request, res: Response) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-    const thisMonthPayments = allPayments.filter(p => p.paidAt && new Date(p.paidAt) >= startOfMonth);
-    const lastMonthPayments = allPayments.filter(p => p.paidAt && new Date(p.paidAt) >= startOfLastMonth && new Date(p.paidAt) < startOfMonth);
+    const thisMonthPayments = allPayments.filter(
+      (p) => p.paidAt && new Date(p.paidAt) >= startOfMonth
+    );
+    const lastMonthPayments = allPayments.filter(
+      (p) => p.paidAt && new Date(p.paidAt) >= startOfLastMonth && new Date(p.paidAt) < startOfMonth
+    );
 
     const thisMonthRevenue = thisMonthPayments.reduce((sum, p) => sum + p.amountInCents, 0);
     const lastMonthRevenue = lastMonthPayments.reduce((sum, p) => sum + p.amountInCents, 0);
     const totalRevenue = allPayments.reduce((sum, p) => sum + p.amountInCents, 0);
 
-    const changePercent = lastMonthRevenue > 0
-      ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
-      : 0;
+    const changePercent =
+      lastMonthRevenue > 0
+        ? Math.round(((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
+        : 0;
 
     // Monthly breakdown for last 6 months
     const monthlyRevenue = [];
     for (let i = 5; i >= 0; i--) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      const monthPayments = allPayments.filter(p => p.paidAt && new Date(p.paidAt) >= monthStart && new Date(p.paidAt) < monthEnd);
+      const monthPayments = allPayments.filter(
+        (p) => p.paidAt && new Date(p.paidAt) >= monthStart && new Date(p.paidAt) < monthEnd
+      );
       monthlyRevenue.push({
         month: monthStart.toLocaleDateString('en', { month: 'short' }),
         revenue: monthPayments.reduce((sum, p) => sum + p.amountInCents, 0) / 100,
@@ -304,7 +325,11 @@ router.post('/create-checkout', async (req: Request, res: Response) => {
     const { planId, clientId } = req.body;
     const database = await db;
 
-    const plan = await database.select().from(paymentPlans).where(eq(paymentPlans.id, planId)).limit(1);
+    const plan = await database
+      .select()
+      .from(paymentPlans)
+      .where(eq(paymentPlans.id, planId))
+      .limit(1);
     if (plan.length === 0 || !plan[0].stripePriceId) {
       return res.status(400).json({ error: 'Invalid plan or plan not configured in Stripe' });
     }
@@ -322,6 +347,106 @@ router.post('/create-checkout', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error creating checkout session:', error);
     res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+// ============ Platform Subscription Routes ============
+
+// GET /api/payments/subscription - Get current user's subscription status
+router.get('/subscription', async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    res.json({
+      status: user.subscriptionStatus ?? null,
+      tier: user.subscriptionTier ?? null,
+      trialEndsAt: user.trialEndsAt ?? null,
+      currentPeriodEnd: user.subscriptionCurrentPeriodEnd ?? null,
+      isInTrial: isInTrial(user),
+      isTrialExpired: isTrialExpired(user),
+      trialDaysRemaining: trialDaysRemaining(user),
+    });
+  } catch (error) {
+    console.error('Error fetching subscription:', error);
+    res.status(500).json({ error: 'Failed to fetch subscription status' });
+  }
+});
+
+// POST /api/payments/create-checkout-session - Create Stripe Checkout for platform subscription
+router.post('/create-checkout-session', async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const stripeClient = await getStripe();
+    if (!stripeClient) {
+      return res.status(503).json({ error: 'Stripe not configured. Set STRIPE_SECRET_KEY.' });
+    }
+
+    const { tier } = req.body as { tier: 'solo' | 'solo_ai' | 'trainer' | 'pro' };
+    const PRICE_IDS: Record<string, string | undefined> = {
+      solo: process.env.STRIPE_PRICE_ID_SOLO,
+      solo_ai: process.env.STRIPE_PRICE_ID_SOLO_AI,
+      trainer: process.env.STRIPE_PRICE_ID_TRAINER,
+      pro: process.env.STRIPE_PRICE_ID_PRO,
+    };
+    const priceId = PRICE_IDS[tier];
+    if (!priceId) {
+      return res.status(400).json({
+        error: `No price configured for tier: ${tier}. Set STRIPE_PRICE_ID_${tier.toUpperCase()} env var.`,
+      });
+    }
+
+    const customerId = await getOrCreateStripeCustomer(user);
+    const origin = req.headers.origin || `${req.protocol}://${req.headers.host}`;
+
+    const session = await stripeClient.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: 'subscription',
+      allow_promotion_codes: true,
+      success_url: `${origin}/pricing?success=true`,
+      cancel_url: `${origin}/pricing`,
+      metadata: { userId: user.id, tier },
+      subscription_data: {
+        metadata: { userId: user.id, tier },
+      },
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+// POST /api/payments/create-portal-session - Stripe Customer Portal
+router.post('/create-portal-session', async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+    if (!user.stripeCustomerId) {
+      return res.status(400).json({ error: 'No subscription found. Subscribe first.' });
+    }
+
+    const stripeClient = await getStripe();
+    if (!stripeClient) {
+      return res.status(503).json({ error: 'Stripe not configured. Set STRIPE_SECRET_KEY.' });
+    }
+
+    const origin = req.headers.origin || `${req.protocol}://${req.headers.host}`;
+    const session = await stripeClient.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: `${origin}/pricing`,
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('Error creating portal session:', error);
+    res.status(500).json({ error: 'Failed to create portal session' });
   }
 });
 

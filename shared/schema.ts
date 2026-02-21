@@ -26,18 +26,22 @@ export const sessions = pgTable(
   (table) => [index('IDX_session_expire').on(table.expire)]
 );
 
-// Users (Trainers, Clients, and Solo Users) - Updated for Replit Auth
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+// Users (Trainers, Clients, and Solo Users) - Standalone Auth System
 export const users = pgTable(
   'users',
   {
     id: varchar('id')
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    email: varchar('email').unique(),
+    email: varchar('email').unique().notNull(),
     firstName: varchar('first_name'),
     lastName: varchar('last_name'),
     profileImageUrl: varchar('profile_image_url'),
+    // Authentication fields
+    password: varchar('password'), // Nullable for OAuth users
+    emailVerified: boolean('email_verified').default(false).notNull(),
+    authProvider: varchar('auth_provider').default('local').notNull(), // 'local', 'google'
+    authProviderId: varchar('auth_provider_id'), // OAuth provider's user ID
     // Role-based access control - now includes 'solo' for independent users
     role: text('role', { enum: ['trainer', 'client', 'solo'] })
       .notNull()
@@ -47,12 +51,43 @@ export const users = pgTable(
     isIndependent: boolean('is_independent').default(true), // true for solo users training without a trainer
     onboardingCompleted: boolean('onboarding_completed').default(false),
     onboardingStep: integer('onboarding_step').default(0),
+    // Stripe subscription fields
+    stripeCustomerId: varchar('stripe_customer_id').unique(),
+    subscriptionStatus: varchar('subscription_status'), // 'trialing'|'active'|'canceled'|'past_due'
+    subscriptionTier: varchar('subscription_tier'), // 'solo'|'trainer'|'pro'
+    subscriptionId: varchar('subscription_id'),
+    subscriptionCurrentPeriodEnd: timestamp('subscription_current_period_end'),
+    trialEndsAt: timestamp('trial_ends_at'),
+    notificationPreferences: jsonb('notification_preferences'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
   },
   (table) => [
     index('idx_users_role').on(table.role),
     index('idx_users_trainer_id').on(table.trainerId),
+    index('idx_users_email').on(table.email),
+    index('idx_users_auth_provider').on(table.authProvider, table.authProviderId),
+  ]
+);
+
+// Password Reset Tokens
+export const passwordResetTokens = pgTable(
+  'password_reset_tokens',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    token: varchar('token').notNull().unique(),
+    expiresAt: timestamp('expires_at').notNull(),
+    used: boolean('used').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_password_reset_tokens_user_id').on(table.userId),
+    index('idx_password_reset_tokens_token').on(table.token),
   ]
 );
 
@@ -275,6 +310,7 @@ export const progressEntries = pgTable(
     value: decimal('value', { precision: 8, scale: 2 }).notNull(),
     unit: text('unit').notNull(), // lbs, kg, inches, cm, etc.
     notes: text('notes'),
+    photoUrl: text('photo_url'),
     recordedAt: timestamp('recorded_at').defaultNow().notNull(),
   },
   (table) => [
@@ -406,9 +442,17 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   workouts: many(workouts),
   trainingSessions: many(trainingSessions),
   appointments: many(appointments),
+  passwordResetTokens: many(passwordResetTokens),
   onboardingProgress: one(userOnboardingProgress, {
     fields: [users.id],
     references: [userOnboardingProgress.userId],
+  }),
+}));
+
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResetTokens.userId],
+    references: [users.id],
   }),
 }));
 
@@ -467,6 +511,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({
@@ -548,6 +597,8 @@ export type UserOnboardingProgress = typeof userOnboardingProgress.$inferSelect;
 // Replit Auth required types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 
 // Helper functions for exercise type system
 export const EXERCISE_FIELD_REQUIREMENTS = {
@@ -838,26 +889,8 @@ export const userStrengthStandards = pgTable(
   ]
 );
 
-// Strength Standards Reference Data (population benchmarks)
-export const strengthStandardsReference = pgTable(
-  'strength_standards_reference',
-  {
-    id: varchar('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    exerciseId: varchar('exercise_id')
-      .notNull()
-      .references(() => exercises.id, { onDelete: 'cascade' }),
-    gender: varchar('gender', { length: 10 }).notNull(), // male, female
-    bodyweightKg: decimal('bodyweight_kg', { precision: 5, scale: 2 }).notNull(),
-    beginnerThreshold: decimal('beginner_threshold', { precision: 6, scale: 2 }),
-    noviceThreshold: decimal('novice_threshold', { precision: 6, scale: 2 }),
-    intermediateThreshold: decimal('intermediate_threshold', { precision: 6, scale: 2 }),
-    advancedThreshold: decimal('advanced_threshold', { precision: 6, scale: 2 }),
-    eliteThreshold: decimal('elite_threshold', { precision: 6, scale: 2 }),
-  },
-  (table) => [index('idx_strength_ref_exercise_gender').on(table.exerciseId, table.gender)]
-);
+// Strength Standards Reference Data - ARCHIVED (see docs/archive/v3-tables-archive.ts)
+// This table was never used. Current strength standards use userStrengthStandards instead.
 
 // -------------------- RECOVERY & FATIGUE TRACKING --------------------
 
@@ -988,271 +1021,23 @@ export const aiChatMessages = pgTable(
   ]
 );
 
-// -------------------- MEAL PLANNING & NUTRITION --------------------
+// -------------------- MEAL PLANNING & NUTRITION - ARCHIVED --------------------
+// Tables: mealPlans, meals, foodLog
+// Status: Never implemented. See docs/archive/V3-FEATURE-VISION.md for full nutrition feature design.
+// Archive: docs/archive/v3-tables-archive.ts
 
-// Meal Plans
-export const mealPlans = pgTable(
-  'meal_plans',
-  {
-    id: varchar('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    userId: varchar('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    name: varchar('name', { length: 255 }).notNull(),
-    description: text('description'),
-    targetCalories: integer('target_calories'),
-    targetProteinGrams: integer('target_protein_grams'),
-    targetCarbsGrams: integer('target_carbs_grams'),
-    targetFatGrams: integer('target_fat_grams'),
-    planType: varchar('plan_type', { length: 30 }), // daily, weekly, custom
-    goal: varchar('goal', { length: 50 }), // muscle_gain, fat_loss, maintenance, performance
-    isAiGenerated: boolean('is_ai_generated').default(false),
-    isActive: boolean('is_active').default(true),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  },
-  (table) => [
-    index('idx_meal_plans_user_id').on(table.userId),
-    index('idx_meal_plans_active').on(table.isActive),
-  ]
-);
+// -------------------- SHOPPING HELPER - ARCHIVED --------------------
+// Tables: groceryStores, shoppingLists, shoppingListItems
+// Status: Never implemented. See docs/archive/V3-FEATURE-VISION.md for full shopping helper design.
+// Archive: docs/archive/v3-tables-archive.ts
 
-// Individual Meals
-export const meals = pgTable(
-  'meals',
-  {
-    id: varchar('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    mealPlanId: varchar('meal_plan_id')
-      .notNull()
-      .references(() => mealPlans.id, { onDelete: 'cascade' }),
-    name: varchar('name', { length: 255 }).notNull(), // Breakfast, Lunch, Dinner, Snack, Pre-workout, Post-workout
-    dayOfWeek: integer('day_of_week'), // 0-6 for weekly plans
-    mealOrder: integer('meal_order'), // Order in the day
-    totalCalories: integer('total_calories'),
-    totalProtein: integer('total_protein'),
-    totalCarbs: integer('total_carbs'),
-    totalFat: integer('total_fat'),
-    foods: jsonb('foods').$type<
-      {
-        name: string;
-        quantity: number;
-        unit: string;
-        calories: number;
-        protein: number;
-        carbs: number;
-        fat: number;
-        groceryItem?: string;
-      }[]
-    >(),
-    recipeUrl: varchar('recipe_url', { length: 500 }),
-    recipeName: varchar('recipe_name', { length: 255 }),
-    recipeSource: varchar('recipe_source', { length: 100 }), // spoonacular, user, ai_generated
-    preparationTimeMinutes: integer('preparation_time_minutes'),
-    instructions: text('instructions'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-  },
-  (table) => [index('idx_meals_meal_plan_id').on(table.mealPlanId)]
-);
-
-// Food Log (daily tracking)
-export const foodLog = pgTable(
-  'food_log',
-  {
-    id: varchar('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    userId: varchar('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    logDate: timestamp('log_date').notNull(),
-    mealType: varchar('meal_type', { length: 30 }), // breakfast, lunch, dinner, snack
-    foodName: varchar('food_name', { length: 255 }).notNull(),
-    quantity: decimal('quantity', { precision: 6, scale: 2 }),
-    unit: varchar('unit', { length: 30 }),
-    calories: integer('calories'),
-    protein: integer('protein'),
-    carbs: integer('carbs'),
-    fat: integer('fat'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-  },
-  (table) => [
-    index('idx_food_log_user_id').on(table.userId),
-    index('idx_food_log_date').on(table.logDate),
-    index('idx_food_log_user_date').on(table.userId, table.logDate),
-  ]
-);
-
-// -------------------- SHOPPING HELPER --------------------
-
-// Grocery Stores (cached from APIs)
-export const groceryStores = pgTable(
-  'grocery_stores',
-  {
-    id: varchar('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    externalId: varchar('external_id', { length: 100 }), // ID from external API
-    apiSource: varchar('api_source', { length: 50 }).notNull(), // google_places, kroger, walmart
-    name: varchar('name', { length: 255 }).notNull(),
-    address: varchar('address', { length: 500 }),
-    city: varchar('city', { length: 100 }),
-    state: varchar('state', { length: 50 }),
-    zipCode: varchar('zip_code', { length: 20 }),
-    country: varchar('country', { length: 50 }),
-    latitude: decimal('latitude', { precision: 10, scale: 8 }),
-    longitude: decimal('longitude', { precision: 11, scale: 8 }),
-    storeType: varchar('store_type', { length: 50 }), // grocery, health_food, warehouse, organic
-    chainName: varchar('chain_name', { length: 100 }),
-    phoneNumber: varchar('phone_number', { length: 30 }),
-    websiteUrl: varchar('website_url', { length: 500 }),
-    lastUpdated: timestamp('last_updated').defaultNow().notNull(),
-  },
-  (table) => [
-    index('idx_grocery_stores_location').on(table.latitude, table.longitude),
-    index('idx_grocery_stores_chain').on(table.chainName),
-  ]
-);
-
-// Shopping Lists
-export const shoppingLists = pgTable(
-  'shopping_lists',
-  {
-    id: varchar('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    userId: varchar('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    mealPlanId: varchar('meal_plan_id').references(() => mealPlans.id),
-    name: varchar('name', { length: 255 }).notNull(),
-    listPeriod: varchar('list_period', { length: 20 }), // daily, weekly, bi-weekly
-    storeId: varchar('store_id').references(() => groceryStores.id),
-    estimatedTotalCost: decimal('estimated_total_cost', { precision: 8, scale: 2 }),
-    totalItems: integer('total_items'),
-    isAiGenerated: boolean('is_ai_generated').default(false),
-    aiPromptUsed: text('ai_prompt_used'),
-    isCompleted: boolean('is_completed').default(false),
-    completedAt: timestamp('completed_at'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  },
-  (table) => [
-    index('idx_shopping_lists_user_id').on(table.userId),
-    index('idx_shopping_lists_meal_plan_id').on(table.mealPlanId),
-  ]
-);
-
-// Shopping List Items
-export const shoppingListItems = pgTable(
-  'shopping_list_items',
-  {
-    id: varchar('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    shoppingListId: varchar('shopping_list_id')
-      .notNull()
-      .references(() => shoppingLists.id, { onDelete: 'cascade' }),
-    itemName: varchar('item_name', { length: 255 }).notNull(),
-    category: varchar('category', { length: 50 }), // produce, meat, dairy, grains, supplements
-    quantity: decimal('quantity', { precision: 6, scale: 2 }),
-    unit: varchar('unit', { length: 30 }),
-    storeProductId: varchar('store_product_id', { length: 100 }), // Product ID from store API
-    storePrice: decimal('store_price', { precision: 8, scale: 2 }),
-    storePriceUnit: varchar('store_price_unit', { length: 30 }),
-    isAvailable: boolean('is_available').default(true),
-    contributesToMacros: jsonb('contributes_to_macros').$type<{
-      calories: number;
-      protein: number;
-      carbs: number;
-      fat: number;
-    }>(),
-    alternatives: jsonb('alternatives').$type<
-      {
-        name: string;
-        price: number;
-        productId: string;
-      }[]
-    >(),
-    isPurchased: boolean('is_purchased').default(false),
-    notes: text('notes'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-  },
-  (table) => [
-    index('idx_shopping_items_list_id').on(table.shoppingListId),
-    index('idx_shopping_items_purchased').on(table.isPurchased),
-  ]
-);
-
-// -------------------- LEADERBOARDS & SOCIAL --------------------
-
-// Leaderboard Definitions
-export const leaderboards = pgTable('leaderboards', {
-  id: varchar('id')
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  name: varchar('name', { length: 255 }).notNull(),
-  type: varchar('type', { length: 50 }).notNull(), // exercise_1rm, total_volume, streak, xp
-  scope: varchar('scope', { length: 50 }).notNull(), // global, trainer_group, friends
-  exerciseId: varchar('exercise_id').references(() => exercises.id),
-  timeframe: varchar('timeframe', { length: 20 }).notNull(), // all_time, monthly, weekly
-  genderFilter: varchar('gender_filter', { length: 10 }), // male, female, null for all
-  ageGroupFilter: varchar('age_group_filter', { length: 20 }), // 18-25, 26-35, 36-45, 46+
-  isActive: boolean('is_active').default(true),
-  lastCalculatedAt: timestamp('last_calculated_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
-// Leaderboard Entries
-export const leaderboardEntries = pgTable(
-  'leaderboard_entries',
-  {
-    id: varchar('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    leaderboardId: varchar('leaderboard_id')
-      .notNull()
-      .references(() => leaderboards.id, { onDelete: 'cascade' }),
-    userId: varchar('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    rank: integer('rank').notNull(),
-    value: decimal('value', { precision: 12, scale: 2 }).notNull(),
-    previousRank: integer('previous_rank'),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  },
-  (table) => [
-    index('idx_leaderboard_entries_leaderboard').on(table.leaderboardId),
-    index('idx_leaderboard_entries_user').on(table.userId),
-    index('idx_leaderboard_entries_rank').on(table.leaderboardId, table.rank),
-    uniqueIndex('idx_leaderboard_entries_unique').on(table.leaderboardId, table.userId),
-  ]
-);
-
-// User Follows (social connections)
-export const userFollows = pgTable(
-  'user_follows',
-  {
-    id: varchar('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    followerId: varchar('follower_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    followingId: varchar('following_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-  },
-  (table) => [
-    index('idx_user_follows_follower').on(table.followerId),
-    index('idx_user_follows_following').on(table.followingId),
-    uniqueIndex('idx_user_follows_unique').on(table.followerId, table.followingId),
-  ]
-);
+// -------------------- LEADERBOARDS & SOCIAL - ARCHIVED --------------------
+// Tables: leaderboards, leaderboardEntries, userFollows
+// Status: Leaderboards exist but query userGamification directly (simpler approach).
+//         Pre-calculated leaderboard tables and social following never implemented.
+// Note: server/routes/leaderboards.ts queries userGamification on-the-fly for current leaderboards.
+// Archive: docs/archive/v3-tables-archive.ts
+// See: docs/archive/V3-FEATURE-VISION.md for social features and advanced leaderboard designs.
 
 // -------------------- WORKOUT SESSION & REST TIMER --------------------
 
@@ -1364,6 +1149,31 @@ export const aiGeneratedWorkouts = pgTable(
     index('idx_ai_workouts_created_at').on(table.createdAt),
   ]
 );
+
+// -------------------- AI USAGE TRACKING --------------------
+
+// Per-user, per-day AI request and token counts for cost control
+export const aiUsage = pgTable(
+  'ai_usage',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: varchar('date', { length: 10 }).notNull(), // YYYY-MM-DD
+    requestCount: integer('request_count').notNull().default(0),
+    tokenCount: integer('token_count').notNull().default(0),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('idx_ai_usage_user_date').on(table.userId, table.date),
+    index('idx_ai_usage_user_id').on(table.userId),
+  ]
+);
+
+export type AiUsage = typeof aiUsage.$inferSelect;
 
 // In-App Notifications
 export const notifications = pgTable(
@@ -1545,15 +1355,7 @@ export const userStrengthStandardsRelations = relations(userStrengthStandards, (
   }),
 }));
 
-export const strengthStandardsReferenceRelations = relations(
-  strengthStandardsReference,
-  ({ one }) => ({
-    exercise: one(exercises, {
-      fields: [strengthStandardsReference.exerciseId],
-      references: [exercises.id],
-    }),
-  })
-);
+// strengthStandardsReferenceRelations - ARCHIVED
 
 export const userMuscleFatigueRelations = relations(userMuscleFatigue, ({ one }) => ({
   user: one(users, { fields: [userMuscleFatigue.userId], references: [users.id] }),
@@ -1579,63 +1381,11 @@ export const aiChatMessagesRelations = relations(aiChatMessages, ({ one }) => ({
   }),
 }));
 
-export const mealPlansRelations = relations(mealPlans, ({ one, many }) => ({
-  user: one(users, { fields: [mealPlans.userId], references: [users.id] }),
-  meals: many(meals),
-  shoppingLists: many(shoppingLists),
-}));
+// mealPlansRelations, mealsRelations, foodLogRelations - ARCHIVED
 
-export const mealsRelations = relations(meals, ({ one }) => ({
-  mealPlan: one(mealPlans, { fields: [meals.mealPlanId], references: [mealPlans.id] }),
-}));
+// shoppingListsRelations, shoppingListItemsRelations, groceryStoresRelations - ARCHIVED
 
-export const foodLogRelations = relations(foodLog, ({ one }) => ({
-  user: one(users, { fields: [foodLog.userId], references: [users.id] }),
-}));
-
-export const shoppingListsRelations = relations(shoppingLists, ({ one, many }) => ({
-  user: one(users, { fields: [shoppingLists.userId], references: [users.id] }),
-  mealPlan: one(mealPlans, { fields: [shoppingLists.mealPlanId], references: [mealPlans.id] }),
-  store: one(groceryStores, { fields: [shoppingLists.storeId], references: [groceryStores.id] }),
-  items: many(shoppingListItems),
-}));
-
-export const shoppingListItemsRelations = relations(shoppingListItems, ({ one }) => ({
-  shoppingList: one(shoppingLists, {
-    fields: [shoppingListItems.shoppingListId],
-    references: [shoppingLists.id],
-  }),
-}));
-
-export const groceryStoresRelations = relations(groceryStores, ({ many }) => ({
-  shoppingLists: many(shoppingLists),
-}));
-
-export const leaderboardsRelations = relations(leaderboards, ({ one, many }) => ({
-  exercise: one(exercises, { fields: [leaderboards.exerciseId], references: [exercises.id] }),
-  entries: many(leaderboardEntries),
-}));
-
-export const leaderboardEntriesRelations = relations(leaderboardEntries, ({ one }) => ({
-  leaderboard: one(leaderboards, {
-    fields: [leaderboardEntries.leaderboardId],
-    references: [leaderboards.id],
-  }),
-  user: one(users, { fields: [leaderboardEntries.userId], references: [users.id] }),
-}));
-
-export const userFollowsRelations = relations(userFollows, ({ one }) => ({
-  follower: one(users, {
-    fields: [userFollows.followerId],
-    references: [users.id],
-    relationName: 'follower',
-  }),
-  following: one(users, {
-    fields: [userFollows.followingId],
-    references: [users.id],
-    relationName: 'following',
-  }),
-}));
+// leaderboardsRelations, leaderboardEntriesRelations, userFollowsRelations - ARCHIVED
 
 export const workoutSessionsRelations = relations(workoutSessions, ({ one, many }) => ({
   user: one(users, { fields: [workoutSessions.userId], references: [users.id] }),
@@ -1658,6 +1408,10 @@ export const aiGeneratedWorkoutsRelations = relations(aiGeneratedWorkouts, ({ on
   user: one(users, { fields: [aiGeneratedWorkouts.userId], references: [users.id] }),
 }));
 
+export const aiUsageRelations = relations(aiUsage, ({ one }) => ({
+  user: one(users, { fields: [aiUsage.userId], references: [users.id] }),
+}));
+
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, { fields: [notifications.userId], references: [users.id] }),
 }));
@@ -1677,6 +1431,46 @@ export const clientIntakeRelations = relations(clientIntake, ({ one }) => ({
   client: one(clients, { fields: [clientIntake.clientId], references: [clients.id] }),
   trainer: one(users, { fields: [clientIntake.trainerId], references: [users.id] }),
 }));
+
+// -------------------- CLIENT ACCESS CODES --------------------
+
+export const clientAccessCodes = pgTable(
+  'client_access_codes',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    clientId: varchar('client_id')
+      .notNull()
+      .unique()
+      .references(() => clients.id, { onDelete: 'cascade' }),
+    accessCode: varchar('access_code', { length: 20 }).notNull().unique(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    lastUsedAt: timestamp('last_used_at'),
+    expiresAt: timestamp('expires_at'),
+    createdBy: varchar('created_by')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    index('idx_client_access_codes_client_id').on(table.clientId),
+    index('idx_client_access_codes_access_code').on(table.accessCode),
+    index('idx_client_access_codes_is_active').on(table.isActive),
+  ]
+);
+
+export const clientAccessCodesRelations = relations(clientAccessCodes, ({ one }) => ({
+  client: one(clients, { fields: [clientAccessCodes.clientId], references: [clients.id] }),
+  createdByUser: one(users, { fields: [clientAccessCodes.createdBy], references: [users.id] }),
+}));
+
+export const insertClientAccessCodeSchema = createInsertSchema(clientAccessCodes).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertClientAccessCode = z.infer<typeof insertClientAccessCodeSchema>;
+export type ClientAccessCode = typeof clientAccessCodes.$inferSelect;
 
 // -------------------- INSERT SCHEMAS FOR NEW TABLES --------------------
 
@@ -1748,52 +1542,13 @@ export const insertAiChatMessageSchema = createInsertSchema(aiChatMessages).omit
   createdAt: true,
 });
 
-export const insertMealPlanSchema = createInsertSchema(mealPlans).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+// Meal planning insert schemas - ARCHIVED (see comment above)
 
-export const insertMealSchema = createInsertSchema(meals).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertFoodLogSchema = createInsertSchema(foodLog).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertGroceryStoreSchema = createInsertSchema(groceryStores).omit({
-  id: true,
-  lastUpdated: true,
-});
-
-export const insertShoppingListSchema = createInsertSchema(shoppingLists).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertShoppingListItemSchema = createInsertSchema(shoppingListItems).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertLeaderboardSchema = createInsertSchema(leaderboards).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertLeaderboardEntrySchema = createInsertSchema(leaderboardEntries).omit({
-  id: true,
-  updatedAt: true,
-});
-
-export const insertUserFollowSchema = createInsertSchema(userFollows).omit({
-  id: true,
-  createdAt: true,
-});
+// Insert schemas for archived tables - REMOVED
+// See docs/archive/v3-tables-archive.ts for:
+// - insertGroceryStoreSchema, insertShoppingListSchema, insertShoppingListItemSchema
+// - insertLeaderboardSchema, insertLeaderboardEntrySchema, insertUserFollowSchema
+// - insertMealPlanSchema, insertMealSchema, insertFoodLogSchema
 
 export const insertWorkoutSessionSchema = createInsertSchema(workoutSessions).omit({
   id: true,
@@ -1851,32 +1606,12 @@ export type AiChatConversation = typeof aiChatConversations.$inferSelect;
 export type InsertAiChatMessage = z.infer<typeof insertAiChatMessageSchema>;
 export type AiChatMessage = typeof aiChatMessages.$inferSelect;
 
-export type InsertMealPlan = z.infer<typeof insertMealPlanSchema>;
-export type MealPlan = typeof mealPlans.$inferSelect;
-
-export type InsertMeal = z.infer<typeof insertMealSchema>;
-export type Meal = typeof meals.$inferSelect;
-
-export type InsertFoodLog = z.infer<typeof insertFoodLogSchema>;
-export type FoodLog = typeof foodLog.$inferSelect;
-
-export type InsertGroceryStore = z.infer<typeof insertGroceryStoreSchema>;
-export type GroceryStore = typeof groceryStores.$inferSelect;
-
-export type InsertShoppingList = z.infer<typeof insertShoppingListSchema>;
-export type ShoppingList = typeof shoppingLists.$inferSelect;
-
-export type InsertShoppingListItem = z.infer<typeof insertShoppingListItemSchema>;
-export type ShoppingListItem = typeof shoppingListItems.$inferSelect;
-
-export type InsertLeaderboard = z.infer<typeof insertLeaderboardSchema>;
-export type Leaderboard = typeof leaderboards.$inferSelect;
-
-export type InsertLeaderboardEntry = z.infer<typeof insertLeaderboardEntrySchema>;
-export type LeaderboardEntry = typeof leaderboardEntries.$inferSelect;
-
-export type InsertUserFollow = z.infer<typeof insertUserFollowSchema>;
-export type UserFollow = typeof userFollows.$inferSelect;
+// Types for archived tables - REMOVED
+// See docs/archive/v3-tables-archive.ts for all archived types:
+// - MealPlan, Meal, FoodLog
+// - GroceryStore, ShoppingList, ShoppingListItem
+// - Leaderboard, LeaderboardEntry, UserFollow
+// - StrengthStandardsReference
 
 export type InsertWorkoutSession = z.infer<typeof insertWorkoutSessionSchema>;
 export type WorkoutSession = typeof workoutSessions.$inferSelect;

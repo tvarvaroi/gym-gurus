@@ -39,6 +39,7 @@ import { TestLoginPage } from '@/components/TestLoginPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import NotificationCenter from '@/components/NotificationCenter';
 import AppHeaderComponent from '@/components/layout/AppHeader';
+import { TrialBanner } from '@/components/TrialBanner';
 
 // Lazy load only secondary pages for code splitting
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
@@ -96,6 +97,23 @@ const PremiumWaterIntakeCalc = lazy(
 // Legal pages
 const TermsPage = lazy(() => import('@/pages/TermsPage'));
 const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
+
+// Auth pages
+const AuthLoginPage = lazy(() => import('@/pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
+// Non-lazy test component
+import TestAuthLogin from '@/pages/auth/TestAuthLogin';
+
+// Disciple login page
+const DiscipleLoginPage = lazy(() => import('@/pages/DiscipleLoginPage'));
+
+// Pricing page
+const PricingPage = lazy(() => import('@/pages/PricingPage'));
+
+// Settings page
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 
 // Solo user pages
 const SoloDashboard = lazy(() => import('@/pages/solo/SoloDashboard'));
@@ -323,6 +341,59 @@ function Router() {
               {() => (
                 <Suspense fallback={<LoadingFallback />}>
                   <PrivacyPage />
+                </Suspense>
+              )}
+            </Route>
+
+            {/* Test route to debug */}
+            <Route path="/login2">
+              {() => {
+                console.log('[Route] /login2 matched!');
+                return (
+                  <Suspense fallback={<LoadingFallback />}>
+                    <AuthLoginPage />
+                  </Suspense>
+                );
+              }}
+            </Route>
+
+            {/* Auth pages (public) */}
+            {/* Test route - non-lazy */}
+            <Route path="/test-auth-login">
+              {() => {
+                console.log('[Route] /test-auth-login matched!');
+                return <TestAuthLogin />;
+              }}
+            </Route>
+
+            <Route path="/auth/login">
+              {() => {
+                console.log('[Route] /auth/login matched!');
+                return (
+                  <Suspense fallback={<LoadingFallback />}>
+                    <AuthLoginPage />
+                  </Suspense>
+                );
+              }}
+            </Route>
+            <Route path="/auth/register">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <RegisterPage />
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/auth/forgot-password">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <ForgotPasswordPage />
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/auth/reset-password">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <ResetPasswordPage />
                 </Suspense>
               )}
             </Route>
@@ -658,6 +729,37 @@ function Router() {
               )}
             </Route>
 
+            {/* Disciple (client) access code login — public */}
+            <Route path="/disciple-login">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <DiscipleLoginPage />
+                </Suspense>
+              )}
+            </Route>
+
+            {/* Pricing page (authenticated users only) */}
+            <Route path="/pricing">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <PricingPage />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+
+            {/* Settings page (authenticated users only) */}
+            <Route path="/settings">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <SettingsPage />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+
             {/* Public landing page at root (must come LAST before 404) */}
             <Route path="/">
               {() => (
@@ -910,7 +1012,12 @@ function AppLayout() {
     location === '/privacy' ||
     location.startsWith('/calculators') ||
     location === '/preview-login' ||
-    location === '/test-login';
+    location === '/test-login' ||
+    location === '/test-auth-login' ||
+    location === '/login2' ||
+    location === '/register2' ||
+    location === '/disciple-login' ||
+    location.startsWith('/auth/');
 
   // DEBUG: Log location and isPublicPage
   useEffect(() => {
@@ -936,6 +1043,7 @@ function AppLayout() {
               <AppSidebar />
               <div className="flex flex-col flex-1 min-w-0 overflow-hidden transition-all duration-200 ease-linear">
                 <AppHeaderComponent />
+                <TrialBanner />
                 <main
                   id="main-content"
                   className="flex-1 overflow-y-auto overflow-x-hidden"

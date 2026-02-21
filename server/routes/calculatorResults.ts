@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { storage } from '../storage';
-import { isAuthenticated } from '../replitAuth';
+import { isAuthenticated } from '../middleware/auth';
 import type { Request, Response } from 'express';
 
 const router = Router();
@@ -12,7 +12,7 @@ const router = Router();
  */
 router.get('/calculator-results', isAuthenticated, async (req: any, res: Response) => {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized - No user ID found' });
     }
@@ -32,7 +32,7 @@ router.get('/calculator-results', isAuthenticated, async (req: any, res: Respons
  */
 router.get('/calculator-results/:type', isAuthenticated, async (req: any, res: Response) => {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = req.user?.id;
     const { type } = req.params;
 
     if (!userId) {
@@ -54,7 +54,7 @@ router.get('/calculator-results/:type', isAuthenticated, async (req: any, res: R
  */
 router.post('/calculator-results', isAuthenticated, async (req: any, res: Response) => {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = req.user?.id;
     const { calculatorType, inputs, results, notes, isFavorite } = req.body;
 
     if (!userId) {
@@ -90,7 +90,7 @@ router.post('/calculator-results', isAuthenticated, async (req: any, res: Respon
  */
 router.patch('/calculator-results/:id', isAuthenticated, async (req: any, res: Response) => {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = req.user?.id;
     const { id } = req.params;
     const { notes, isFavorite } = req.body;
 
@@ -123,7 +123,7 @@ router.patch('/calculator-results/:id', isAuthenticated, async (req: any, res: R
  */
 router.delete('/calculator-results/:id', isAuthenticated, async (req: any, res: Response) => {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = req.user?.id;
     const { id } = req.params;
 
     if (!userId) {

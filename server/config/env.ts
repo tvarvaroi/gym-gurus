@@ -32,6 +32,17 @@ const requiredEnvSchema = z.object({
 });
 
 const optionalEnvSchema = z.object({
+  // Application
+  APP_URL: z.string().optional(),
+
+  // Email Service (Resend)
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+
+  // OAuth (Google)
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
   // AI (Anthropic Claude)
   ANTHROPIC_API_KEY: z.string().optional(),
 

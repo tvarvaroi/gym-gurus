@@ -2,7 +2,7 @@
 // Mounted with raw body parser for signature verification
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
-import { payments } from '../../shared/schema';
+import { payments, users } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 const router = Router();
@@ -82,7 +82,16 @@ router.post('/stripe', async (req: Request, res: Response) => {
         break;
 
       case 'invoice.payment_failed':
-        await handleInvoiceFailed(event.data.object);
+        await handleSubscriptionInvoiceFailed(event.data.object);
+        break;
+
+      // --- Subscription lifecycle ---
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object);
+        break;
+
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object);
         break;
 
       default:
@@ -99,10 +108,29 @@ router.post('/stripe', async (req: Request, res: Response) => {
 // ---------- Event Handlers ----------
 
 async function handleCheckoutCompleted(session: any) {
+  const database = await db;
+
+  // Platform subscription checkout (userId + tier in metadata)
+  if (session.mode === 'subscription' && session.metadata?.userId) {
+    const { userId, tier } = session.metadata;
+    // The subscription.updated event will fire shortly and set full details,
+    // but we can eagerly update status here for responsiveness.
+    await database
+      .update(users)
+      .set({
+        stripeCustomerId: session.customer,
+        subscriptionId: session.subscription,
+        subscriptionStatus: 'active',
+        subscriptionTier: tier ?? null,
+      })
+      .where(eq(users.id, userId));
+    return;
+  }
+
+  // Trainer-client payment plan checkout (legacy flow)
   const { trainerId, clientId, planId } = session.metadata || {};
   if (!trainerId || !clientId) return;
 
-  const database = await db;
   await database.insert(payments).values({
     trainerId,
     clientId,
@@ -115,11 +143,15 @@ async function handleCheckoutCompleted(session: any) {
     paidAt: new Date(),
   });
 
-  // Send notification
   try {
     const { notifyPaymentReceived } = await import('../services/notificationService');
     const amountFormatted = `$${(session.amount_total / 100).toFixed(2)}`;
-    await notifyPaymentReceived(trainerId, `Client ${clientId}`, amountFormatted, session.payment_intent);
+    await notifyPaymentReceived(
+      trainerId,
+      `Client ${clientId}`,
+      amountFormatted,
+      session.payment_intent
+    );
   } catch {
     // Non-critical
   }
@@ -161,9 +193,69 @@ async function handleInvoicePaid(invoice: any) {
   });
 }
 
-async function handleInvoiceFailed(invoice: any) {
+async function handleSubscriptionInvoiceFailed(invoice: any) {
   console.warn(`Invoice payment failed: ${invoice.id}`);
-  // Could send notification to trainer about failed subscription payment
+  // Update user subscription status to past_due if we have a customer
+  if (invoice.customer) {
+    const database = await db;
+    await database
+      .update(users)
+      .set({ subscriptionStatus: 'past_due' })
+      .where(eq(users.stripeCustomerId, invoice.customer));
+  }
+}
+
+// ---------- Subscription Lifecycle Handlers ----------
+
+/** Map Stripe product/price metadata tier to our tier names */
+function extractTierFromSubscription(subscription: any): string | null {
+  // First: check metadata set at checkout
+  const tier = subscription.metadata?.tier;
+  if (tier) return tier;
+  // Fallback: derive from price ID env vars
+  const priceId = subscription.items?.data?.[0]?.price?.id;
+  if (!priceId) return null;
+  if (priceId === process.env.STRIPE_PRICE_ID_SOLO) return 'solo';
+  if (priceId === process.env.STRIPE_PRICE_ID_TRAINER) return 'trainer';
+  if (priceId === process.env.STRIPE_PRICE_ID_PRO) return 'pro';
+  return null;
+}
+
+async function handleSubscriptionUpdated(subscription: any) {
+  const database = await db;
+  const tier = extractTierFromSubscription(subscription);
+  const currentPeriodEnd = subscription.current_period_end
+    ? new Date(subscription.current_period_end * 1000)
+    : null;
+
+  await database
+    .update(users)
+    .set({
+      subscriptionStatus: subscription.status, // active, trialing, past_due, canceled, etc.
+      subscriptionTier: tier,
+      subscriptionId: subscription.id,
+      subscriptionCurrentPeriodEnd: currentPeriodEnd,
+    })
+    .where(eq(users.stripeCustomerId, subscription.customer));
+
+  console.log(
+    `Subscription updated for customer ${subscription.customer}: ${subscription.status} (${tier})`
+  );
+}
+
+async function handleSubscriptionDeleted(subscription: any) {
+  const database = await db;
+  await database
+    .update(users)
+    .set({
+      subscriptionStatus: 'canceled',
+      subscriptionTier: null,
+      subscriptionId: null,
+      subscriptionCurrentPeriodEnd: null,
+    })
+    .where(eq(users.stripeCustomerId, subscription.customer));
+
+  console.log(`Subscription canceled for customer ${subscription.customer}`);
 }
 
 export default router;

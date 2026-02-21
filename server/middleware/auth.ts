@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { storage } from '../storage';
-import { isAuthenticated, getAuthenticatedUserId } from '../replitAuth';
+import { getUserById } from '../auth';
 import type { User } from '@shared/schema';
+import { isInTrial, isTrialExpired, canAccessTier } from '../services/subscription';
 
 // Extend Express Session interface to include user data
 declare module 'express-session' {
@@ -19,6 +20,7 @@ declare module 'express-session' {
 
 // Augment the Express.User type that Passport uses
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     // Passport already declares User, we need to merge with it
     interface User {
@@ -27,6 +29,12 @@ declare global {
       firstName?: string | null;
       lastName?: string | null;
       profileImageUrl?: string | null;
+      role?: string | null;
+      stripeCustomerId?: string | null;
+      subscriptionStatus?: string | null;
+      subscriptionTier?: string | null;
+      subscriptionCurrentPeriodEnd?: Date | null;
+      trialEndsAt?: Date | null;
       createdAt?: Date | null;
       updatedAt?: Date | null;
     }
@@ -34,80 +42,45 @@ declare global {
 }
 
 /**
- * Secure session-based authentication middleware - replaces insecure header auth
+ * Check if user is authenticated via session
+ */
+export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  const userId = (req as any).session?.userId;
+
+  if (!userId) {
+    return res.status(401).json({
+      error: 'Authentication required',
+      message: 'Please log in to access this resource',
+    });
+  }
+
+  next();
+}
+
+/**
+ * Secure session-based authentication middleware
+ * Loads user from database and attaches to request
  */
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    // Use secure session-based authentication
-    const userId = getAuthenticatedUserId(req);
-    
+    const userId = (req as any).session?.userId;
+
     if (!userId) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'Authentication required',
-        message: 'Please log in to access this resource' 
+        message: 'Please log in to access this resource',
       });
     }
 
-    // Try to get user from database, fall back to session data in development
-    let user: User | undefined;
-    try {
-      user = await storage.getUser(userId);
-    } catch (dbError) {
-      // In development mode when database is unavailable, use session data
-      if (process.env.NODE_ENV === 'development') {
-        const sessionUser = (req as any).user;
-        if (sessionUser?.claims) {
-          // Construct user object from session claims - ensure consistent demo-trainer-123 ID in development
-          user = {
-            id: "demo-trainer-123", // Always use consistent demo trainer ID in development
-            email: sessionUser.claims.email || sessionUser.email || "trainer@example.com",
-            firstName: sessionUser.claims.first_name || sessionUser.firstName || "Demo",
-            lastName: sessionUser.claims.last_name || sessionUser.lastName || "Trainer",
-            profileImageUrl: sessionUser.claims.profile_image_url || sessionUser.profileImageUrl || null,
-            role: "trainer",
-            trainerId: null,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-        } else {
-          // Fallback to demo user in development
-          user = {
-            id: "demo-trainer-123",
-            email: "trainer@example.com",
-            firstName: "Demo",
-            lastName: "Trainer",
-            profileImageUrl: null,
-            role: "trainer",
-            trainerId: null,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-        }
-      } else {
-        throw dbError;
-      }
-    }
-    
-    // If user is still not found, synthesize demo user in development mode
-    if (!user && process.env.NODE_ENV === 'development' && userId === "demo-trainer-123") {
-      // Synthesize demo user when storage.getUser returns undefined
-      user = {
-        id: "demo-trainer-123",
-        email: "trainer@example.com",
-        firstName: "Demo",
-        lastName: "Trainer",
-        profileImageUrl: null,
-        role: "trainer",
-        trainerId: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-    }
-    
+    // Get user from database
+    const user = await getUserById(userId);
+
     if (!user) {
-      return res.status(401).json({ 
+      // Session exists but user doesn't - clear session
+      (req as any).session.destroy();
+      return res.status(401).json({
         error: 'Invalid authentication',
-        message: 'User not found' 
+        message: 'User not found',
       });
     }
 
@@ -116,9 +89,9 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Authentication failed',
-      message: 'Internal server error during authentication' 
+      message: 'Internal server error during authentication',
     });
   }
 }
@@ -141,14 +114,14 @@ export async function requireClientOwnership(req: Request, res: Response, next: 
     if (!userId) {
       return res.status(401).json({
         error: 'Authentication required',
-        message: 'No authenticated user found'
+        message: 'No authenticated user found',
       });
     }
 
     if (!clientId) {
       return res.status(400).json({
         error: 'Bad request',
-        message: 'Client ID is required'
+        message: 'Client ID is required',
       });
     }
 
@@ -157,7 +130,7 @@ export async function requireClientOwnership(req: Request, res: Response, next: 
     if (!authenticatedUser) {
       return res.status(401).json({
         error: 'Authentication required',
-        message: 'User not found'
+        message: 'User not found',
       });
     }
 
@@ -168,7 +141,7 @@ export async function requireClientOwnership(req: Request, res: Response, next: 
       if (!client) {
         return res.status(404).json({
           error: 'Client not found',
-          message: 'The specified client does not exist'
+          message: 'The specified client does not exist',
         });
       }
 
@@ -176,7 +149,7 @@ export async function requireClientOwnership(req: Request, res: Response, next: 
       if (client.email !== authenticatedUser.email) {
         return res.status(403).json({
           error: 'Access denied',
-          message: 'You can only access your own data'
+          message: 'You can only access your own data',
         });
       }
       // Client accessing their own data - allowed
@@ -188,14 +161,14 @@ export async function requireClientOwnership(req: Request, res: Response, next: 
     if (!client) {
       return res.status(404).json({
         error: 'Client not found',
-        message: 'The specified client does not exist'
+        message: 'The specified client does not exist',
       });
     }
 
     if (client.trainerId !== userId) {
       return res.status(403).json({
         error: 'Access denied',
-        message: 'You can only access your own clients'
+        message: 'You can only access your own clients',
       });
     }
 
@@ -204,7 +177,7 @@ export async function requireClientOwnership(req: Request, res: Response, next: 
     console.error('Authorization error:', error);
     res.status(500).json({
       error: 'Authorization failed',
-      message: 'Internal server error during authorization'
+      message: 'Internal server error during authorization',
     });
   }
 }
@@ -218,32 +191,32 @@ export async function requireTrainerOwnership(req: Request, res: Response, next:
     const authenticatedTrainerId = req.user?.id;
 
     if (!authenticatedTrainerId) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'Authentication required',
-        message: 'No authenticated user found' 
+        message: 'No authenticated user found',
       });
     }
 
     if (!trainerId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Bad request',
-        message: 'Trainer ID is required' 
+        message: 'Trainer ID is required',
       });
     }
 
     if (trainerId !== authenticatedTrainerId) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Access denied',
-        message: 'You can only access your own resources' 
+        message: 'You can only access your own resources',
       });
     }
 
     next();
   } catch (error) {
     console.error('Authorization error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Authorization failed',
-      message: 'Internal server error during authorization' 
+      message: 'Internal server error during authorization',
     });
   }
 }
@@ -266,7 +239,7 @@ export function rateLimitWebSocket(userId: string): boolean {
     // Reset or initialize rate limit
     wsConnectionLimits.set(userId, {
       count: 1,
-      resetTime: now + RATE_LIMIT_WINDOW
+      resetTime: now + RATE_LIMIT_WINDOW,
     });
     return true;
   }
@@ -277,4 +250,40 @@ export function rateLimitWebSocket(userId: string): boolean {
 
   userLimit.count++;
   return true;
+}
+
+/**
+ * Subscription gate middleware factory.
+ * Disciples (role==='client') always pass — their trainer pays.
+ * Trial users have full access during trial.
+ * After trial expires with no subscription → 402 with upgrade prompt.
+ */
+export function requireSubscription(tier: 'solo' | 'trainer' | 'pro') {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    // Disciples never pay
+    if (user.role === 'client') return next();
+    // Active subscription at required tier
+    if (canAccessTier(user, tier)) return next();
+    // Valid trial = full access
+    if (isInTrial(user)) return next();
+    // Trial expired with no subscription
+    if (isTrialExpired(user)) {
+      return res.status(402).json({
+        error: 'subscription_required',
+        tier,
+        trialExpired: true,
+        message: 'Your free trial has ended. Please subscribe to continue.',
+      });
+    }
+    // No trial at all, no subscription
+    return res.status(402).json({
+      error: 'subscription_required',
+      tier,
+      message: `This feature requires a ${tier} subscription or higher.`,
+    });
+  };
 }

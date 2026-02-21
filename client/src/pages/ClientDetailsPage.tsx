@@ -1,25 +1,60 @@
-import { useState } from "react";
-import { useRoute, useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { useState } from 'react';
+import { useRoute, useLocation } from 'wouter';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { motion } from 'framer-motion';
 import {
-  Mail, Target, Calendar, TrendingUp,
-  Dumbbell, Plus, Edit2, UserCircle,
-  Activity, Weight, CheckCircle2, Clock, Send, CalendarPlus,
-  X, TrendingDown, Percent, BarChart3, Flame, Heart, Apple, Beef, ClipboardCheck
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
-import { format, formatDistanceToNow } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import ProgressFormModal from "@/components/ProgressFormModal";
-import { EditClientButton } from "@/components/ClientFormModal";
+  Mail,
+  Target,
+  Calendar,
+  TrendingUp,
+  Dumbbell,
+  Plus,
+  Edit2,
+  UserCircle,
+  Activity,
+  Weight,
+  CheckCircle2,
+  Clock,
+  Send,
+  CalendarPlus,
+  X,
+  TrendingDown,
+  Percent,
+  BarChart3,
+  Flame,
+  Heart,
+  Apple,
+  Beef,
+  ClipboardCheck,
+  Key,
+  Copy,
+  Check,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from 'recharts';
+import { format, formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import ProgressFormModal from '@/components/ProgressFormModal';
+import { EditClientButton } from '@/components/ClientFormModal';
 import {
   calculateBodyFatPercentage,
   calculateBMR,
@@ -28,13 +63,13 @@ import {
   calculateNutritionPlan,
   getActivityLevelDisplay,
   getBodyFatCategory,
-  type ClientBiometrics
-} from "@/lib/biometricCalculations";
-import type { Client as ClientSchema } from "@shared/schema";
-import ClientIntakeForm from "@/components/ClientIntakeForm";
-import { QueryErrorState } from "@/components/query-states/QueryErrorState";
-import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { TruncatedText } from "@/components/TruncatedText";
+  type ClientBiometrics,
+} from '@/lib/biometricCalculations';
+import type { Client as ClientSchema } from '@shared/schema';
+import ClientIntakeForm from '@/components/ClientIntakeForm';
+import { QueryErrorState } from '@/components/query-states/QueryErrorState';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { TruncatedText } from '@/components/TruncatedText';
 
 // API response type - dates are serialized as strings
 interface ClientAPI {
@@ -104,8 +139,222 @@ interface TrainingSession {
   notes?: string;
 }
 
+// ---- Access Code Card Component ----
+function AccessCodeCard({ clientId, clientName }: { clientId: string; clientName: string }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [copied, setCopied] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
+
+  const { data, isLoading } = useQuery<{
+    accessCode: string | null;
+    lastUsedAt: string | null;
+    createdAt: string | null;
+  }>({
+    queryKey: [`/api/clients/${clientId}/access-code`],
+    enabled: !!clientId,
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: () =>
+      apiRequest('POST', `/api/clients/${clientId}/access-code`).then((r) => r.json()),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/access-code`] }),
+    onError: () =>
+      toast({
+        title: 'Error',
+        description: 'Failed to generate access code',
+        variant: 'destructive',
+      }),
+  });
+
+  const regenerateMutation = useMutation({
+    mutationFn: () =>
+      apiRequest('POST', `/api/clients/${clientId}/access-code/regenerate`).then((r) => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/access-code`] });
+      setConfirmRegenerate(false);
+      toast({ title: 'Code regenerated', description: 'The old code is now invalid.' });
+    },
+    onError: () =>
+      toast({
+        title: 'Error',
+        description: 'Failed to regenerate access code',
+        variant: 'destructive',
+      }),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: () =>
+      apiRequest('DELETE', `/api/clients/${clientId}/access-code`).then((r) => r.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/access-code`] });
+      setConfirmRevoke(false);
+      toast({
+        title: 'Code revoked',
+        description: `${clientName} can no longer log in until you generate a new code.`,
+      });
+    },
+    onError: () =>
+      toast({
+        title: 'Error',
+        description: 'Failed to revoke access code',
+        variant: 'destructive',
+      }),
+  });
+
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const activeCode = data?.accessCode ?? null;
+
+  return (
+    <Card className="glass-strong border-border/50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Key className="w-4 h-4 text-primary" />
+          Client Access Code
+        </CardTitle>
+        <CardDescription>
+          {clientName} uses this code to log in at /disciple-login — no email or password needed.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        ) : activeCode ? (
+          <>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-mono tracking-[0.2em] font-semibold text-primary">
+                {activeCode}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => copyCode(activeCode)}
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3 w-3 mr-1 text-green-500" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            </div>
+            {data?.lastUsedAt ? (
+              <p className="text-xs text-muted-foreground">
+                Last used: {new Date(data.lastUsedAt).toLocaleDateString()}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Never used</p>
+            )}
+            <div className="flex gap-2 flex-wrap">
+              {!confirmRegenerate ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmRegenerate(true)}
+                  disabled={regenerateMutation.isPending}
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Regenerate
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    This invalidates the current code.
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => regenerateMutation.mutate()}
+                    disabled={regenerateMutation.isPending}
+                  >
+                    {regenerateMutation.isPending ? 'Regenerating...' : 'Confirm'}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirmRegenerate(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+              {!confirmRevoke ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmRevoke(true)}
+                  disabled={revokeMutation.isPending}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Revoke
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {clientName} won't be able to log in.
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => revokeMutation.mutate()}
+                    disabled={revokeMutation.isPending}
+                  >
+                    {revokeMutation.isPending ? 'Revoking...' : 'Confirm Revoke'}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirmRevoke(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              No active access code. Generate one so {clientName} can log in.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => generateMutation.mutate()}
+              disabled={generateMutation.isPending}
+            >
+              <Key className="h-3 w-3 mr-1" />
+              {generateMutation.isPending ? 'Generating...' : 'Generate Access Code'}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ClientDetailsPage() {
-  const [, params] = useRoute("/clients/:id");
+  const [, params] = useRoute('/clients/:id');
   const [location, setLocation] = useLocation();
   const clientId = params?.id;
   const { toast } = useToast();
@@ -121,9 +370,13 @@ export default function ClientDetailsPage() {
   const tabParam = searchParams.get('tab') || 'overview';
 
   // Fetch client details
-  const { data: clientAPI, isLoading: loadingClient, error: clientError } = useQuery<ClientAPI>({
+  const {
+    data: clientAPI,
+    isLoading: loadingClient,
+    error: clientError,
+  } = useQuery<ClientAPI>({
     queryKey: [`/api/clients/detail/${clientId}`],
-    enabled: !!clientId
+    enabled: !!clientId,
   });
 
   // Convert API response to Client schema type
@@ -132,22 +385,22 @@ export default function ClientDetailsPage() {
   // Fetch client's workout assignments
   const { data: rawWorkoutAssignments = [] } = useQuery<WorkoutAssignment[]>({
     queryKey: [`/api/clients/${clientId}/workouts`],
-    enabled: !!clientId
+    enabled: !!clientId,
   });
 
   // Filter out assignments with missing workout data
-  const workoutAssignments = rawWorkoutAssignments.filter(a => a.workout != null);
+  const workoutAssignments = rawWorkoutAssignments.filter((a) => a.workout != null);
 
   // Fetch client's progress entries
   const { data: progressEntries = [] } = useQuery<ProgressEntry[]>({
     queryKey: [`/api/progress/${clientId}`],
-    enabled: !!clientId
+    enabled: !!clientId,
   });
 
   // Fetch client's training sessions
   const { data: trainingSessions = [] } = useQuery<TrainingSession[]>({
     queryKey: [`/api/clients/${clientId}/sessions`],
-    enabled: !!clientId
+    enabled: !!clientId,
   });
 
   // Fetch client's compliance rates
@@ -169,7 +422,7 @@ export default function ClientDetailsPage() {
       if (!response.ok) throw new Error('Failed to fetch workouts');
       return response.json();
     },
-    enabled: showWorkoutAssign
+    enabled: showWorkoutAssign,
   });
 
   // Workout assignment moved to Schedule page
@@ -178,12 +431,12 @@ export default function ClientDetailsPage() {
   // Process progress data for charts
   const progressChartData = (type: string) => {
     return progressEntries
-      .filter(entry => entry.type === type)
+      .filter((entry) => entry.type === type)
       .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime())
-      .map(entry => ({
+      .map((entry) => ({
         date: format(new Date(entry.recordedAt), 'MMM d'),
         value: parseFloat(entry.value),
-        fullDate: entry.recordedAt
+        fullDate: entry.recordedAt,
       }));
   };
 
@@ -192,16 +445,18 @@ export default function ClientDetailsPage() {
 
   // Calculate stats
   const totalWorkouts = workoutAssignments.length;
-  const completedWorkouts = workoutAssignments.filter(w => w.completedAt).length;
-  const completionRate = totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0;
+  const completedWorkouts = workoutAssignments.filter((w) => w.completedAt).length;
+  const completionRate =
+    totalWorkouts > 0 ? Math.round((completedWorkouts / totalWorkouts) * 100) : 0;
 
-  const upcomingSessions = trainingSessions.filter(s =>
-    s.status === 'scheduled' && new Date(s.scheduledAt) > new Date()
+  const upcomingSessions = trainingSessions.filter(
+    (s) => s.status === 'scheduled' && new Date(s.scheduledAt) > new Date()
   ).length;
 
   const latestWeight = weightData[weightData.length - 1];
   const firstWeight = weightData[0];
-  const weightChange = latestWeight && firstWeight ? (latestWeight.value - firstWeight.value).toFixed(1) : null;
+  const weightChange =
+    latestWeight && firstWeight ? (latestWeight.value - firstWeight.value).toFixed(1) : null;
 
   if (loadingClient) {
     return (
@@ -225,7 +480,9 @@ export default function ClientDetailsPage() {
         <QueryErrorState
           error={clientError}
           title="Failed to load client"
-          onRetry={() => queryClient.invalidateQueries({ queryKey: [`/api/clients/detail/${clientId}`] })}
+          onRetry={() =>
+            queryClient.invalidateQueries({ queryKey: [`/api/clients/detail/${clientId}`] })
+          }
         />
       </div>
     );
@@ -257,7 +514,7 @@ export default function ClientDetailsPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
       >
         <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-background via-background/95 to-background/90 shadow-premium backdrop-blur-xl">
           {/* Animated gradient background */}
@@ -275,12 +532,16 @@ export default function ClientDetailsPage() {
                     className="relative"
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
                   >
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full blur-xl"
                       animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                      transition={{ duration: 3, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
+                      transition={{
+                        duration: 3,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
+                        ease: 'easeInOut',
+                      }}
                     />
                     <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/30 shadow-lg">
                       <UserCircle className="w-16 h-16 text-primary" />
@@ -292,13 +553,17 @@ export default function ClientDetailsPage() {
                       } shadow-lg`}
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
+                      transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
                     >
                       {client.status === 'active' && (
                         <motion.div
                           className="absolute inset-0 rounded-full bg-emerald-500"
                           animate={{ opacity: [0.5, 1, 0.5] }}
-                          transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
+                          transition={{
+                            duration: 2,
+                            repeat: prefersReducedMotion ? 0 : Infinity,
+                            ease: 'easeInOut',
+                          }}
                         />
                       )}
                     </motion.div>
@@ -338,14 +603,11 @@ export default function ClientDetailsPage() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.4, type: "spring" }}
+                  transition={{ delay: 0.4, type: 'spring' }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <EditClientButton
-                    client={client}
-                    trainerId={client.trainerId}
-                  />
+                  <EditClientButton client={client} trainerId={client.trainerId} />
                 </motion.div>
               </div>
 
@@ -399,13 +661,13 @@ export default function ClientDetailsPage() {
                 <motion.div
                   className="text-center p-4 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20"
                   whileHover={{ scale: 1.05, y: -4 }}
-                  transition={{ type: "spring", stiffness: 300 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <motion.div
                     className="text-3xl font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ delay: 0.7, type: "spring", stiffness: 200 }}
+                    transition={{ delay: 0.7, type: 'spring', stiffness: 200 }}
                   >
                     {totalWorkouts}
                   </motion.div>
@@ -415,13 +677,13 @@ export default function ClientDetailsPage() {
                 <motion.div
                   className="text-center p-4 rounded-lg bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20"
                   whileHover={{ scale: 1.05, y: -4 }}
-                  transition={{ type: "spring", stiffness: 300 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <motion.div
                     className="text-3xl font-light bg-gradient-to-r from-emerald-600 to-emerald-500/70 bg-clip-text text-transparent"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
+                    transition={{ delay: 0.8, type: 'spring', stiffness: 200 }}
                   >
                     {completionRate}%
                   </motion.div>
@@ -431,13 +693,13 @@ export default function ClientDetailsPage() {
                 <motion.div
                   className="text-center p-4 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20"
                   whileHover={{ scale: 1.05, y: -4 }}
-                  transition={{ type: "spring", stiffness: 300 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <motion.div
                     className="text-3xl font-light bg-gradient-to-r from-blue-600 to-blue-500/70 bg-clip-text text-transparent"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ delay: 0.9, type: "spring", stiffness: 200 }}
+                    transition={{ delay: 0.9, type: 'spring', stiffness: 200 }}
                   >
                     {progressEntries.length}
                   </motion.div>
@@ -447,13 +709,13 @@ export default function ClientDetailsPage() {
                 <motion.div
                   className="text-center p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20"
                   whileHover={{ scale: 1.05, y: -4 }}
-                  transition={{ type: "spring", stiffness: 300 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <motion.div
                     className="text-3xl font-light bg-gradient-to-r from-purple-600 to-purple-500/70 bg-clip-text text-transparent"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ delay: 1.0, type: "spring", stiffness: 200 }}
+                    transition={{ delay: 1.0, type: 'spring', stiffness: 200 }}
                   >
                     {upcomingSessions}
                   </motion.div>
@@ -473,19 +735,36 @@ export default function ClientDetailsPage() {
           gender: (client.gender as 'male' | 'female') ?? undefined,
           height: client.height ? parseFloat(client.height as string) : undefined,
           weight: client.weight ? parseFloat(client.weight as string) : undefined,
-          activityLevel: (client.activityLevel as 'active' | 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active') ?? undefined,
-          neckCircumference: client.neckCircumference ? parseFloat(client.neckCircumference as string) : undefined,
-          waistCircumference: client.waistCircumference ? parseFloat(client.waistCircumference as string) : undefined,
-          hipCircumference: client.hipCircumference ? parseFloat(client.hipCircumference as string) : undefined,
+          activityLevel:
+            (client.activityLevel as
+              | 'active'
+              | 'sedentary'
+              | 'lightly_active'
+              | 'moderately_active'
+              | 'very_active') ?? undefined,
+          neckCircumference: client.neckCircumference
+            ? parseFloat(client.neckCircumference as string)
+            : undefined,
+          waistCircumference: client.waistCircumference
+            ? parseFloat(client.waistCircumference as string)
+            : undefined,
+          hipCircumference: client.hipCircumference
+            ? parseFloat(client.hipCircumference as string)
+            : undefined,
         };
 
         const bodyFat = calculateBodyFatPercentage(biometrics);
         const bmr = calculateBMR(biometrics);
         const tdee = calculateTDEE(bmr, biometrics.activityLevel);
-        const calorieRecs = calculateCalorieRecommendations(tdee, biometrics.gender, biometrics.weight);
+        const calorieRecs = calculateCalorieRecommendations(
+          tdee,
+          biometrics.gender,
+          biometrics.weight
+        );
         const nutritionPlan = calculateNutritionPlan(biometrics);
 
-        const hasBasicBiometrics = biometrics.age && biometrics.gender && biometrics.height && biometrics.weight;
+        const hasBasicBiometrics =
+          biometrics.age && biometrics.gender && biometrics.height && biometrics.weight;
 
         if (hasBasicBiometrics) {
           return (
@@ -523,7 +802,9 @@ export default function ClientDetailsPage() {
                     >
                       <p className="text-xs text-muted-foreground mb-1">Age & Gender</p>
                       <p className="text-2xl font-light">{biometrics.age}</p>
-                      <p className="text-sm text-muted-foreground capitalize">{biometrics.gender}</p>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {biometrics.gender}
+                      </p>
                     </motion.div>
 
                     {/* Height & Weight */}
@@ -561,7 +842,9 @@ export default function ClientDetailsPage() {
                       whileHover={{ scale: 1.03, y: -2 }}
                     >
                       <p className="text-xs text-muted-foreground mb-1">Activity Level</p>
-                      <p className="text-sm font-medium">{getActivityLevelDisplay(biometrics.activityLevel)}</p>
+                      <p className="text-sm font-medium">
+                        {getActivityLevelDisplay(biometrics.activityLevel)}
+                      </p>
                     </motion.div>
                   </div>
 
@@ -580,12 +863,16 @@ export default function ClientDetailsPage() {
                         >
                           <div className="flex items-center gap-2 mb-2">
                             <Heart className="w-4 h-4 text-orange-600" />
-                            <p className="text-sm font-medium text-muted-foreground">BMR (Basal Metabolic Rate)</p>
+                            <p className="text-sm font-medium text-muted-foreground">
+                              BMR (Basal Metabolic Rate)
+                            </p>
                           </div>
                           <p className="text-3xl font-light bg-gradient-to-r from-orange-600 to-orange-500/70 bg-clip-text text-transparent">
                             {bmr} <span className="text-base">cal/day</span>
                           </p>
-                          <p className="text-xs text-muted-foreground mt-2">Calories burned at rest</p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Calories burned at rest
+                          </p>
                         </motion.div>
 
                         {/* TDEE */}
@@ -595,12 +882,16 @@ export default function ClientDetailsPage() {
                         >
                           <div className="flex items-center gap-2 mb-2">
                             <Flame className="w-4 h-4 text-blue-600" />
-                            <p className="text-sm font-medium text-muted-foreground">TDEE (Total Daily Energy)</p>
+                            <p className="text-sm font-medium text-muted-foreground">
+                              TDEE (Total Daily Energy)
+                            </p>
                           </div>
                           <p className="text-3xl font-light bg-gradient-to-r from-blue-600 to-blue-500/70 bg-clip-text text-transparent">
                             {tdee} <span className="text-base">cal/day</span>
                           </p>
-                          <p className="text-xs text-muted-foreground mt-2">Total calories burned daily</p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Total calories burned daily
+                          </p>
                         </motion.div>
                       </div>
                     </div>
@@ -622,10 +913,15 @@ export default function ClientDetailsPage() {
                         >
                           <div className="space-y-3">
                             <div>
-                              <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20 mb-2">
+                              <Badge
+                                variant="outline"
+                                className="bg-red-500/10 text-red-600 border-red-500/20 mb-2"
+                              >
                                 Aggressive Weight Loss
                               </Badge>
-                              <p className="text-2xl font-light">{calorieRecs.aggressiveWeightLoss} cal/day</p>
+                              <p className="text-2xl font-light">
+                                {calorieRecs.aggressiveWeightLoss} cal/day
+                              </p>
                               <p className="text-xs text-muted-foreground">~2 lbs/week loss</p>
                             </div>
                             <Separator />
@@ -635,21 +931,30 @@ export default function ClientDetailsPage() {
                                   <Beef className="w-3.5 h-3.5 text-red-600" />
                                   Protein
                                 </span>
-                                <span className="font-medium">{nutritionPlan.aggressiveWeightLoss.protein.grams}g ({nutritionPlan.aggressiveWeightLoss.protein.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.aggressiveWeightLoss.protein.grams}g (
+                                  {nutritionPlan.aggressiveWeightLoss.protein.percentage}%)
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center gap-1.5">
                                   <Apple className="w-3.5 h-3.5 text-emerald-600" />
                                   Carbs
                                 </span>
-                                <span className="font-medium">{nutritionPlan.aggressiveWeightLoss.carbs.grams}g ({nutritionPlan.aggressiveWeightLoss.carbs.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.aggressiveWeightLoss.carbs.grams}g (
+                                  {nutritionPlan.aggressiveWeightLoss.carbs.percentage}%)
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center gap-1.5">
                                   <Activity className="w-3.5 h-3.5 text-amber-600" />
                                   Fats
                                 </span>
-                                <span className="font-medium">{nutritionPlan.aggressiveWeightLoss.fats.grams}g ({nutritionPlan.aggressiveWeightLoss.fats.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.aggressiveWeightLoss.fats.grams}g (
+                                  {nutritionPlan.aggressiveWeightLoss.fats.percentage}%)
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -662,10 +967,15 @@ export default function ClientDetailsPage() {
                         >
                           <div className="space-y-3">
                             <div>
-                              <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20 mb-2">
+                              <Badge
+                                variant="outline"
+                                className="bg-orange-500/10 text-orange-600 border-orange-500/20 mb-2"
+                              >
                                 Steady Weight Loss
                               </Badge>
-                              <p className="text-2xl font-light">{calorieRecs.steadyWeightLoss} cal/day</p>
+                              <p className="text-2xl font-light">
+                                {calorieRecs.steadyWeightLoss} cal/day
+                              </p>
                               <p className="text-xs text-muted-foreground">~1 lb/week loss</p>
                             </div>
                             <Separator />
@@ -675,21 +985,30 @@ export default function ClientDetailsPage() {
                                   <Beef className="w-3.5 h-3.5 text-red-600" />
                                   Protein
                                 </span>
-                                <span className="font-medium">{nutritionPlan.steadyWeightLoss.protein.grams}g ({nutritionPlan.steadyWeightLoss.protein.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.steadyWeightLoss.protein.grams}g (
+                                  {nutritionPlan.steadyWeightLoss.protein.percentage}%)
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center gap-1.5">
                                   <Apple className="w-3.5 h-3.5 text-emerald-600" />
                                   Carbs
                                 </span>
-                                <span className="font-medium">{nutritionPlan.steadyWeightLoss.carbs.grams}g ({nutritionPlan.steadyWeightLoss.carbs.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.steadyWeightLoss.carbs.grams}g (
+                                  {nutritionPlan.steadyWeightLoss.carbs.percentage}%)
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center gap-1.5">
                                   <Activity className="w-3.5 h-3.5 text-amber-600" />
                                   Fats
                                 </span>
-                                <span className="font-medium">{nutritionPlan.steadyWeightLoss.fats.grams}g ({nutritionPlan.steadyWeightLoss.fats.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.steadyWeightLoss.fats.grams}g (
+                                  {nutritionPlan.steadyWeightLoss.fats.percentage}%)
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -702,7 +1021,10 @@ export default function ClientDetailsPage() {
                         >
                           <div className="space-y-3">
                             <div>
-                              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 mb-2">
+                              <Badge
+                                variant="outline"
+                                className="bg-blue-500/10 text-blue-600 border-blue-500/20 mb-2"
+                              >
                                 Maintain Weight
                               </Badge>
                               <p className="text-2xl font-light">{calorieRecs.maintain} cal/day</p>
@@ -715,21 +1037,30 @@ export default function ClientDetailsPage() {
                                   <Beef className="w-3.5 h-3.5 text-red-600" />
                                   Protein
                                 </span>
-                                <span className="font-medium">{nutritionPlan.maintain.protein.grams}g ({nutritionPlan.maintain.protein.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.maintain.protein.grams}g (
+                                  {nutritionPlan.maintain.protein.percentage}%)
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center gap-1.5">
                                   <Apple className="w-3.5 h-3.5 text-emerald-600" />
                                   Carbs
                                 </span>
-                                <span className="font-medium">{nutritionPlan.maintain.carbs.grams}g ({nutritionPlan.maintain.carbs.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.maintain.carbs.grams}g (
+                                  {nutritionPlan.maintain.carbs.percentage}%)
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center gap-1.5">
                                   <Activity className="w-3.5 h-3.5 text-amber-600" />
                                   Fats
                                 </span>
-                                <span className="font-medium">{nutritionPlan.maintain.fats.grams}g ({nutritionPlan.maintain.fats.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.maintain.fats.grams}g (
+                                  {nutritionPlan.maintain.fats.percentage}%)
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -742,10 +1073,15 @@ export default function ClientDetailsPage() {
                         >
                           <div className="space-y-3">
                             <div>
-                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 mb-2">
+                              <Badge
+                                variant="outline"
+                                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 mb-2"
+                              >
                                 Muscle Gain
                               </Badge>
-                              <p className="text-2xl font-light">{calorieRecs.muscleGain} cal/day</p>
+                              <p className="text-2xl font-light">
+                                {calorieRecs.muscleGain} cal/day
+                              </p>
                               <p className="text-xs text-muted-foreground">+300 cal surplus</p>
                             </div>
                             <Separator />
@@ -755,21 +1091,30 @@ export default function ClientDetailsPage() {
                                   <Beef className="w-3.5 h-3.5 text-red-600" />
                                   Protein
                                 </span>
-                                <span className="font-medium">{nutritionPlan.muscleGain.protein.grams}g ({nutritionPlan.muscleGain.protein.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.muscleGain.protein.grams}g (
+                                  {nutritionPlan.muscleGain.protein.percentage}%)
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center gap-1.5">
                                   <Apple className="w-3.5 h-3.5 text-emerald-600" />
                                   Carbs
                                 </span>
-                                <span className="font-medium">{nutritionPlan.muscleGain.carbs.grams}g ({nutritionPlan.muscleGain.carbs.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.muscleGain.carbs.grams}g (
+                                  {nutritionPlan.muscleGain.carbs.percentage}%)
+                                </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center gap-1.5">
                                   <Activity className="w-3.5 h-3.5 text-amber-600" />
                                   Fats
                                 </span>
-                                <span className="font-medium">{nutritionPlan.muscleGain.fats.grams}g ({nutritionPlan.muscleGain.fats.percentage}%)</span>
+                                <span className="font-medium">
+                                  {nutritionPlan.muscleGain.fats.grams}g (
+                                  {nutritionPlan.muscleGain.fats.percentage}%)
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -784,7 +1129,10 @@ export default function ClientDetailsPage() {
                         transition={{ delay: 0.8 }}
                       >
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                          <strong>Formulas used:</strong> Body Fat % (US Navy Method, ~3.5% accuracy) • BMR (Mifflin-St Jeor Equation) • TDEE (BMR × Activity Multiplier) • Macros based on evidence-based research for optimal body composition
+                          <strong>Formulas used:</strong> Body Fat % (US Navy Method, ~3.5%
+                          accuracy) • BMR (Mifflin-St Jeor Equation) • TDEE (BMR × Activity
+                          Multiplier) • Macros based on evidence-based research for optimal body
+                          composition
                         </p>
                       </motion.div>
                     </div>
@@ -864,6 +1212,9 @@ export default function ClientDetailsPage() {
 
       {/* Workout Assignment: Now handled via Schedule page */}
 
+      {/* Access Code Card */}
+      {clientId && <AccessCodeCard clientId={clientId} clientName={client?.name ?? ''} />}
+
       {/* Main Content Tabs */}
       <Tabs defaultValue={tabParam} className="space-y-6">
         <TabsList className="glass">
@@ -884,7 +1235,9 @@ export default function ClientDetailsPage() {
                   <BarChart3 className="w-5 h-5 text-primary" />
                   Workout Compliance
                 </CardTitle>
-                <CardDescription>Workout completion rates over different time periods</CardDescription>
+                <CardDescription>
+                  Workout completion rates over different time periods
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -895,17 +1248,24 @@ export default function ClientDetailsPage() {
                     { label: 'All Time', data: complianceData.allTime },
                   ].map(({ label, data }) => (
                     <div key={label} className="text-center p-3 rounded-lg bg-muted/30">
-                      <div className={`text-2xl font-bold ${
-                        data.rate >= 80 ? 'text-emerald-500' :
-                        data.rate >= 50 ? 'text-yellow-500' :
-                        data.rate > 0 ? 'text-red-500' :
-                        'text-muted-foreground'
-                      }`}>
+                      <div
+                        className={`text-2xl font-bold ${
+                          data.rate >= 80
+                            ? 'text-emerald-500'
+                            : data.rate >= 50
+                              ? 'text-yellow-500'
+                              : data.rate > 0
+                                ? 'text-red-500'
+                                : 'text-muted-foreground'
+                        }`}
+                      >
                         {data.total > 0 ? `${data.rate}%` : '--'}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">{label}</div>
                       {data.total > 0 && (
-                        <div className="text-xs text-muted-foreground">{data.completed}/{data.total} done</div>
+                        <div className="text-xs text-muted-foreground">
+                          {data.completed}/{data.total} done
+                        </div>
                       )}
                     </div>
                   ))}
@@ -924,9 +1284,7 @@ export default function ClientDetailsPage() {
                     <Weight className="w-5 h-5 text-primary" />
                     Weight Progress
                   </CardTitle>
-                  <CardDescription>
-                    {weightData.length} measurements tracked
-                  </CardDescription>
+                  <CardDescription>{weightData.length} measurements tracked</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
@@ -938,7 +1296,7 @@ export default function ClientDetailsPage() {
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
+                          borderRadius: '8px',
                         }}
                       />
                       <Area
@@ -962,9 +1320,7 @@ export default function ClientDetailsPage() {
                     <TrendingUp className="w-5 h-5 text-primary" />
                     Body Fat %
                   </CardTitle>
-                  <CardDescription>
-                    {bodyFatData.length} measurements tracked
-                  </CardDescription>
+                  <CardDescription>{bodyFatData.length} measurements tracked</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
@@ -976,7 +1332,7 @@ export default function ClientDetailsPage() {
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
+                          borderRadius: '8px',
                         }}
                       />
                       <Line
@@ -998,8 +1354,11 @@ export default function ClientDetailsPage() {
               <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {workoutAssignments.slice(0, 5).map(assignment => (
-                <div key={assignment.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+              {workoutAssignments.slice(0, 5).map((assignment) => (
+                <div
+                  key={assignment.id}
+                  className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+                >
                   <div className="flex items-center gap-3">
                     <Dumbbell className="w-4 h-4 text-primary" />
                     <div>
@@ -1007,8 +1366,7 @@ export default function ClientDetailsPage() {
                       <p className="text-sm text-muted-foreground">
                         {assignment.completedAt
                           ? `Completed ${formatDistanceToNow(new Date(assignment.completedAt))} ago`
-                          : `Assigned ${formatDistanceToNow(new Date(assignment.assignedAt))} ago`
-                        }
+                          : `Assigned ${formatDistanceToNow(new Date(assignment.assignedAt))} ago`}
                       </p>
                     </div>
                   </div>
@@ -1018,9 +1376,7 @@ export default function ClientDetailsPage() {
                 </div>
               ))}
               {workoutAssignments.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
-                  No workouts assigned yet
-                </p>
+                <p className="text-center text-muted-foreground py-8">No workouts assigned yet</p>
               )}
             </CardContent>
           </Card>
@@ -1043,7 +1399,7 @@ export default function ClientDetailsPage() {
           {/* Assigned Workouts List */}
           {workoutAssignments.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {workoutAssignments.map(assignment => (
+              {workoutAssignments.map((assignment) => (
                 <Card key={assignment.id} className="glass border-border/50">
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -1111,14 +1467,16 @@ export default function ClientDetailsPage() {
             <div className="space-y-4">
               {progressEntries
                 .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())
-                .map(entry => (
+                .map((entry) => (
                   <Card key={entry.id} className="glass border-border/50">
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2">
                             <Badge>{entry.type.replace('_', ' ')}</Badge>
-                            <span className="text-2xl font-light">{entry.value} {entry.unit}</span>
+                            <span className="text-2xl font-light">
+                              {entry.value} {entry.unit}
+                            </span>
                           </div>
                           {entry.notes && (
                             <p className="text-sm text-muted-foreground mt-2">{entry.notes}</p>
@@ -1140,9 +1498,7 @@ export default function ClientDetailsPage() {
                 <p className="text-muted-foreground mb-6">
                   Start tracking {client.name}'s progress by adding measurements
                 </p>
-                <Button onClick={() => setShowProgressModal(true)}>
-                  Add First Entry
-                </Button>
+                <Button onClick={() => setShowProgressModal(true)}>Add First Entry</Button>
               </CardContent>
             </Card>
           )}
@@ -1155,8 +1511,10 @@ export default function ClientDetailsPage() {
           {trainingSessions.length > 0 ? (
             <div className="space-y-4">
               {trainingSessions
-                .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime())
-                .map(session => (
+                .sort(
+                  (a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()
+                )
+                .map((session) => (
                   <Card key={session.id} className="glass border-border/50">
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between">
@@ -1166,7 +1524,15 @@ export default function ClientDetailsPage() {
                             <span className="font-medium">
                               {format(new Date(session.scheduledAt), 'PPP p')}
                             </span>
-                            <Badge variant={session.status === 'completed' ? 'default' : session.status === 'scheduled' ? 'outline' : 'secondary'}>
+                            <Badge
+                              variant={
+                                session.status === 'completed'
+                                  ? 'default'
+                                  : session.status === 'scheduled'
+                                    ? 'outline'
+                                    : 'secondary'
+                              }
+                            >
                               {session.status}
                             </Badge>
                           </div>
@@ -1236,7 +1602,7 @@ export default function ClientDetailsPage() {
                 <motion.div
                   className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 backdrop-blur-xl"
                   whileHover={{ scale: 1.03, y: -4 }}
-                  transition={{ type: "spring", stiffness: 300 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Weight className="w-4 h-4 text-blue-600" />
@@ -1246,7 +1612,9 @@ export default function ClientDetailsPage() {
                     <span className="text-2xl font-light bg-gradient-to-r from-blue-600 to-blue-500/70 bg-clip-text text-transparent">
                       {weightChange}
                     </span>
-                    <span className="text-sm text-muted-foreground">{weightData[0]?.value ? 'kg' : ''}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {weightData[0]?.value ? 'kg' : ''}
+                    </span>
                   </div>
                   {weightChange && (
                     <div className="flex items-center gap-1 mt-2">
@@ -1255,7 +1623,9 @@ export default function ClientDetailsPage() {
                       ) : (
                         <TrendingUp className="w-4 h-4 text-orange-600" />
                       )}
-                      <span className={`text-xs ${parseFloat(weightChange) < 0 ? 'text-emerald-600' : 'text-orange-600'}`}>
+                      <span
+                        className={`text-xs ${parseFloat(weightChange) < 0 ? 'text-emerald-600' : 'text-orange-600'}`}
+                      >
                         {Math.abs(parseFloat(weightChange))} kg
                       </span>
                     </div>
@@ -1264,48 +1634,54 @@ export default function ClientDetailsPage() {
               )}
 
               {/* Body Fat Change Card */}
-              {bodyFatData.length > 0 && (() => {
-                const latestBodyFat = bodyFatData[bodyFatData.length - 1];
-                const firstBodyFat = bodyFatData[0];
-                const bodyFatChange = latestBodyFat && firstBodyFat ? (latestBodyFat.value - firstBodyFat.value).toFixed(1) : null;
+              {bodyFatData.length > 0 &&
+                (() => {
+                  const latestBodyFat = bodyFatData[bodyFatData.length - 1];
+                  const firstBodyFat = bodyFatData[0];
+                  const bodyFatChange =
+                    latestBodyFat && firstBodyFat
+                      ? (latestBodyFat.value - firstBodyFat.value).toFixed(1)
+                      : null;
 
-                return (
-                  <motion.div
-                    className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20 backdrop-blur-xl"
-                    whileHover={{ scale: 1.03, y: -4 }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Percent className="w-4 h-4 text-purple-600" />
-                      <p className="text-xs text-muted-foreground">Body Fat Change</p>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-light bg-gradient-to-r from-purple-600 to-purple-500/70 bg-clip-text text-transparent">
-                        {bodyFatChange}
-                      </span>
-                      <span className="text-sm text-muted-foreground">%</span>
-                    </div>
-                    {bodyFatChange && (
-                      <div className="flex items-center gap-1 mt-2">
-                        {parseFloat(bodyFatChange) < 0 ? (
-                          <TrendingDown className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <TrendingUp className="w-4 h-4 text-orange-600" />
-                        )}
-                        <span className={`text-xs ${parseFloat(bodyFatChange) < 0 ? 'text-emerald-600' : 'text-orange-600'}`}>
-                          {Math.abs(parseFloat(bodyFatChange))}%
-                        </span>
+                  return (
+                    <motion.div
+                      className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20 backdrop-blur-xl"
+                      whileHover={{ scale: 1.03, y: -4 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <Percent className="w-4 h-4 text-purple-600" />
+                        <p className="text-xs text-muted-foreground">Body Fat Change</p>
                       </div>
-                    )}
-                  </motion.div>
-                );
-              })()}
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-light bg-gradient-to-r from-purple-600 to-purple-500/70 bg-clip-text text-transparent">
+                          {bodyFatChange}
+                        </span>
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                      {bodyFatChange && (
+                        <div className="flex items-center gap-1 mt-2">
+                          {parseFloat(bodyFatChange) < 0 ? (
+                            <TrendingDown className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <TrendingUp className="w-4 h-4 text-orange-600" />
+                          )}
+                          <span
+                            className={`text-xs ${parseFloat(bodyFatChange) < 0 ? 'text-emerald-600' : 'text-orange-600'}`}
+                          >
+                            {Math.abs(parseFloat(bodyFatChange))}%
+                          </span>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })()}
 
               {/* Total Measurements Card */}
               <motion.div
                 className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 backdrop-blur-xl"
                 whileHover={{ scale: 1.03, y: -4 }}
-                transition={{ type: "spring", stiffness: 300 }}
+                transition={{ type: 'spring', stiffness: 300 }}
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Activity className="w-4 h-4 text-emerald-600" />
@@ -1318,7 +1694,8 @@ export default function ClientDetailsPage() {
                   <span className="text-sm text-muted-foreground">entries</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {progressEntries.length > 0 && format(new Date(progressEntries[0].recordedAt), 'MMM d, yyyy')}
+                  {progressEntries.length > 0 &&
+                    format(new Date(progressEntries[0].recordedAt), 'MMM d, yyyy')}
                 </p>
               </motion.div>
 
@@ -1326,7 +1703,7 @@ export default function ClientDetailsPage() {
               <motion.div
                 className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20 backdrop-blur-xl"
                 whileHover={{ scale: 1.03, y: -4 }}
-                transition={{ type: "spring", stiffness: 300 }}
+                transition={{ type: 'spring', stiffness: 300 }}
               >
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle2 className="w-4 h-4 text-orange-600" />
@@ -1373,26 +1750,23 @@ export default function ClientDetailsPage() {
                       <AreaChart data={weightData}>
                         <defs>
                           <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                        <XAxis
-                          dataKey="date"
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="hsl(var(--border))"
+                          opacity={0.3}
                         />
-                        <YAxis
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                        />
+                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: 'hsl(var(--card))',
                             border: '1px solid hsl(var(--border))',
                             borderRadius: '8px',
-                            backdropFilter: 'blur(16px)'
+                            backdropFilter: 'blur(16px)',
                           }}
                         />
                         <Area
@@ -1409,61 +1783,63 @@ export default function ClientDetailsPage() {
               )}
 
               {/* Body Fat Chart */}
-              {bodyFatData.length > 0 && (() => {
-                const latestBodyFat = bodyFatData[bodyFatData.length - 1];
-                const firstBodyFat = bodyFatData[0];
+              {bodyFatData.length > 0 &&
+                (() => {
+                  const latestBodyFat = bodyFatData[bodyFatData.length - 1];
+                  const firstBodyFat = bodyFatData[0];
 
-                return (
-                  <Card className="glass-strong border-border/50 backdrop-blur-xl">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <TrendingUp className="w-5 h-5 text-primary" />
-                        Body Fat %
-                      </CardTitle>
-                      <CardDescription className="flex items-center justify-between">
-                        <span>{bodyFatData.length} measurements</span>
-                        {firstBodyFat && latestBodyFat && (
-                          <span className="text-sm font-medium">
-                            {firstBodyFat.value}% → {latestBodyFat.value}%
-                          </span>
-                        )}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={bodyFatData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                          <XAxis
-                            dataKey="date"
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
-                          />
-                          <YAxis
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: 'hsl(var(--card))',
-                              border: '1px solid hsl(var(--border))',
-                              borderRadius: '8px',
-                              backdropFilter: 'blur(16px)'
-                            }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={3}
-                            dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                            activeDot={{ r: 6 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                );
-              })()}
+                  return (
+                    <Card className="glass-strong border-border/50 backdrop-blur-xl">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <TrendingUp className="w-5 h-5 text-primary" />
+                          Body Fat %
+                        </CardTitle>
+                        <CardDescription className="flex items-center justify-between">
+                          <span>{bodyFatData.length} measurements</span>
+                          {firstBodyFat && latestBodyFat && (
+                            <span className="text-sm font-medium">
+                              {firstBodyFat.value}% → {latestBodyFat.value}%
+                            </span>
+                          )}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <LineChart data={bodyFatData}>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="hsl(var(--border))"
+                              opacity={0.3}
+                            />
+                            <XAxis
+                              dataKey="date"
+                              stroke="hsl(var(--muted-foreground))"
+                              fontSize={12}
+                            />
+                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--card))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px',
+                                backdropFilter: 'blur(16px)',
+                              }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="value"
+                              stroke="hsl(var(--primary))"
+                              strokeWidth={3}
+                              dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                              activeDot={{ r: 6 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
             </motion.div>
 
             {/* Recent Progress Entries */}
@@ -1481,7 +1857,10 @@ export default function ClientDetailsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       {progressEntries
-                        .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())
+                        .sort(
+                          (a, b) =>
+                            new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+                        )
                         .slice(0, 5)
                         .map((entry, index) => (
                           <motion.div
@@ -1501,10 +1880,14 @@ export default function ClientDetailsPage() {
                                   <Badge variant="outline" className="text-xs">
                                     {entry.type.replace('_', ' ')}
                                   </Badge>
-                                  <span className="font-medium">{entry.value} {entry.unit}</span>
+                                  <span className="font-medium">
+                                    {entry.value} {entry.unit}
+                                  </span>
                                 </div>
                                 {entry.notes && (
-                                  <p className="text-xs text-muted-foreground mt-1">{entry.notes}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {entry.notes}
+                                  </p>
                                 )}
                               </div>
                             </div>
