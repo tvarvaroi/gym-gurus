@@ -86,6 +86,32 @@ import uploadsRoutes from './routes/uploads';
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session-based authentication is set up in server/index.ts
 
+  // ─── Health check — public, NO rate limiting, NO auth ─────────────────────
+  // Railway and uptime monitors poll this to verify the service is alive.
+  // Returns 200 when the DB is reachable, 503 otherwise.
+  app.get('/api/health', async (_req: Request, res: Response) => {
+    const start = Date.now();
+    try {
+      const db = await getDb();
+      await db.execute(sql`SELECT 1`);
+      res.json({
+        status: 'ok',
+        db: 'connected',
+        env: process.env.NODE_ENV,
+        uptimeSeconds: Math.floor(process.uptime()),
+        responseMs: Date.now() - start,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(503).json({
+        status: 'error',
+        db: 'disconnected',
+        error: error instanceof Error ? error.message : 'Unknown DB error',
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
   // Apply general rate limiting to all API routes
   app.use('/api', generalRateLimit);
 
@@ -872,18 +898,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/workouts - Create new workout
   app.post('/api/workouts', secureAuth, strictRateLimit, async (req: Request, res: Response) => {
     try {
-      const trainerId = (req.user as any).id as string;
-      console.log('🏋️ Creating workout for trainer:', trainerId);
-      console.log('📝 Request body trainerId:', req.body.trainerId);
-
-      // In development, ensure we use demo-trainer-123
-      const finalTrainerId =
-        process.env.NODE_ENV === 'development' ? 'demo-trainer-123' : trainerId;
-      console.log('✅ Final trainerId used:', finalTrainerId);
+      const finalTrainerId = (req.user as any).id as string;
 
       const validatedData = insertWorkoutSchema.parse({ ...req.body, trainerId: finalTrainerId });
       const workout = await storage.createWorkout(validatedData);
-      console.log('💪 Workout created successfully:', workout);
 
       // Automatic milestone tracking: Mark first workout created
       try {

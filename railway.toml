@@ -1,0 +1,30 @@
+# Railway deployment configuration
+# https://docs.railway.app/reference/config-as-code
+#
+# REQUIRED environment variables to set in Railway dashboard:
+#   DATABASE_URL       — Railway Postgres provides this automatically
+#   SESSION_SECRET     — openssl rand -base64 48
+#   NODE_ENV           — production
+#   APP_URL            — https://yourdomain.railway.app (or custom domain)
+#
+# OPTIONAL (enable features):
+#   ANTHROPIC_API_KEY
+#   STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET + VITE_STRIPE_PUBLISHABLE_KEY
+#   RESEND_API_KEY + EMAIL_FROM
+#   GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET
+#   SENTRY_DSN
+#
+# See .env.example for the full list.
+
+[build]
+builder = "nixpacks"
+buildCommand = "npm run build"
+
+[deploy]
+# Sync DB schema then start the server.
+# NODE_ENV must be set to "production" in Railway environment variables.
+startCommand = "npm run db:push && npm run start:prod"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10

@@ -305,8 +305,15 @@ router.post('/generate-workout', async (req: Request, res: Response) => {
   }
 
   try {
-    const { goal, experienceLevel, availableEquipment, duration, focusMuscles, excludeExercises } =
-      req.body;
+    const {
+      goal,
+      experienceLevel,
+      availableEquipment,
+      duration,
+      focusMuscles,
+      excludeExercises,
+      inspiredBy,
+    } = req.body;
 
     if (!goal) {
       releaseConcurrentSlot(user.id);
@@ -320,6 +327,7 @@ router.post('/generate-workout', async (req: Request, res: Response) => {
       duration: duration || 45,
       focusMuscles,
       excludeExercises,
+      inspiredBy,
     });
 
     // Estimate tokens from response size

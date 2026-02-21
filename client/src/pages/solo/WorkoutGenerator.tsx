@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -64,6 +66,45 @@ const goalOptions = [
   { value: 'fat_loss', label: 'Fat Loss', icon: Flame },
 ];
 
+// "Inspired By" training style options
+const inspiredByOptions = [
+  { value: 'none', label: 'Custom Program', description: 'No specific style — generate freely' },
+  {
+    value: 'cbum',
+    label: 'Chris Bumstead Style',
+    description: 'High volume PPL, strict form, classic physique',
+  },
+  {
+    value: 'sulek',
+    label: 'Sam Sulek Style',
+    description: 'Extreme intensity, train to failure, high volume',
+  },
+  {
+    value: 'nippard',
+    label: 'Jeff Nippard Style',
+    description: 'Science-based, evidence-backed, periodized',
+  },
+  {
+    value: 'rp',
+    label: 'Renaissance Periodization',
+    description: 'Systematic volume, MEV to MRV progression',
+  },
+  {
+    value: 'athleanx',
+    label: 'Athlean-X Style',
+    description: 'Corrective exercise, injury prevention, functional',
+  },
+  {
+    value: 'starting_strength',
+    label: 'Starting Strength',
+    description: 'Barbell basics, 3×5, linear progression',
+  },
+  { value: 'nsuns', label: 'nSuns 5/3/1', description: 'High volume LP, heavy compounds' },
+  { value: 'ppl', label: 'Classic PPL', description: 'Push/Pull/Legs 6-day rotation' },
+  { value: 'upper_lower', label: 'Upper/Lower', description: '4-day split, balanced frequency' },
+  { value: 'bro_split', label: 'Bro Split', description: '5-day, one body part per day' },
+];
+
 // Equipment options
 const equipmentOptions = [
   { value: 'full_gym', label: 'Full Gym' },
@@ -85,8 +126,25 @@ interface GeneratedWorkout {
 
 export default function WorkoutGenerator() {
   const [, navigate] = useLocation();
+  const search = useSearch();
+  const clientId = new URLSearchParams(search).get('clientId');
   const { toast } = useToast();
   const prefersReducedMotion = useReducedMotion();
+
+  // Fetch client data when clientId is present (trainer generating for a client)
+  const { data: clientData } = useQuery<{
+    name?: string;
+    goal?: string;
+    experienceLevel?: string;
+    fitnessProfile?: {
+      primaryGoal?: string;
+      experienceLevel?: string;
+      availableEquipment?: string[];
+    };
+  }>({
+    queryKey: [`/api/clients/detail/${clientId}`],
+    enabled: !!clientId,
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedWorkout, setGeneratedWorkout] = useState<GeneratedWorkout | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -96,11 +154,45 @@ export default function WorkoutGenerator() {
   // Form state
   const [workoutFocus, setWorkoutFocus] = useState('push');
   const [goal, setGoal] = useState('strength');
+  const [inspiredBy, setInspiredBy] = useState('none');
   const [duration, setDuration] = useState([45]);
   const [equipment, setEquipment] = useState('full_gym');
   const [includeWarmup, setIncludeWarmup] = useState(true);
   const [includeCooldown, setIncludeCooldown] = useState(true);
   const [difficulty, setDifficulty] = useState('intermediate');
+
+  // Exercise library for thumbnail / detail linking
+  const { data: libraryExercises = [] } = useQuery<
+    { id: string; name: string; thumbnailUrl?: string | null }[]
+  >({
+    queryKey: ['/api/exercises'],
+    staleTime: 10 * 60 * 1000,
+    select: (data: any[]) =>
+      data.map((e) => ({ id: e.id, name: e.name, thumbnailUrl: e.thumbnailUrl })),
+  });
+
+  const libraryByName = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; thumbnailUrl?: string | null }>();
+    for (const ex of libraryExercises) {
+      map.set(ex.name.toLowerCase(), ex);
+    }
+    return map;
+  }, [libraryExercises]);
+
+  // Pre-fill from client data when generating for a client
+  useEffect(() => {
+    if (!clientData) return;
+    const profile = clientData.fitnessProfile;
+    if (profile?.experienceLevel) setDifficulty(profile.experienceLevel);
+    // Map client goal string to form goal
+    const goalRaw = profile?.primaryGoal || clientData.goal || '';
+    if (goalRaw.toLowerCase().includes('strength')) setGoal('strength');
+    else if (goalRaw.toLowerCase().includes('muscle') || goalRaw.toLowerCase().includes('hyper'))
+      setGoal('muscle');
+    else if (goalRaw.toLowerCase().includes('fat') || goalRaw.toLowerCase().includes('weight'))
+      setGoal('fat_loss');
+    else if (goalRaw.toLowerCase().includes('endur')) setGoal('endurance');
+  }, [clientData]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -139,6 +231,7 @@ export default function WorkoutGenerator() {
           availableEquipment: equipmentMap[equipment] || ['barbell', 'dumbbells'],
           duration: duration[0],
           focusMuscles: workoutFocus === 'full_body' ? undefined : focusMuscleMap[workoutFocus],
+          inspiredBy: inspiredBy !== 'none' ? inspiredBy : undefined,
         }),
       });
 
@@ -207,37 +300,80 @@ export default function WorkoutGenerator() {
     handleGenerate();
   };
 
-  const handleSaveWorkout = async () => {
+  // Shared save logic: create workout record then attach any exercises found in the library
+  const persistGeneratedWorkout = async (): Promise<void> => {
     if (!generatedWorkout) return;
 
+    // 1. Create the workout row with all required fields
+    const response = await fetch('/api/workouts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        title: generatedWorkout.name,
+        description:
+          generatedWorkout.description || `AI-generated ${workoutFocus.replace(/_/g, ' ')} workout`,
+        duration: duration[0],
+        difficulty: difficulty,
+        category: workoutFocus,
+      }),
+    });
+
+    if (!response.ok) throw new Error('Failed to save workout');
+    const workout = await response.json();
+
+    // 2. Attach exercises that have a matching entry in the exercise library.
+    //    Normalize names for matching (lowercase, strip punctuation/extra words).
+    const normalizeName = (name: string) =>
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    await Promise.allSettled(
+      generatedWorkout.exercises.map(async (ex, index) => {
+        const normalizedAI = normalizeName(ex.name);
+        // Try exact → normalized → substring/contains fuzzy match
+        const libEx =
+          libraryByName.get(ex.name.toLowerCase()) ??
+          libraryByName.get(normalizedAI) ??
+          libraryExercises.find((libE) => {
+            const normalLib = normalizeName(libE.name);
+            // Require both sides to be meaningful (≥5 chars) to avoid spurious matches
+            if (normalLib.length < 5 || normalizedAI.length < 5) return false;
+            return normalLib.includes(normalizedAI) || normalizedAI.includes(normalLib);
+          });
+        if (!libEx) return; // no library match — skip rather than fail
+        const restSeconds = parseInt(String(ex.rest)) || 60;
+        await fetch(`/api/workouts/${workout.id}/exercises`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            exerciseId: libEx.id,
+            sets: ex.sets,
+            reps: String(ex.reps),
+            restTime: restSeconds,
+            sortOrder: index,
+          }),
+        });
+      })
+    );
+
+    // Bust the workouts cache so the list page shows the new entry immediately
+    queryClient.invalidateQueries({ queryKey: ['/api/workouts'] });
+  };
+
+  const handleSaveWorkout = async () => {
+    if (!generatedWorkout) return;
     setIsSaving(true);
     try {
-      const response = await fetch('/api/workouts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: generatedWorkout.name,
-          description: `AI-generated ${workoutFocus} workout`,
-          exercises: generatedWorkout.exercises.map((ex) => ({
-            exerciseName: ex.name,
-            sets: ex.sets,
-            reps: ex.reps,
-            restSeconds: ex.rest,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save workout');
-      }
-
+      await persistGeneratedWorkout();
       toast({
         title: 'Workout Saved',
         description: 'Your workout has been saved to My Workouts',
       });
-
-      // Navigate to workouts page
       navigate('/workouts');
     } catch (err: any) {
       toast({
@@ -252,29 +388,9 @@ export default function WorkoutGenerator() {
 
   const handleStartWorkout = async () => {
     if (!generatedWorkout) return;
-    // Save the workout first, then navigate to workouts
     setIsSaving(true);
     try {
-      const response = await fetch('/api/workouts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: generatedWorkout.name,
-          description: `AI-generated ${workoutFocus} workout`,
-          exercises: generatedWorkout.exercises.map((ex) => ({
-            exerciseName: ex.name,
-            sets: ex.sets,
-            reps: ex.reps,
-            restSeconds: ex.rest,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save workout');
-      }
-
+      await persistGeneratedWorkout();
       toast({
         title: 'Workout Saved & Ready',
         description: 'Your workout has been saved. Find it in My Workouts to start!',
@@ -313,10 +429,20 @@ export default function WorkoutGenerator() {
             Create personalized workouts powered by AI
           </p>
         </div>
-        <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-400">
-          <Sparkles className="h-3 w-3 mr-1" />
-          AI Powered
-        </Badge>
+        <div className="flex items-center gap-2">
+          {clientId && clientData?.name && (
+            <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400">
+              For {clientData.name}
+            </Badge>
+          )}
+          <Badge
+            variant="outline"
+            className="bg-purple-500/10 border-purple-500/30 text-purple-400"
+          >
+            <Sparkles className="h-3 w-3 mr-1" />
+            AI Powered
+          </Badge>
+        </div>
       </motion.div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -378,6 +504,28 @@ export default function WorkoutGenerator() {
                     </Button>
                   ))}
                 </div>
+              </div>
+
+              {/* Inspired By */}
+              <div className="space-y-2">
+                <Label>Training Style</Label>
+                <Select value={inspiredBy} onValueChange={setInspiredBy}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {inspiredByOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex flex-col">
+                          <span>{option.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {option.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Duration */}
@@ -615,33 +763,47 @@ export default function WorkoutGenerator() {
                     {/* Exercises */}
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium">Exercises</h4>
-                      {generatedWorkout.exercises.map((exercise, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="p-3 rounded-lg bg-muted/30 border border-border/50 flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-sm font-medium text-purple-400">
-                              {index + 1}
+                      {generatedWorkout.exercises.map((exercise, index) => {
+                        const libEx = libraryByName.get(exercise.name.toLowerCase());
+                        return (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="p-3 rounded-lg bg-muted/30 border border-border/50 flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-3">
+                              {libEx?.thumbnailUrl ? (
+                                <img
+                                  src={libEx.thumbnailUrl}
+                                  alt={exercise.name}
+                                  className="w-10 h-10 rounded-lg object-cover bg-muted/50 flex-shrink-0"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-sm font-medium text-purple-400 flex-shrink-0">
+                                  {index + 1}
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium text-sm">{exercise.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {exercise.muscleGroup}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-sm">{exercise.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {exercise.muscleGroup}
+                            <div className="text-right text-sm">
+                              <p className="font-medium">
+                                {exercise.sets} × {exercise.reps}
                               </p>
+                              <p className="text-xs text-muted-foreground">{exercise.rest}s rest</p>
                             </div>
-                          </div>
-                          <div className="text-right text-sm">
-                            <p className="font-medium">
-                              {exercise.sets} × {exercise.reps}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{exercise.rest}s rest</p>
-                          </div>
-                        </motion.div>
-                      ))}
+                          </motion.div>
+                        );
+                      })}
                     </div>
 
                     {/* Cool-down */}

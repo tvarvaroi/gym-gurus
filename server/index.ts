@@ -46,24 +46,9 @@ const app = express();
 
 // Skip middleware for WebSocket connections (Vite HMR)
 const skipForWebSocket = (middleware: any) => (req: Request, res: Response, next: NextFunction) => {
-  if (req.headers.upgrade === 'websocket') {
-    console.log('[WebSocket] Bypassing middleware for WebSocket connection');
-    return next();
-  }
+  if (req.headers.upgrade === 'websocket') return next();
   return middleware(req, res, next);
 };
-
-// Debug: Log all requests to see WebSocket upgrades
-app.use((req, res, next) => {
-  if (req.headers.upgrade) {
-    console.log('[WebSocket] Upgrade request detected:', {
-      upgrade: req.headers.upgrade,
-      connection: req.headers.connection,
-      url: req.url,
-    });
-  }
-  next();
-});
 
 // Security headers with Helmet (skip for WebSocket connections)
 app.use(

@@ -590,6 +590,7 @@ export async function aiGenerateWorkout(params: {
   duration: number;
   focusMuscles?: string[];
   excludeExercises?: string[];
+  inspiredBy?: string;
 }): Promise<z.infer<typeof workoutSchema>> {
   const model = getModel();
   if (!model) return generateFallbackWorkout(params);
@@ -644,6 +645,7 @@ Difficulty guidance: ${dp}
 Equipment available: ${params.availableEquipment.join(', ')}
 ${params.focusMuscles ? `Target muscles (ONLY include exercises for these muscle groups — do NOT include exercises for other muscle groups): ${params.focusMuscles.join(', ')}` : ''}
 ${params.excludeExercises ? `Exclude these exercises: ${params.excludeExercises.join(', ')}` : ''}
+${params.inspiredBy ? `Training style: model this workout after "${params.inspiredBy}" training methodology (adapt volume, intensity, and exercise selection to match that style while respecting the user's experience level and equipment).` : ''}
 
 Include a proper warmup, ${Math.max(4, Math.floor(params.duration / 8))} main exercises, and a cooldown.
 ${params.focusMuscles ? 'Every main exercise must target the specified muscle groups only.' : ''}

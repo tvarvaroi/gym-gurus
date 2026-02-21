@@ -34,3 +34,12 @@ window.fetch = (input, init = {}) => {
 };
 
 createRoot(document.getElementById('root')!).render(<App />);
+
+// Register service worker for PWA / offline support
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // SW registration is non-critical — fail silently
+    });
+  });
+}

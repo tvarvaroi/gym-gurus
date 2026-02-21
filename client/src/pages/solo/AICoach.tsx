@@ -21,7 +21,9 @@ import {
   AlertCircle,
   Crown,
   Lock,
+  Save,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface Message {
@@ -47,8 +49,49 @@ const quickPrompts = [
   },
 ];
 
+// ─── Workout detection helpers ────────────────────────────────────────────────
+
+/** Returns true when an assistant message looks like a structured workout */
+function looksLikeWorkout(content: string): boolean {
+  // Need multiple indicators: exercise lists + sets/reps pattern
+  const hasSetRep = /\d+\s*[×x]\s*\d+|\d+\s*sets?|\d+\s*reps?/i.test(content);
+  const hasExercisePhrases =
+    /(bench press|squat|deadlift|pull.?up|row|curl|press|lunge|plank|dip|fly|extension|raise|push.?up)/i.test(
+      content
+    );
+  const hasNumberedList = /^\s*\d+[.)]/m.test(content);
+  return hasSetRep && hasExercisePhrases && hasNumberedList;
+}
+
+/** Best-effort parse of exercises from a workout message */
+function parseExercises(content: string): { name: string; sets: number; reps: string }[] {
+  const exercises: { name: string; sets: number; reps: string }[] = [];
+  // Match lines like: "1. Bench Press — 4 × 8-10" or "- Squat: 3 sets of 5"
+  const lineRe =
+    /(?:^|\n)\s*(?:\d+[.)]|-|\*)\s*([A-Za-z][A-Za-z\s\-/]+?)(?:\s*[—–:-]|\s{2,})\s*(\d+)\s*[×x]\s*([\d\-–]+)|(\d+)\s*sets?\s+(?:of\s+)?([\d\-–]+)\s*reps?/gi;
+  let m;
+  while ((m = lineRe.exec(content)) !== null) {
+    if (m[1]) {
+      exercises.push({ name: m[1].trim(), sets: Number(m[2]) || 3, reps: m[3] || '8-12' });
+    }
+  }
+  // Fallback: extract exercise names from numbered lines
+  if (exercises.length === 0) {
+    const nameRe = /(?:^|\n)\s*\d+[.)]\s*\*{0,2}([A-Z][A-Za-z\s\-/]{2,40})\*{0,2}/gm;
+    let nm;
+    while ((nm = nameRe.exec(content)) !== null) {
+      exercises.push({ name: nm[1].trim(), sets: 3, reps: '8-12' });
+    }
+  }
+  return exercises.slice(0, 16); // cap at 16
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function AICoach() {
   const prefersReducedMotion = useReducedMotion();
+  const { toast } = useToast();
+  const [savingMessageId, setSavingMessageId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -104,6 +147,38 @@ export default function AICoach() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const saveWorkoutFromChat = async (message: Message) => {
+    const exercises = parseExercises(message.content);
+    setSavingMessageId(message.id);
+    try {
+      const res = await fetch('/api/workouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: 'AI Coach Workout',
+          description: 'Workout suggested by AI Coach',
+          exercises: exercises.map((ex) => ({
+            exerciseName: ex.name,
+            sets: ex.sets,
+            reps: ex.reps,
+            restSeconds: 60,
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to save workout');
+      toast({ title: 'Workout saved!', description: 'Find it in My Workouts.' });
+    } catch {
+      toast({
+        title: 'Save failed',
+        description: 'Could not save workout.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingMessageId(null);
+    }
+  };
 
   const handleSend = async (message?: string) => {
     const content = message || input;
@@ -320,40 +395,60 @@ export default function AICoach() {
                     </div>
 
                     {/* Message Bubble */}
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                        message.role === 'assistant'
-                          ? 'bg-muted/50 rounded-tl-none'
-                          : 'bg-purple-500/20 rounded-tr-none'
-                      }`}
-                    >
-                      <p className="text-sm font-light whitespace-pre-wrap leading-relaxed">
-                        {message.content.split('\n').map((line, i) => {
-                          // Handle bold text
-                          const parts = line.split(/(\*\*[^*]+\*\*)/g);
-                          return (
-                            <span key={i}>
-                              {parts.map((part, j) => {
-                                if (part.startsWith('**') && part.endsWith('**')) {
-                                  return (
-                                    <strong key={j} className="font-medium">
-                                      {part.slice(2, -2)}
-                                    </strong>
-                                  );
-                                }
-                                return part;
-                              })}
-                              {i < message.content.split('\n').length - 1 && <br />}
-                            </span>
-                          );
-                        })}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {message.timestamp.toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
+                    <div className="max-w-[80%] flex flex-col gap-1">
+                      <div
+                        className={`rounded-2xl px-4 py-3 ${
+                          message.role === 'assistant'
+                            ? 'bg-muted/50 rounded-tl-none'
+                            : 'bg-purple-500/20 rounded-tr-none'
+                        }`}
+                      >
+                        <p className="text-sm font-light whitespace-pre-wrap leading-relaxed">
+                          {message.content.split('\n').map((line, i) => {
+                            // Handle bold text
+                            const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                            return (
+                              <span key={i}>
+                                {parts.map((part, j) => {
+                                  if (part.startsWith('**') && part.endsWith('**')) {
+                                    return (
+                                      <strong key={j} className="font-medium">
+                                        {part.slice(2, -2)}
+                                      </strong>
+                                    );
+                                  }
+                                  return part;
+                                })}
+                                {i < message.content.split('\n').length - 1 && <br />}
+                              </span>
+                            );
+                          })}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {message.timestamp.toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                      {/* Save as Workout button — shown on assistant workout messages */}
+                      {message.role === 'assistant' &&
+                        index > 0 &&
+                        looksLikeWorkout(message.content) && (
+                          <button
+                            type="button"
+                            onClick={() => saveWorkoutFromChat(message)}
+                            disabled={savingMessageId === message.id}
+                            className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-colors disabled:opacity-50"
+                          >
+                            {savingMessageId === message.id ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Save className="h-3 w-3" />
+                            )}
+                            Save as Workout
+                          </button>
+                        )}
                     </div>
                   </motion.div>
                 ))}

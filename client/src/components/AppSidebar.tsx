@@ -12,6 +12,8 @@ import {
   Wand2,
   CreditCard,
   Settings,
+  Apple,
+  ChevronDown,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -27,10 +29,11 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import logoImage from '@assets/Sophisticated Logo with Japanese Influences (3)_1757605872884.png';
-import { motion } from 'framer-motion';
-import { useState, memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, memo } from 'react';
 import { useLocation } from 'wouter';
 import { useUser } from '@/contexts/UserContext';
+import { useQuery } from '@tanstack/react-query';
 
 // Trainer menu items - Full platform access
 const trainerMenuItems = [
@@ -68,6 +71,11 @@ const trainerMenuItems = [
     title: 'AI Coach',
     url: '/solo/coach',
     icon: Sparkles,
+  },
+  {
+    title: 'Nutrition Planner',
+    url: '/solo/nutrition',
+    icon: Apple,
   },
   {
     title: 'Payments',
@@ -133,6 +141,11 @@ const soloMenuItems = [
     icon: Wand2,
   },
   {
+    title: 'Nutrition Planner',
+    url: '/solo/nutrition',
+    icon: Apple,
+  },
+  {
     title: 'My Workouts',
     url: '/workouts',
     icon: Dumbbell,
@@ -172,8 +185,24 @@ const soloMenuItems = [
 const AppSidebar = memo(() => {
   const [location] = useLocation();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [workoutsOpen, setWorkoutsOpen] = useState(() => location.startsWith('/workout-builder/'));
   const { isTrainer, isClient, isSolo } = useUser();
   const { state } = useSidebar();
+
+  // Auto-open My Workouts dropdown when navigating to a workout builder page
+  useEffect(() => {
+    if (location.startsWith('/workout-builder/')) {
+      setWorkoutsOpen(true);
+    }
+  }, [location]);
+
+  // Fetch saved workouts for solo sidebar dropdown
+  const { data: myWorkouts = [] } = useQuery<{ id: string; title: string }[]>({
+    queryKey: ['/api/workouts'],
+    enabled: isSolo,
+    staleTime: 30 * 1000,
+    select: (data: any[]) => data.map((w) => ({ id: w.id, title: w.title })),
+  });
 
   // Select menu items based on user role
   const menuItems = isTrainer ? trainerMenuItems : isSolo ? soloMenuItems : clientMenuItems;
@@ -397,6 +426,8 @@ const AppSidebar = memo(() => {
               <SidebarMenu className="space-y-1">
                 {menuItems.map((item, index) => {
                   const active = isActive(item.url);
+                  const isMyWorkouts = isSolo && item.title === 'My Workouts';
+
                   return (
                     <SidebarMenuItem key={item.title}>
                       <Tooltip>
@@ -415,11 +446,8 @@ const AppSidebar = memo(() => {
                                   ? 'bg-muted/50'
                                   : 'bg-transparent'
                             }`}
-                            style={{
-                              transformOrigin: 'left center',
-                            }}
+                            style={{ transformOrigin: 'left center' }}
                           >
-                            {/* Animated background indicator with gradient - hide when collapsed */}
                             {!isCollapsed && (
                               <motion.div
                                 className="absolute left-0 top-0 w-1 h-full rounded-r-full z-10"
@@ -465,14 +493,12 @@ const AppSidebar = memo(() => {
                                 </motion.div>
                                 {!isCollapsed && (
                                   <motion.span
-                                    className={`text-base transition-colors duration-200 ${
+                                    className={`text-base transition-colors duration-200 flex-1 ${
                                       active
                                         ? 'font-medium text-primary'
                                         : 'font-light text-foreground'
                                     }`}
-                                    animate={{
-                                      fontWeight: active ? 500 : 300,
-                                    }}
+                                    animate={{ fontWeight: active ? 500 : 300 }}
                                     transition={{ duration: 0.2 }}
                                   >
                                     {item.title}
@@ -480,6 +506,25 @@ const AppSidebar = memo(() => {
                                 )}
                               </a>
                             </SidebarMenuButton>
+
+                            {/* Chevron toggle for My Workouts dropdown (solo only) */}
+                            {isMyWorkouts && !isCollapsed && (
+                              <SidebarMenuAction
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setWorkoutsOpen((o) => !o);
+                                }}
+                                className={`right-2 rounded-lg transition-all duration-200 ${
+                                  workoutsOpen
+                                    ? 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400'
+                                    : 'hover:bg-muted/40 text-muted-foreground/60'
+                                }`}
+                              >
+                                <ChevronDown
+                                  className={`h-3.5 w-3.5 transition-transform duration-300 ${workoutsOpen ? 'rotate-180' : ''}`}
+                                />
+                              </SidebarMenuAction>
+                            )}
                           </motion.div>
                         </TooltipTrigger>
                         {isCollapsed && (
@@ -488,6 +533,107 @@ const AppSidebar = memo(() => {
                           </TooltipContent>
                         )}
                       </Tooltip>
+
+                      {/* Collapsible workout sub-items (solo My Workouts only) */}
+                      <AnimatePresence initial={false}>
+                        {isMyWorkouts && workoutsOpen && !isCollapsed && (
+                          <motion.div
+                            key="workout-list"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                            className="relative mt-1 mb-2 ml-2 pl-2 overflow-hidden"
+                          >
+                            {/* Vertical connector line */}
+                            <div className="absolute left-[18px] top-1 bottom-3 w-px bg-gradient-to-b from-purple-500/50 via-purple-500/20 to-transparent" />
+
+                            <div className="space-y-0.5">
+                              {myWorkouts.length === 0 ? (
+                                <div className="flex items-center gap-2 pl-7 py-2">
+                                  <span className="text-[11px] text-muted-foreground/50 font-light italic">
+                                    No workouts yet
+                                  </span>
+                                </div>
+                              ) : (
+                                myWorkouts.map((workout, wIdx) => {
+                                  const isActiveWorkout =
+                                    location === `/workout-builder/${workout.id}`;
+                                  return (
+                                    <motion.div
+                                      key={workout.id}
+                                      initial={{ opacity: 0, x: -6 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{
+                                        delay: wIdx * 0.04,
+                                        type: 'spring',
+                                        stiffness: 400,
+                                        damping: 30,
+                                      }}
+                                      whileHover={{ x: 4 }}
+                                    >
+                                      <a
+                                        href={`/workout-builder/${workout.id}`}
+                                        className={`flex items-center gap-2.5 pl-7 pr-3 py-2 mx-1 rounded-xl transition-all duration-200 group relative ${
+                                          isActiveWorkout
+                                            ? 'bg-purple-500/15 border border-purple-500/20 shadow-sm shadow-purple-500/10'
+                                            : 'hover:bg-muted/20 border border-transparent'
+                                        }`}
+                                      >
+                                        {/* Connector dot */}
+                                        <div
+                                          className={`absolute left-2 w-2 h-2 rounded-full border-2 flex-shrink-0 transition-all duration-200 ${
+                                            isActiveWorkout
+                                              ? 'bg-purple-400 border-purple-400 shadow-sm shadow-purple-400/50'
+                                              : 'bg-background border-muted-foreground/30 group-hover:border-muted-foreground/60'
+                                          }`}
+                                        />
+
+                                        {/* Icon */}
+                                        <div
+                                          className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                                            isActiveWorkout
+                                              ? 'bg-purple-500/20 shadow-inner'
+                                              : 'bg-muted/20 group-hover:bg-muted/40'
+                                          }`}
+                                        >
+                                          <Dumbbell
+                                            className={`w-3.5 h-3.5 transition-colors duration-200 ${
+                                              isActiveWorkout
+                                                ? 'text-purple-400'
+                                                : 'text-muted-foreground/50 group-hover:text-muted-foreground/80'
+                                            }`}
+                                          />
+                                        </div>
+
+                                        {/* Title */}
+                                        <span
+                                          className={`text-[13px] truncate flex-1 transition-colors duration-200 ${
+                                            isActiveWorkout
+                                              ? 'font-medium text-purple-300'
+                                              : 'font-light text-muted-foreground/70 group-hover:text-foreground'
+                                          }`}
+                                        >
+                                          {workout.title}
+                                        </span>
+
+                                        {/* Active dot indicator */}
+                                        {isActiveWorkout && (
+                                          <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0"
+                                          />
+                                        )}
+                                      </a>
+                                    </motion.div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </SidebarMenuItem>
                   );
                 })}

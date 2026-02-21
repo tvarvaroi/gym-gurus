@@ -126,6 +126,11 @@ export async function checkAndReserveSlot(user: UserLike): Promise<{
   limit: number;
   reason?: 'no_subscription' | 'trial_expired' | 'daily_limit_reached' | 'too_many_concurrent';
 }> {
+  // Dev bypass — set BYPASS_AI_LIMITS=true in .env to disable all limits
+  if (process.env.BYPASS_AI_LIMITS === 'true') {
+    return { allowed: true, remaining: 999, limit: 999 };
+  }
+
   const limit = await getDailyLimit(user);
 
   if (limit === 0) {

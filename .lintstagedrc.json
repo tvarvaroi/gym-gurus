@@ -1,9 +1,4 @@
 {
-  "*.{ts,tsx}": [
-    "npx eslint --fix",
-    "npx prettier --write"
-  ],
-  "*.{json,md}": [
-    "npx prettier --write"
-  ]
+  "*.{ts,tsx}": ["npx eslint --fix --no-warn-ignored", "npx prettier --write"],
+  "*.{json,md}": ["npx prettier --write"]
 }

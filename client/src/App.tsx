@@ -122,6 +122,7 @@ const AICoach = lazy(() => import('@/pages/solo/AICoach'));
 const Recovery = lazy(() => import('@/pages/solo/Recovery'));
 const SoloAchievements = lazy(() => import('@/pages/solo/Achievements'));
 const WorkoutGenerator = lazy(() => import('@/pages/solo/WorkoutGenerator'));
+const NutritionPlanner = lazy(() => import('@/pages/solo/NutritionPlanner'));
 
 // Loading fallback component
 const LoadingFallback = memo(() => {
@@ -724,6 +725,15 @@ function Router() {
                 <Suspense fallback={<LoadingFallback />}>
                   <PageTransition>
                     <WorkoutGenerator />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
+            <Route path="/solo/nutrition">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <NutritionPlanner />
                   </PageTransition>
                 </Suspense>
               )}

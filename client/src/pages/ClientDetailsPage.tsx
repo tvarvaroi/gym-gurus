@@ -32,6 +32,7 @@ import {
   Check,
   RefreshCw,
   Trash2,
+  Wand2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -599,14 +600,22 @@ export default function ClientDetailsPage() {
                   </motion.div>
                 </div>
 
-                {/* Edit Button */}
+                {/* Action Buttons */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.4, type: 'spring' }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2"
                 >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                    onClick={() => setLocation(`/solo/generate?clientId=${clientId}`)}
+                  >
+                    <Wand2 className="h-3.5 w-3.5" />
+                    Generate Workout
+                  </Button>
                   <EditClientButton client={client} trainerId={client.trainerId} />
                 </motion.div>
               </div>
