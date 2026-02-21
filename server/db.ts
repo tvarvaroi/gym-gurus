@@ -5,9 +5,9 @@ import { join } from 'path';
 try {
   const envPath = join(process.cwd(), '.env');
   const envFile = readFileSync(envPath, 'utf-8');
-  const envVars = envFile.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+  const envVars = envFile.split('\n').filter((line) => line.trim() && !line.startsWith('#'));
 
-  envVars.forEach(line => {
+  envVars.forEach((line) => {
     const [key, ...valueParts] = line.split('=');
     const value = valueParts.join('=').trim();
     if (key && value && !process.env[key.trim()]) {
@@ -22,8 +22,8 @@ import { Pool as NeonPool, neonConfig } from '@neondatabase/serverless';
 import { Pool as PgPool } from 'pg';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { drizzle as pgDrizzle } from 'drizzle-orm/node-postgres';
-import ws from "ws";
-import * as schema from "@shared/schema";
+import ws from 'ws';
+import * as schema from '@shared/schema';
 import { logger } from './logger';
 
 // Configure Neon
@@ -42,15 +42,20 @@ function getConnectionString(): string {
     logger.info('Using DATABASE_URL for database connection');
     return process.env.DATABASE_URL;
   }
-  
+
   // Construct from PG* variables if available
-  if (process.env.PGHOST && process.env.PGUSER && process.env.PGPASSWORD && process.env.PGDATABASE) {
+  if (
+    process.env.PGHOST &&
+    process.env.PGUSER &&
+    process.env.PGPASSWORD &&
+    process.env.PGDATABASE
+  ) {
     const host = process.env.PGHOST;
     const user = process.env.PGUSER;
     const password = process.env.PGPASSWORD;
     const database = process.env.PGDATABASE;
     const port = process.env.PGPORT || '5432';
-    
+
     // Check if it's a Neon host
     const isNeon = host.includes('neon.tech');
     const sslMode = isNeon ? '?sslmode=require' : '';
@@ -58,9 +63,9 @@ function getConnectionString(): string {
     logger.info('Constructing database URL from PG* environment variables');
     return `postgresql://${user}:${password}@${host}:${port}/${database}${sslMode}`;
   }
-  
+
   throw new Error(
-    "No database connection string found. Please set REPLIT_DB_URL, DATABASE_URL, or PG* environment variables.",
+    'No database connection string found. Please set REPLIT_DB_URL, DATABASE_URL, or PG* environment variables.'
   );
 }
 
@@ -75,10 +80,10 @@ async function initializeDatabase() {
 
   const connectionString = getConnectionString();
   logger.debug('Connection string:', connectionString.replace(/:[^@]+@/, ':***@')); // Log URL with masked password
-  
+
   // Check if this is a Neon URL
   const isNeonUrl = connectionString.includes('neon.tech');
-  
+
   // First, try Neon if it's a Neon URL
   if (isNeonUrl) {
     // Try with multiple attempts to wake up the endpoint
@@ -89,9 +94,9 @@ async function initializeDatabase() {
         const neonPool = new NeonPool({
           connectionString,
           connectionTimeoutMillis: 10000 * attempt, // Increase timeout with each attempt
-          idleTimeoutMillis: 60000,  // 60s idle before reclaim
+          idleTimeoutMillis: 60000, // 60s idle before reclaim
           max: 20,
-          min: 2,                    // Keep warm connections
+          min: 2, // Keep warm connections
           application_name: 'gymgurus',
         });
 
@@ -116,12 +121,12 @@ async function initializeDatabase() {
         logger.warn(`Neon connection attempt ${attempt} failed:`, neonError);
         if (attempt < maxAttempts) {
           // Wait before retrying (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+          await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
         }
       }
     }
   }
-  
+
   // Fall back to standard PostgreSQL driver
   return fallbackToStandardPg();
 }
@@ -136,14 +141,17 @@ async function fallbackToStandardPg() {
 
     const pgPool = new PgPool({
       connectionString,
-      ssl: connectionString.includes('sslmode=require') ? {
-        rejectUnauthorized: false
-      } : undefined,
+      ssl:
+        connectionString.includes('sslmode=') || process.env.NODE_ENV === 'production'
+          ? {
+              rejectUnauthorized: false,
+            }
+          : undefined,
       connectionTimeoutMillis: 10000,
-      idleTimeoutMillis: 60000,     // 60s idle before reclaim
+      idleTimeoutMillis: 60000, // 60s idle before reclaim
       max: 20,
-      min: 2,                       // Keep warm connections
-      statement_timeout: 30000,     // 30s query timeout prevents runaway queries
+      min: 2, // Keep warm connections
+      statement_timeout: 30000, // 30s query timeout prevents runaway queries
       application_name: 'gymgurus',
     });
 
@@ -175,7 +183,7 @@ let connectionPromise: Promise<boolean> | null = null;
 
 async function ensureConnection() {
   if (!connectionPromise) {
-    connectionPromise = initializeDatabase().then(result => {
+    connectionPromise = initializeDatabase().then((result) => {
       connectionEstablished = result;
       if (!connectionEstablished) {
         logger.error('Could not establish database connection');
@@ -212,7 +220,9 @@ async function testConnection() {
         logger.warn('No tables found. Database migration needed.');
         logger.info('Run: npm run db:push --force');
       } else {
-        logger.info('Found tables:', { tables: tablesResult.rows.map((r: any) => r.table_name).join(', ') });
+        logger.info('Found tables:', {
+          tables: tablesResult.rows.map((r: any) => r.table_name).join(', '),
+        });
       }
     } catch (tableError: any) {
       logger.error('Could not query tables:', tableError);
