@@ -7,6 +7,11 @@ import prettier from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
 import globals from 'globals';
 
+// globals package has keys with trailing whitespace (e.g. "AudioWorkletGlobalScope ")
+// which ESLint 9 rejects — strip them here.
+const cleanGlobals = (obj) =>
+  Object.fromEntries(Object.entries(obj).map(([k, v]) => [k.trim(), v]));
+
 export default [
   {
     ignores: [
@@ -40,8 +45,8 @@ export default [
         },
       },
       globals: {
-        ...globals.browser,
-        ...globals.node,
+        ...cleanGlobals(globals.browser),
+        ...cleanGlobals(globals.node),
         React: 'readonly',
         JSX: 'readonly',
         NodeJS: 'readonly',
