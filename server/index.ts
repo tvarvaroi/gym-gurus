@@ -23,6 +23,7 @@ try {
   }
 }
 
+import { fileURLToPath } from 'url';
 import express, { type Request, Response, NextFunction } from 'express';
 import compression from 'compression';
 import helmet from 'helmet';
@@ -182,7 +183,8 @@ app.use((req, res, next) => {
   // This needs to be before setupVite to avoid catch-all route interference
   if (isDevelopment) {
     const path = await import('path');
-    app.use(express.static(path.resolve(import.meta.dirname, '..', 'client', 'public')));
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    app.use(express.static(path.resolve(__dirname, '..', 'client', 'public')));
     await setupVite(app, server);
   } else {
     serveStatic(app);
