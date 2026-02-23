@@ -142,7 +142,9 @@ async function fallbackToStandardPg() {
     const pgPool = new PgPool({
       connectionString,
       ssl:
-        connectionString.includes('sslmode=') || process.env.NODE_ENV === 'production'
+        connectionString.includes('sslmode=require') ||
+        connectionString.includes('sslmode=verify-full') ||
+        connectionString.includes('sslmode=verify-ca')
           ? {
               rejectUnauthorized: false,
             }
