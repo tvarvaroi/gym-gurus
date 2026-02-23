@@ -30,17 +30,24 @@ import { logger } from './logger';
 neonConfig.webSocketConstructor = ws;
 
 // Construct DATABASE_URL from available sources
+function withSsl(url: string): string {
+  // Append sslmode=require if no SSL param is already present.
+  // Railway Postgres (and most cloud providers) require SSL.
+  if (url.includes('sslmode=') || url.includes('ssl=')) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'sslmode=require';
+}
+
 function getConnectionString(): string {
   // First, check for REPLIT_DB_URL (new Replit database) - but only if it's a PostgreSQL URL
   if (process.env.REPLIT_DB_URL && process.env.REPLIT_DB_URL.startsWith('postgresql://')) {
     logger.info('Using REPLIT_DB_URL for database connection');
-    return process.env.REPLIT_DB_URL;
+    return withSsl(process.env.REPLIT_DB_URL);
   }
 
   // Then, check for DATABASE_URL
   if (process.env.DATABASE_URL) {
     logger.info('Using DATABASE_URL for database connection');
-    return process.env.DATABASE_URL;
+    return withSsl(process.env.DATABASE_URL);
   }
 
   // Construct from PG* variables if available
@@ -56,12 +63,8 @@ function getConnectionString(): string {
     const database = process.env.PGDATABASE;
     const port = process.env.PGPORT || '5432';
 
-    // Check if it's a Neon host
-    const isNeon = host.includes('neon.tech');
-    const sslMode = isNeon ? '?sslmode=require' : '';
-
     logger.info('Constructing database URL from PG* environment variables');
-    return `postgresql://${user}:${password}@${host}:${port}/${database}${sslMode}`;
+    return withSsl(`postgresql://${user}:${password}@${host}:${port}/${database}`);
   }
 
   throw new Error(
@@ -141,14 +144,7 @@ async function fallbackToStandardPg() {
 
     const pgPool = new PgPool({
       connectionString,
-      ssl:
-        connectionString.includes('sslmode=require') ||
-        connectionString.includes('sslmode=verify-full') ||
-        connectionString.includes('sslmode=verify-ca')
-          ? {
-              rejectUnauthorized: false,
-            }
-          : undefined,
+      ssl: connectionString.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 60000, // 60s idle before reclaim
       max: 20,
