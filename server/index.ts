@@ -61,10 +61,10 @@ app.use(
             directives: {
               defaultSrc: ["'self'"],
               scriptSrc: ["'self'", "'unsafe-inline'"],
-              styleSrc: ["'self'", "'unsafe-inline'"],
+              styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
               imgSrc: ["'self'", 'data:', 'https:'],
               connectSrc: ["'self'"],
-              fontSrc: ["'self'"],
+              fontSrc: ["'self'", 'https://fonts.gstatic.com'],
               objectSrc: ["'none'"],
               mediaSrc: ["'self'"],
               frameSrc: ["'none'"],
@@ -141,7 +141,12 @@ app.use(skipForWebSocket(sanitizeInput));
 // Set CSRF cookie on every response
 app.use(skipForWebSocket(csrfCookieSetter));
 // Validate CSRF token on state-changing requests (exclude Stripe webhooks)
-app.use('/api', skipForWebSocket(csrfProtection(['/api/webhooks/stripe', '/api/callback'])));
+app.use(
+  '/api',
+  skipForWebSocket(
+    csrfProtection(['/api/webhooks/stripe', '/api/callback', '/api/analytics/web-vitals'])
+  )
+);
 
 app.use((req, res, next) => {
   const start = Date.now();
