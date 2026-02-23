@@ -27,7 +27,7 @@ import { logger } from './logger';
 // Railway Postgres (and most cloud providers) require SSL.
 function withSsl(url: string): string {
   if (url.includes('sslmode=') || url.includes('ssl=')) return url;
-  return url + (url.includes('?') ? '&' : '?') + 'sslmode=require';
+  return url + (url.includes('?') ? '&' : '?') + 'sslmode=no-verify';
 }
 
 function getConnectionString(): string {
@@ -70,7 +70,7 @@ async function initializeDatabase(): Promise<boolean> {
   try {
     const pgPool = new Pool({
       connectionString,
-      ssl: connectionString.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
+      ssl: connectionString.includes('sslmode=') ? { rejectUnauthorized: false } : undefined,
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 60000,
       max: 20,
