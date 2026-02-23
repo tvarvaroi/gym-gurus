@@ -23,17 +23,10 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '@shared/schema';
 import { logger } from './logger';
 
-// Append sslmode=require if no SSL param is already present.
-// Railway Postgres (and most cloud providers) require SSL.
-function withSsl(url: string): string {
-  if (url.includes('sslmode=') || url.includes('ssl=')) return url;
-  return url + (url.includes('?') ? '&' : '?') + 'sslmode=no-verify';
-}
-
-function getConnectionString(): string {
+function getRawConnectionString(): string {
   if (process.env.DATABASE_URL) {
     logger.info('Using DATABASE_URL for database connection');
-    return withSsl(process.env.DATABASE_URL);
+    return process.env.DATABASE_URL;
   }
 
   // Construct from PG* variables if available
@@ -50,12 +43,40 @@ function getConnectionString(): string {
     const port = process.env.PGPORT || '5432';
 
     logger.info('Constructing database URL from PG* environment variables');
-    return withSsl(`postgresql://${user}:${password}@${host}:${port}/${database}`);
+    return `postgresql://${user}:${password}@${host}:${port}/${database}`;
   }
 
   throw new Error(
     'No database connection string found. Please set DATABASE_URL or PG* environment variables.'
   );
+}
+
+async function tryConnect(connectionString: string, ssl: any, label: string): Promise<Pool | null> {
+  const maskedUrl = connectionString.replace(/:[^@]+@/, ':****@');
+  console.log(`[DB DEBUG] Attempt: ${label}`);
+  console.log(`[DB DEBUG] Connecting to: ${maskedUrl}`);
+  console.log(`[DB DEBUG] SSL config: ${JSON.stringify(ssl)}`);
+
+  const pgPool = new Pool({
+    connectionString,
+    ssl,
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 60000,
+    max: 20,
+    min: 2,
+    statement_timeout: 30000,
+    application_name: 'gymgurus',
+  });
+
+  try {
+    await pgPool.query('SELECT 1');
+    console.log(`[DB DEBUG] SUCCESS with: ${label}`);
+    return pgPool;
+  } catch (err: any) {
+    console.log(`[DB DEBUG] FAILED with: ${label} — ${err.message}`);
+    await pgPool.end().catch(() => {});
+    return null;
+  }
 }
 
 let pool: Pool;
@@ -64,38 +85,35 @@ let db: ReturnType<typeof drizzle>;
 async function initializeDatabase(): Promise<boolean> {
   logger.info('Attempting database connection...');
 
-  const connectionString = getConnectionString();
-  logger.debug('Connection string:', connectionString.replace(/:[^@]+@/, ':***@'));
+  const rawUrl = getRawConnectionString();
 
-  try {
-    const pgPool = new Pool({
-      connectionString,
-      ssl: connectionString.includes('sslmode=') ? { rejectUnauthorized: false } : undefined,
-      connectionTimeoutMillis: 10000,
-      idleTimeoutMillis: 60000,
-      max: 20,
-      min: 2,
-      statement_timeout: 30000,
-      application_name: 'gymgurus',
-    });
+  // Attempt 1: SSL enabled (rejectUnauthorized: false), no sslmode in URL
+  let pgPool = await tryConnect(
+    rawUrl,
+    { rejectUnauthorized: false },
+    'ssl=true, no sslmode in URL'
+  );
 
-    await pgPool.query('SELECT 1');
-    logger.info('Connected using standard PostgreSQL driver');
+  // Attempt 2: No SSL at all
+  if (!pgPool) {
+    pgPool = await tryConnect(rawUrl, false, 'ssl=false');
+  }
 
-    pool = pgPool;
-    db = drizzle(pool, { schema });
-
-    pgPool.on('error', (err) => {
-      logger.error('PostgreSQL pool error:', err);
-    });
-
-    return true;
-  } catch (err: any) {
-    logger.error('PostgreSQL connection failed', err);
+  if (!pgPool) {
+    logger.error('All connection attempts failed.');
     logger.error('The application will continue running, but database operations will fail.');
-    logger.error('Please check your database configuration and ensure the database is accessible.');
     return false;
   }
+
+  pool = pgPool;
+  db = drizzle(pool, { schema });
+
+  pool.on('error', (err) => {
+    logger.error('PostgreSQL pool error:', err);
+  });
+
+  logger.info('Connected using standard PostgreSQL driver');
+  return true;
 }
 
 // Initialize database connection
