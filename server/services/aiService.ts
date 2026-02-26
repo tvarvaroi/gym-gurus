@@ -98,15 +98,22 @@ RULES:
 - When uncertain, say so honestly
 - Cite reasoning: "This works because..." not just "Do this"
 - Use metric and imperial units based on user preference (default: both)
+- For unsafe requests (crash diets, losing more than 1kg/week, extreme calorie deficits below 1200 kcal, training through pain), explicitly warn that the goal is medically unsafe and recommend a safer alternative (0.5-1kg/week loss, minimum 1200-1500 kcal for women/men)
+- For pain or injury questions, recommend consulting a doctor or physiotherapist before continuing training
+- Never diagnose medical conditions
+- Add a brief disclaimer when giving specific nutrition advice: "For personalized medical or dietary advice, consult a healthcare professional"
+- You DO have conversation memory within this chat session — the previous messages in this conversation are provided to you. Reference earlier messages when relevant.
 
 PERSONALIZATION:
-- The USER PROFILE section below contains real data from the user's account — USE IT
+- The USER PROFILE section below contains real data from the user's account — USE IT in every response
 - Reference their specific weight, height, goals, and equipment when giving advice
 - NEVER ask for information that's already in their profile
 - If they ask "what do you know about me", summarize their profile data
-- Tailor calorie/macro recommendations to their actual body stats
+- Calculate SPECIFIC numbers rather than giving ranges: use their exact weight for protein calculations (e.g., "at 82kg you need 131-180g protein/day" not "eat 1.6-2.2g/kg")
+- When asked about calories, calculate their approximate TDEE from their profile data (weight, height, age, gender, activity level) using the Mifflin-St Jeor equation, then adjust for their goal
 - Suggest exercises that match their available equipment
-- Respect their injuries and dietary restrictions in ALL recommendations`;
+- Respect their injuries and dietary restrictions in ALL recommendations
+- Reference their recent workouts when suggesting training splits or recovery advice`;
 
 async function buildUserContext(userId?: string, context?: UserContext): Promise<string> {
   const parts: string[] = ['\n\nUSER PROFILE:'];
@@ -148,11 +155,13 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
         if (profile.bodyFatPercentage) parts.push(`Body fat: ${profile.bodyFatPercentage}%`);
         if (profile.gender && profile.gender !== 'prefer_not_to_say')
           parts.push(`Gender: ${profile.gender}`);
+        let ageYears: number | null = null;
         if (profile.dateOfBirth) {
-          const ageYears = Math.floor(
+          ageYears = Math.floor(
             (Date.now() - new Date(profile.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
           );
           if (ageYears > 0 && ageYears < 120) parts.push(`Age: ${ageYears}`);
+          else ageYears = null;
         }
         if (profile.primaryGoal && !context?.goals)
           parts.push(`Primary goal: ${String(profile.primaryGoal).replace(/_/g, ' ')}`);
@@ -185,6 +194,31 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
           parts.push(`Protein target: ${profile.proteinTargetGrams}g`);
         if (profile.carbsTargetGrams) parts.push(`Carbs target: ${profile.carbsTargetGrams}g`);
         if (profile.fatTargetGrams) parts.push(`Fat target: ${profile.fatTargetGrams}g`);
+
+        // Calculate and include BMR/TDEE so the AI has pre-computed stats
+        const weight = Number(profile.weightKg);
+        const height = Number(profile.heightCm);
+        const gender = profile.gender;
+        if (weight && height && ageYears && (gender === 'male' || gender === 'female')) {
+          const bmr =
+            gender === 'male'
+              ? 10 * weight + 6.25 * height - 5 * ageYears + 5
+              : 10 * weight + 6.25 * height - 5 * ageYears - 161;
+          const actMultipliers: Record<string, number> = {
+            sedentary: 1.2,
+            lightly_active: 1.375,
+            moderately_active: 1.55,
+            very_active: 1.725,
+            extra_active: 1.9,
+          };
+          const actKey = String(profile.activityLevel || 'moderately_active');
+          const mult = actMultipliers[actKey] ?? 1.55;
+          const tdee = Math.round(bmr * mult);
+          parts.push(`\nCALCULATED STATS (Mifflin-St Jeor):`);
+          parts.push(`BMR: ${Math.round(bmr)} kcal/day`);
+          parts.push(`TDEE: ${tdee} kcal/day (maintenance)`);
+          parts.push(`Recommended protein: ${Math.round(weight * 1.8)}g/day (1.8g/kg bodyweight)`);
+        }
       }
 
       // Recent workouts created by this user (trainer or solo)
@@ -556,15 +590,16 @@ export async function aiChat(
 
   try {
     const userCtx = await buildUserContext(userId, userContext);
-    console.log(`[AI Chat] Sending request with ${userCtx.length} chars of user context`);
+    console.log(
+      `[AI Chat] Attempting Claude API call for user: ${userId}, context: ${userCtx.length} chars`
+    );
     const result = await generateText({
       model,
       system: CHAT_SYSTEM_PROMPT + userCtx,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      tools: fitnessTools,
-      maxSteps: 3,
-      maxTokens: 1024,
+      maxTokens: 2048,
     });
+    console.log(`[AI Chat] Claude API call succeeded, response: ${result.text.length} chars`);
     return result.text || "I couldn't generate a response. Please try again.";
   } catch (error: any) {
     console.error('[AI Chat] generateText failed:', error?.message || error);
@@ -585,9 +620,7 @@ export async function aiChatStream(
     model,
     system: CHAT_SYSTEM_PROMPT + (await buildUserContext(userId, userContext)),
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    tools: fitnessTools,
-    maxSteps: 3,
-    maxTokens: 1024,
+    maxTokens: 2048,
   });
 }
 
@@ -638,25 +671,43 @@ export async function aiGenerateWorkout(params: {
   if (!model) return generateFallbackWorkout(params);
 
   // Map goal → explicit rep/rest/intensity guidance for the prompt
-  const goalGuidance: Record<string, { repRange: string; restPeriod: string; note: string }> = {
+  const goalGuidance: Record<
+    string,
+    { repRange: string; restPeriod: string; restDetails: string; note: string }
+  > = {
     strength: {
       repRange: '3-6 reps',
-      restPeriod: '2-3 minutes',
+      restPeriod: '2-3 minutes for compounds, 60-90 seconds for isolation',
+      restDetails: `REST PERIOD RULES (Strength goal — this is critical for performance):
+- Heavy compound lifts (Bench Press, Squat, Deadlift, Overhead Press, Barbell Row): 150-180 seconds (2.5-3 min) — write as "150s" or "180s"
+- Medium compound lifts (Incline Press, Romanian Deadlift, Pull-ups, Dips, Close-Grip Bench): 120 seconds — write as "120s"
+- Isolation/accessory exercises (Lateral Raise, Curls, Tricep Extensions, Face Pulls): 60-90 seconds — write as "60s" or "90s"
+IMPORTANT: Each exercise MUST have its own rest period based on the above categories. Do NOT use the same rest time for all exercises.`,
       note: 'Prioritise heavy compound lifts and maximal load',
     },
     hypertrophy: {
       repRange: '8-12 reps',
-      restPeriod: '60-90 seconds',
+      restPeriod: '90-120 seconds for compounds, 60-90 seconds for isolation',
+      restDetails: `REST PERIOD RULES (Hypertrophy goal):
+- Compound lifts (Bench, Squat, Row, Press): 90-120 seconds — write as "90s" or "120s"
+- Isolation exercises (Curls, Raises, Flyes, Extensions): 60-90 seconds — write as "60s" or "90s"
+Each exercise should have its own rest period based on whether it's a compound or isolation movement.`,
       note: 'Moderate weight, focus on time under tension and mind-muscle connection',
     },
     endurance: {
       repRange: '15-25 reps',
       restPeriod: '30-45 seconds',
+      restDetails: `REST PERIOD RULES (Endurance goal):
+- All exercises: 30-45 seconds — write as "30s" or "45s"
+- Keep rest minimal to maintain elevated heart rate.`,
       note: 'Lighter loads, higher volume, keep rest short',
     },
     fat_loss: {
       repRange: '12-15 reps',
       restPeriod: '30-45 seconds',
+      restDetails: `REST PERIOD RULES (Fat Loss goal):
+- All exercises: 30-45 seconds — write as "30s" or "45s"
+- Circuit or superset format preferred, keep heart rate elevated.`,
       note: 'Circuit or superset format preferred, keep heart rate elevated throughout',
     },
   };
@@ -681,7 +732,6 @@ export async function aiGenerateWorkout(params: {
 
 Goal: ${params.goal}
 Rep range: ${gp.repRange} per set
-Rest periods: ${gp.restPeriod} between sets
 Intensity note: ${gp.note}
 Difficulty guidance: ${dp}
 Equipment available: ${params.availableEquipment.join(', ')}
@@ -689,9 +739,11 @@ ${params.focusMuscles ? `Target muscles (ONLY include exercises for these muscle
 ${params.excludeExercises ? `Exclude these exercises: ${params.excludeExercises.join(', ')}` : ''}
 ${params.inspiredBy ? `Training style: model this workout after "${params.inspiredBy}" training methodology (adapt volume, intensity, and exercise selection to match that style while respecting the user's experience level and equipment).` : ''}
 
+${gp.restDetails}
+
 Include a proper warmup, ${Math.max(4, Math.floor(params.duration / 8))} main exercises, and a cooldown.
 ${params.focusMuscles ? 'Every main exercise must target the specified muscle groups only.' : ''}
-Use the specified rep range and rest periods for all main exercises.`,
+Use the specified rep range for all main exercises. Use the REST PERIOD RULES above to assign the correct rest time PER EXERCISE — different exercises should have different rest periods based on their type.`,
       maxTokens: 2048,
     });
     return object;
@@ -739,16 +791,27 @@ export async function aiGenerateMealPlan(params: {
   if (!model) return generateFallbackMealPlan(params);
 
   try {
+    const proteinTarget = params.macros?.protein ?? Math.round((params.targetCalories * 0.3) / 4);
+    const minProteinPerMeal = Math.round((proteinTarget / params.mealsPerDay) * 0.85);
+
     const { object } = await generateObject({
       model,
       schema: mealPlanSchema,
-      system:
-        'You are a certified sports nutritionist. Design practical, balanced meal plans. For each meal provide totalCalories, totalProtein, totalCarbs, totalFat (summed from foods) and prepTime in minutes. For each food item include calories, protein, carbs, and fat in grams.',
-      prompt: `Generate a daily meal plan with ${params.mealsPerDay} meals targeting ${params.targetCalories} calories.
-${params.macros ? `Target macros — Protein: ${params.macros.protein}g, Carbs: ${params.macros.carbs}g, Fat: ${params.macros.fat}g` : ''}
-${params.dietaryRestrictions?.length ? `Dietary restrictions: ${params.dietaryRestrictions.join(', ')}` : ''}
+      system: `You are a certified sports nutritionist specializing in performance nutrition for athletes and fitness enthusiasts. Design practical, balanced meal plans with accurate macronutrient data.
 
-Use whole, commonly available foods. Include prep-friendly options. For each food item, provide accurate protein, carbs, and fat values in grams. Sum them per meal as totalProtein, totalCarbs, totalFat.`,
+CRITICAL MACRO CONSTRAINTS:
+- Total daily protein MUST be within 5% of the target. This is the #1 priority for fitness meal plans. If the target is ${proteinTarget}g, the total must be between ${Math.round(proteinTarget * 0.95)}g and ${Math.round(proteinTarget * 1.05)}g.
+- Total daily calories should be within 10% of the target.
+- Each meal must have at least ${minProteinPerMeal}g of protein. Distribute protein roughly evenly across meals.
+- When building meals, start with the protein source first, then add carbs and fats around it.
+- For each food item, provide accurate macros based on standard USDA/nutrition database values. Double-check that per-food protein values sum correctly to the meal total.
+
+For each meal provide totalCalories, totalProtein, totalCarbs, totalFat (summed from individual foods) and prepTime in minutes.`,
+      prompt: `Generate a daily meal plan with ${params.mealsPerDay} meals targeting ${params.targetCalories} calories.
+${params.macros ? `Target macros — Protein: ${params.macros.protein}g (MUST hit within 5%), Carbs: ${params.macros.carbs}g, Fat: ${params.macros.fat}g` : `Target protein: ${proteinTarget}g (MUST hit within 5%)`}
+${params.dietaryRestrictions?.length ? `Dietary restrictions: ${params.dietaryRestrictions.join(', ')} — ALL foods must comply, no exceptions` : ''}
+
+Use whole, commonly available foods. Include prep-friendly options. Choose high-protein foods for each meal (e.g., eggs, Greek yogurt, chicken, fish, tofu, lentils, cottage cheese, whey protein). Verify that the sum of per-food protein across all meals equals the daily protein target (within 5%).`,
       maxTokens: 2048,
     });
     return object;
