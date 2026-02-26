@@ -18,7 +18,7 @@ import {
   Sparkles,
   CheckCircle2,
   Users,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 
 interface Achievement {
@@ -48,7 +48,8 @@ function getCategoryFromType(type: string | null): string {
   if (!type) return 'workout';
   if (type.includes('streak')) return 'consistency';
   if (type.includes('strength') || type.includes('1rm') || type.includes('pr')) return 'strength';
-  if (type.includes('social') || type.includes('share') || type.includes('leaderboard')) return 'social';
+  if (type.includes('social') || type.includes('share') || type.includes('leaderboard'))
+    return 'social';
   return 'workout';
 }
 
@@ -56,21 +57,51 @@ function getAchievementIcon(category: string, rarity: string | null) {
   if (rarity === 'legendary') return Crown;
   if (rarity === 'epic') return Sparkles;
   switch (category) {
-    case 'workout': return Dumbbell;
-    case 'strength': return TrendingUp;
-    case 'consistency': return Flame;
-    case 'social': return Users;
-    default: return Trophy;
+    case 'workout':
+      return Dumbbell;
+    case 'strength':
+      return TrendingUp;
+    case 'consistency':
+      return Flame;
+    case 'social':
+      return Users;
+    default:
+      return Trophy;
   }
 }
 
 // Rarity colors
 const rarityColors: Record<string, { bg: string; border: string; text: string; glow: string }> = {
-  common: { bg: 'bg-slate-500/10', border: 'border-slate-500/30', text: 'text-slate-400', glow: 'shadow-slate-500/20' },
-  uncommon: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-400', glow: 'shadow-emerald-500/20' },
-  rare: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', glow: 'shadow-blue-500/20' },
-  epic: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400', glow: 'shadow-purple-500/20' },
-  legendary: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', glow: 'shadow-amber-500/20' },
+  common: {
+    bg: 'bg-slate-500/10',
+    border: 'border-slate-500/30',
+    text: 'text-slate-400',
+    glow: 'shadow-slate-500/20',
+  },
+  uncommon: {
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/30',
+    text: 'text-emerald-400',
+    glow: 'shadow-emerald-500/20',
+  },
+  rare: {
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/30',
+    text: 'text-blue-400',
+    glow: 'shadow-blue-500/20',
+  },
+  epic: {
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-500/30',
+    text: 'text-purple-400',
+    glow: 'shadow-purple-500/20',
+  },
+  legendary: {
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/30',
+    text: 'text-amber-400',
+    glow: 'shadow-amber-500/20',
+  },
 };
 
 export default function Achievements() {
@@ -78,22 +109,29 @@ export default function Achievements() {
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
   const prefersReducedMotion = useReducedMotion();
 
-  const { data: achievements = [], isLoading, error } = useQuery<Achievement[]>({
+  const {
+    data: achievements = [],
+    isLoading,
+    error,
+  } = useQuery<Achievement[]>({
     queryKey: ['/api/gamification/achievements'],
   });
 
   // Map achievements with computed categories
-  const mappedAchievements = achievements.map(a => ({
+  const mappedAchievements = achievements.map((a) => ({
     ...a,
     category: a.category || getCategoryFromType(a.requirementType),
   }));
 
-  const filteredAchievements = selectedCategory === 'all'
-    ? mappedAchievements
-    : mappedAchievements.filter(a => a.category === selectedCategory);
+  const filteredAchievements =
+    selectedCategory === 'all'
+      ? mappedAchievements
+      : mappedAchievements.filter((a) => a.category === selectedCategory);
 
-  const earnedCount = mappedAchievements.filter(a => a.earned).length;
-  const totalXP = mappedAchievements.filter(a => a.earned).reduce((sum, a) => sum + (a.xpReward || 0), 0);
+  const earnedCount = mappedAchievements.filter((a) => a.earned).length;
+  const totalXP = mappedAchievements
+    .filter((a) => a.earned)
+    .reduce((sum, a) => sum + (a.xpReward || 0), 0);
 
   if (isLoading) {
     return (
@@ -145,22 +183,30 @@ export default function Achievements() {
             <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20">
               <Trophy className="h-8 w-8 text-amber-400" />
             </div>
-            <span className="font-light bg-gradient-to-r from-amber-400 to-yellow-400 bg-clip-text text-transparent">Achievements</span>
+            <span className="font-light bg-gradient-to-r from-amber-400 to-yellow-400 bg-clip-text text-transparent">
+              Achievements
+            </span>
           </h1>
-          <p className="text-muted-foreground font-light">Unlock achievements and earn XP rewards</p>
+          <p className="text-muted-foreground font-light">
+            Unlock achievements and earn XP rewards
+          </p>
         </div>
 
-        {/* Stats */}
-        <div className="flex gap-4">
-          <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
-            <p className="text-2xl font-light text-amber-400">{earnedCount}/{mappedAchievements.length}</p>
-            <p className="text-xs text-muted-foreground">Unlocked</p>
+        {/* Stats — only show when achievements are defined */}
+        {mappedAchievements.length > 0 && (
+          <div className="flex gap-4">
+            <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
+              <p className="text-2xl font-light text-amber-400">
+                {earnedCount}/{mappedAchievements.length}
+              </p>
+              <p className="text-xs text-muted-foreground">Unlocked</p>
+            </div>
+            <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
+              <p className="text-2xl font-light text-purple-400">{totalXP.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">XP Earned</p>
+            </div>
           </div>
-          <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
-            <p className="text-2xl font-light text-purple-400">{totalXP.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">XP Earned</p>
-          </div>
-        </div>
+        )}
       </motion.div>
 
       {/* Category Tabs */}
@@ -176,9 +222,10 @@ export default function Achievements() {
               variant={selectedCategory === category.id ? 'default' : 'outline'}
               size="sm"
               onClick={() => setSelectedCategory(category.id)}
-              className={selectedCategory === category.id
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:from-amber-600 hover:to-yellow-600'
-                : 'border-border/50 hover:border-amber-500/30 hover:bg-amber-500/10'
+              className={
+                selectedCategory === category.id
+                  ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:from-amber-600 hover:to-yellow-600'
+                  : 'border-border/50 hover:border-amber-500/30 hover:bg-amber-500/10'
               }
             >
               <category.icon className="h-4 w-4 mr-2" />
@@ -200,7 +247,9 @@ export default function Achievements() {
             <Trophy className="h-12 w-12 text-muted-foreground/30" />
             <div className="space-y-1">
               <p className="text-base font-medium text-muted-foreground">No achievements found</p>
-              <p className="text-sm text-muted-foreground/60">Complete workouts and hit milestones to unlock achievements</p>
+              <p className="text-sm text-muted-foreground/60">
+                Complete workouts and hit milestones to unlock achievements
+              </p>
             </div>
           </div>
         )}
@@ -224,13 +273,17 @@ export default function Achievements() {
                       ? `${rarity.bg} ${rarity.border} hover:shadow-lg ${rarity.glow}`
                       : 'bg-card/30 border-border/30 opacity-60 hover:opacity-80'
                   }`}
-                  onClick={() => setSelectedAchievement(
-                    selectedAchievement === achievement.id ? null : achievement.id
-                  )}
+                  onClick={() =>
+                    setSelectedAchievement(
+                      selectedAchievement === achievement.id ? null : achievement.id
+                    )
+                  }
                 >
                   {/* Rarity indicator */}
                   {achievement.earned && (
-                    <div className={`absolute top-0 right-0 px-2 py-1 text-xs font-medium capitalize ${rarity.bg} ${rarity.text} rounded-bl-lg`}>
+                    <div
+                      className={`absolute top-0 right-0 px-2 py-1 text-xs font-medium capitalize ${rarity.bg} ${rarity.text} rounded-bl-lg`}
+                    >
                       {rarityKey}
                     </div>
                   )}
@@ -238,9 +291,11 @@ export default function Achievements() {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
                       {/* Icon */}
-                      <div className={`relative p-3 rounded-xl ${
-                        achievement.earned ? rarity.bg : 'bg-muted/30'
-                      }`}>
+                      <div
+                        className={`relative p-3 rounded-xl ${
+                          achievement.earned ? rarity.bg : 'bg-muted/30'
+                        }`}
+                      >
                         {achievement.earned ? (
                           <AchIcon className={`h-6 w-6 ${rarity.text}`} />
                         ) : (
@@ -251,15 +306,22 @@ export default function Achievements() {
                             className="absolute inset-0 rounded-xl"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: [0.3, 0.6, 0.3] }}
-                            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity }}
+                            transition={{
+                              duration: 2,
+                              repeat: prefersReducedMotion ? 0 : Infinity,
+                            }}
                             style={{
                               background: `radial-gradient(circle, ${
-                                rarityKey === 'legendary' ? 'rgba(251, 191, 36, 0.3)' :
-                                rarityKey === 'epic' ? 'rgba(168, 85, 247, 0.3)' :
-                                rarityKey === 'rare' ? 'rgba(59, 130, 246, 0.3)' :
-                                rarityKey === 'uncommon' ? 'rgba(34, 197, 94, 0.3)' :
-                                'rgba(148, 163, 184, 0.3)'
-                              }, transparent 70%)`
+                                rarityKey === 'legendary'
+                                  ? 'rgba(251, 191, 36, 0.3)'
+                                  : rarityKey === 'epic'
+                                    ? 'rgba(168, 85, 247, 0.3)'
+                                    : rarityKey === 'rare'
+                                      ? 'rgba(59, 130, 246, 0.3)'
+                                      : rarityKey === 'uncommon'
+                                        ? 'rgba(34, 197, 94, 0.3)'
+                                        : 'rgba(148, 163, 184, 0.3)'
+                              }, transparent 70%)`,
                             }}
                           />
                         )}
@@ -267,9 +329,11 @@ export default function Achievements() {
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <h3 className={`font-medium truncate ${
-                          achievement.earned ? 'text-foreground' : 'text-muted-foreground'
-                        }`}>
+                        <h3
+                          className={`font-medium truncate ${
+                            achievement.earned ? 'text-foreground' : 'text-muted-foreground'
+                          }`}
+                        >
                           {achievement.name}
                         </h3>
                         <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
@@ -281,7 +345,10 @@ export default function Achievements() {
                           <div className="flex items-center gap-2 mt-2 text-xs">
                             <CheckCircle2 className={`h-3 w-3 ${rarity.text}`} />
                             <span className="text-muted-foreground">
-                              Unlocked {achievement.earnedAt ? new Date(achievement.earnedAt).toLocaleDateString() : ''}
+                              Unlocked{' '}
+                              {achievement.earnedAt
+                                ? new Date(achievement.earnedAt).toLocaleDateString()
+                                : ''}
                             </span>
                           </div>
                         ) : (
@@ -296,10 +363,14 @@ export default function Achievements() {
 
                         {/* XP Reward */}
                         <div className="flex items-center gap-1 mt-2">
-                          <Zap className={`h-3 w-3 ${achievement.earned ? 'text-amber-400' : 'text-muted-foreground'}`} />
-                          <span className={`text-xs font-medium ${
-                            achievement.earned ? 'text-amber-400' : 'text-muted-foreground'
-                          }`}>
+                          <Zap
+                            className={`h-3 w-3 ${achievement.earned ? 'text-amber-400' : 'text-muted-foreground'}`}
+                          />
+                          <span
+                            className={`text-xs font-medium ${
+                              achievement.earned ? 'text-amber-400' : 'text-muted-foreground'
+                            }`}
+                          >
                             {(achievement.xpReward || 0).toLocaleString()} XP
                           </span>
                         </div>
@@ -318,14 +389,12 @@ export default function Achievements() {
                           <div className="pt-4 mt-4 border-t border-border/50">
                             <div className="text-sm text-muted-foreground space-y-2">
                               <p>
-                                <strong>Category:</strong> {
-                                  categories.find(c => c.id === achievement.category)?.label
-                                }
+                                <strong>Category:</strong>{' '}
+                                {categories.find((c) => c.id === achievement.category)?.label}
                               </p>
                               <p>
-                                <strong>Rarity:</strong> <span className={`capitalize ${rarity.text}`}>
-                                  {rarityKey}
-                                </span>
+                                <strong>Rarity:</strong>{' '}
+                                <span className={`capitalize ${rarity.text}`}>{rarityKey}</span>
                               </p>
                               {!achievement.earned && (
                                 <p className="text-amber-400">
