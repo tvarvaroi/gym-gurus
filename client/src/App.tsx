@@ -863,17 +863,22 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   // No need for complex useEffect, React will handle key change
 
-  // Show error state if auth check fails (network error, server down)
+  // Show error state if auth check fails (network error, server down, rate limited)
   if (!isLoading && error && !(error instanceof Error && error.message.startsWith('401:'))) {
+    const isRateLimited = error instanceof Error && error.message.startsWith('429:');
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center space-y-4 max-w-md px-6">
           <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
             <X className="h-8 w-8 text-destructive" />
           </div>
-          <h2 className="text-xl font-semibold text-foreground">Connection Error</h2>
+          <h2 className="text-xl font-semibold text-foreground">
+            {isRateLimited ? 'Too Many Requests' : 'Connection Error'}
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Unable to connect to the server. Please check your internet connection and try again.
+            {isRateLimited
+              ? "You're sending requests too quickly. Please wait a moment and try again."
+              : 'Unable to connect to the server. Please check your internet connection and try again.'}
           </p>
           <Button onClick={() => window.location.reload()} size="lg">
             Try Again

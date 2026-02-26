@@ -1,4 +1,4 @@
-import { AlertCircle, RefreshCw, WifiOff } from 'lucide-react';
+import { AlertCircle, Clock, RefreshCw, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -23,20 +23,35 @@ export function QueryErrorState({
   className,
   compact = false,
 }: QueryErrorStateProps) {
-  const isNetworkError = error?.message?.includes('Failed to fetch') ||
+  const isRateLimited = error?.message?.startsWith('429:');
+  const isNetworkError =
+    error?.message?.includes('Failed to fetch') ||
     error?.message?.includes('NetworkError') ||
     error?.message?.includes('net::');
 
-  const errorTitle = title || (isNetworkError ? 'Connection Error' : 'Something went wrong');
-  const errorMessage = isNetworkError
-    ? 'Unable to reach the server. Check your connection and try again.'
-    : error?.message || 'An unexpected error occurred. Please try again.';
+  const errorTitle =
+    title ||
+    (isRateLimited
+      ? 'Too Many Requests'
+      : isNetworkError
+        ? 'Connection Error'
+        : 'Something went wrong');
+  const errorMessage = isRateLimited
+    ? "You're sending requests too quickly. Please wait a moment and try again."
+    : isNetworkError
+      ? 'Unable to reach the server. Check your connection and try again.'
+      : error?.message || 'An unexpected error occurred. Please try again.';
 
-  const Icon = isNetworkError ? WifiOff : AlertCircle;
+  const Icon = isRateLimited ? Clock : isNetworkError ? WifiOff : AlertCircle;
 
   if (compact) {
     return (
-      <div className={cn('flex items-center gap-3 p-4 rounded-lg bg-destructive/5 border border-destructive/20', className)}>
+      <div
+        className={cn(
+          'flex items-center gap-3 p-4 rounded-lg bg-destructive/5 border border-destructive/20',
+          className
+        )}
+      >
         <Icon className="h-5 w-5 text-destructive flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-destructive">{errorTitle}</p>
@@ -106,8 +121,7 @@ export function QueryStateWrapper({
     return <QueryErrorState error={error} onRetry={onRetry} className={className} />;
   }
 
-  const isEmpty = data === null || data === undefined ||
-    (Array.isArray(data) && data.length === 0);
+  const isEmpty = data === null || data === undefined || (Array.isArray(data) && data.length === 0);
 
   if (isEmpty && emptyFallback) {
     return <>{emptyFallback}</>;
