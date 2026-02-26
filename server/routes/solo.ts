@@ -2,7 +2,7 @@
 // Provides workout logging, activity tracking, and dashboard stats for solo users
 
 import { Router, Request, Response } from 'express';
-import { db } from '../db';
+import { getDb } from '../db';
 import {
   workoutSessions,
   workoutSetLogs,
@@ -28,7 +28,7 @@ router.get('/fitness-profile', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const database = await db;
+    const database = await getDb();
     const profile = await database
       .select()
       .from(userFitnessProfile)
@@ -56,7 +56,7 @@ router.get('/today-workout', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const database = await db;
+    const database = await getDb();
     const today = new Date();
     const todayStart = new Date(today.setHours(0, 0, 0, 0));
     const todayEnd = new Date(today.setHours(23, 59, 59, 999));
@@ -172,7 +172,7 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const database = await db;
+    const database = await getDb();
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
     const weekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Sunday
@@ -231,7 +231,7 @@ router.post('/sessions/start', async (req: Request, res: Response) => {
 
     const { workoutName, plannedDurationMinutes, workoutType } = req.body;
 
-    const database = await db;
+    const database = await getDb();
 
     // Check if there's already an active session
     const activeSession = await database
@@ -288,7 +288,7 @@ router.post('/sessions/:sessionId/log-set', async (req: Request, res: Response) 
       return res.status(400).json({ error: 'Exercise ID and set number required' });
     }
 
-    const database = await db;
+    const database = await getDb();
 
     // Verify session belongs to user and is active
     const session = await database
@@ -338,7 +338,7 @@ router.patch('/sessions/:sessionId/complete', async (req: Request, res: Response
     const { sessionId } = req.params;
     const { notes, perceivedExertion } = req.body;
 
-    const database = await db;
+    const database = await getDb();
 
     // Verify session belongs to user
     const session = await database
@@ -588,7 +588,7 @@ router.get('/sessions/active', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const database = await db;
+    const database = await getDb();
 
     const activeSession = await database
       .select()
@@ -631,7 +631,7 @@ router.get('/stats', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const database = await db;
+    const database = await getDb();
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 });
 

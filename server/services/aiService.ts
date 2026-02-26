@@ -12,15 +12,28 @@ import { eq, desc } from 'drizzle-orm';
 
 function getProvider() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn('[AI] ANTHROPIC_API_KEY is not set — all AI features will use fallbacks');
+    return null;
+  }
   return createAnthropic({ apiKey });
 }
 
 function getModel(modelId = 'claude-sonnet-4-6') {
   const provider = getProvider();
   if (!provider) return null;
-  return provider(modelId);
+  try {
+    return provider(modelId);
+  } catch (err) {
+    console.error('[AI] Failed to create model:', err);
+    return null;
+  }
 }
+
+// Log AI readiness on first import
+console.log(
+  `[AI] Provider ready: ${!!process.env.ANTHROPIC_API_KEY} (key length: ${process.env.ANTHROPIC_API_KEY?.length ?? 0})`
+);
 
 // ---------- System Prompts ----------
 
@@ -537,22 +550,25 @@ export async function aiChat(
 ): Promise<string> {
   const model = getModel();
   if (!model) {
-    return generateFallbackChatResponse(messages[messages.length - 1]?.content || '');
+    console.warn('[AI Chat] No model available — using profile-aware fallback');
+    return generateFallbackChatResponse(messages[messages.length - 1]?.content || '', userId);
   }
 
   try {
+    const userCtx = await buildUserContext(userId, userContext);
+    console.log(`[AI Chat] Sending request with ${userCtx.length} chars of user context`);
     const result = await generateText({
       model,
-      system: CHAT_SYSTEM_PROMPT + (await buildUserContext(userId, userContext)),
+      system: CHAT_SYSTEM_PROMPT + userCtx,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       tools: fitnessTools,
       maxSteps: 3,
       maxTokens: 1024,
     });
     return result.text || "I couldn't generate a response. Please try again.";
-  } catch (error) {
-    console.warn('AI SDK chat failed, using fallback:', error);
-    return generateFallbackChatResponse(messages[messages.length - 1]?.content || '');
+  } catch (error: any) {
+    console.error('[AI Chat] generateText failed:', error?.message || error);
+    return generateFallbackChatResponse(messages[messages.length - 1]?.content || '', userId);
   }
 }
 
@@ -790,8 +806,57 @@ Give a weekly score (0-100) and one overall recommendation.`,
 
 // ============ Fallback Response Generators ============
 
-function generateFallbackChatResponse(userMessage: string): string {
+async function generateFallbackChatResponse(userMessage: string, userId?: string): Promise<string> {
   const msg = userMessage.toLowerCase();
+
+  // Fetch profile data for personalized fallback
+  let profileSummary = '';
+  if (userId) {
+    try {
+      const db = await getDb();
+      const [profile] = await db
+        .select()
+        .from(userFitnessProfile)
+        .where(eq(userFitnessProfile.userId, userId))
+        .limit(1);
+      const [user] = await db
+        .select({ firstName: users.firstName })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (profile) {
+        const parts: string[] = [];
+        if (user?.firstName) parts.push(`name: ${user.firstName}`);
+        if (profile.weightKg) parts.push(`weight: ${profile.weightKg}kg`);
+        if (profile.heightCm) parts.push(`height: ${profile.heightCm}cm`);
+        if (profile.primaryGoal)
+          parts.push(`goal: ${String(profile.primaryGoal).replace(/_/g, ' ')}`);
+        if (profile.experienceLevel) parts.push(`level: ${profile.experienceLevel}`);
+        if (profile.activityLevel)
+          parts.push(`activity: ${String(profile.activityLevel).replace(/_/g, ' ')}`);
+        if (profile.dailyCalorieTarget) parts.push(`cal target: ${profile.dailyCalorieTarget}`);
+        if (profile.proteinTargetGrams) parts.push(`protein: ${profile.proteinTargetGrams}g`);
+        if (parts.length) profileSummary = parts.join(', ');
+      }
+    } catch {
+      // Continue without profile
+    }
+  }
+
+  // If user asks what we know about them, return profile data
+  if (
+    msg.includes('know about me') ||
+    msg.includes('my profile') ||
+    msg.includes('my data') ||
+    msg.includes('my stats') ||
+    msg.includes('my info')
+  ) {
+    if (profileSummary) {
+      return `Here's what I have from your profile: ${profileSummary}. You can update these in Settings > Body Stats. How can I help you with your fitness goals?`;
+    }
+    return "I don't have your profile data yet. Head to Settings > Body Stats to add your weight, height, and goals — then I can give you much more personalized advice!";
+  }
 
   if (msg.includes('workout') || msg.includes('exercise') || msg.includes('training')) {
     return 'For optimal results, aim for 3-5 training sessions per week with progressive overload. Focus on compound movements like squats, deadlifts, bench press, and rows as your foundation. Make sure to increase weight or reps each week to continue making progress. Would you like me to help you create a specific workout plan?';
@@ -833,7 +898,10 @@ function generateFallbackChatResponse(userMessage: string): string {
     return 'Incorporate dynamic stretching before workouts and static stretching after. Hold each stretch for 30-60 seconds. Focus on hip flexors, hamstrings, thoracic spine, and shoulders — these are commonly tight areas. Consider adding a dedicated mobility session 1-2x per week for long-term joint health.';
   }
 
-  return "That's a great question! Here are some general fitness tips: Stay consistent with your training, prioritize compound movements, eat adequate protein, get enough sleep, and track your progress. Would you like specific advice about workouts, nutrition, or recovery?";
+  if (profileSummary) {
+    return `Based on your profile (${profileSummary}), I'm here to help with personalized fitness advice. Ask me about workouts, nutrition, recovery, or any fitness topic!`;
+  }
+  return "I'm your AI Coach, ready to help with workouts, nutrition, recovery, and more. Ask me anything about fitness!";
 }
 
 // Fallback exercise bank keyed by focus type, with barbell/dumbbell/bodyweight variants
