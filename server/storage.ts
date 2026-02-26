@@ -1499,7 +1499,8 @@ export class DatabaseStorage implements IStorage {
 
   // Calculator Results methods
   async getCalculatorResults(userId: string) {
-    return await this.db
+    const db = await getDb();
+    return await db
       .select()
       .from(calculatorResults)
       .where(eq(calculatorResults.userId, userId))
@@ -1507,7 +1508,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCalculatorResultsByType(userId: string, calculatorType: string) {
-    return await this.db
+    const db = await getDb();
+    return await db
       .select()
       .from(calculatorResults)
       .where(
@@ -1527,12 +1529,14 @@ export class DatabaseStorage implements IStorage {
     notes?: string;
     isFavorite?: boolean;
   }) {
-    const [result] = await this.db.insert(calculatorResults).values(data).returning();
+    const db = await getDb();
+    const [result] = await db.insert(calculatorResults).values(data).returning();
     return result;
   }
 
   async updateCalculatorResult(id: string, data: { notes?: string; isFavorite?: boolean }) {
-    const [updated] = await this.db
+    const db = await getDb();
+    const [updated] = await db
       .update(calculatorResults)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(calculatorResults.id, id))
@@ -1541,7 +1545,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCalculatorResult(id: string) {
-    await this.db.delete(calculatorResults).where(eq(calculatorResults.id, id));
+    const db = await getDb();
+    await db.delete(calculatorResults).where(eq(calculatorResults.id, id));
   }
 }
 
