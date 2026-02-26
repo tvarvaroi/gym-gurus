@@ -693,15 +693,19 @@ const mealPlanSchema = z.object({
     z.object({
       name: z.string(),
       time: z.string(),
-      calories: z.number(),
-      protein: z.number(),
-      carbs: z.number(),
-      fat: z.number(),
+      totalCalories: z.number(),
+      totalProtein: z.number(),
+      totalCarbs: z.number(),
+      totalFat: z.number(),
+      prepTime: z.number(),
       foods: z.array(
         z.object({
           name: z.string(),
           amount: z.string(),
           calories: z.number(),
+          protein: z.number(),
+          carbs: z.number(),
+          fat: z.number(),
         })
       ),
     })
@@ -722,12 +726,13 @@ export async function aiGenerateMealPlan(params: {
     const { object } = await generateObject({
       model,
       schema: mealPlanSchema,
-      system: 'You are a certified sports nutritionist. Design practical, balanced meal plans.',
+      system:
+        'You are a certified sports nutritionist. Design practical, balanced meal plans. For each meal provide totalCalories, totalProtein, totalCarbs, totalFat (summed from foods) and prepTime in minutes. For each food item include calories, protein, carbs, and fat in grams.',
       prompt: `Generate a daily meal plan with ${params.mealsPerDay} meals targeting ${params.targetCalories} calories.
 ${params.macros ? `Target macros — Protein: ${params.macros.protein}g, Carbs: ${params.macros.carbs}g, Fat: ${params.macros.fat}g` : ''}
 ${params.dietaryRestrictions?.length ? `Dietary restrictions: ${params.dietaryRestrictions.join(', ')}` : ''}
 
-Use whole, commonly available foods. Include prep-friendly options.`,
+Use whole, commonly available foods. Include prep-friendly options. For each food item, provide accurate protein, carbs, and fat values in grams. Sum them per meal as totalProtein, totalCarbs, totalFat.`,
       maxTokens: 2048,
     });
     return object;
@@ -1463,75 +1468,147 @@ function generateFallbackMealPlan(params: {
   const caloriesPerMeal = Math.round(params.targetCalories / params.mealsPerDay);
   const meals: z.infer<typeof mealPlanSchema>['meals'] = [];
 
+  const proteinPerMeal = Math.round((caloriesPerMeal * 0.3) / 4);
+  const carbsPerMeal = Math.round((caloriesPerMeal * 0.4) / 4);
+  const fatPerMeal = Math.round((caloriesPerMeal * 0.3) / 9);
+
   const mealTemplates = [
     {
       name: 'Breakfast',
       time: '8:00 AM',
+      prepTime: 15,
       foods: [
         {
           name: 'Oatmeal with berries and protein',
           amount: '1 bowl',
           calories: Math.round(caloriesPerMeal * 0.4),
+          protein: Math.round(proteinPerMeal * 0.3),
+          carbs: Math.round(carbsPerMeal * 0.5),
+          fat: Math.round(fatPerMeal * 0.2),
         },
-        { name: 'Scrambled eggs', amount: '3 eggs', calories: Math.round(caloriesPerMeal * 0.35) },
+        {
+          name: 'Scrambled eggs',
+          amount: '3 eggs',
+          calories: Math.round(caloriesPerMeal * 0.35),
+          protein: Math.round(proteinPerMeal * 0.5),
+          carbs: Math.round(carbsPerMeal * 0.1),
+          fat: Math.round(fatPerMeal * 0.5),
+        },
         {
           name: 'Whole grain toast',
           amount: '1 slice',
           calories: Math.round(caloriesPerMeal * 0.25),
+          protein: Math.round(proteinPerMeal * 0.2),
+          carbs: Math.round(carbsPerMeal * 0.4),
+          fat: Math.round(fatPerMeal * 0.3),
         },
       ],
     },
     {
       name: 'Lunch',
       time: '12:30 PM',
+      prepTime: 20,
       foods: [
         {
           name: 'Grilled chicken breast',
           amount: '200g',
           calories: Math.round(caloriesPerMeal * 0.4),
+          protein: Math.round(proteinPerMeal * 0.6),
+          carbs: 0,
+          fat: Math.round(fatPerMeal * 0.2),
         },
-        { name: 'Brown rice', amount: '1 cup cooked', calories: Math.round(caloriesPerMeal * 0.3) },
+        {
+          name: 'Brown rice',
+          amount: '1 cup cooked',
+          calories: Math.round(caloriesPerMeal * 0.3),
+          protein: Math.round(proteinPerMeal * 0.1),
+          carbs: Math.round(carbsPerMeal * 0.7),
+          fat: Math.round(fatPerMeal * 0.1),
+        },
         {
           name: 'Mixed salad with olive oil',
           amount: '1 large bowl',
           calories: Math.round(caloriesPerMeal * 0.3),
+          protein: Math.round(proteinPerMeal * 0.3),
+          carbs: Math.round(carbsPerMeal * 0.3),
+          fat: Math.round(fatPerMeal * 0.7),
         },
       ],
     },
     {
       name: 'Snack',
       time: '3:30 PM',
+      prepTime: 5,
       foods: [
         {
           name: 'Greek yogurt with nuts',
           amount: '1 cup + 30g',
           calories: Math.round(caloriesPerMeal * 0.5),
+          protein: Math.round(proteinPerMeal * 0.6),
+          carbs: Math.round(carbsPerMeal * 0.3),
+          fat: Math.round(fatPerMeal * 0.6),
         },
-        { name: 'Apple', amount: '1 medium', calories: Math.round(caloriesPerMeal * 0.5) },
+        {
+          name: 'Apple',
+          amount: '1 medium',
+          calories: Math.round(caloriesPerMeal * 0.5),
+          protein: Math.round(proteinPerMeal * 0.4),
+          carbs: Math.round(carbsPerMeal * 0.7),
+          fat: Math.round(fatPerMeal * 0.4),
+        },
       ],
     },
     {
       name: 'Dinner',
       time: '7:00 PM',
+      prepTime: 25,
       foods: [
-        { name: 'Salmon fillet', amount: '180g', calories: Math.round(caloriesPerMeal * 0.4) },
-        { name: 'Sweet potato', amount: '1 medium', calories: Math.round(caloriesPerMeal * 0.3) },
-        { name: 'Steamed broccoli', amount: '1 cup', calories: Math.round(caloriesPerMeal * 0.3) },
+        {
+          name: 'Salmon fillet',
+          amount: '180g',
+          calories: Math.round(caloriesPerMeal * 0.4),
+          protein: Math.round(proteinPerMeal * 0.5),
+          carbs: 0,
+          fat: Math.round(fatPerMeal * 0.5),
+        },
+        {
+          name: 'Sweet potato',
+          amount: '1 medium',
+          calories: Math.round(caloriesPerMeal * 0.3),
+          protein: Math.round(proteinPerMeal * 0.1),
+          carbs: Math.round(carbsPerMeal * 0.8),
+          fat: Math.round(fatPerMeal * 0.1),
+        },
+        {
+          name: 'Steamed broccoli',
+          amount: '1 cup',
+          calories: Math.round(caloriesPerMeal * 0.3),
+          protein: Math.round(proteinPerMeal * 0.4),
+          carbs: Math.round(carbsPerMeal * 0.2),
+          fat: Math.round(fatPerMeal * 0.4),
+        },
       ],
     },
     {
       name: 'Evening Snack',
       time: '9:00 PM',
+      prepTime: 5,
       foods: [
         {
           name: 'Casein protein shake',
           amount: '1 scoop',
           calories: Math.round(caloriesPerMeal * 0.6),
+          protein: Math.round(proteinPerMeal * 0.7),
+          carbs: Math.round(carbsPerMeal * 0.3),
+          fat: Math.round(fatPerMeal * 0.2),
         },
         {
           name: 'Peanut butter on rice cake',
           amount: '1 tbsp + 1 cake',
           calories: Math.round(caloriesPerMeal * 0.4),
+          protein: Math.round(proteinPerMeal * 0.3),
+          carbs: Math.round(carbsPerMeal * 0.7),
+          fat: Math.round(fatPerMeal * 0.8),
         },
       ],
     },
@@ -1541,10 +1618,10 @@ function generateFallbackMealPlan(params: {
     const template = mealTemplates[i];
     meals.push({
       ...template,
-      calories: caloriesPerMeal,
-      protein: Math.round((caloriesPerMeal * 0.3) / 4),
-      carbs: Math.round((caloriesPerMeal * 0.4) / 4),
-      fat: Math.round((caloriesPerMeal * 0.3) / 9),
+      totalCalories: caloriesPerMeal,
+      totalProtein: proteinPerMeal,
+      totalCarbs: carbsPerMeal,
+      totalFat: fatPerMeal,
     });
   }
 
