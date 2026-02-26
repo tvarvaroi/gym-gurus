@@ -665,8 +665,13 @@ function SubscriptionTab() {
 
   // Tier display names
   const TIER_NAMES: Record<string, string> = {
+    free: 'Free Trial',
     solo: 'Ronin',
+    solo_free: 'Ronin Free',
+    solo_ai: 'Ronin AI',
     trainer: 'Guru',
+    trainer_basic: 'Guru Basic',
+    trainer_pro: 'Guru Pro',
     pro: 'Pro Guru',
   };
 
