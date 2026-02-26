@@ -7,12 +7,14 @@
 **Answer:** **YES, but not how you think!** ✨
 
 You'll have:
+
 - ✅ **ONE unified app** (not two separate apps)
 - ✅ **Same pages/routes** that show different content based on user role
 - ✅ **Some unique pages** per role (like `/clients` trainer-only, `/my-progress` client-only)
 - ✅ **Shared navigation** that adapts to show relevant items only
 
 **This is NOT confusing because:**
+
 1. Users never see both interfaces - they only see THEIR role's view
 2. Navigation is tailored - trainers see "My Clients", clients see "My Workouts"
 3. Same familiar structure - both have Dashboard, Messages, Schedule
@@ -77,6 +79,7 @@ You'll have:
 ## 🗂️ **Current vs New File Structure**
 
 ### Current Structure (Trainer-Only):
+
 ```
 client/src/
 ├── pages/
@@ -89,6 +92,7 @@ client/src/
 ```
 
 ### New Structure (Dual-Sided):
+
 ```
 client/src/
 ├── contexts/
@@ -145,20 +149,22 @@ client/src/
 
 ```typescript
 // shared/schema.ts - UPDATE
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
-  name: text("name").notNull(),
+export const users = pgTable('users', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text('email').notNull().unique(),
+  name: text('name').notNull(),
 
   // NEW: Add role field
-  role: text("role", { enum: ['trainer', 'client'] })
+  role: text('role', { enum: ['trainer', 'client'] })
     .notNull()
     .default('client'),
 
   // NEW: For clients - link to their trainer
-  trainerId: varchar("trainer_id").references(() => users.id),
+  trainerId: varchar('trainer_id').references(() => users.id),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -555,6 +561,7 @@ export function RoleBadge() {
 ## 📋 **Implementation Checklist**
 
 ### Week 1: Foundation
+
 - [ ] Add `role` field to users table (migration)
 - [ ] Create UserContext with role management
 - [ ] Create useUserRole hook
@@ -562,29 +569,34 @@ export function RoleBadge() {
 - [ ] Create ProtectedRoute component
 
 ### Week 2: Navigation & Dashboard
+
 - [ ] Split Dashboard into TrainerDashboard & ClientDashboard
 - [ ] Update AppSidebar with role-based menus
 - [ ] Add role badge/indicator in header
 - [ ] Test role switching
 
 ### Week 3: Trainer Pages
+
 - [ ] Keep existing ClientsPage (trainer-only)
 - [ ] Keep existing WorkoutBuilder (trainer-only)
 - [ ] Add analytics/reports page (trainer-only)
 
 ### Week 4: Client Pages
+
 - [ ] Create MyWorkoutsPage (shows assigned workouts)
 - [ ] Create MyProgressPage (personal progress tracking)
 - [ ] Create WorkoutLoggerPage (log workouts)
 - [ ] Create TrainerInfoCard (show their trainer)
 
 ### Week 5: Adaptive Pages
+
 - [ ] Update WorkoutsPage to be role-adaptive
 - [ ] Update MessagesPage to filter by relationship
 - [ ] Update SchedulePage to show relevant sessions
 - [ ] Update ExercisesPage (trainer edits, client views)
 
 ### Week 6: Polish & Testing
+
 - [ ] Add permission system checks throughout
 - [ ] Test all trainer flows
 - [ ] Test all client flows

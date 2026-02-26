@@ -16,7 +16,7 @@ const config: CapacitorConfig = {
   // To switch to bundled mode (fully offline): comment out `server` block
   // and run `npx cap copy` after each `npm run build`.
   server: {
-    url: 'https://gymgurus.up.railway.app', // ← UPDATE to your Railway URL
+    url: 'https://railway.com/project/9e0624f8-6483-4887-a2db-e13300e52713/service/721b6fdc-1a58-403d-be7d-6bf49f941239/settings?environmentId=aef26017-80e7-43d9-a511-7dc2c38eb3e7', // ← UPDATE to your Railway URL
     cleartext: false,
     androidScheme: 'https',
   },

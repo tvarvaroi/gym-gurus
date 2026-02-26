@@ -5,6 +5,7 @@ Use this checklist before deploying GymGurus to production.
 ## Pre-Deployment
 
 ### Environment Setup
+
 - [ ] Create `.env` file with production values
 - [ ] Set `NODE_ENV=production`
 - [ ] Generate secure `SESSION_SECRET` (min 32 characters)
@@ -12,6 +13,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] Verify all environment variables with `npm run dev` (will fail if missing required vars)
 
 ### Database
+
 - [ ] Run migrations: `npm run db:push`
 - [ ] Verify all new indexes are created
 - [ ] Set up database backups (automated daily)
@@ -19,6 +21,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] Configure connection pooling (max 20 connections)
 
 ### Security
+
 - [ ] SSL certificate installed and configured
 - [ ] HTTPS enforced (HTTP redirects to HTTPS)
 - [ ] Firewall configured (only ports 80, 443 open)
@@ -27,6 +30,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] Input sanitization validated
 
 ### Code Quality
+
 - [ ] All tests passing: `npm run test:run`
 - [ ] Coverage > 80%: `npm run test:coverage`
 - [ ] No linting errors: `npm run lint`
@@ -34,6 +38,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] TypeScript check: `npm run check`
 
 ### Build & Performance
+
 - [ ] Production build successful: `npm run build`
 - [ ] Bundle size analyzed: `npm run build:analyze`
 - [ ] Bundle size < 200KB gzipped
@@ -42,6 +47,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] Web Vitals thresholds met
 
 ### Security Audit
+
 - [ ] Run: `npm audit fix`
 - [ ] No critical vulnerabilities
 - [ ] Dependencies up to date
@@ -50,6 +56,7 @@ Use this checklist before deploying GymGurus to production.
 ## Deployment
 
 ### Server Setup
+
 - [ ] Node.js 20.x installed
 - [ ] npm packages installed: `npm ci --production`
 - [ ] Process manager configured (PM2, systemd)
@@ -58,6 +65,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] Static files served with proper cache headers
 
 ### Application
+
 - [ ] Build artifacts copied to server
 - [ ] Environment variables set
 - [ ] Database connection verified
@@ -66,6 +74,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] File upload directory writable (if applicable)
 
 ### Monitoring
+
 - [ ] Error monitoring configured (Sentry recommended)
 - [ ] Performance monitoring enabled (Web Vitals)
 - [ ] Uptime monitoring configured (UptimeRobot, etc.)
@@ -73,6 +82,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] Alerts configured for errors/downtime
 
 ### DNS & CDN
+
 - [ ] Domain pointing to server
 - [ ] CDN configured for static assets (optional)
 - [ ] DNS propagation complete
@@ -81,6 +91,7 @@ Use this checklist before deploying GymGurus to production.
 ## Post-Deployment
 
 ### Verification
+
 - [ ] Application accessible at domain
 - [ ] SSL certificate valid (no warnings)
 - [ ] Login/signup working
@@ -90,6 +101,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] All features tested in production
 
 ### Performance
+
 - [ ] Run Lighthouse audit
 - [ ] Check Web Vitals metrics
 - [ ] Test page load times
@@ -97,6 +109,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] Test with slow 3G connection
 
 ### Security
+
 - [ ] Security headers present (check with https://securityheaders.com)
 - [ ] No sensitive data in client-side code
 - [ ] No credentials in logs
@@ -104,6 +117,7 @@ Use this checklist before deploying GymGurus to production.
 - [ ] CSRF protection working
 
 ### Monitoring Setup
+
 - [ ] Error tracking verified (Sentry)
 - [ ] Performance monitoring verified
 - [ ] Uptime monitoring verified
@@ -114,6 +128,7 @@ Use this checklist before deploying GymGurus to production.
 If something goes wrong:
 
 1. **Immediate**:
+
    ```bash
    # Stop the application
    pm2 stop gymgurus
@@ -126,6 +141,7 @@ If something goes wrong:
    ```
 
 2. **Database Rollback** (if needed):
+
    ```bash
    # Restore from backup
    psql $DATABASE_URL < backup.sql
@@ -190,15 +206,19 @@ curl https://yourdomain.com/api/health
 ## Common Issues
 
 ### Issue: Database connection fails
+
 **Solution**: Check `DATABASE_URL`, firewall rules, and database server status
 
 ### Issue: WebSocket not connecting
+
 **Solution**: Verify WebSocket support in reverse proxy (nginx/caddy)
 
 ### Issue: High memory usage
+
 **Solution**: Reduce database connection pool size, check for memory leaks
 
 ### Issue: Slow response times
+
 **Solution**: Check database indexes, enable query logging, optimize slow queries
 
 ## Support
@@ -238,4 +258,4 @@ curl http://localhost:5000/api/health
 
 ---
 
-*Last updated: November 15, 2025*
+_Last updated: November 15, 2025_

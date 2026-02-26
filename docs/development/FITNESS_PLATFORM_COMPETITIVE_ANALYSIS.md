@@ -1,4 +1,5 @@
 # Competitive Analysis: Top Fitness & Personal Trainer Platforms
+
 ## Executive Summary
 
 This report analyzes 7 leading fitness and personal trainer platforms to identify common website structures, design patterns, and best practices for building GymGurus' landing pages. The analysis covers Trainerize, TrueCoach, MyFitnessPal, Future, Virtuagym, PT Distinction, and My PT Hub.
@@ -6,6 +7,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ---
 
 ## Table of Contents
+
 1. [Common Page Structures Across Platforms](#common-page-structures)
 2. [Platform-by-Platform Breakdown](#platform-breakdown)
 3. [Best Practices by Page Type](#best-practices)
@@ -20,6 +22,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Primary Navigation Pages (Found in 6-7 of 7 platforms)
 
 **Core Pages:**
+
 - **Home/Landing Page** (7/7 platforms)
 - **Features** (7/7 platforms) - Often with dropdowns or subpages
 - **Pricing** (7/7 platforms)
@@ -28,6 +31,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - **Get Started/Free Trial CTA** (7/7 platforms)
 
 **Secondary Pages:**
+
 - **About/Our Story** (5/7 platforms)
 - **Support/Help Center** (5/7 platforms)
 - **Customers/Case Studies** (4/7 platforms)
@@ -37,12 +41,14 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Segmentation Approaches
 
 **By User Type (4/7 platforms):**
+
 - Independent coaches/trainers
 - Small-to-medium businesses/studios
 - Large enterprises/gym chains
 - Healthcare practitioners (PT Distinction, TrueCoach)
 
 **By Training Type (3/7 platforms):**
+
 - Online training
 - In-person training
 - Hybrid models
@@ -55,6 +61,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Trainerize (B2B - Trainer Software)
 
 **Navigation Structure:**
+
 - Business Types (Independent Coach, SMB, Large Business)
 - Ways to Train (Online, In-person, Hybrid, Group)
 - Pricing & Features
@@ -62,12 +69,14 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Academy (Business Courses, Product Training)
 
 **Hero Section:**
+
 - Value Proposition: "The #1 coaching app to better engage your clients"
 - Email signup field prominently featured
 - "30 days free, no credit card required" offer
 - Immediate action emphasis
 
 **Key Homepage Sections:**
+
 1. Social Proof: Major client logos (Gold's Gym, Life Time, YMCA)
 2. Statistics: "400K+ personal trainers and coaches"
 3. Feature Categories: Coach, Engage, Manage
@@ -75,12 +84,14 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 5. Integration ecosystem showcase
 
 **CTAs:**
+
 - Hero email signup
 - "Learn More" beneath business tiers
 - Pricing guide downloads
 - Demo/consultation requests
 
 **Design Patterns:**
+
 - Progressive disclosure through dropdown menus
 - Trust builders with recognizable logos early
 - Multiple conversion paths (email, demos, downloads)
@@ -92,26 +103,31 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### TrueCoach (B2B - Trainer Software)
 
 **Navigation Structure:**
+
 - Specialties (Fitness Professionals, Healthcare Practitioners, Large Businesses)
 - Subcategories for each specialty (Strength & Conditioning, PT, Nutrition, etc.)
 
 **Hero Section:**
+
 - Value Proposition: "Save time and grow your business with the #1 online platform built for personal trainers, coaches, and gym owners"
 - 14-day free trial with "Cancel any time" reassurance
 - Background hero image (1024x491px)
 
 **Key Homepage Sections:**
+
 1. Free resource offering (PDF: "Launching Your Personal Training Business")
 2. Specialty-specific landing pages with tailored messaging
 3. Role-based value propositions
 
 **CTAs:**
+
 - Orange (#f44e27) primary buttons
 - Teal (#029b95) hover states
 - Uppercase, bold text styling
 - 5px border radius
 
 **Design Patterns:**
+
 - Self-identification through specialty selection
 - Action-verb focused messaging (Upload, Assign, Track, Monitor)
 - Workflow-focused benefits
@@ -124,6 +140,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### MyFitnessPal (B2C - Consumer App)
 
 **Navigation Structure:**
+
 - Login/Account
 - Reviews
 - How It Works
@@ -132,6 +149,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Products, Resources, Company (footer)
 
 **Hero Section:**
+
 - Bold gradient background (blue to purple)
 - Headline: "Nutrition tracking for real life"
 - Phone mockup showing app dashboard
@@ -139,6 +157,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Integration carousel (35+ devices/apps)
 
 **Key Homepage Sections:**
+
 1. Reviews & Social Proof: "3.5 Million 5-Star Ratings"
 2. User testimonials with specific outcomes
 3. Feature breakdown (1-2-3 format):
@@ -161,6 +180,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 | Footer | "Sign up," "Try it free" | Contextual |
 
 **Design Patterns:**
+
 - Mobile-first responsive design
 - Card-based components
 - Asymmetrical grid layouts (alternating image/text)
@@ -177,11 +197,13 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Future (B2C - Premium Personal Training)
 
 **Navigation Structure:**
+
 - Home
 - Coaches
 - Get Started (routes to survey)
 
 **Hero Section:**
+
 - Large serif typography: "Personal training anytime, anywhere"
 - Italicized tagline emphasizing flexibility
 - Dual background images (mobile/desktop)
@@ -190,6 +212,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Star rating: "4.9 • 9.7k Reviews"
 
 **Key Homepage Sections:**
+
 1. Feature Showcase Cards:
    - Do What You Enjoy (personalized preferences)
    - No Equipment, No Problem (location-adaptive)
@@ -202,11 +225,13 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 4. Interactive expandable categories
 
 **CTAs:**
+
 - "Find Your Coach" (primary hero)
 - "Get Started" (floating nav)
 - All route to "/survey/intro" questionnaire
 
 **Design Patterns:**
+
 - Black/near-black backgrounds
 - White primary text
 - Yellow accent (#FED009) for emphasis
@@ -227,19 +252,23 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Virtuagym (B2B + B2C - Multi-Platform)
 
 **Navigation Structure:**
+
 - Minimal header with Login
 - Three primary service categories
 
 **Hero Section:**
+
 - Headline: "Industry-leading technology solutions, which empowers businesses, health professionals and consumers to create sustainable lifestyle change"
 - Comprehensive platform positioning
 
 **Key Homepage Sections:**
+
 1. Fitness Business Solutions: "All-in-One Software to Manage and Grow your Health Club or Studio Chain"
 2. Corporate Wellness: "Healthier and Happier Employees"
 3. Consumer Apps: Fitness and nutrition for personal use
 
 **Design Patterns:**
+
 - Three-column service offering (classic SaaS pattern)
 - Clear customer persona segmentation
 - B2B + B2C hybrid approach
@@ -251,6 +280,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### PT Distinction (B2B - Trainer Software)
 
 **Navigation Structure:**
+
 - Home
 - Features
 - Pricing
@@ -259,6 +289,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Log in / Free trial
 
 **Hero Section:**
+
 - Headline: "Train more clients in less time, with better results"
 - Embedded video (Wistia player)
 - Dual CTAs: "Start free trial" and "How it works"
@@ -266,6 +297,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Mobile-responsive alternate layouts
 
 **Key Homepage Sections:**
+
 1. Credibility/Social Proof:
    - Certification badges (G2, Capterra, GetApp, Trustpilot)
    - "Rated 4.9 stars on Capterra"
@@ -281,11 +313,13 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 6. Guarantee section
 
 **CTAs:**
+
 - "Start free trial" (header, multiple body sections, footer)
 - "Start your 1-Month free trial" emphasized throughout
 - "Log in," "How it works" secondary CTAs
 
 **Design Patterns:**
+
 - Professional blues/whites with accents
 - Large, readable sans-serif fonts
 - Generous whitespace
@@ -302,6 +336,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### My PT Hub (B2B - Trainer Software)
 
 **Navigation Structure:**
+
 - Features submenu (11 items): Workout builder, nutrition, white label app, automated check-ins, client management, branding, wearables, business tools, calendar, templates, habits
 - All features
 - Pricing
@@ -311,6 +346,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Login / Start free trial
 
 **Hero Section:**
+
 - Split-column design
 - Headline: "The all-in-one personal training software and app"
 - Subheadline: "Unlimited clients. Unlimited growth."
@@ -322,6 +358,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - 75px top padding (desktop), optimized mobile
 
 **Key Homepage Sections:**
+
 1. Social Proof: "Trusted by 130,000+ fitness coaches globally"
 2. Statistics:
    - 130k+ Fitness coaches
@@ -339,6 +376,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 6. Partner logos (CIMSPA, CreatePT, etc.)
 
 **CTAs:**
+
 - Primary blue (#0077FF)
 - Hover state (#005FCC)
 - Header, hero, footer placement
@@ -346,6 +384,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Feature-level CTAs to detail pages
 
 **Design Patterns:**
+
 - Primary blue: #0077FF
 - Dark text: #282828, #333333
 - White/light gray backgrounds
@@ -370,6 +409,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Landing/Home Page
 
 **Hero Section Best Practices:**
+
 1. **Clear Value Proposition** (7/7 platforms)
    - State who you serve and what problem you solve
    - Use numbers when possible (#1, 400K+ users, etc.)
@@ -394,6 +434,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
    - Background videos/imagery
 
 **Homepage Structure Pattern:**
+
 ```
 1. Hero Section (Value Prop + CTA)
 2. Social Proof Bar (Logos, Stats, Certifications)
@@ -409,6 +450,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ```
 
 **Content Types to Include:**
+
 - Statistics (user counts, results metrics)
 - Feature cards with icons/imagery
 - Video demos (embedded or background)
@@ -619,11 +661,13 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Color Schemes
 
 **B2B Platforms (Targeting Trainers):**
+
 - **Professional Blues**: #0077FF (My PT Hub), Blue palette (PT Distinction)
 - **Bold Accents**: Orange #f44e27 (TrueCoach), Teal #029b95
 - **Trust Colors**: White backgrounds, dark text, blue CTAs
 
 **B2C Platforms (Targeting Consumers):**
+
 - **Vibrant Gradients**: Blue-to-purple (MyFitnessPal)
 - **Premium Dark**: Black/near-black backgrounds (Future)
 - **Energy Colors**: Yellow #FED009 accent (Future)
@@ -632,16 +676,19 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Typography Patterns
 
 **Headlines:**
+
 - Large, bold sans-serif (B2B): 24-68px
 - Serif for premium feel (B2C): Up to 6.25rem (Future)
 - Fluid sizing with CSS clamp() functions
 
 **Body Text:**
+
 - Sans-serif for readability: 16-18px
 - Line height: 1.5-1.7
 - Dark gray instead of pure black: #282828, #333333
 
 **Font Families:**
+
 - Gilroy (My PT Hub)
 - HongKong (TrueCoach)
 - Inter (MyFitnessPal)
@@ -650,16 +697,19 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Layout Patterns
 
 **Grid Systems:**
+
 - 2-3 column feature grids
 - Responsive breakpoints: 768px (tablet), 1024px (desktop)
 - Mobile-first design approach (7/7 platforms)
 
 **Spacing:**
+
 - Consistent padding/margin: 24px, 32px, 48px, 75px
 - Generous whitespace between sections
 - 16px base unit for component spacing
 
 **Card Designs:**
+
 - White backgrounds with subtle shadows
 - Border radius: 5-30px (20-30px more modern)
 - Shadow specs: 0px 2px 8px rgba, 40px blur radius
@@ -668,6 +718,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### CTA Button Patterns
 
 **Primary CTAs:**
+
 - High contrast colors: Blue (#0077FF), Orange (#f44e27), Yellow (#FED009)
 - 5-10px border radius
 - Uppercase or sentence case
@@ -676,6 +727,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Hover states: Darker shade (15-20% darker)
 
 **Button Copy:**
+
 - "Start Free Trial" (most common)
 - "Get Started"
 - "Find Your Coach"
@@ -683,6 +735,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - "Start Today"
 
 **Secondary CTAs:**
+
 - Outlined buttons
 - Ghost buttons (transparent with border)
 - Text links with underlines
@@ -691,6 +744,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Interactive Elements
 
 **Common Patterns:**
+
 - Accordion FAQs (expand/collapse)
 - Carousel/sliders for features or testimonials
 - Video embeds (Wistia, Vimeo common)
@@ -700,6 +754,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Intersection Observer for viewport animations
 
 **Performance Optimizations:**
+
 - Lazy-loaded images with placeholders
 - Responsive image srcsets
 - Font preloading
@@ -710,6 +765,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Premium Design Elements
 
 **Visual Enhancements:**
+
 - Backdrop blur effects (frosted glass)
 - Gradient overlays for text readability
 - Drop shadows on imagery (40px blur)
@@ -718,6 +774,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 - Infinite carousel/logo rotations
 
 **Micro-interactions:**
+
 - Button hover states
 - Card hover elevations
 - Smooth page transitions
@@ -732,48 +789,56 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Core Messaging Themes
 
 **1. Time Efficiency (6/7 platforms)**
+
 - "Train more clients in less time" (PT Distinction)
 - "Save valuable time through 15+ efficiency features" (My PT Hub)
 - "Save time and grow your business" (TrueCoach)
 - "Works while you sleep" (automation focus)
 
 **2. Client Engagement (5/7 platforms)**
+
 - "Better engage your clients" (Trainerize)
 - "Engage clients with user-friendly tracking" (My PT Hub)
 - Client retention and motivation tools
 - Communication and community features
 
 **3. Business Growth (6/7 platforms)**
+
 - "Unlimited growth" (My PT Hub)
 - "Grow your business" (TrueCoach, Trainerize)
 - Revenue generation tools
 - Scalability without limits
 
 **4. All-in-One Solution (5/7 platforms)**
+
 - "All-in-one personal training software" (My PT Hub)
 - "Everything you would ever want or need" (PT Distinction)
 - Platform consolidation messaging
 - Comprehensive feature sets
 
 **5. Professional Results (5/7 platforms)**
+
 - "Better results" (PT Distinction)
 - "Elite coaching" capabilities
 - Professional-grade tools
 - Evidence-based approaches
 
 **6. Flexibility & Accessibility (4/7 platforms)**
+
 - "Anytime, anywhere" (Future)
 - "No equipment, no problem" (Future)
 - Online, in-person, hybrid options
 - Mobile-first access
 
 **7. Personalization (4/7 platforms)**
+
 - Customized programs (Future)
 - Individual preferences (Future)
 - Custom branding (6/7 platforms)
 - Tailored experiences
 
 **8. No Limits/Freedom (4/7 platforms)**
+
 - "Unlimited clients" (My PT Hub)
 - "No client cap" (My PT Hub)
 - "No hidden fees" (PT Distinction, My PT Hub)
@@ -782,24 +847,28 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Target Audience Messaging
 
 **For Independent Trainers/Coaches:**
+
 - Solo practitioner efficiency
 - Professional presentation without dev costs
 - Affordable pricing with growth runway
 - Easy to set up and use
 
 **For Small-Medium Businesses/Studios:**
+
 - Team collaboration features
 - Client management at scale
 - Business analytics and reporting
 - Integration with existing tools
 
 **For Large Enterprises/Gym Chains:**
+
 - Multi-location support
 - Advanced admin controls
 - Enterprise-grade security
 - Dedicated support
 
 **For Healthcare Practitioners:**
+
 - Compliance and documentation
 - Rehabilitation protocol support
 - Medical integration capabilities
@@ -808,6 +877,7 @@ This report analyzes 7 leading fitness and personal trainer platforms to identif
 ### Messaging Formulas
 
 **Problem-Solution Format:**
+
 ```
 Pain Point: "Spending hours on admin work?"
 Solution: "Automate check-ins, payments, and scheduling"
@@ -815,6 +885,7 @@ Result: "Focus on what matters: coaching clients"
 ```
 
 **Before-After Format:**
+
 ```
 Before: "Juggling multiple apps and spreadsheets"
 After: "One platform for everything you need"
@@ -822,6 +893,7 @@ Benefit: "Save 10+ hours per week"
 ```
 
 **Feature-Benefit Format:**
+
 ```
 Feature: "AI Meal Planner"
 Benefit: "Create nutrition plans in minutes, not hours"
@@ -852,6 +924,7 @@ Based on competitive analysis, GymGurus should implement:
 Organize by user benefit (similar to Trainerize model):
 
 **For Trainers:**
+
 - Client Management
 - Workout Builder
 - Nutrition Planning
@@ -862,6 +935,7 @@ Organize by user benefit (similar to Trainerize model):
 - Business Analytics
 
 **Platform Capabilities:**
+
 - Mobile Apps (iOS/Android)
 - Custom Branding
 - Integrations
@@ -870,6 +944,7 @@ Organize by user benefit (similar to Trainerize model):
 #### **Resource Center Structure:**
 
 **Content Types:**
+
 - Blog (industry insights, tips)
 - Video Tutorials
 - Case Studies (client success stories)
@@ -878,6 +953,7 @@ Organize by user benefit (similar to Trainerize model):
 - Getting Started Guides
 
 **Categories:**
+
 - Growing Your Training Business
 - Coaching Best Practices
 - Platform How-Tos
@@ -1039,11 +1115,13 @@ Organize by user benefit (similar to Trainerize model):
 #### **1. Hero Section**
 
 **Layout:**
+
 - 60/40 split (text/visual) on desktop
 - Full-width mobile with stacked content
 - Video background option or product screenshot
 
 **Copy Framework:**
+
 ```
 H1: [Action Verb] Your [Target Audience]'s [Main Benefit]
 Examples:
@@ -1064,10 +1142,12 @@ Trust Elements:
 ```
 
 **CTA Options:**
+
 - Primary: "Start Free Trial" (email signup)
 - Secondary: "Watch Demo" or "See How It Works"
 
 **Visual:**
+
 - Dashboard screenshot showing key features
 - Video demo (30-60 seconds)
 - Animated feature showcase
@@ -1078,6 +1158,7 @@ Trust Elements:
 #### **2. Social Proof Bar**
 
 **Elements:**
+
 ```
 Stat: "Trusted by X,XXX fitness professionals worldwide"
 Logos: 5-8 recognizable gyms/trainers (if available)
@@ -1086,6 +1167,7 @@ Badges: Industry certifications, awards
 ```
 
 **Design:**
+
 - Light gray background to separate from hero
 - Center-aligned
 - Logos in grayscale for consistency
@@ -1096,6 +1178,7 @@ Badges: Industry certifications, awards
 #### **3. Problem/Solution Statement**
 
 **Framework:**
+
 ```
 Problem: "Stop [pain point 1], [pain point 2], and [pain point 3]"
 Example: "Stop juggling multiple apps, losing time on admin work, and struggling to scale"
@@ -1105,6 +1188,7 @@ Example: "GymGurus gives you everything in one place, automated workflows, and u
 ```
 
 **Design:**
+
 - Centered text
 - Large font size (24-32px)
 - Max width 800px for readability
@@ -1117,21 +1201,25 @@ Example: "GymGurus gives you everything in one place, automated workflows, and u
 **Features to Highlight:**
 
 **Column 1: Save Time**
+
 - Icon: Clock or timer
 - Headline: "Save 10+ Hours Per Week"
 - Description: "Automate check-ins, scheduling, payments, and program delivery. Focus on coaching, not admin work."
 
 **Column 2: Engage Clients**
+
 - Icon: Mobile phone or chat bubble
 - Headline: "Keep Clients Motivated"
 - Description: "In-app messaging, progress tracking, and automated encouragement keep clients engaged and accountable."
 
 **Column 3: Grow Revenue**
+
 - Icon: Graph trending up or dollar sign
 - Headline: "Scale Without Limits"
 - Description: "Unlimited clients, automated billing, and professional branding help you grow your business faster."
 
 **Design:**
+
 - Cards with hover effects
 - Icons (illustrated or simple line icons)
 - Equal height columns
@@ -1142,18 +1230,22 @@ Example: "GymGurus gives you everything in one place, automated workflows, and u
 #### **5. How It Works (3-Step Process)**
 
 **Step 1: Set Up Your Programs**
+
 - Visual: Workout builder screenshot
 - Text: "Create unlimited workout and nutrition plans with our intuitive builder. Use templates or build from scratch."
 
 **Step 2: Invite Your Clients**
+
 - Visual: Client invitation screen
 - Text: "Add clients in seconds. They get instant access to their custom-branded mobile app."
 
 **Step 3: Track Progress & Grow**
+
 - Visual: Analytics dashboard
 - Text: "Monitor results, communicate seamlessly, and grow your business with powerful insights."
 
 **Design:**
+
 - Numbered circles or badges
 - Screenshots for each step
 - Arrow connectors between steps
@@ -1190,6 +1282,7 @@ Example: "GymGurus gives you everything in one place, automated workflows, and u
    - Text: "Manage scheduling, payments, contracts, and reporting. Complete business operations in one dashboard."
 
 **Design:**
+
 - Alternate image left/right
 - Large screenshots (60% width)
 - Text overlay or side-by-side
@@ -1219,6 +1312,7 @@ Testimonial 3:
 ```
 
 **Design:**
+
 - Cards with light background
 - Circular photos
 - Star ratings
@@ -1230,6 +1324,7 @@ Testimonial 3:
 #### **8. Statistics Section**
 
 **Metrics to Display:**
+
 ```
 ┌──────────────┬──────────────┬──────────────┬──────────────┐
 │   XX,XXX     │    XXX+      │   X.X mil    │    XX%       │
@@ -1240,6 +1335,7 @@ Testimonial 3:
 ```
 
 **Design:**
+
 - Large numbers (48-72px)
 - Smaller descriptive text below
 - Accent color for numbers
@@ -1252,15 +1348,16 @@ Testimonial 3:
 
 **Comparison Format:**
 
-| Other Platforms | GymGurus |
-|-----------------|----------|
-| Pay per client | Unlimited clients included |
-| Hidden fees | All-inclusive pricing |
-| Basic features | 100+ features included |
-| Generic app | Custom-branded mobile apps |
-| Email support | Live chat + phone support |
+| Other Platforms | GymGurus                   |
+| --------------- | -------------------------- |
+| Pay per client  | Unlimited clients included |
+| Hidden fees     | All-inclusive pricing      |
+| Basic features  | 100+ features included     |
+| Generic app     | Custom-branded mobile apps |
+| Email support   | Live chat + phone support  |
 
 **Or Benefit Checklist:**
+
 ```
 ✓ No hidden fees - transparent pricing
 ✓ Unlimited clients - no per-user charges
@@ -1273,6 +1370,7 @@ Testimonial 3:
 ```
 
 **Design:**
+
 - Two-column comparison table
 - Or single column checklist with green checkmarks
 - Bold or highlighted GymGurus advantages
@@ -1283,6 +1381,7 @@ Testimonial 3:
 #### **10. Integrations**
 
 **Content:**
+
 ```
 "Connect with tools you already use"
 
@@ -1296,6 +1395,7 @@ Categories:
 ```
 
 **Design:**
+
 - Logo grid (grayscale with color on hover)
 - 6-10 key integrations visible
 - "View All Integrations" link
@@ -1306,6 +1406,7 @@ Categories:
 #### **11. Pricing Preview**
 
 **Content:**
+
 ```
 "Simple, transparent pricing"
 
@@ -1318,6 +1419,7 @@ Starting at $XX/month
 ```
 
 **Design:**
+
 - Centered text
 - Minimal detail (save full details for pricing page)
 - Single CTA to pricing page
@@ -1354,6 +1456,7 @@ Starting at $XX/month
    - "We accept all major credit cards and offer annual payment discounts. Enterprise plans can arrange invoicing."
 
 **Design:**
+
 - Expandable accordion (only one open at a time)
 - Question in bold
 - Answer with 2-3 sentences max
@@ -1365,6 +1468,7 @@ Starting at $XX/month
 #### **13. Final CTA Section**
 
 **Content:**
+
 ```
 H2: "Ready to transform your training business?"
 Subhead: "Join XX,XXX trainers using GymGurus to save time, engage clients, and grow revenue."
@@ -1377,6 +1481,7 @@ Trust badges: [Security icon] 256-bit SSL Encryption
 ```
 
 **Design:**
+
 - Gradient or colored background
 - White text
 - Large CTA buttons
@@ -1597,6 +1702,7 @@ Based on competitive analysis, here's a recommended pricing structure:
 ### Competitive Advantages to Highlight:
 
 Based on this analysis, GymGurus can differentiate by:
+
 - **Unlimited everything**: No client caps, no feature restrictions
 - **True all-in-one**: Don't make users pay for add-ons
 - **Trainer-first design**: Built by trainers, for trainers
@@ -1609,6 +1715,7 @@ Based on this analysis, GymGurus can differentiate by:
 ## Appendix: Quick Reference Checklist
 
 ### Homepage Must-Haves:
+
 - [ ] Clear value proposition in H1
 - [ ] Email signup or free trial CTA
 - [ ] Trust indicators (trial length, no CC, etc.)
@@ -1624,6 +1731,7 @@ Based on this analysis, GymGurus can differentiate by:
 - [ ] Footer with all navigation
 
 ### Pricing Page Must-Haves:
+
 - [ ] 2-3 pricing tiers
 - [ ] Monthly/annual toggle
 - [ ] "Most popular" tier highlighted
@@ -1636,6 +1744,7 @@ Based on this analysis, GymGurus can differentiate by:
 - [ ] Final CTA
 
 ### Features Page Must-Haves:
+
 - [ ] Feature categories/organization
 - [ ] 8-12 primary features
 - [ ] Screenshot for each feature
@@ -1644,6 +1753,7 @@ Based on this analysis, GymGurus can differentiate by:
 - [ ] CTA to start trial
 
 ### About Page Must-Haves:
+
 - [ ] Company mission/vision
 - [ ] Founder or origin story
 - [ ] Team section with photos
@@ -1652,6 +1762,7 @@ Based on this analysis, GymGurus can differentiate by:
 - [ ] CTA (careers or trial)
 
 ### Design Checklist:
+
 - [ ] Mobile-responsive (test 375px, 768px, 1024px, 1440px)
 - [ ] Consistent color scheme
 - [ ] Readable typography (16px+ body text)

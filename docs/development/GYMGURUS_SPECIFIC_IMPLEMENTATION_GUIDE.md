@@ -1,4 +1,5 @@
 # GymGurus-Specific Implementation Guide
+
 ## Workout Assignment & Display Refactoring
 
 ---
@@ -8,6 +9,7 @@
 **GREAT NEWS:** Your app already has ~60% of the required infrastructure!
 
 ### What Already Exists ✅
+
 - ✅ `scheduledDate`, `dayOfWeek`, `weekNumber` fields in schema
 - ✅ Server auto-calculates week fields from `scheduledDate`
 - ✅ `WeeklyWorkoutView` component groups by `dayOfWeek`
@@ -15,6 +17,7 @@
 - ✅ Appointments table with `startTime`/`endTime` fields
 
 ### What Needs to Change 🔧
+
 - 🔧 Add date/time picker to assignment UI
 - 🔧 Connect appointments to workout assignments
 - 🔧 Add per-set weights (currently per-exercise)
@@ -23,6 +26,7 @@
 - 🔧 Remove "Assign Workout" from Client Details page
 
 ### Estimated Effort
+
 - **Backend changes:** 2-3 weeks
 - **Frontend changes:** 3-4 weeks
 - **Testing & polish:** 1-2 weeks
@@ -35,23 +39,27 @@
 ### 1.1 Current Workout Assignment Flow
 
 #### **Location 1: WorkoutBuilder.tsx**
+
 **File:** `client/src/pages/WorkoutBuilder.tsx` (Lines 102-121)
 
 **Current Code:**
+
 ```typescript
 const assignWorkoutMutation = useMutation({
-  mutationFn: (clientId: string) => apiRequest('POST', '/api/workout-assignments', {
-    workoutId,
-    clientId
-  }),
+  mutationFn: (clientId: string) =>
+    apiRequest('POST', '/api/workout-assignments', {
+      workoutId,
+      clientId,
+    }),
   onSuccess: () => {
-    toast({ title: "Workout assigned successfully" });
+    toast({ title: 'Workout assigned successfully' });
     refetch();
-  }
+  },
 });
 ```
 
 **Problems:**
+
 - ❌ No date selection
 - ❌ No time selection
 - ❌ Assignment happens immediately
@@ -60,23 +68,26 @@ const assignWorkoutMutation = useMutation({
 ---
 
 #### **Location 2: ClientDetailsPage.tsx**
+
 **File:** `client/src/pages/ClientDetailsPage.tsx` (Lines 156-173)
 
 **Current Code:**
+
 ```typescript
 const assignWorkoutMutation = useMutation({
   mutationFn: async (workoutId: string) => {
     const response = await fetch('/api/workout-assignments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workoutId, clientId })
+      body: JSON.stringify({ workoutId, clientId }),
     });
     return response.json();
-  }
+  },
 });
 ```
 
 **Problems:**
+
 - ❌ Same issues as WorkoutBuilder
 - ❌ This page should NOT have assignment (per requirements)
 - 🔧 **ACTION:** Remove this entire section
@@ -86,30 +97,35 @@ const assignWorkoutMutation = useMutation({
 ### 1.2 Current Data Model
 
 #### **Schema: workoutAssignments table**
+
 **File:** `shared/schema.ts` (Lines 110-129)
 
 ```typescript
-export const workoutAssignments = pgTable("workout_assignments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  workoutId: varchar("workout_id").notNull(),
-  clientId: varchar("client_id").notNull(),
-  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
-  completedAt: timestamp("completed_at"),
-  notes: text("notes"),
+export const workoutAssignments = pgTable('workout_assignments', {
+  id: varchar('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  workoutId: varchar('workout_id').notNull(),
+  clientId: varchar('client_id').notNull(),
+  assignedAt: timestamp('assigned_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+  notes: text('notes'),
 
   // ✅ THESE ALREADY EXIST BUT AREN'T USED!
-  scheduledDate: text("scheduled_date"),      // YYYY-MM-DD
-  dayOfWeek: integer("day_of_week"),          // 0-6
-  weekNumber: integer("week_number"),         // ISO week
-  weekYear: integer("week_year"),             // Year
+  scheduledDate: text('scheduled_date'), // YYYY-MM-DD
+  dayOfWeek: integer('day_of_week'), // 0-6
+  weekNumber: integer('week_number'), // ISO week
+  weekYear: integer('week_year'), // Year
 });
 ```
 
 **Good News:**
+
 - ✅ Schema already supports scheduling!
 - ✅ Just needs UI to populate these fields
 
 **What's Missing:**
+
 - ❌ No `scheduledTime` field (need to add)
 - ❌ No `timezone` field (need to add)
 - ❌ No `isCustomized` flag (template vs instance)
@@ -118,22 +134,24 @@ export const workoutAssignments = pgTable("workout_assignments", {
 ---
 
 #### **Schema: workoutExercises table**
+
 **File:** `shared/schema.ts` (Lines 95-107)
 
 ```typescript
-export const workoutExercises = pgTable("workout_exercises", {
-  id: varchar("id").primaryKey(),
-  workoutId: varchar("workout_id").notNull(),
-  exerciseId: varchar("exercise_id").notNull(),
-  sets: integer("sets").notNull(),           // Just a count
-  reps: text("reps").notNull(),               // e.g., "10-12"
-  weight: text("weight"),                     // Single weight for ALL sets
-  restTime: integer("rest_time"),
-  sortOrder: integer("sort_order").notNull()
+export const workoutExercises = pgTable('workout_exercises', {
+  id: varchar('id').primaryKey(),
+  workoutId: varchar('workout_id').notNull(),
+  exerciseId: varchar('exercise_id').notNull(),
+  sets: integer('sets').notNull(), // Just a count
+  reps: text('reps').notNull(), // e.g., "10-12"
+  weight: text('weight'), // Single weight for ALL sets
+  restTime: integer('rest_time'),
+  sortOrder: integer('sort_order').notNull(),
 });
 ```
 
 **Problems:**
+
 - ❌ `weight` is per-exercise, not per-set
 - ❌ Can't do progressive overload (different weights per set)
 - ❌ No exercise type system
@@ -144,18 +162,26 @@ export const workoutExercises = pgTable("workout_exercises", {
 ### 1.3 Current Client Display
 
 #### **WeeklyWorkoutView Component**
+
 **File:** `client/src/components/WeeklyWorkoutView.tsx`
 
 **Key Logic (Lines 72-86):**
+
 ```typescript
 const workoutsByDay = useMemo(() => {
   if (!data?.workouts) return {};
 
   const grouped: Record<number, Workout[]> = {
-    0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []
+    0: [],
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+    5: [],
+    6: [],
   };
 
-  data.workouts.forEach(workout => {
+  data.workouts.forEach((workout) => {
     if (workout.dayOfWeek !== null && workout.dayOfWeek !== undefined) {
       grouped[workout.dayOfWeek].push(workout);
     }
@@ -166,12 +192,14 @@ const workoutsByDay = useMemo(() => {
 ```
 
 **Good News:**
+
 - ✅ Already groups by `dayOfWeek`!
 - ✅ Calendar grid already implemented
 - ✅ Shows exercise details in expandable cards
 - ✅ Shows completion status
 
 **What's Missing:**
+
 - ❌ No time display (only date)
 - ❌ No timezone handling
 - 🔧 **ACTION:** Add time display next to day name (already partially done!)
@@ -181,30 +209,33 @@ const workoutsByDay = useMemo(() => {
 ### 1.4 Appointments System
 
 #### **Schema: appointments table**
+
 **File:** `shared/schema.ts` (Lines 213-231)
 
 ```typescript
-export const appointments = pgTable("appointments", {
-  id: varchar("id").primaryKey(),
-  trainerId: varchar("trainer_id").notNull(),
-  clientId: varchar("client_id").notNull(),
-  title: text("title").notNull(),
-  date: text("date").notNull(),              // YYYY-MM-DD
-  startTime: text("start_time").notNull(),   // HH:MM ✅
-  endTime: text("end_time"),                 // HH:MM ✅
-  type: text("type").notNull(),
-  status: text("status").notNull(),
-  notes: text("notes")
+export const appointments = pgTable('appointments', {
+  id: varchar('id').primaryKey(),
+  trainerId: varchar('trainer_id').notNull(),
+  clientId: varchar('client_id').notNull(),
+  title: text('title').notNull(),
+  date: text('date').notNull(), // YYYY-MM-DD
+  startTime: text('start_time').notNull(), // HH:MM ✅
+  endTime: text('end_time'), // HH:MM ✅
+  type: text('type').notNull(),
+  status: text('status').notNull(),
+  notes: text('notes'),
 });
 ```
 
 **Current State:**
+
 - ✅ Has time fields (`startTime`, `endTime`)
 - ❌ **NO relationship to workouts!**
 - ❌ Appointments ≠ Workouts (separate systems)
 
 **Decision Point:**
 Should we:
+
 1. **Option A:** Link appointments to workout assignments (recommended)
 2. **Option B:** Keep them separate but show both in calendar
 
@@ -357,40 +388,49 @@ CREATE INDEX idx_workout_assignments_appointment
 #### **Update shared/schema.ts**
 
 **Add to workoutAssignments table:**
+
 ```typescript
-export const workoutAssignments = pgTable("workout_assignments", {
-  // ... existing fields ...
+export const workoutAssignments = pgTable(
+  'workout_assignments',
+  {
+    // ... existing fields ...
 
-  // NEW SCHEDULING FIELDS
-  scheduledTime: text("scheduled_time"),
-  timezone: text("timezone").default('UTC'),
-  durationMinutes: integer("duration_minutes"),
-  isCustomized: boolean("is_customized").default(false),
-  customTitle: text("custom_title"),
-  customNotes: text("custom_notes"),
-  status: text("status").default('scheduled'),
-  cancelledAt: timestamp("cancelled_at"),
-  cancellationReason: text("cancellation_reason"),
+    // NEW SCHEDULING FIELDS
+    scheduledTime: text('scheduled_time'),
+    timezone: text('timezone').default('UTC'),
+    durationMinutes: integer('duration_minutes'),
+    isCustomized: boolean('is_customized').default(false),
+    customTitle: text('custom_title'),
+    customNotes: text('custom_notes'),
+    status: text('status').default('scheduled'),
+    cancelledAt: timestamp('cancelled_at'),
+    cancellationReason: text('cancellation_reason'),
 
-  // OPTIONAL: Link to appointment
-  appointmentId: varchar("appointment_id").references(() => appointments.id),
-}, (table) => [
-  index("idx_workout_assignments_scheduled_datetime").on(table.scheduledDate, table.scheduledTime),
-  index("idx_workout_assignments_status").on(table.status),
-]);
+    // OPTIONAL: Link to appointment
+    appointmentId: varchar('appointment_id').references(() => appointments.id),
+  },
+  (table) => [
+    index('idx_workout_assignments_scheduled_datetime').on(
+      table.scheduledDate,
+      table.scheduledTime
+    ),
+    index('idx_workout_assignments_status').on(table.status),
+  ]
+);
 ```
 
 **Add to exercises table:**
+
 ```typescript
-export const exercises = pgTable("exercises", {
+export const exercises = pgTable('exercises', {
   // ... existing fields ...
 
   // NEW TYPE SYSTEM
-  exerciseType: text("exercise_type").default('weighted_reps'),
-  defaultSets: integer("default_sets"),
-  defaultReps: text("default_reps"),
-  defaultDuration: integer("default_duration"),
-  thumbnailUrl: text("thumbnail_url"),
+  exerciseType: text('exercise_type').default('weighted_reps'),
+  defaultSets: integer('default_sets'),
+  defaultReps: text('default_reps'),
+  defaultDuration: integer('default_duration'),
+  thumbnailUrl: text('thumbnail_url'),
 });
 
 // Add enum
@@ -401,28 +441,29 @@ export enum ExerciseType {
   CARDIO_DISTANCE = 'cardio_distance',
   CARDIO_TIME = 'cardio_time',
   PLYOMETRIC = 'plyometric',
-  MOBILITY = 'mobility'
+  MOBILITY = 'mobility',
 }
 ```
 
 **Update workoutExercises table:**
+
 ```typescript
-export const workoutExercises = pgTable("workout_exercises", {
-  id: varchar("id").primaryKey(),
-  workoutId: varchar("workout_id").notNull(),
-  exerciseId: varchar("exercise_id").notNull(),
+export const workoutExercises = pgTable('workout_exercises', {
+  id: varchar('id').primaryKey(),
+  workoutId: varchar('workout_id').notNull(),
+  exerciseId: varchar('exercise_id').notNull(),
 
   // REPLACE sets, reps, weight with:
-  setsConfiguration: jsonb("sets_configuration").notNull().$type<SetConfiguration[]>(),
+  setsConfiguration: jsonb('sets_configuration').notNull().$type<SetConfiguration[]>(),
 
-  restTime: integer("rest_time"),
-  sortOrder: integer("sort_order").notNull(),
+  restTime: integer('rest_time'),
+  sortOrder: integer('sort_order').notNull(),
 
   // NEW FIELDS
-  notes: text("notes"),
-  tempo: text("tempo"),
-  groupId: text("group_id"),  // For supersets
-  groupType: text("group_type")  // 'superset', 'circuit', etc.
+  notes: text('notes'),
+  tempo: text('tempo'),
+  groupId: text('group_id'), // For supersets
+  groupType: text('group_type'), // 'superset', 'circuit', etc.
 });
 
 // Add type
@@ -443,12 +484,13 @@ export interface SetConfiguration {
 ```
 
 **Update appointments table:**
+
 ```typescript
-export const appointments = pgTable("appointments", {
+export const appointments = pgTable('appointments', {
   // ... existing fields ...
 
   // NEW: Link to workout
-  workoutAssignmentId: varchar("workout_assignment_id").references(() => workoutAssignments.id),
+  workoutAssignmentId: varchar('workout_assignment_id').references(() => workoutAssignments.id),
 });
 ```
 
@@ -461,8 +503,9 @@ export const appointments = pgTable("appointments", {
 **File:** `server/routes.ts` (around line 780)
 
 **Current code:**
+
 ```typescript
-app.post("/api/workout-assignments", async (req: Request, res: Response) => {
+app.post('/api/workout-assignments', async (req: Request, res: Response) => {
   try {
     const validatedData = insertWorkoutAssignmentSchema.parse(req.body);
 
@@ -478,29 +521,30 @@ app.post("/api/workout-assignments", async (req: Request, res: Response) => {
     const assignment = await storage.assignWorkoutToClient(assignmentData);
     res.status(201).json(assignment);
   } catch (error) {
-    res.status(500).json({ error: "Failed to assign workout" });
+    res.status(500).json({ error: 'Failed to assign workout' });
   }
 });
 ```
 
 **NEW code (enhanced):**
+
 ```typescript
-app.post("/api/workout-assignments", async (req: Request, res: Response) => {
+app.post('/api/workout-assignments', async (req: Request, res: Response) => {
   try {
     const validatedData = insertWorkoutAssignmentSchema.parse(req.body);
 
     // REQUIRE scheduledDate and scheduledTime going forward
     if (!validatedData.scheduledDate) {
       return res.status(400).json({
-        error: "scheduledDate is required",
-        details: "Workouts must be scheduled for a specific date"
+        error: 'scheduledDate is required',
+        details: 'Workouts must be scheduled for a specific date',
       });
     }
 
     if (!validatedData.scheduledTime) {
       return res.status(400).json({
-        error: "scheduledTime is required",
-        details: "Workouts must be scheduled for a specific time"
+        error: 'scheduledTime is required',
+        details: 'Workouts must be scheduled for a specific time',
       });
     }
 
@@ -527,13 +571,13 @@ app.post("/api/workout-assignments", async (req: Request, res: Response) => {
       clientId: validatedData.clientId,
       date: validatedData.scheduledDate,
       time: validatedData.scheduledTime,
-      duration: assignmentData.durationMinutes
+      duration: assignmentData.durationMinutes,
     });
 
     if (conflicts.length > 0) {
       return res.status(409).json({
-        error: "Schedule conflict detected",
-        conflicts: conflicts
+        error: 'Schedule conflict detected',
+        conflicts: conflicts,
       });
     }
 
@@ -545,14 +589,15 @@ app.post("/api/workout-assignments", async (req: Request, res: Response) => {
     res.status(201).json(assignment);
   } catch (error) {
     if (error instanceof ZodError) {
-      return res.status(400).json({ error: "Invalid data", details: error.errors });
+      return res.status(400).json({ error: 'Invalid data', details: error.errors });
     }
-    res.status(500).json({ error: "Failed to assign workout" });
+    res.status(500).json({ error: 'Failed to assign workout' });
   }
 });
 ```
 
 **Add helper function:**
+
 ```typescript
 async function checkScheduleConflicts(params: {
   trainerId: string;
@@ -569,7 +614,8 @@ async function checkScheduleConflicts(params: {
   const endMinutes = startMinutes + params.duration;
 
   // Check for overlapping assignments
-  const conflicts = await db.select()
+  const conflicts = await db
+    .select()
     .from(workoutAssignments)
     .where(
       and(
@@ -583,7 +629,7 @@ async function checkScheduleConflicts(params: {
     );
 
   // Filter by time overlap
-  return conflicts.filter(conflict => {
+  return conflicts.filter((conflict) => {
     if (!conflict.scheduledTime) return false;
 
     const [cHours, cMinutes] = conflict.scheduledTime.split(':').map(Number);
@@ -610,15 +656,16 @@ This is the NEW primary way to assign workouts (from Schedule page).
 
 ```typescript
 // POST /api/schedule/assign-workout - Assign workout from schedule page
-app.post("/api/schedule/assign-workout", secureAuth, async (req: Request, res: Response) => {
+app.post('/api/schedule/assign-workout', secureAuth, async (req: Request, res: Response) => {
   try {
-    const { workoutId, clientId, scheduledDate, scheduledTime, timezone, customizations } = req.body;
+    const { workoutId, clientId, scheduledDate, scheduledTime, timezone, customizations } =
+      req.body;
 
     // Validate required fields
     if (!workoutId || !clientId || !scheduledDate || !scheduledTime) {
       return res.status(400).json({
-        error: "Missing required fields",
-        required: ['workoutId', 'clientId', 'scheduledDate', 'scheduledTime']
+        error: 'Missing required fields',
+        required: ['workoutId', 'clientId', 'scheduledDate', 'scheduledTime'],
       });
     }
 
@@ -627,7 +674,7 @@ app.post("/api/schedule/assign-workout", secureAuth, async (req: Request, res: R
     // Load workout template
     const workout = await storage.getWorkout(workoutId);
     if (!workout) {
-      return res.status(404).json({ error: "Workout not found" });
+      return res.status(404).json({ error: 'Workout not found' });
     }
 
     // Check schedule conflicts
@@ -636,18 +683,18 @@ app.post("/api/schedule/assign-workout", secureAuth, async (req: Request, res: R
       clientId,
       date: scheduledDate,
       time: scheduledTime,
-      duration: workout.duration
+      duration: workout.duration,
     });
 
     if (conflicts.length > 0) {
       return res.status(409).json({
-        error: "Schedule conflict",
-        conflicts: conflicts.map(c => ({
+        error: 'Schedule conflict',
+        conflicts: conflicts.map((c) => ({
           id: c.id,
           clientId: c.clientId,
           time: c.scheduledTime,
-          title: c.customTitle || 'Scheduled workout'
-        }))
+          title: c.customTitle || 'Scheduled workout',
+        })),
       });
     }
 
@@ -667,7 +714,7 @@ app.post("/api/schedule/assign-workout", secureAuth, async (req: Request, res: R
       status: 'scheduled',
       isCustomized: !!customizations,
       customTitle: customizations?.title,
-      customNotes: customizations?.notes
+      customNotes: customizations?.notes,
     });
 
     // If customizations.exercises provided, create customized exercises
@@ -681,13 +728,13 @@ app.post("/api/schedule/assign-workout", secureAuth, async (req: Request, res: R
 
     // Update onboarding
     await storage.updateUserOnboardingProgress(trainerId, {
-      assignedFirstWorkout: true
+      assignedFirstWorkout: true,
     });
 
     res.status(201).json(assignment);
   } catch (error) {
-    console.error("Error assigning workout from schedule:", error);
-    res.status(500).json({ error: "Failed to assign workout" });
+    console.error('Error assigning workout from schedule:', error);
+    res.status(500).json({ error: 'Failed to assign workout' });
   }
 });
 ```
@@ -701,20 +748,24 @@ app.post("/api/schedule/assign-workout", secureAuth, async (req: Request, res: R
 **File:** `client/src/pages/ClientDetailsPage.tsx`
 
 **Find and remove** (around lines 156-173):
+
 ```typescript
 // DELETE THIS ENTIRE SECTION
 const assignWorkoutMutation = useMutation({
   mutationFn: async (workoutId: string) => {
     // ...
-  }
+  },
 });
 
 // And the UI button that uses it
 ```
 
 **Add message instead:**
+
 ```tsx
-{/* Where the assign button was */}
+{
+  /* Where the assign button was */
+}
 <Card className="p-6">
   <div className="text-center text-muted-foreground">
     <Calendar className="mx-auto h-12 w-12 mb-4" />
@@ -725,7 +776,7 @@ const assignWorkoutMutation = useMutation({
       </Link>
     </p>
   </div>
-</Card>
+</Card>;
 ```
 
 ---
@@ -740,7 +791,13 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { apiRequest } from '@/lib/queryClient';
@@ -759,7 +816,7 @@ export function ScheduleWorkoutModal({
   onOpenChange,
   preselectedDate,
   preselectedTime,
-  preselectedClient
+  preselectedClient,
 }: ScheduleWorkoutModalProps) {
   const { toast } = useToast();
 
@@ -775,7 +832,7 @@ export function ScheduleWorkoutModal({
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/clients');
       return response.json();
-    }
+    },
   });
 
   // Fetch workouts
@@ -784,7 +841,7 @@ export function ScheduleWorkoutModal({
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/workouts');
       return response.json();
-    }
+    },
   });
 
   // Schedule mutation
@@ -803,12 +860,12 @@ export function ScheduleWorkoutModal({
         toast({
           title: 'Schedule conflict',
           description: 'This time slot conflicts with an existing appointment',
-          variant: 'destructive'
+          variant: 'destructive',
         });
       } else {
         toast({ title: 'Failed to schedule workout', variant: 'destructive' });
       }
-    }
+    },
   });
 
   const handleSchedule = () => {
@@ -823,7 +880,7 @@ export function ScheduleWorkoutModal({
       scheduledDate: selectedDate.toISOString().split('T')[0],
       scheduledTime: selectedTime,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      customizations: customNotes ? { notes: customNotes } : undefined
+      customizations: customNotes ? { notes: customNotes } : undefined,
     });
   };
 
@@ -864,7 +921,7 @@ export function ScheduleWorkoutModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {timeSlots.map(time => (
+                {timeSlots.map((time) => (
                   <SelectItem key={time} value={time}>
                     {time}
                   </SelectItem>
@@ -925,7 +982,9 @@ export function ScheduleWorkoutModal({
             </Button>
             <Button
               onClick={handleSchedule}
-              disabled={scheduleMutation.isPending || !selectedDate || !selectedClient || !selectedWorkout}
+              disabled={
+                scheduleMutation.isPending || !selectedDate || !selectedClient || !selectedWorkout
+              }
             >
               {scheduleMutation.isPending ? 'Scheduling...' : 'Schedule Workout'}
             </Button>
@@ -944,12 +1003,13 @@ export function ScheduleWorkoutModal({
 **File:** `client/src/pages/SchedulePage.tsx`
 
 **Add button to schedule workout:**
+
 ```tsx
 import { ScheduleWorkoutModal } from '@/components/ScheduleWorkoutModal';
 
 export default function SchedulePage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{date: Date, time: string} | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{ date: Date; time: string } | null>(null);
 
   // Existing code...
 
@@ -995,22 +1055,20 @@ const handleAddExercise = () => {
     reps: exerciseData.reps,
     weight: exerciseData.weight,
     restTime: exerciseData.restTime,
-    sortOrder: (workout?.exercises?.length || 0) + 1
+    sortOrder: (workout?.exercises?.length || 0) + 1,
   });
 };
 
 // AFTER (prevents duplicates):
 const handleAddExercise = () => {
   // Check if exercise already exists
-  const isDuplicate = workout?.exercises?.some(
-    (ex) => ex.exerciseId === selectedExercise
-  );
+  const isDuplicate = workout?.exercises?.some((ex) => ex.exerciseId === selectedExercise);
 
   if (isDuplicate) {
     toast({
-      title: "Exercise already added",
-      description: "This exercise is already in the workout",
-      variant: "destructive"
+      title: 'Exercise already added',
+      description: 'This exercise is already in the workout',
+      variant: 'destructive',
     });
     return;
   }
@@ -1021,7 +1079,7 @@ const handleAddExercise = () => {
     reps: exerciseData.reps,
     weight: exerciseData.weight,
     restTime: exerciseData.restTime,
-    sortOrder: (workout?.exercises?.length || 0) + 1
+    sortOrder: (workout?.exercises?.length || 0) + 1,
   });
 };
 ```
@@ -1037,7 +1095,9 @@ const handleAddExercise = () => {
 **Replace the simple sets/reps/weight inputs with:**
 
 ```tsx
-{/* Per-Set Configuration */}
+{
+  /* Per-Set Configuration */
+}
 <div className="space-y-4">
   <Label>Sets Configuration</Label>
 
@@ -1049,7 +1109,9 @@ const handleAddExercise = () => {
         <div className="flex-1 grid grid-cols-3 gap-4">
           {/* Reps */}
           <div>
-            <Label htmlFor={`reps-${setIndex}`} className="text-xs">Reps</Label>
+            <Label htmlFor={`reps-${setIndex}`} className="text-xs">
+              Reps
+            </Label>
             <Input
               id={`reps-${setIndex}`}
               type="number"
@@ -1059,7 +1121,7 @@ const handleAddExercise = () => {
                 newConfig[setIndex] = {
                   ...newConfig[setIndex],
                   setNumber: setIndex + 1,
-                  reps: parseInt(e.target.value)
+                  reps: parseInt(e.target.value),
                 };
                 setExerciseData({ ...exerciseData, setsConfig: newConfig });
               }}
@@ -1068,7 +1130,9 @@ const handleAddExercise = () => {
 
           {/* Weight */}
           <div>
-            <Label htmlFor={`weight-${setIndex}`} className="text-xs">Weight (kg)</Label>
+            <Label htmlFor={`weight-${setIndex}`} className="text-xs">
+              Weight (kg)
+            </Label>
             <Input
               id={`weight-${setIndex}`}
               type="number"
@@ -1078,7 +1142,7 @@ const handleAddExercise = () => {
                 newConfig[setIndex] = {
                   ...newConfig[setIndex],
                   setNumber: setIndex + 1,
-                  weight: parseFloat(e.target.value)
+                  weight: parseFloat(e.target.value),
                 };
                 setExerciseData({ ...exerciseData, setsConfig: newConfig });
               }}
@@ -1087,7 +1151,9 @@ const handleAddExercise = () => {
 
           {/* RPE (optional) */}
           <div>
-            <Label htmlFor={`rpe-${setIndex}`} className="text-xs">Target RPE</Label>
+            <Label htmlFor={`rpe-${setIndex}`} className="text-xs">
+              Target RPE
+            </Label>
             <Input
               id={`rpe-${setIndex}`}
               type="number"
@@ -1100,7 +1166,7 @@ const handleAddExercise = () => {
                 newConfig[setIndex] = {
                   ...newConfig[setIndex],
                   setNumber: setIndex + 1,
-                  rpe: parseInt(e.target.value)
+                  rpe: parseInt(e.target.value),
                 };
                 setExerciseData({ ...exerciseData, setsConfig: newConfig });
               }}
@@ -1124,7 +1190,7 @@ const handleAddExercise = () => {
 
         const newConfig = [...Array(exerciseData.sets)].map((_, i) => ({
           ...firstSet,
-          setNumber: i + 1
+          setNumber: i + 1,
         }));
         setExerciseData({ ...exerciseData, setsConfig: newConfig });
       }}
@@ -1143,9 +1209,9 @@ const handleAddExercise = () => {
 
         const newConfig = [...Array(exerciseData.sets)].map((_, i) => ({
           setNumber: i + 1,
-          reps: Math.max(6, baseReps - (i * 2)), // Decrease 2 reps per set
-          weight: baseWeight + (i * 10), // Increase 10kg per set
-          completed: false
+          reps: Math.max(6, baseReps - i * 2), // Decrease 2 reps per set
+          weight: baseWeight + i * 10, // Increase 10kg per set
+          completed: false,
         }));
         setExerciseData({ ...exerciseData, setsConfig: newConfig });
       }}
@@ -1153,7 +1219,7 @@ const handleAddExercise = () => {
       Progressive Overload
     </Button>
   </div>
-</div>
+</div>;
 ```
 
 ---
@@ -1161,6 +1227,7 @@ const handleAddExercise = () => {
 ## 📋 Part 3: Testing Checklist
 
 ### Unit Tests
+
 - [ ] Schema migrations run without errors
 - [ ] New fields have correct types and constraints
 - [ ] Backfill scripts preserve existing data
@@ -1169,6 +1236,7 @@ const handleAddExercise = () => {
 - [ ] Duplicate exercise prevention works
 
 ### Integration Tests
+
 - [ ] Can assign workout with date and time from Schedule page
 - [ ] Cannot assign workout without date/time
 - [ ] Client Details page doesn't show assign button
@@ -1177,6 +1245,7 @@ const handleAddExercise = () => {
 - [ ] Exercise type system shows appropriate fields
 
 ### E2E Tests
+
 - [ ] Full workflow: Create template → Schedule for client → Client views → Client completes
 - [ ] Reschedule workflow works
 - [ ] Cancel workflow works
@@ -1188,23 +1257,27 @@ const handleAddExercise = () => {
 ## 📋 Part 4: Deployment Strategy
 
 ### Week 1-2: Backend (Database + API)
+
 1. Run migrations on staging
 2. Test with real data snapshot
 3. Deploy to production (backward compatible)
 4. Monitor for errors
 
 ### Week 3-4: Frontend (UI Changes)
+
 1. Deploy Schedule page changes
 2. Deploy Client Details changes (remove assign button)
 3. Deploy WorkoutBuilder improvements
 4. Feature flag for rollout
 
 ### Week 5: Client App Updates
+
 1. Deploy calendar view improvements
 2. Deploy per-set weight tracking
 3. Deploy simplified Schedule page
 
 ### Week 6: Full Release
+
 1. Enable for all users
 2. Send announcement
 3. Monitor metrics
@@ -1240,11 +1313,13 @@ Track these KPIs post-deployment:
 If critical issues arise:
 
 ### Database Rollback
+
 - Migrations are additive (don't drop columns immediately)
 - Can revert to old code without data loss
 - Old assignments still work (scheduledDate nullable)
 
 ### Feature Flags
+
 ```typescript
 const ENABLE_SCHEDULED_ASSIGNMENTS = process.env.FEATURE_SCHEDULED_ASSIGNMENTS === 'true';
 
@@ -1260,6 +1335,7 @@ if (ENABLE_SCHEDULED_ASSIGNMENTS) {
 ## 📚 Additional Resources
 
 ### Files to Review
+
 1. `shared/schema.ts` - Complete data model
 2. `server/routes.ts` - All API endpoints
 3. `client/src/components/WeeklyWorkoutView.tsx` - Calendar implementation
@@ -1267,6 +1343,7 @@ if (ENABLE_SCHEDULED_ASSIGNMENTS) {
 5. `client/src/pages/WorkoutBuilder.tsx` - Template creation
 
 ### Key Dependencies
+
 - `date-fns` - Already installed ✅
 - `date-fns-tz` - Need to add for timezone support
 - `@tanstack/react-query` - Already installed ✅

@@ -1,6 +1,7 @@
 # GymGurus Landing Pages - Implementation Plan
 
 ## Overview
+
 Create a premium, carousel-based landing experience with multiple pages showcasing GymGurus' value proposition, features, pricing, and company story. The design will maintain the luxury aesthetic of the current login page with a fixed background video and smooth content transitions.
 
 ---
@@ -10,6 +11,7 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 ### Pages to Implement (6 Total)
 
 #### 1. **Home/Hero Page** (Default/First Page)
+
 - Large centered GymGurus logo (2x size of login page)
 - Premium tagline: "Transform Your Training Business"
 - Subtle animated elements (particles, gradients, glow effects)
@@ -17,30 +19,35 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 - Scroll indicator or navigation hints
 
 #### 2. **Features Page**
+
 - Showcase core platform capabilities
 - 3-column grid of feature cards with icons
 - Interactive feature demonstrations
 - "All-in-One Solution" messaging
 
 #### 3. **Pricing Page**
+
 - 3-tier pricing structure (Starter, Professional, Enterprise)
 - Feature comparison table
 - "30-Day Free Trial" prominent CTA
 - FAQ section for pricing questions
 
 #### 4. **About Us Page**
+
 - Company mission and vision
 - Team showcase (if applicable)
 - Company values and culture
 - Milestones and achievements
 
 #### 5. **Resources Page**
+
 - Blog preview/featured articles
 - Guides and tutorials
 - Success stories/testimonials
 - Video content library
 
 #### 6. **Contact Page**
+
 - Contact form
 - Support information
 - Office location (if applicable)
@@ -60,6 +67,7 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 ```
 
 **Specifications:**
+
 - **Position**: Fixed at top, glass morphism backdrop
 - **Background**: `rgba(255, 255, 255, 0.05)` with `backdrop-filter: blur(12px)`
 - **Height**: 80px
@@ -73,6 +81,7 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 ### Carousel Navigation System
 
 **Approach**: Horizontal carousel with smooth transitions
+
 - **Method**: Framer Motion AnimatePresence for page transitions
 - **Direction**: Left/right arrow keys, mouse swipe, navigation clicks
 - **Animation**: Slide + fade effect (300-500ms duration)
@@ -80,6 +89,7 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 - **Indicators**: Dot navigation at bottom showing current page
 
 **Alternative Approach**: Full-page scroll snap
+
 - **Method**: CSS scroll-snap-type
 - **Navigation**: Smooth scroll to sections
 - **Advantage**: Native browser behavior, better performance
@@ -92,15 +102,15 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 
 ```css
 /* Primary Colors */
---gold-primary: #c9a855;      /* Trainer/Premium accent */
---gold-light: #d4b86a;        /* Hover states */
---teal-primary: #0d9488;      /* Client accent */
---teal-light: #14b8a6;        /* Secondary teal */
+--gold-primary: #c9a855; /* Trainer/Premium accent */
+--gold-light: #d4b86a; /* Hover states */
+--teal-primary: #0d9488; /* Client accent */
+--teal-light: #14b8a6; /* Secondary teal */
 
 /* Neutrals */
---bg-dark: #0a0a0a;           /* Background base */
---text-white: #ffffff;        /* Primary text */
---text-muted: rgba(255, 255, 255, 0.7);  /* Secondary text */
+--bg-dark: #0a0a0a; /* Background base */
+--text-white: #ffffff; /* Primary text */
+--text-muted: rgba(255, 255, 255, 0.7); /* Secondary text */
 
 /* Glass Morphism */
 --glass-bg: rgba(255, 255, 255, 0.05);
@@ -112,15 +122,11 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 
 ```css
 /* Headings */
---h1: 64px / 800 weight / -0.02em tracking  (Hero titles)
---h2: 48px / 700 weight / -0.01em tracking  (Section titles)
---h3: 32px / 600 weight / 0em tracking      (Feature titles)
---h4: 24px / 600 weight / 0em tracking      (Card titles)
-
-/* Body */
---body-large: 20px / 400 weight / 1.6 line-height
---body-regular: 16px / 400 weight / 1.5 line-height
---body-small: 14px / 400 weight / 1.4 line-height
+--h1: 64px / 800 weight / -0.02em tracking (Hero titles) --h2: 48px / 700 weight / -0.01em tracking
+  (Section titles) --h3: 32px / 600 weight / 0em tracking (Feature titles) --h4: 24px / 600 weight /
+  0em tracking (Card titles) /* Body */ --body-large: 20px / 400 weight / 1.6 line-height
+  --body-regular: 16px / 400 weight / 1.5 line-height --body-small: 14px / 400 weight / 1.4
+  line-height;
 ```
 
 ### Component Library Needed
@@ -172,6 +178,7 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 ```
 
 **Key Elements:**
+
 - Animated gradient orbs floating in background
 - Logo with subtle pulse/glow animation
 - Value props in glass morphism cards
@@ -210,6 +217,7 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 ```
 
 **Features to Highlight:**
+
 1. Client Management & CRM
 2. Workout Builder & Library
 3. Nutrition Planning & Tracking
@@ -255,6 +263,7 @@ Create a premium, carousel-based landing experience with multiple pages showcasi
 ```
 
 **Pricing Strategy:**
+
 - Emphasize "Unlimited Clients" on Pro+ tiers
 - Free trial prominent on all plans
 - Annual discount highlighted
@@ -414,31 +423,28 @@ const PageCarousel = () => {
     <PricingPage />,
     <AboutPage />,
     <ResourcesPage />,
-    <ContactPage />
+    <ContactPage />,
   ];
 
   const pageVariants = {
     enter: (direction: number) => ({
       x: direction > 0 ? 1000 : -1000,
-      opacity: 0
+      opacity: 0,
     }),
     center: {
       x: 0,
-      opacity: 1
+      opacity: 1,
     },
     exit: (direction: number) => ({
       x: direction < 0 ? 1000 : -1000,
-      opacity: 0
-    })
+      opacity: 0,
+    }),
   };
 
   return (
     <div className="carousel-container">
       <VideoBackground />
-      <LandingHeader
-        currentPage={currentPage}
-        onNavigate={setCurrentPage}
-      />
+      <LandingHeader currentPage={currentPage} onNavigate={setCurrentPage} />
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
           key={currentPage}
@@ -467,12 +473,24 @@ const LandingPage = () => {
       <VideoBackground />
       <LandingHeader />
       <div className="scroll-snap-wrapper">
-        <section className="snap-page"><HeroPage /></section>
-        <section className="snap-page"><FeaturesPage /></section>
-        <section className="snap-page"><PricingPage /></section>
-        <section className="snap-page"><AboutPage /></section>
-        <section className="snap-page"><ResourcesPage /></section>
-        <section className="snap-page"><ContactPage /></section>
+        <section className="snap-page">
+          <HeroPage />
+        </section>
+        <section className="snap-page">
+          <FeaturesPage />
+        </section>
+        <section className="snap-page">
+          <PricingPage />
+        </section>
+        <section className="snap-page">
+          <AboutPage />
+        </section>
+        <section className="snap-page">
+          <ResourcesPage />
+        </section>
+        <section className="snap-page">
+          <ContactPage />
+        </section>
       </div>
     </div>
   );
@@ -527,7 +545,7 @@ const LandingHeader = ({ currentPage, onNavigate }) => {
     { label: 'Pricing', index: 2 },
     { label: 'About', index: 3 },
     { label: 'Resources', index: 4 },
-    { label: 'Contact', index: 5 }
+    { label: 'Contact', index: 5 },
   ];
 
   return (
@@ -546,9 +564,7 @@ const LandingHeader = ({ currentPage, onNavigate }) => {
               key={item.index}
               onClick={() => onNavigate(item.index)}
               className={`text-sm font-medium transition-colors ${
-                currentPage === item.index
-                  ? 'text-gold-primary'
-                  : 'text-white/70 hover:text-white'
+                currentPage === item.index ? 'text-gold-primary' : 'text-white/70 hover:text-white'
               }`}
             >
               {item.label}
@@ -579,7 +595,7 @@ export const pageTransitionVariants = {
   enter: (direction: number) => ({
     x: direction > 0 ? '100%' : '-100%',
     opacity: 0,
-    scale: 0.95
+    scale: 0.95,
   }),
   center: {
     x: 0,
@@ -587,8 +603,8 @@ export const pageTransitionVariants = {
     scale: 1,
     transition: {
       duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94] // Smooth easing
-    }
+      ease: [0.25, 0.46, 0.45, 0.94], // Smooth easing
+    },
   },
   exit: (direction: number) => ({
     x: direction > 0 ? '-100%' : '100%',
@@ -596,9 +612,9 @@ export const pageTransitionVariants = {
     scale: 0.95,
     transition: {
       duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94]
-    }
-  })
+      ease: [0.25, 0.46, 0.45, 0.94],
+    },
+  }),
 };
 
 export const fadeInUpVariants = {
@@ -606,8 +622,8 @@ export const fadeInUpVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: 'easeOut' }
-  }
+    transition: { duration: 0.6, ease: 'easeOut' },
+  },
 };
 
 export const staggerContainer = {
@@ -615,9 +631,9 @@ export const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15
-    }
-  }
+      staggerChildren: 0.15,
+    },
+  },
 };
 
 export const scaleInVariants = {
@@ -625,8 +641,8 @@ export const scaleInVariants = {
   visible: {
     scale: 1,
     opacity: 1,
-    transition: { duration: 0.5, ease: 'easeOut' }
-  }
+    transition: { duration: 0.5, ease: 'easeOut' },
+  },
 };
 ```
 
@@ -643,12 +659,7 @@ export const scaleInVariants = {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transform: translateX(-100%);
   transition: transform 0.6s;
 }
@@ -679,11 +690,7 @@ const ParallaxSection = ({ children }) => {
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
-  return (
-    <motion.div style={{ y }}>
-      {children}
-    </motion.div>
-  );
+  return <motion.div style={{ y }}>{children}</motion.div>;
 };
 ```
 
@@ -694,20 +701,24 @@ const ParallaxSection = ({ children }) => {
 ### Hero Page Copy
 
 **Main Headline:**
+
 - "Transform Your Training Business"
 - Alt: "Build. Scale. Succeed."
 - Alt: "The Future of Personal Training"
 
 **Subheadline:**
+
 - "All-in-one platform for modern personal trainers"
 - "Manage clients, create workouts, track progress—all in one place"
 
 **Value Props:**
+
 1. ✓ Unlimited Clients
 2. ✓ Save 10+ Hours per Week
 3. ✓ Grow Your Revenue by 40%
 
 **CTA:**
+
 - Primary: "Start Free Trial"
 - Secondary: "Watch Demo"
 
@@ -716,6 +727,7 @@ const ParallaxSection = ({ children }) => {
 **Headline:** "Everything You Need, Nothing You Don't"
 
 **Feature Descriptions:**
+
 1. **Client Management**
    - "Track every detail. From onboarding to goal achievement, manage your entire client roster in one intuitive dashboard."
 
@@ -740,11 +752,13 @@ const ParallaxSection = ({ children }) => {
 **Subheadline:** "Choose the plan that fits your business. Upgrade or downgrade anytime."
 
 **Tier Names & Positioning:**
+
 - **Starter**: "Perfect for new trainers"
 - **Professional**: "Most popular for growing businesses"
 - **Enterprise**: "For established training businesses"
 
 **Trust Builders:**
+
 - "30-day free trial on all plans"
 - "No credit card required"
 - "Cancel anytime, no questions asked"
@@ -756,6 +770,7 @@ const ParallaxSection = ({ children }) => {
 "GymGurus was born from a simple observation: personal trainers are incredible at transforming lives, but often struggle with the business and administrative side. We believe trainers should spend their time training—not drowning in paperwork. That's why we built the most intuitive, powerful, and affordable all-in-one platform for fitness professionals."
 
 **Core Values:**
+
 1. **Trainer-First**: Everything we build starts with the question: "How does this help trainers succeed?"
 2. **Innovation**: We're constantly pushing boundaries with AI, automation, and cutting-edge features.
 3. **Integrity**: Transparent pricing, honest communication, no hidden fees or surprises.
@@ -770,38 +785,70 @@ const ParallaxSection = ({ children }) => {
 
 /* Mobile (320px - 767px) */
 @media (max-width: 767px) {
-  .h1 { font-size: 32px; }
-  .h2 { font-size: 28px; }
-  .h3 { font-size: 24px; }
+  .h1 {
+    font-size: 32px;
+  }
+  .h2 {
+    font-size: 28px;
+  }
+  .h3 {
+    font-size: 24px;
+  }
 
-  .feature-grid { grid-template-columns: 1fr; }
-  .pricing-grid { grid-template-columns: 1fr; }
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
 
-  .nav-menu { display: none; } /* Show hamburger menu */
-  .header-logo { height: 32px; }
+  .nav-menu {
+    display: none;
+  } /* Show hamburger menu */
+  .header-logo {
+    height: 32px;
+  }
 }
 
 /* Tablet (768px - 1023px) */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .h1 { font-size: 48px; }
-  .h2 { font-size: 36px; }
+  .h1 {
+    font-size: 48px;
+  }
+  .h2 {
+    font-size: 36px;
+  }
 
-  .feature-grid { grid-template-columns: repeat(2, 1fr); }
-  .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pricing-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* Desktop (1024px+) */
 @media (min-width: 1024px) {
-  .h1 { font-size: 64px; }
-  .h2 { font-size: 48px; }
+  .h1 {
+    font-size: 64px;
+  }
+  .h2 {
+    font-size: 48px;
+  }
 
-  .feature-grid { grid-template-columns: repeat(3, 1fr); }
-  .pricing-grid { grid-template-columns: repeat(3, 1fr); }
+  .feature-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .pricing-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* Large Desktop (1440px+) */
 @media (min-width: 1440px) {
-  .container { max-width: 1280px; }
+  .container {
+    max-width: 1280px;
+  }
 }
 ```
 
@@ -810,18 +857,21 @@ const ParallaxSection = ({ children }) => {
 ## 9. Performance Optimization
 
 ### Image Optimization
+
 - Use WebP format with fallbacks
 - Lazy load images below fold
 - Implement blur-up placeholder technique
 - Compress images to < 200KB
 
 ### Video Optimization
+
 - Compress background video to < 5MB
 - Use poster image for instant display
 - Load video asynchronously
 - Pause video when not in viewport
 
 ### Code Splitting
+
 ```tsx
 // Lazy load pages
 const HeroPage = lazy(() => import('./components/landing/HeroPage'));
@@ -830,6 +880,7 @@ const PricingPage = lazy(() => import('./components/landing/PricingPage'));
 ```
 
 ### Animation Performance
+
 - Use `transform` and `opacity` for animations (GPU-accelerated)
 - Avoid animating `width`, `height`, `left`, `top`
 - Use `will-change` sparingly for complex animations
@@ -840,14 +891,19 @@ const PricingPage = lazy(() => import('./components/landing/PricingPage'));
 ## 10. SEO & Accessibility
 
 ### Meta Tags
+
 ```html
-<meta name="description" content="GymGurus - All-in-one platform for personal trainers. Manage clients, create workouts, track progress." />
+<meta
+  name="description"
+  content="GymGurus - All-in-one platform for personal trainers. Manage clients, create workouts, track progress."
+/>
 <meta name="keywords" content="personal trainer software, fitness app, client management" />
 <meta property="og:title" content="GymGurus - Transform Your Training Business" />
 <meta property="og:image" content="/og-image.jpg" />
 ```
 
 ### Semantic HTML
+
 ```tsx
 <main>
   <section aria-label="Hero">
@@ -860,6 +916,7 @@ const PricingPage = lazy(() => import('./components/landing/PricingPage'));
 ```
 
 ### Accessibility
+
 - All interactive elements keyboard accessible
 - Focus visible styles on all focusable elements
 - ARIA labels for icon-only buttons
@@ -872,6 +929,7 @@ const PricingPage = lazy(() => import('./components/landing/PricingPage'));
 ## 11. Implementation Timeline
 
 ### Phase 1: Foundation (Week 1)
+
 - [x] Complete research
 - [ ] Set up landing page routing
 - [ ] Create VideoBackground component
@@ -880,18 +938,21 @@ const PricingPage = lazy(() => import('./components/landing/PricingPage'));
 - [ ] Set up animation system
 
 ### Phase 2: Core Pages (Week 2)
+
 - [ ] Build HeroPage component
 - [ ] Build FeaturesPage component
 - [ ] Build PricingPage component
 - [ ] Create shared components (FeatureCard, PricingCard, etc.)
 
 ### Phase 3: Secondary Pages (Week 3)
+
 - [ ] Build AboutPage component
 - [ ] Build ResourcesPage component
 - [ ] Build ContactPage component
 - [ ] Implement contact form functionality
 
 ### Phase 4: Polish & Optimization (Week 4)
+
 - [ ] Add micro-interactions and hover effects
 - [ ] Optimize images and video
 - [ ] Implement lazy loading
@@ -901,6 +962,7 @@ const PricingPage = lazy(() => import('./components/landing/PricingPage'));
 - [ ] SEO meta tags
 
 ### Phase 5: Testing & Launch
+
 - [ ] Cross-browser testing
 - [ ] Mobile device testing
 - [ ] Fix bugs and issues
@@ -912,18 +974,21 @@ const PricingPage = lazy(() => import('./components/landing/PricingPage'));
 ## 12. Success Metrics
 
 ### User Engagement
+
 - Average time on landing pages
 - Carousel page progression rate
 - CTA click-through rates
 - Video play rate
 
 ### Conversion Metrics
+
 - Free trial signup rate
 - Pricing page visit → signup conversion
 - Contact form submissions
 - Login rate from landing pages
 
 ### Performance Metrics
+
 - Page load time < 2 seconds
 - Lighthouse score > 90
 - Core Web Vitals pass
@@ -944,6 +1009,7 @@ const PricingPage = lazy(() => import('./components/landing/PricingPage'));
 ## Appendix: Component Props Examples
 
 ### FeatureCard Props
+
 ```typescript
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -955,6 +1021,7 @@ interface FeatureCardProps {
 ```
 
 ### PricingCard Props
+
 ```typescript
 interface PricingCardProps {
   name: string;
@@ -969,6 +1036,7 @@ interface PricingCardProps {
 ```
 
 ### CTAButton Props
+
 ```typescript
 interface CTAButtonProps {
   children: React.ReactNode;

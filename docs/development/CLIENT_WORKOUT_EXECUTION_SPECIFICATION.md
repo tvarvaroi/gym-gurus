@@ -9,18 +9,21 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ## 1. Core Design Principles
 
 ### Distraction-Free Experience
+
 - **No navigation bar** during active workout
 - **No pop-ups or interruptions**
 - **Full-screen focus mode** option
 - **Minimal UI clutter** - only essential information visible
 
 ### Large, Touch-Friendly Elements
+
 - **Minimum tap target size**: 44x44px (Apple HIG standard)
 - **Large, readable text** for reps/sets/weight
 - **High contrast** for easy reading in gym lighting
 - **Sweat-proof interactions** - large buttons with spacing
 
 ### Mobile-First, One-Handed Operation
+
 - **Primary actions within thumb reach**
 - **Swipe gestures** for common actions
 - **One action per screen** principle
@@ -33,6 +36,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ### A. Exercise Display & Navigation
 
 #### Exercise Card Layout
+
 ```
 ┌─────────────────────────────────────┐
 │ [← Back] Exercise 1 of 5    [Menu] │
@@ -54,6 +58,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ```
 
 **Key Elements:**
+
 - Exercise name (large, bold)
 - Muscle group + exercise type tags
 - Thumbnail/GIF demonstration
@@ -64,6 +69,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ### B. Set Logging Interface
 
 #### Active Set Tracking
+
 ```
 ┌─────────────────────────────────────┐
 │         SET TRACKING                │
@@ -90,6 +96,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ```
 
 **Key Features:**
+
 - **Auto-fill from previous set** (reduce taps by 60%)
 - **Large +/- buttons** for weight/reps adjustment
 - **Visual set completion** (checkmark)
@@ -100,6 +107,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ### C. Rest Timer
 
 #### Timer Design (Based on Hevy, JEFIT, Setgraph)
+
 ```
 ┌─────────────────────────────────────┐
 │     🎯 REST PERIOD                  │
@@ -122,6 +130,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ```
 
 **Timer Features:**
+
 - **Automatic start** after set completion
 - **Visual countdown** with progress bar
 - **Audio/haptic alerts** at intervals (30s, 10s, done)
@@ -134,6 +143,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ### D. Workout Summary View
 
 #### Progress Overview (Swipe Up Anytime)
+
 ```
 ┌─────────────────────────────────────┐
 │    WORKOUT PROGRESS                 │
@@ -164,6 +174,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ### A. Motivation & Gamification
 
 #### Achievement Celebrations (Based on Nike Training Club, Strava)
+
 - **Instant feedback** after each set completion
 - **Milestone badges**:
   - First workout completed
@@ -175,6 +186,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 - **Social sharing** options for achievements
 
 #### Progress Indicators
+
 - **Real-time stats** during workout
 - **PR alerts** when lifting more than previous best
 - **Volume tracking** (total weight × reps)
@@ -184,12 +196,14 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ### B. Smart Features
 
 #### Intelligent Suggestions
+
 - **Weight recommendations** based on progression
 - **Rest time optimization** based on exercise type
 - **Form tips** for each exercise
 - **Warm-up set suggestions**
 
 #### Data Visualization
+
 - **Mini charts** showing progression over time
 - **Strength curve** visualization
 - **Volume trends** per muscle group
@@ -197,6 +211,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ### C. Accessibility Features
 
 #### Multi-Modal Feedback
+
 - **Voice announcements** for rest timer completion
 - **Haptic feedback** on set completion
 - **Audio cues** for form reminders
@@ -208,6 +223,7 @@ Based on analysis of leading fitness apps (Strong, Hevy, JEFIT) and UX best prac
 ## 4. User Flow
 
 ### Starting a Workout
+
 ```
 Client Dashboard
     ↓
@@ -223,6 +239,7 @@ Exercise Execution Screen
 ```
 
 ### During Exercise
+
 ```
 Exercise Display
     ↓
@@ -242,6 +259,7 @@ Repeat for all sets
 ```
 
 ### Completing Workout
+
 ```
 Final set completed
     ↓
@@ -262,6 +280,7 @@ Update progress tracking & achievements
 ## 5. Technical Implementation Recommendations
 
 ### State Management
+
 ```typescript
 interface WorkoutSession {
   workoutId: string;
@@ -291,12 +310,14 @@ interface SetLog {
 ```
 
 ### Local Storage & Sync
+
 - **Save progress locally** (IndexedDB/localStorage)
 - **Sync to server** periodically (every 30s or on set completion)
 - **Offline-first** approach
 - **Conflict resolution** for interrupted workouts
 
 ### Performance
+
 - **Lazy load** exercise videos/images
 - **Prefetch** next exercise data
 - **Minimize re-renders** during active workout
@@ -306,22 +327,23 @@ interface SetLog {
 
 ## 6. Key Differences: Client vs Trainer View
 
-| Feature | Client (Execution) | Trainer (Builder) |
-|---------|-------------------|-------------------|
-| **Primary Goal** | Log and complete workout | Create/edit workout plan |
-| **Exercise Info** | Demonstration, previous data | Exercise selection, parameters |
-| **Interaction** | Simple logging (weight, reps) | Complex editing (add/remove/reorder) |
-| **Timer** | Automatic rest timer | Not needed |
-| **Progress** | Real-time stats, motivation | Preview/planning |
-| **Navigation** | Linear flow (exercise by exercise) | Free editing |
-| **UI Priority** | Large, touch-friendly, minimal | Dense information, controls |
-| **Offline Support** | Essential | Nice to have |
+| Feature             | Client (Execution)                 | Trainer (Builder)                    |
+| ------------------- | ---------------------------------- | ------------------------------------ |
+| **Primary Goal**    | Log and complete workout           | Create/edit workout plan             |
+| **Exercise Info**   | Demonstration, previous data       | Exercise selection, parameters       |
+| **Interaction**     | Simple logging (weight, reps)      | Complex editing (add/remove/reorder) |
+| **Timer**           | Automatic rest timer               | Not needed                           |
+| **Progress**        | Real-time stats, motivation        | Preview/planning                     |
+| **Navigation**      | Linear flow (exercise by exercise) | Free editing                         |
+| **UI Priority**     | Large, touch-friendly, minimal     | Dense information, controls          |
+| **Offline Support** | Essential                          | Nice to have                         |
 
 ---
 
 ## 7. Competitive Analysis Summary
 
 ### Strong App
+
 - ✅ Clean, minimal interface
 - ✅ Reliable set logging
 - ✅ Automatic rest timer
@@ -329,6 +351,7 @@ interface SetLog {
 - **Key Takeaway**: "Just works" - prioritize reliability over features
 
 ### Hevy
+
 - ✅ Social features for motivation
 - ✅ Free tier with core features
 - ✅ 350+ exercise demonstrations
@@ -336,6 +359,7 @@ interface SetLog {
 - **Key Takeaway**: Social motivation is powerful
 
 ### JEFIT
+
 - ✅ 1,400+ exercises with HD videos
 - ✅ Web interface available
 - ✅ Advanced analytics
@@ -347,6 +371,7 @@ interface SetLog {
 ## 8. Implementation Priority
 
 ### Phase 1: MVP (Immediate)
+
 1. ✅ Exercise display with name, sets, reps, weight
 2. ✅ Simple set logging interface
 3. ✅ Basic rest timer (90s default)
@@ -354,6 +379,7 @@ interface SetLog {
 5. ✅ Workout completion screen
 
 ### Phase 2: Enhanced UX (Next Sprint)
+
 1. Auto-fill from previous workout
 2. Exercise-specific rest times
 3. Previous workout comparison
@@ -361,6 +387,7 @@ interface SetLog {
 5. Workout summary statistics
 
 ### Phase 3: Gamification (Future)
+
 1. Achievement badges
 2. Celebration animations
 3. Personal record tracking
@@ -372,12 +399,14 @@ interface SetLog {
 ## Sources & References
 
 ### App Reviews & Comparisons
-- [Best Strong App Alternatives (2025)](https://setgraph.app/articles/best-strong-app-alternatives-(2025))
+
+- [Best Strong App Alternatives (2025)](<https://setgraph.app/articles/best-strong-app-alternatives-(2025)>)
 - [Hevy Workout App Review 2024](https://www.hotelgyms.com/blog/hevy-workout-app-review-the-up-and-comer-taking-the-fitness-world-by-storm)
 - [Best Weightlifting Apps of 2025](https://just12reps.com/best-weightlifting-apps-of-2025-compare-strong-fitbod-hevy-jefit-just12reps/)
 - [Strong vs Hevy Comparison](https://www.saashub.com/compare-strong-vs-hevy)
 
 ### UX/UI Best Practices
+
 - [Fitness App UI Design: Key Principles](https://stormotion.io/blog/fitness-app-ux/)
 - [How to Design a Fitness App](https://www.zfort.com/blog/How-to-Design-a-Fitness-App-UX-UI-Best-Practices-for-Engagement-and-Retention)
 - [UI/UX Design Principles for Fitness Apps](https://easternpeak.com/blog/fitness-app-design-best-practices/)
@@ -385,15 +414,18 @@ interface SetLog {
 - [Best UX/UI Design Practices For Fitness Apps In 2025](https://dataconomy.com/2025/11/11/best-ux-ui-practices-for-fitness-apps-retaining-and-re-engaging-users/)
 
 ### Design Patterns
+
 - [Designing a lightweight workout log](https://georgewang89.medium.com/designing-a-lightweight-workout-log-bd430039762f)
 - [Apple HIG - Workouts Pattern](https://developer.apple.com/design/human-interface-guidelines/patterns/workouts/)
 
 ### Rest Timer Features
+
 - [JEFIT Product Updates - Revamped Workout Tab](https://www.jefit.com/wp/jefit-news-product-updates/upcoming-enhancements-revamped-workout-tab-and-improved-exercise-screens/)
 - [Hevy Workout Rest Timer](https://www.hevyapp.com/features/workout-rest-timer/)
 - [Setgraph Rest Timer Guide](https://setgraph.app/articles/get-the-most-out-of-setgraph-s-rest-timer)
 
 ### Gamification & Motivation
+
 - [Gamification For Fitness Apps](https://nudgenow.com/blogs/gamify-your-fitness-apps)
 - [Gamified Fitness Apps in 2024](https://hitberrygames.medium.com/gamified-fitness-apps-in-2023-the-trend-you-cannot-miss-b1640232e67a)
 - [Gamification in Health and Fitness Apps](https://www.plotline.so/blog/gamification-in-health-and-fitness-apps)
@@ -403,6 +435,7 @@ interface SetLog {
 ---
 
 ## Key Statistics
+
 - **40% reduction in app abandonment** when workout logging requires fewer taps
 - **50% increase in retention** when users can start first workout within 60 seconds
 - **75% of users stay motivated** by gamified fitness apps
@@ -412,6 +445,7 @@ interface SetLog {
 ---
 
 ## Next Steps
+
 1. Review this specification with stakeholders
 2. Create wireframes/mockups for the execution interface
 3. Implement Phase 1 MVP features

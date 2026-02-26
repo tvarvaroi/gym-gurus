@@ -22,12 +22,14 @@ I've analyzed 7 top fitness platforms (Trainerize, TrueCoach, MyFitnessPal, Futu
 ## Key Design Decisions
 
 ### Navigation System
+
 - **Fixed Header**: Glass morphism, always visible
 - **Carousel**: Horizontal slides with smooth transitions (Framer Motion)
 - **Background**: Video stays fixed, only content slides
 - **Indicators**: Dot navigation showing current page
 
 ### Visual Style (Matching Login Page)
+
 - **Colors**: Gold (#c9a855) for premium, Teal (#0d9488) for accents
 - **Typography**: Large headlines (64px), clean sans-serif
 - **Effects**: Glass morphism cards, gradient buttons, subtle animations
@@ -40,6 +42,7 @@ I've analyzed 7 top fitness platforms (Trainerize, TrueCoach, MyFitnessPal, Futu
 ### What Top Platforms Do
 
 **Common Pages (7/7 platforms have):**
+
 - Home with strong value prop
 - Features page with 6-10 core capabilities
 - Pricing with 2-3 tiers
@@ -47,12 +50,14 @@ I've analyzed 7 top fitness platforms (Trainerize, TrueCoach, MyFitnessPal, Futu
 - Resources/blog section
 
 **Key Messaging Themes:**
+
 1. ⏱️ "Save 10+ hours per week" (time efficiency)
 2. ♾️ "Unlimited clients" (no caps)
 3. 🚀 "Scale your business" (growth potential)
 4. 📱 "All-in-one solution" (stop juggling apps)
 
 **Trust Builders:**
+
 - 30-day free trial
 - No credit card required
 - Money-back guarantee
@@ -94,6 +99,7 @@ I've analyzed 7 top fitness platforms (Trainerize, TrueCoach, MyFitnessPal, Futu
 ```
 
 **Premium Elements:**
+
 - Animated gradient orbs in background
 - Particle effects on mouse movement
 - Logo with subtle glow animation
@@ -107,26 +113,30 @@ I've analyzed 7 top fitness platforms (Trainerize, TrueCoach, MyFitnessPal, Futu
 ### 3-Tier Model (Industry Standard)
 
 **Starter** - $49/month
+
 - 50 clients
 - Core features
 - Email support
-- *Perfect for new trainers*
+- _Perfect for new trainers_
 
 **Professional** - $99/month [MOST POPULAR]
+
 - **Unlimited clients**
 - All features
 - Priority support
 - Custom branding
-- *For growing businesses*
+- _For growing businesses_
 
 **Enterprise** - Custom pricing
+
 - Everything in Pro
 - Dedicated account manager
 - White-label options
 - API access
-- *For established businesses*
+- _For established businesses_
 
 **Key Differentiators:**
+
 - ✅ 30-day free trial (all plans)
 - ✅ No credit card required
 - ✅ Unlimited clients (Pro+)
@@ -177,6 +187,7 @@ I've analyzed 7 top fitness platforms (Trainerize, TrueCoach, MyFitnessPal, Futu
    - Communication history
 
 **Additional Features:**
+
 - Payment processing
 - Mobile apps (iOS & Android)
 - Automated workflows
@@ -190,12 +201,14 @@ I've analyzed 7 top fitness platforms (Trainerize, TrueCoach, MyFitnessPal, Futu
 ### Carousel Approach: Framer Motion
 
 **Why Framer Motion?**
+
 - Smooth, performant animations
 - Easy gesture controls (swipe)
 - Great developer experience
 - Supports complex transitions
 
 **Alternative: CSS Scroll Snap**
+
 - Native browser feature
 - Better performance
 - Simpler implementation
@@ -225,15 +238,18 @@ LandingPage/
 ### Copywriting Framework
 
 **Headlines Formula:**
+
 - Action Verb + Benefit + Result
 - Example: "Transform Your Training Business"
 - Alt: "Build. Scale. Succeed."
 
 **Feature Descriptions:**
+
 - What it does → Why it matters → Client benefit
 - Example: "Track every detail → Know your clients → Better results"
 
 **CTAs:**
+
 - Primary: "Start Free Trial" (action-oriented)
 - Secondary: "Watch Demo" (low commitment)
 - Avoid: "Learn More" (too generic)
@@ -243,12 +259,14 @@ LandingPage/
 ## Performance Targets
 
 ### Core Web Vitals
+
 - ✅ Page load < 2 seconds
 - ✅ Lighthouse score > 90
 - ✅ First Contentful Paint < 1.5s
 - ✅ Time to Interactive < 3s
 
 ### Optimization Strategies
+
 1. Compress background video to < 5MB
 2. Lazy load below-fold images
 3. Code split page components
@@ -262,22 +280,26 @@ LandingPage/
 ### Phased Approach (4 Weeks)
 
 **Week 1: Foundation**
+
 - Set up routing & navigation
 - Build carousel container
 - Create VideoBackground component
 - Design system & shared components
 
 **Week 2: Core Pages**
+
 - Hero/Home page (most important)
 - Features page
 - Pricing page
 
 **Week 3: Secondary Pages**
+
 - About page
 - Resources page
 - Contact page with form
 
 **Week 4: Polish**
+
 - Animations & micro-interactions
 - Responsive design
 - Performance optimization
@@ -288,6 +310,7 @@ LandingPage/
 ## Success Metrics
 
 ### Track These KPIs
+
 1. **Engagement**: Time on page, page progression
 2. **Conversion**: Free trial signups, contact form submissions
 3. **Performance**: Load time, Core Web Vitals
@@ -400,12 +423,14 @@ Based on market analysis, GymGurus should highlight:
 4. Continuously optimize based on data
 
 **Focus on Conversion**
+
 - Hero page is 80% of your conversion
 - Make the CTA impossible to miss
 - Remove friction from signup flow
 - Test, measure, improve
 
 **Maintain Premium Feel**
+
 - Every detail matters
 - Animations should feel smooth (60fps)
 - Copy should be confident, not salesy

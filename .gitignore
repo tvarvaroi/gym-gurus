@@ -23,3 +23,24 @@ full-app-browser-test.cjs
 
 # Local Claude settings
 .claude/settings.local.json
+# Claude Code
+.claude/settings.local.json
+.claude/agent-memory-local/
+CLAUDE.local.md
+
+# Sensitive files
+cookies.txt
+*.env
+.env.*
+
+# Replit (legacy)
+.replit
+replit.nix
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cleanup script
+cleanup.ps1
+cleanup.sh

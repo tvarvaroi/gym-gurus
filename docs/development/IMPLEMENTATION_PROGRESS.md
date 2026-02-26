@@ -5,24 +5,25 @@
 ### **Quick Wins (15 minutes)**
 
 #### 1. ✅ Fixed Duplicate Exercise Prevention
+
 **File:** `client/src/pages/WorkoutBuilder.tsx` (Lines 129-141)
 
 **What Changed:**
+
 - Added duplicate detection before adding exercises to workouts
 - Shows user-friendly error message if exercise already exists
 - Prevents data integrity issues
 
 **Code Added:**
+
 ```typescript
-const isDuplicate = workout?.exercises?.some(
-  (ex: any) => ex.exerciseId === selectedExercise
-);
+const isDuplicate = workout?.exercises?.some((ex: any) => ex.exerciseId === selectedExercise);
 
 if (isDuplicate) {
   toast({
-    title: "Exercise Already Added",
+    title: 'Exercise Already Added',
     description: `${exercise.name} is already in this workout...`,
-    variant: "destructive",
+    variant: 'destructive',
   });
   return;
 }
@@ -33,9 +34,11 @@ if (isDuplicate) {
 ---
 
 #### 2. ✅ Removed Assignment from Client Details
+
 **File:** `client/src/pages/ClientDetailsPage.tsx`
 
 **What Changed:**
+
 - Removed `assignWorkoutMutation` (lines 157-173)
 - Updated "Assign Workout" button to navigate to Schedule page
 - Removed entire workout assignment interface section (883-950)
@@ -48,9 +51,11 @@ if (isDuplicate) {
 ### **Database Migrations (Complete)**
 
 #### 1. ✅ Migration 001: Workout Scheduling Fields
+
 **File:** `server/migrations/001_add_workout_scheduling.sql`
 
 **Fields Added to `workout_assignments`:**
+
 - `scheduled_time` (TEXT) - HH:MM format
 - `timezone` (TEXT) - IANA timezone
 - `duration_minutes` (INTEGER)
@@ -63,19 +68,23 @@ if (isDuplicate) {
 - `notifications_sent` (JSONB)
 
 **Indexes Added:**
+
 - `idx_workout_assignments_scheduled_datetime`
 - `idx_workout_assignments_status`
 - `idx_workout_assignments_client_status`
 
 **Constraints:**
+
 - Status must be one of: scheduled, in_progress, completed, cancelled, missed
 
 ---
 
 #### 2. ✅ Migration 002: Exercise Type System
+
 **File:** `server/migrations/002_exercise_type_system.sql`
 
 **Fields Added to `exercises`:**
+
 - `exercise_type` (TEXT) - weighted_reps/bodyweight_reps/timed_hold/etc.
 - `default_sets` (INTEGER)
 - `default_reps` (TEXT)
@@ -86,6 +95,7 @@ if (isDuplicate) {
 - `alternative_exercises` (TEXT[])
 
 **Exercise Types Supported:**
+
 1. `weighted_reps` - Standard weighted (bench press, squats)
 2. `bodyweight_reps` - Bodyweight (push-ups, pull-ups)
 3. `timed_hold` - Isometric (plank, wall sit)
@@ -99,12 +109,15 @@ if (isDuplicate) {
 ---
 
 #### 3. ✅ Migration 003: Per-Set Weights
+
 **File:** `server/migrations/003_per_set_weights.sql`
 
 **Field Added to `workout_exercises`:**
+
 - `sets_configuration` (JSONB) - Array of set configurations
 
 **New Fields for Advanced Features:**
+
 - `notes` (TEXT) - Exercise-specific notes
 - `tempo` (TEXT) - Tempo prescription (e.g., "3-1-1-0")
 - `group_id` (TEXT) - For supersets/circuits
@@ -112,6 +125,7 @@ if (isDuplicate) {
 
 **Backfill Logic:**
 Converts old format:
+
 ```
 sets: 3
 reps: "10"
@@ -119,11 +133,12 @@ weight: "135"
 ```
 
 To new format:
+
 ```json
 [
-  {"setNumber": 1, "reps": 10, "weight": 135, "completed": false},
-  {"setNumber": 2, "reps": 10, "weight": 135, "completed": false},
-  {"setNumber": 3, "reps": 10, "weight": 135, "completed": false}
+  { "setNumber": 1, "reps": 10, "weight": 135, "completed": false },
+  { "setNumber": 2, "reps": 10, "weight": 135, "completed": false },
+  { "setNumber": 3, "reps": 10, "weight": 135, "completed": false }
 ]
 ```
 
@@ -132,15 +147,18 @@ To new format:
 ---
 
 ### **Migration Runner**
+
 **File:** `server/runMigrations.ts`
 
 Simple script to run all migrations in order:
+
 ```bash
 npx tsx server/runMigrations.ts
 ```
 
 Features:
-- Runs migrations in alphabetical order (001_, 002_, 003_)
+
+- Runs migrations in alphabetical order (001*, 002*, 003\_)
 - Shows progress for each migration
 - Error handling with rollback guidance
 
@@ -149,9 +167,11 @@ Features:
 ## 📋 Next Steps (Pending)
 
 ### **Phase 2: Schema Types Update**
+
 **File:** `shared/schema.ts`
 
 **What Needs Updating:**
+
 1. Add new fields to `workoutAssignments` table definition
 2. Add new fields to `exercises` table definition
 3. Update `workoutExercises` table with `setsConfiguration` type
@@ -164,9 +184,11 @@ Features:
 ---
 
 ### **Phase 3: Backend API Enhancement**
+
 **File:** `server/routes.ts`
 
 **What Needs Updating:**
+
 1. Update `POST /api/workout-assignments` to require date/time
 2. Add conflict detection helper function
 3. Create new `POST /api/schedule/assign-workout` endpoint
@@ -177,9 +199,11 @@ Features:
 ---
 
 ### **Phase 4: Schedule Modal Component**
+
 **File:** `client/src/components/ScheduleWorkoutModal.tsx` (NEW)
 
 **What Needs Creating:**
+
 1. Dialog component with date/time pickers
 2. Client selector dropdown
 3. Workout template selector
@@ -192,9 +216,11 @@ Features:
 ---
 
 ### **Phase 5: Schedule Page Integration**
+
 **File:** `client/src/pages/SchedulePage.tsx`
 
 **What Needs Updating:**
+
 1. Add "Schedule Workout" button to header
 2. Integrate ScheduleWorkoutModal
 3. Handle click events from calendar
@@ -207,6 +233,7 @@ Features:
 ## 🎯 Summary
 
 ### **Completed Today:**
+
 - ✅ 2 Quick wins (duplicate prevention + removed wrong assignment flow)
 - ✅ 3 Database migrations (scheduling + exercise types + per-set weights)
 - ✅ Migration runner script
@@ -216,6 +243,7 @@ Features:
 ### **Time Spent:** ~2 hours
 
 ### **Remaining Work:** ~4-6 hours
+
 1. Schema types update (30 min)
 2. Backend API enhancement (1-2 hours)
 3. Schedule modal component (2-3 hours)
@@ -226,6 +254,7 @@ Features:
 ## 🚀 How to Continue
 
 ### **Option 1: Run Migrations (Staging First!)**
+
 ```bash
 # IMPORTANT: Test on staging first!
 # IMPORTANT: Backup production database before running!
@@ -234,14 +263,18 @@ npx tsx server/runMigrations.ts
 ```
 
 ### **Option 2: Continue Implementation**
+
 Next steps in order:
+
 1. Update `shared/schema.ts` types
 2. Enhance backend API endpoints
 3. Create ScheduleWorkoutModal component
 4. Integrate into SchedulePage
 
 ### **Option 3: Test Current Changes**
+
 The quick wins are already functional:
+
 1. Try adding duplicate exercise in WorkoutBuilder (should show error)
 2. Visit Client Details page (assign button now goes to Schedule)
 
@@ -267,6 +300,7 @@ Before running migrations in production:
 If migrations cause issues:
 
 ### **Rollback Migration 003 (Per-Set Weights):**
+
 ```sql
 -- Restore old columns as primary
 ALTER TABLE workout_exercises
@@ -283,6 +317,7 @@ ALTER TABLE workout_exercises
 ```
 
 ### **Rollback Migration 002 (Exercise Types):**
+
 ```sql
 ALTER TABLE exercises
   DROP COLUMN exercise_type,
@@ -296,6 +331,7 @@ ALTER TABLE exercises
 ```
 
 ### **Rollback Migration 001 (Scheduling):**
+
 ```sql
 ALTER TABLE workout_assignments
   DROP COLUMN scheduled_time,
@@ -315,12 +351,14 @@ ALTER TABLE workout_assignments
 ## 📝 Notes
 
 ### **Good News:**
+
 - Your schema already had `scheduledDate`, `dayOfWeek`, `weekNumber` fields!
 - Backend already auto-calculates week fields!
 - `WeeklyWorkoutView` already groups by `dayOfWeek`!
 - Migrations are additive (don't break existing data)
 
 ### **Design Decisions Made:**
+
 1. Keep old columns in migration 003 for safety (can drop later)
 2. Default all existing exercises to `weighted_reps` type
 3. Backfill empty sets_configuration with sensible defaults
@@ -328,6 +366,7 @@ ALTER TABLE workout_assignments
 5. Use JSONB for flexibility in set configurations
 
 ### **Future Enhancements (Not in This Phase):**
+
 - Notification system implementation
 - Timezone conversion utilities
 - Offline sync for client app

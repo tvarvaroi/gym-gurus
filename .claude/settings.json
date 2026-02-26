@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx drizzle-kit *)",
+      "Bash(npx playwright *)",
+      "Edit(server/**)",
+      "Edit(client/**)",
+      "Edit(shared/**)"
+    ],
+    "deny": ["Bash(rm -rf *)", "Bash(DROP *)"]
+  }
+}
