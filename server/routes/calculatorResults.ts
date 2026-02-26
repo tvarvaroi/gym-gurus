@@ -5,6 +5,12 @@ import type { Request, Response } from 'express';
 
 const router = Router();
 
+// PostgreSQL error code for "relation does not exist" — the calculator_results
+// table may not have been created yet if drizzle-kit push hasn't been run.
+function isTableMissing(error: unknown): boolean {
+  return (error as any)?.code === '42P01';
+}
+
 /**
  * @route   GET /api/calculator-results
  * @desc    Get all saved calculator results for the authenticated user
@@ -20,6 +26,9 @@ router.get('/calculator-results', isAuthenticated, async (req: any, res: Respons
     const results = await storage.getCalculatorResults(userId);
     res.json(results);
   } catch (error) {
+    if (isTableMissing(error)) {
+      return res.json([]);
+    }
     console.error('Error fetching calculator results:', error);
     res.status(500).json({ error: 'Failed to fetch calculator results' });
   }
@@ -42,6 +51,9 @@ router.get('/calculator-results/:type', isAuthenticated, async (req: any, res: R
     const results = await storage.getCalculatorResultsByType(userId, type);
     res.json(results);
   } catch (error) {
+    if (isTableMissing(error)) {
+      return res.json([]);
+    }
     console.error('Error fetching calculator results by type:', error);
     res.status(500).json({ error: 'Failed to fetch calculator results' });
   }
@@ -78,6 +90,11 @@ router.post('/calculator-results', isAuthenticated, async (req: any, res: Respon
 
     res.status(201).json(saved);
   } catch (error) {
+    if (isTableMissing(error)) {
+      return res.status(503).json({
+        error: 'Calculator results storage is not yet available. Please try again later.',
+      });
+    }
     console.error('Error creating calculator result:', error);
     res.status(500).json({ error: 'Failed to save calculator result' });
   }
@@ -111,6 +128,11 @@ router.patch('/calculator-results/:id', isAuthenticated, async (req: any, res: R
 
     res.json(updated);
   } catch (error) {
+    if (isTableMissing(error)) {
+      return res.status(503).json({
+        error: 'Calculator results storage is not yet available. Please try again later.',
+      });
+    }
     console.error('Error updating calculator result:', error);
     res.status(500).json({ error: 'Failed to update calculator result' });
   }
@@ -135,6 +157,11 @@ router.delete('/calculator-results/:id', isAuthenticated, async (req: any, res: 
     await storage.deleteCalculatorResult(id);
     res.status(204).send();
   } catch (error) {
+    if (isTableMissing(error)) {
+      return res.status(503).json({
+        error: 'Calculator results storage is not yet available. Please try again later.',
+      });
+    }
     console.error('Error deleting calculator result:', error);
     res.status(500).json({ error: 'Failed to delete calculator result' });
   }
