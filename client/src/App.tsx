@@ -404,6 +404,15 @@ function Router() {
             <Route path="/clients/:id" component={ClientDetailsPage} />
             <Route path="/clients" component={ClientsPage} />
             <Route path="/workouts" component={WorkoutsPage} />
+            <Route path="/workout-execution/:id">
+              {() => (
+                <Suspense fallback={<LoadingFallback />}>
+                  <PageTransition>
+                    <WorkoutExecution />
+                  </PageTransition>
+                </Suspense>
+              )}
+            </Route>
             <Route path="/workout-builder/:id" component={WorkoutPage} />
             <Route path="/exercises" component={ExercisesPage} />
             <Route path="/progress" component={ProgressPage} />

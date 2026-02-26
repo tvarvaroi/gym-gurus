@@ -958,6 +958,23 @@ export default function WorkoutBuilder() {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Start Workout button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: isSolo ? 0.5 : 0.6, duration: 0.5 }}
+          >
+            <Button
+              className="w-full gap-2"
+              size="lg"
+              onClick={() => setLocation(`/workout-execution/${workoutId}`)}
+              disabled={!workout?.exercises?.length}
+            >
+              <Play className="h-5 w-5" />
+              Start Workout
+            </Button>
+          </motion.div>
         </div>
       </div>
     </motion.div>

@@ -173,7 +173,17 @@ const TrainerWorkoutCard = memo(
                 onClick={() => (window.location.href = `/workout-builder/${workout.id}`)}
                 data-testid={`button-view-workout-${workout.id}`}
               >
-                Build Workout
+                <BookOpen className="h-3.5 w-3.5 mr-1.5" />
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 transition-all duration-300"
+                onClick={() => (window.location.href = `/workout-execution/${workout.id}`)}
+                data-testid={`button-start-workout-${workout.id}`}
+              >
+                <Play className="h-3.5 w-3.5 mr-1.5" />
+                Start
               </Button>
             </div>
           </CardContent>

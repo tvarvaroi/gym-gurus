@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { apiRequest } from '@/lib/queryClient';
+import { useUser } from '@/contexts/UserContext';
 import {
   ArrowLeft,
   Check,
@@ -82,6 +83,7 @@ export default function WorkoutExecution() {
   const params = useParams();
   const workoutId = params.id as string;
   const [, setLocationOriginal] = useLocation();
+  const { isClient } = useUser();
 
   // Custom navigation guard
   const setLocation = useCallback(
@@ -138,15 +140,18 @@ export default function WorkoutExecution() {
 
   // Note: beforeunload navigation guard is implemented further down (see ~line 215)
 
-  // Fetch workout assignment details
+  // Fetch workout details — different endpoint for clients (assignments) vs solo/trainer (workouts)
+  const fetchUrl = isClient
+    ? `/api/workout-assignments/${workoutId}`
+    : `/api/workouts/detail/${workoutId}`;
   const {
     data: workout,
     isLoading,
     error: workoutError,
   } = useQuery({
-    queryKey: [`/api/workout-assignments/${workoutId}`],
+    queryKey: [fetchUrl],
     queryFn: async () => {
-      const response = await fetch(`/api/workout-assignments/${workoutId}`, {
+      const response = await fetch(fetchUrl, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch workout');
@@ -349,13 +354,29 @@ export default function WorkoutExecution() {
     }
   };
 
-  // Save workout mutation
+  // Save workout mutation — different endpoint for clients vs solo/trainer
   const saveWorkoutMutation = useMutation({
     mutationFn: async () => {
       if (!session) return;
 
-      return apiRequest('PUT', `/api/workout-assignments/${workoutId}/complete`, {
+      if (isClient) {
+        return apiRequest('PUT', `/api/workout-assignments/${workoutId}/complete`, {
+          notes: 'Workout completed via execution interface',
+        });
+      }
+
+      // Solo/trainer: send exercise data for fatigue/recovery calculation
+      const durationMinutes = Math.round(
+        (Date.now() - new Date(session.startedAt).getTime()) / 60000
+      );
+      return apiRequest('PUT', `/api/solo/workouts/${workoutId}/complete-solo`, {
         notes: 'Workout completed via execution interface',
+        durationMinutes,
+        exercises: session.exercises.map((ex) => ({
+          exerciseName: ex.exerciseName,
+          muscleGroup: ex.muscleGroup,
+          sets: ex.sets.filter((s) => s.completed).map((s) => ({ weight: s.weight, reps: s.reps })),
+        })),
       });
     },
     onSuccess: () => {
@@ -364,6 +385,8 @@ export default function WorkoutExecution() {
         description: 'Great job completing your workout!',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/client/profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/recovery/fatigue'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/gamification/profile'] });
       setTimeout(() => {
         setLocation('/workouts');
       }, 2000);

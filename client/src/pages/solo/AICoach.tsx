@@ -105,6 +105,7 @@ export default function AICoach() {
   const [isTyping, setIsTyping] = useState(false);
   const [localRemaining, setLocalRemaining] = useState<number | null>(null);
   const [limitReached, setLimitReached] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useQuery({
@@ -209,7 +210,7 @@ export default function AICoach() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: content.trim(),
-          conversationId: messages.length > 1 ? 'solo-chat' : undefined,
+          conversationId: conversationId || undefined,
           context: {
             goals: fitnessProfile?.primaryGoal || 'general fitness',
             experience: fitnessProfile?.experienceLevel || 'intermediate',
@@ -221,6 +222,11 @@ export default function AICoach() {
       });
 
       const data = await response.json();
+
+      // Persist conversation ID for message history
+      if (data.conversationId && !data.conversationId.startsWith('temp-')) {
+        setConversationId(data.conversationId);
+      }
 
       if (response.status === 402) {
         // Usage limit reached

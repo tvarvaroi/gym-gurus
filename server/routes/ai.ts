@@ -19,6 +19,56 @@ import {
 
 const router = Router();
 
+// ---------- Rest Period Post-Processing ----------
+
+const HEAVY_COMPOUNDS = [
+  'bench press',
+  'squat',
+  'deadlift',
+  'overhead press',
+  'barbell row',
+  'back squat',
+  'front squat',
+  'military press',
+];
+const MEDIUM_COMPOUNDS = [
+  'incline press',
+  'incline bench',
+  'close-grip bench',
+  'dumbbell press',
+  'pull-up',
+  'chin-up',
+  'dip',
+  'leg press',
+  'hip thrust',
+  'romanian deadlift',
+  'barbell curl',
+  'pendlay row',
+  't-bar row',
+];
+
+function adjustRestPeriods(
+  workout: { exercises?: { name: string; rest: string }[] },
+  goal: string
+): void {
+  if (!workout?.exercises) return;
+  const g = goal?.toLowerCase().replace(/[\s_]+/g, '_') || '';
+
+  for (const exercise of workout.exercises) {
+    const name = exercise.name.toLowerCase();
+    const isHeavy = HEAVY_COMPOUNDS.some((c) => name.includes(c));
+    const isMedium = MEDIUM_COMPOUNDS.some((c) => name.includes(c));
+
+    if (g === 'strength' || g === 'build_strength') {
+      exercise.rest = isHeavy ? '180s' : isMedium ? '120s' : '75s';
+    } else if (g === 'hypertrophy' || g === 'build_muscle') {
+      exercise.rest = isHeavy ? '120s' : isMedium ? '90s' : '60s';
+    } else if (g === 'endurance' || g === 'fat_loss') {
+      exercise.rest = '45s';
+    }
+  }
+}
+
 // ---------- Helpers ----------
 
 function requireApiKey(res: Response): boolean {
@@ -329,6 +379,9 @@ router.post('/generate-workout', async (req: Request, res: Response) => {
       excludeExercises,
       inspiredBy,
     });
+
+    // Post-process rest periods based on exercise type and goal
+    adjustRestPeriods(workout, goal);
 
     // Estimate tokens from response size
     const tokensUsed = Math.ceil(JSON.stringify(workout).length / 4);

@@ -12,6 +12,8 @@ import {
   userMuscleFatigue,
   userMuscleVolume,
   workoutRecoveryLog,
+  workouts,
+  workoutExercises,
 } from '../../shared/schema';
 import { eq, and, desc, sql, gte, lte, inArray } from 'drizzle-orm';
 import { startOfWeek, endOfWeek, format, addDays } from 'date-fns';
@@ -577,6 +579,245 @@ router.patch('/sessions/:sessionId/complete', async (req: Request, res: Response
   } catch (error) {
     console.error('Error completing workout session:', error);
     res.status(500).json({ error: 'Failed to complete workout session' });
+  }
+});
+
+// ==================== Solo Workout Completion (with fatigue bridge) ====================
+
+// PUT /api/solo/workouts/:id/complete-solo - Complete a workout and update recovery/fatigue
+router.put('/workouts/:id/complete-solo', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { id: workoutId } = req.params;
+    const { notes, durationMinutes, exercises: clientExercises } = req.body;
+
+    const database = await getDb();
+
+    // Verify workout belongs to this user
+    const [workout] = await database
+      .select()
+      .from(workouts)
+      .where(and(eq(workouts.id, workoutId), eq(workouts.trainerId, userId)))
+      .limit(1);
+
+    if (!workout) {
+      return res.status(404).json({ error: 'Workout not found' });
+    }
+
+    const now = new Date();
+    const duration = durationMinutes || 30;
+
+    // Award XP and update gamification
+    let gamificationResult = null;
+    try {
+      const { awardWorkoutCompletionXp, updateStreak, updateWorkoutStats } =
+        await import('../services/gamification/xpService');
+
+      const totalSets = (clientExercises || []).reduce(
+        (sum: number, ex: any) => sum + (ex.sets?.length || 0),
+        0
+      );
+      const totalReps = (clientExercises || []).reduce(
+        (sum: number, ex: any) =>
+          sum + (ex.sets || []).reduce((s: number, set: any) => s + (set.reps || 0), 0),
+        0
+      );
+      const totalVolume = (clientExercises || []).reduce(
+        (sum: number, ex: any) =>
+          sum +
+          (ex.sets || []).reduce(
+            (s: number, set: any) => s + (set.weight || 0) * (set.reps || 0),
+            0
+          ),
+        0
+      );
+
+      const xpResult = await awardWorkoutCompletionXp(userId, duration, false);
+      const streakResult = await updateStreak(userId);
+      await updateWorkoutStats(userId, totalVolume, totalReps, totalSets, duration);
+
+      gamificationResult = {
+        xpAwarded: xpResult.xpAwarded,
+        newLevel: xpResult.newLevel,
+        leveledUp: xpResult.leveledUp,
+        streak: streakResult,
+      };
+
+      if (xpResult.leveledUp) {
+        const { notifyLevelUp } = await import('../services/notificationService');
+        const { getGenZRank } = await import('../services/gamification/xpService');
+        await notifyLevelUp(userId, xpResult.newLevel, getGenZRank(xpResult.newLevel));
+      }
+
+      if (streakResult.milestone) {
+        const { notifyStreakMilestone } = await import('../services/notificationService');
+        await notifyStreakMilestone(userId, streakResult.milestone, streakResult.streakXpAwarded);
+      }
+    } catch (gamificationError) {
+      console.warn('Gamification update failed (non-critical):', gamificationError);
+    }
+
+    // Update recovery fatigue system from exercise data sent by client
+    try {
+      if (clientExercises && clientExercises.length > 0) {
+        const RECOVERY_HOURS: Record<string, number> = {
+          chest: 48,
+          back: 48,
+          shoulders: 48,
+          biceps: 36,
+          triceps: 36,
+          forearms: 24,
+          quads: 72,
+          hamstrings: 72,
+          glutes: 72,
+          calves: 48,
+          abs: 24,
+          obliques: 24,
+          lower_back: 48,
+          traps: 48,
+          lats: 48,
+        };
+
+        // Build per-muscle fatigue aggregation from client-sent exercise data
+        const muscleData: Record<string, { sets: number; volumeKg: number; fatigue: number }> = {};
+
+        for (const ex of clientExercises) {
+          const muscleGroup = (ex.muscleGroup || 'general').toLowerCase().replace(/\s+/g, '_');
+          const completedSets = ex.sets || [];
+          const numSets = completedSets.length;
+          if (numSets === 0) continue;
+
+          const totalReps = completedSets.reduce((sum: number, s: any) => sum + (s.reps || 0), 0);
+          const totalVol = completedSets.reduce(
+            (sum: number, s: any) => sum + (s.weight || 0) * (s.reps || 0),
+            0
+          );
+          const avgReps = totalReps / Math.max(1, numSets);
+          const fatigue = Math.min(100, (1.0 * numSets * avgReps * 0.7) / 1.4);
+
+          if (!muscleData[muscleGroup]) {
+            muscleData[muscleGroup] = { sets: 0, volumeKg: 0, fatigue: 0 };
+          }
+          muscleData[muscleGroup].sets += numSets;
+          muscleData[muscleGroup].volumeKg += totalVol;
+          muscleData[muscleGroup].fatigue = Math.min(
+            100,
+            muscleData[muscleGroup].fatigue + fatigue
+          );
+        }
+
+        const musclesWorked = Object.entries(muscleData).map(([muscleGroup, data]) => ({
+          muscleGroup,
+          sets: data.sets,
+          volumeKg: Math.round(data.volumeKg * 100) / 100,
+          fatigueContribution: Math.round(data.fatigue * 100) / 100,
+        }));
+
+        // Update muscle fatigue records (upsert)
+        for (const mw of musclesWorked) {
+          const recoveryHours = RECOVERY_HOURS[mw.muscleGroup] || 48;
+          const estimatedRecovery = new Date(now.getTime() + recoveryHours * 60 * 60 * 1000);
+
+          const existing = await database
+            .select()
+            .from(userMuscleFatigue)
+            .where(
+              and(
+                eq(userMuscleFatigue.userId, userId),
+                eq(userMuscleFatigue.muscleGroup, mw.muscleGroup)
+              )
+            )
+            .limit(1);
+
+          if (existing.length > 0) {
+            await database
+              .update(userMuscleFatigue)
+              .set({
+                fatigueLevel: String(Math.min(100, mw.fatigueContribution)),
+                lastTrainedAt: now,
+                estimatedFullRecoveryAt: estimatedRecovery,
+                volumeLastSession: String(mw.volumeKg),
+                setsLastSession: mw.sets,
+                updatedAt: now,
+              })
+              .where(eq(userMuscleFatigue.id, existing[0].id));
+          } else {
+            await database.insert(userMuscleFatigue).values({
+              userId,
+              muscleGroup: mw.muscleGroup,
+              fatigueLevel: String(Math.min(100, mw.fatigueContribution)),
+              lastTrainedAt: now,
+              estimatedFullRecoveryAt: estimatedRecovery,
+              volumeLastSession: String(mw.volumeKg),
+              setsLastSession: mw.sets,
+              avgRecoveryHours: String(recoveryHours),
+            });
+          }
+        }
+
+        // Update muscle volume tracking (upsert)
+        for (const mw of musclesWorked) {
+          const existing = await database
+            .select()
+            .from(userMuscleVolume)
+            .where(
+              and(
+                eq(userMuscleVolume.userId, userId),
+                eq(userMuscleVolume.muscleGroup, mw.muscleGroup)
+              )
+            )
+            .limit(1);
+
+          if (existing.length > 0) {
+            await database
+              .update(userMuscleVolume)
+              .set({
+                volumeThisWeekKg: sql`${userMuscleVolume.volumeThisWeekKg} + ${mw.volumeKg}`,
+                setsThisWeek: sql`${userMuscleVolume.setsThisWeek} + ${mw.sets}`,
+                volumeThisMonthKg: sql`${userMuscleVolume.volumeThisMonthKg} + ${mw.volumeKg}`,
+                setsThisMonth: sql`${userMuscleVolume.setsThisMonth} + ${mw.sets}`,
+                totalVolumeKg: sql`${userMuscleVolume.totalVolumeKg} + ${mw.volumeKg}`,
+                totalSets: sql`${userMuscleVolume.totalSets} + ${mw.sets}`,
+                lastUpdated: now,
+              })
+              .where(eq(userMuscleVolume.id, existing[0].id));
+          } else {
+            await database.insert(userMuscleVolume).values({
+              userId,
+              muscleGroup: mw.muscleGroup,
+              volumeThisWeekKg: String(mw.volumeKg),
+              setsThisWeek: mw.sets,
+              volumeThisMonthKg: String(mw.volumeKg),
+              setsThisMonth: mw.sets,
+              totalVolumeKg: String(mw.volumeKg),
+              totalSets: mw.sets,
+            });
+          }
+        }
+
+        // Log recovery entry
+        await database.insert(workoutRecoveryLog).values({
+          userId,
+          workoutLogId: workoutId,
+          musclesWorked,
+          perceivedExertion: null,
+        });
+      }
+    } catch (recoveryError) {
+      console.warn('Recovery fatigue update failed (non-critical):', recoveryError);
+    }
+
+    res.json({
+      success: true,
+      gamification: gamificationResult,
+    });
+  } catch (error) {
+    console.error('Error completing solo workout:', error);
+    res.status(500).json({ error: 'Failed to complete workout' });
   }
 });
 
