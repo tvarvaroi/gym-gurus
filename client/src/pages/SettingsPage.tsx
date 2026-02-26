@@ -962,8 +962,8 @@ function DangerZoneTab() {
             <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
               <li>All your client data and workout plans will be inaccessible</li>
               <li>
-                Your subscription will not be automatically cancelled — cancel it first in the
-                Subscription tab
+                Your subscription will not be automatically cancelled — cancel it first in the Plan
+                tab
               </li>
               <li>Your personal information will be anonymised in our database</li>
               <li>This cannot be reversed</li>
