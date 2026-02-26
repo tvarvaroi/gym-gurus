@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -86,6 +87,7 @@ const mealsPerDayOptions = [3, 4, 5, 6];
 export default function NutritionPlanner() {
   const { toast } = useToast();
   const prefersReducedMotion = useReducedMotion();
+  const profile = useFitnessProfile();
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [mealPlan, setMealPlan] = useState<GeneratedMealPlan | null>(null);
@@ -100,6 +102,54 @@ export default function NutritionPlanner() {
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>(['None']);
   const [budget, setBudget] = useState('moderate');
   const [cookingSkill, setCookingSkill] = useState('basic');
+
+  // Derive defaults from user's fitness profile (TDEE via Mifflin-St Jeor)
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+
+    // Map profile goal → nutrition goal
+    const goalMap: Record<string, string> = {
+      lose_weight: 'cut',
+      build_muscle: 'bulk',
+      maintain_weight: 'maintain',
+      improve_fitness: 'maintain',
+    };
+    if (profile.primaryGoal && goalMap[profile.primaryGoal]) {
+      setNutritionGoal(goalMap[profile.primaryGoal]);
+    }
+
+    // Calculate TDEE from profile stats
+    if (profile.weightKg && profile.heightCm) {
+      const w = profile.weightKg;
+      const h = profile.heightCm;
+      const a = profile.age || 25;
+      const bmr =
+        profile.gender === 'female'
+          ? 10 * w + 6.25 * h - 5 * a - 161
+          : 10 * w + 6.25 * h - 5 * a + 5;
+
+      const activityMultipliers: Record<string, number> = {
+        sedentary: 1.2,
+        light: 1.375,
+        moderate: 1.55,
+        active: 1.725,
+        very_active: 1.9,
+        athlete: 2.1,
+      };
+      const multiplier = activityMultipliers[profile.activityLevel || ''] || 1.55;
+      const tdee = Math.round(bmr * multiplier);
+      setTargetCalories(String(tdee));
+
+      // Protein: 2.0g per kg body weight
+      setProteinTarget(String(Math.round(w * 2.0)));
+    } else if (profile.dailyCalorieTarget) {
+      setTargetCalories(String(Math.round(profile.dailyCalorieTarget)));
+    }
+
+    if (profile.proteinTargetGrams) {
+      setProteinTarget(String(Math.round(profile.proteinTargetGrams)));
+    }
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleDietary(value: string) {
     if (value === 'None') {
