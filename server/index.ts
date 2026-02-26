@@ -120,9 +120,9 @@ app.use(
     session({
       store: new PgSession({
         pool: sessionPool,
-        tableName: 'session', // Default table name
-        createTableIfMissing: true, // Auto-create on first run
-        pruneSessionInterval: false, // Disable automatic cleanup to avoid index conflicts
+        tableName: 'session',
+        createTableIfMissing: false, // We create the table ourselves in startup (see below)
+        pruneSessionInterval: 60, // Prune expired sessions every 60 seconds
       }),
       secret: env.SESSION_SECRET || process.env.SESSION_SECRET || 'fallback-secret-for-dev',
       resave: false,
@@ -183,6 +183,27 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Ensure the session table and index exist before any requests are handled.
+  // We do this ourselves (instead of createTableIfMissing) because connect-pg-simple
+  // uses CREATE INDEX without IF NOT EXISTS, which throws error 42P07 if the index
+  // already exists — crashing every request with "Internal Server Error".
+  try {
+    await sessionPool.query(`
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid" varchar NOT NULL COLLATE "default",
+        "sess" json NOT NULL,
+        "expire" timestamp(6) NOT NULL,
+        PRIMARY KEY ("sid")
+      )
+    `);
+    await sessionPool.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`
+    );
+    log('Session table ready');
+  } catch (err) {
+    console.error('[Session] Failed to ensure session table exists:', err);
+  }
+
   const server = await registerRoutes(app);
 
   // Global error handler — structured error responses, DB error handling, env-aware

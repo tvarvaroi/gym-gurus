@@ -23,7 +23,7 @@ buildCommand = "npm run build"
 [deploy]
 # NODE_ENV must be set to "production" in Railway environment variables.
 # Note: db:push removed from start command — run manually if schema changes are needed.
-startCommand = "NODE_TLS_REJECT_UNAUTHORIZED=0 npm run start:prod"
+startCommand = "npm run start:prod"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"

@@ -5,7 +5,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Railway Postgres requires SSL. Force sslmode=require if not already in the URL.
-// NODE_TLS_REJECT_UNAUTHORIZED=0 in the start command handles cert verification.
+// The runtime db pools use ssl: { rejectUnauthorized: false } individually.
 const rawUrl = process.env.DATABASE_URL;
 const dbUrl =
   rawUrl.includes('sslmode') || rawUrl.includes('ssl=')
