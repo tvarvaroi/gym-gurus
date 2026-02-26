@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Target, Scale, Ruler, User } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
 import { fadeInUp } from '@/lib/premiumAnimations';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
 
@@ -48,8 +49,15 @@ function getBMIWeightRange(heightCm: number): { min: number; max: number } {
 }
 
 export default function PremiumIdealWeightCalc() {
+  const profile = useFitnessProfile();
   const [gender, setGender] = useState<Gender>('male');
   const [height, setHeight] = useState(170);
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.heightCm) setHeight(Math.round(profile.heightCm));
+    if (profile.gender) setGender(profile.gender);
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const results = useMemo(() => {
     if (height < 137) return null;

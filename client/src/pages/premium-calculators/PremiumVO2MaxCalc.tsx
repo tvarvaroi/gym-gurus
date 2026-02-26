@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Timer, TrendingUp } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
 import { fadeInUp } from '@/lib/premiumAnimations';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type TestMethod = 'cooper' | 'rockport' | 'beep' | 'manual';
 
@@ -146,6 +147,7 @@ function getVO2Category(
 }
 
 export default function PremiumVO2MaxCalc() {
+  const profile = useFitnessProfile();
   const [method, setMethod] = useState<TestMethod>('cooper');
   const [age, setAge] = useState(30);
   const [gender, setGender] = useState<'male' | 'female'>('male');
@@ -156,6 +158,13 @@ export default function PremiumVO2MaxCalc() {
   const [beepLevel, setBeepLevel] = useState(8);
   const [beepShuttles, setBeepShuttles] = useState(4);
   const [manualVO2, setManualVO2] = useState(45);
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+    if (profile.gender) setGender(profile.gender);
+    if (profile.age) setAge(profile.age);
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const result = useMemo((): VO2MaxResult => {
     let vo2max: number;

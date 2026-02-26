@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, Clock, Scale, Dumbbell } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
 import { fadeInUp } from '@/lib/premiumAnimations';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 const EXERCISE_CATEGORIES = {
   strength: {
@@ -62,6 +63,7 @@ const EXERCISE_CATEGORIES = {
 type Unit = 'kg' | 'lbs';
 
 export default function PremiumCaloriesBurnedCalc() {
+  const profile = useFitnessProfile();
   const [weight, setWeight] = useState(70);
   const [unit, setUnit] = useState<Unit>('kg');
   const [duration, setDuration] = useState(60);
@@ -69,6 +71,11 @@ export default function PremiumCaloriesBurnedCalc() {
   const [selectedExercise, setSelectedExercise] = useState(
     EXERCISE_CATEGORIES.strength.exercises[0]
   );
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const weightKg = unit === 'lbs' ? weight * 0.453592 : weight;
 

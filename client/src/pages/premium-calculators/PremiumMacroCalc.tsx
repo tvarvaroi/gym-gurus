@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Apple } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
 import { fadeInUp } from '@/lib/premiumAnimations';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -72,6 +73,7 @@ function calculateMacros(
 }
 
 export default function PremiumMacroCalc() {
+  const profile = useFitnessProfile();
   const [gender, setGender] = useState<Gender>('male');
   const [age, setAge] = useState(25);
   const [weight, setWeight] = useState(75);
@@ -79,6 +81,14 @@ export default function PremiumMacroCalc() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
   const [goal, setGoal] = useState<Goal>('maintain');
   const [dietType, setDietType] = useState<DietType>('balanced');
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+    if (profile.heightCm) setHeight(Math.round(profile.heightCm));
+    if (profile.gender) setGender(profile.gender);
+    if (profile.age) setAge(profile.age);
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const results = useMemo(
     () => calculateMacros(gender, weight, height, age, activityLevel, goal, dietType),

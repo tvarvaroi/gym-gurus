@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
 import { fadeInUp } from '@/lib/premiumAnimations';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
 
@@ -27,11 +28,18 @@ function calculateBodyFat(
 }
 
 export default function PremiumBodyFatCalc() {
+  const profile = useFitnessProfile();
   const [gender, setGender] = useState<Gender>('male');
   const [height, setHeight] = useState(175);
   const [waist, setWaist] = useState(85);
   const [neck, setNeck] = useState(38);
   const [hips, setHips] = useState(95);
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.heightCm) setHeight(Math.round(profile.heightCm));
+    if (profile.gender) setGender(profile.gender);
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const results = useMemo(() => {
     const bodyFat = calculateBodyFat(

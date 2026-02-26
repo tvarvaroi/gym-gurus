@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Droplets, Scale, Activity, ThermometerSun, Coffee, Beer } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
 import { fadeInUp } from '@/lib/premiumAnimations';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type WeightUnit = 'kg' | 'lbs';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'athlete';
@@ -25,12 +26,18 @@ const CLIMATE_FACTORS = {
 };
 
 export default function PremiumWaterIntakeCalc() {
+  const profile = useFitnessProfile();
   const [weight, setWeight] = useState(70);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('kg');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
   const [climate, setClimate] = useState<Climate>('moderate');
   const [caffeineServings, setCaffeineServings] = useState(2);
   const [alcoholServings, setAlcoholServings] = useState(0);
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const weightKg = weightUnit === 'lbs' ? weight * 0.453592 : weight;
 

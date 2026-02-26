@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Activity, Zap } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
 import { fadeInUp } from '@/lib/premiumAnimations';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type CalculationMethod = 'age' | 'karvonen' | 'manual';
 
@@ -85,11 +86,17 @@ function calculateZones(maxHR: number, restingHR: number, useKarvonen: boolean):
 }
 
 export default function PremiumHeartRateZonesCalc() {
+  const profile = useFitnessProfile();
   const [method, setMethod] = useState<CalculationMethod>('age');
   const [age, setAge] = useState(30);
   const [restingHR, setRestingHR] = useState(60);
   const [manualMaxHR, setManualMaxHR] = useState(190);
   const [formula, setFormula] = useState<'standard' | 'tanaka'>('tanaka');
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.age) setAge(profile.age);
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const maxHR = useMemo(() => {
     if (method === 'manual') {

@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Scale } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
 import { fadeInUp } from '@/lib/premiumAnimations';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 function calculateBMI(weight: number, height: number) {
   const heightM = height / 100;
@@ -33,8 +34,15 @@ function calculateBMI(weight: number, height: number) {
 }
 
 export default function PremiumBMICalc() {
+  const profile = useFitnessProfile();
   const [weight, setWeight] = useState(70);
   const [height, setHeight] = useState(170);
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+    if (profile.heightCm) setHeight(Math.round(profile.heightCm));
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const results = useMemo(() => calculateBMI(weight, height), [weight, height]);
   const inputs = { weight, height };
