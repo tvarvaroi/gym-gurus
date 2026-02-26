@@ -244,7 +244,7 @@ function GamificationCard() {
           <Trophy className="w-5 h-5 text-yellow-500" />
           Your Progress
         </h3>
-        <Link href="/solo/achievements">
+        <Link href="/progress">
           <a className="text-sm text-primary hover:underline">View All</a>
         </Link>
       </div>
@@ -384,6 +384,18 @@ function WeeklyActivityCard() {
   const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
   const todayIndex = today === 0 ? 6 : today - 1; // Convert to Monday-based index
 
+  // Calculate actual dates for the current week (Monday-Sunday)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset);
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d.getDate();
+  });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -429,7 +441,7 @@ function WeeklyActivityCard() {
                       : 'bg-secondary/50 text-muted-foreground/50'
                 }`}
               >
-                {activity[index] ? '✓' : index + 1}
+                {activity[index] ? '✓' : weekDates[index]}
               </div>
             </div>
           ))}
@@ -439,67 +451,108 @@ function WeeklyActivityCard() {
   );
 }
 
-// Build a recovery-aware fallback suggestion
-function getRecoverySuggestion(
-  fatigueData:
-    | Array<{ muscleGroup: string; fatigueLevel: number; recoveryStatus: string }>
-    | undefined
-): { message: string; action: string; actionHref: string } {
+// Build a contextual coaching suggestion based on workout history and recovery
+function getContextualSuggestion(ctx: {
+  fatigueData?: Array<{
+    muscleGroup: string;
+    fatigueLevel: number;
+    recoveryStatus: string;
+    lastTrainedAt: string | null;
+  }>;
+  totalWorkouts?: number;
+  hasWorkoutToday?: boolean;
+  lastWorkoutDate?: string | null;
+  streak?: number;
+}): { message: string; action: string; actionHref: string } {
   const defaultAction = { action: 'Chat with AI Coach', actionHref: '/solo/coach' };
 
-  if (!fatigueData || fatigueData.length === 0) {
+  // Brand new user with 0 workouts
+  if (!ctx.totalWorkouts || ctx.totalWorkouts === 0) {
     return {
-      message: 'Complete a workout to start tracking your muscle recovery!',
-      ...defaultAction,
+      message: 'Ready to start your fitness journey? Generate your first AI-powered workout!',
+      action: 'Generate Workout',
+      actionHref: '/solo/generate',
     };
   }
 
-  const recovered = fatigueData.filter((m) => m.recoveryStatus === 'recovered');
-  const fatigued = fatigueData.filter((m) => m.recoveryStatus === 'fatigued');
-  const recovering = fatigueData.filter((m) => m.recoveryStatus === 'recovering');
-
-  const formatName = (g: string) => g.replace(/_/g, ' ');
-
-  // All muscles recovered - suggest a workout
-  if (fatigued.length === 0 && recovering.length === 0) {
+  // Completed a workout today
+  if (ctx.hasWorkoutToday) {
     return {
-      message: 'All muscle groups are fully recovered. Great time for your next workout!',
-      action: 'Start Workout',
-      actionHref: '/solo/workout',
-    };
-  }
-
-  // Heavy fatigue - suggest rest
-  if (fatigued.length >= 5) {
-    return {
-      message: `${fatigued.length} muscle groups are still fatigued. Consider a rest day or light cardio to aid recovery.`,
+      message:
+        'Great workout today! Make sure to stay hydrated and get enough protein for recovery.',
       action: 'View Recovery',
       actionHref: '/solo/recovery',
     };
   }
 
-  // Some fatigued, some recovered - suggest targeting recovered muscles
-  if (recovered.length > 0 && fatigued.length > 0) {
-    const readyMuscles = recovered
-      .slice(0, 3)
-      .map((m) => formatName(m.muscleGroup))
-      .join(', ');
-    const fatiguedMuscles = fatigued
-      .slice(0, 2)
-      .map((m) => formatName(m.muscleGroup))
-      .join(', ');
-    return {
-      message: `Your ${readyMuscles} are recovered and ready to train. Let ${fatiguedMuscles} rest a bit longer.`,
-      action: 'View Recovery',
-      actionHref: '/solo/recovery',
-    };
+  // Check if 3+ days since last workout
+  if (ctx.lastWorkoutDate) {
+    const daysSinceLast = Math.floor(
+      (Date.now() - new Date(ctx.lastWorkoutDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (daysSinceLast >= 3) {
+      return {
+        message: `It's been ${daysSinceLast} days since your last workout. A quick session can help maintain your momentum!`,
+        action: 'Start Workout',
+        actionHref: '/solo/generate',
+      };
+    }
   }
 
-  // Mostly recovering
-  if (recovering.length > 0) {
+  // Recovery-based suggestions
+  const fatigueData = ctx.fatigueData;
+  if (fatigueData && fatigueData.length > 0) {
+    const recovered = fatigueData.filter((m) => m.recoveryStatus === 'recovered');
+    const fatigued = fatigueData.filter((m) => m.recoveryStatus === 'fatigued');
+    const recovering = fatigueData.filter((m) => m.recoveryStatus === 'recovering');
+    const formatName = (g: string) => g.replace(/_/g, ' ');
+
+    if (fatigued.length >= 5) {
+      return {
+        message: `${fatigued.length} muscle groups are still fatigued. Consider a rest day or light cardio to aid recovery.`,
+        action: 'View Recovery',
+        actionHref: '/solo/recovery',
+      };
+    }
+
+    if (recovered.length > 0 && fatigued.length > 0) {
+      const readyMuscles = recovered
+        .slice(0, 3)
+        .map((m) => formatName(m.muscleGroup))
+        .join(', ');
+      const fatiguedMuscles = fatigued
+        .slice(0, 2)
+        .map((m) => formatName(m.muscleGroup))
+        .join(', ');
+      return {
+        message: `Your ${readyMuscles} are recovered and ready to train. Let ${fatiguedMuscles} rest a bit longer.`,
+        action: 'View Recovery',
+        actionHref: '/solo/recovery',
+      };
+    }
+
+    if (fatigued.length === 0 && recovering.length === 0 && recovered.length > 0) {
+      return {
+        message: 'All muscle groups are fully recovered. Great time for your next workout!',
+        action: 'Start Workout',
+        actionHref: '/solo/generate',
+      };
+    }
+
+    if (recovering.length > 0) {
+      return {
+        message: `${recovering.length} muscle groups are recovering. A light session or active recovery could help.`,
+        ...defaultAction,
+      };
+    }
+  }
+
+  // Streak-based encouragement
+  if (ctx.streak && ctx.streak >= 3) {
     return {
-      message: `${recovering.length} muscle groups are recovering. A light session or active recovery could help.`,
-      ...defaultAction,
+      message: `${ctx.streak}-day streak! Keep the momentum going with today's workout.`,
+      action: 'Generate Workout',
+      actionHref: '/solo/generate',
     };
   }
 
@@ -526,6 +579,18 @@ function AICoachSuggestion() {
     retry: false,
   });
 
+  const { data: soloStats } = useQuery<any>({
+    queryKey: ['/api/solo/stats'],
+    retry: false,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: todayWorkout } = useQuery<any>({
+    queryKey: ['/api/solo/today-workout'],
+    retry: false,
+    staleTime: 60 * 1000,
+  });
+
   const { data: aiInsights, isLoading } = useQuery<any>({
     queryKey: ['/api/ai/progress-insights'],
     queryFn: async () => {
@@ -549,11 +614,17 @@ function AICoachSuggestion() {
   });
 
   const rawInsight = aiInsights?.insights ?? aiInsights?.message ?? null;
-  const recoverySuggestion = getRecoverySuggestion(fatigueData);
+  const contextualSuggestion = getContextualSuggestion({
+    fatigueData: fatigueData ?? undefined,
+    totalWorkouts: gamification?.totalWorkoutsCompleted || soloStats?.totalWorkouts || 0,
+    hasWorkoutToday: todayWorkout?.workout?.status === 'completed',
+    lastWorkoutDate: soloStats?.lastWorkoutDate || null,
+    streak: gamification?.currentStreakDays || 0,
+  });
   const suggestion =
     typeof rawInsight === 'string'
       ? { message: rawInsight, action: 'Chat with AI Coach', actionHref: '/solo/coach' }
-      : recoverySuggestion;
+      : contextualSuggestion;
 
   return (
     <motion.div
@@ -684,8 +755,8 @@ export function SoloDashboard() {
         <QuickActionCard
           icon={<TrendingUp className="w-6 h-6" />}
           title="My Progress"
-          description="View achievements"
-          href="/solo/achievements"
+          description="Track your fitness journey"
+          href="/progress"
           gradient="bg-gradient-to-br from-green-600 to-emerald-600"
           delay={0.2}
         />
