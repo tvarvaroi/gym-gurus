@@ -439,6 +439,76 @@ function WeeklyActivityCard() {
   );
 }
 
+// Build a recovery-aware fallback suggestion
+function getRecoverySuggestion(
+  fatigueData:
+    | Array<{ muscleGroup: string; fatigueLevel: number; recoveryStatus: string }>
+    | undefined
+): { message: string; action: string; actionHref: string } {
+  const defaultAction = { action: 'Chat with AI Coach', actionHref: '/solo/coach' };
+
+  if (!fatigueData || fatigueData.length === 0) {
+    return {
+      message: 'Complete a workout to start tracking your muscle recovery!',
+      ...defaultAction,
+    };
+  }
+
+  const recovered = fatigueData.filter((m) => m.recoveryStatus === 'recovered');
+  const fatigued = fatigueData.filter((m) => m.recoveryStatus === 'fatigued');
+  const recovering = fatigueData.filter((m) => m.recoveryStatus === 'recovering');
+
+  const formatName = (g: string) => g.replace(/_/g, ' ');
+
+  // All muscles recovered - suggest a workout
+  if (fatigued.length === 0 && recovering.length === 0) {
+    return {
+      message: 'All muscle groups are fully recovered. Great time for your next workout!',
+      action: 'Start Workout',
+      actionHref: '/solo/workout',
+    };
+  }
+
+  // Heavy fatigue - suggest rest
+  if (fatigued.length >= 5) {
+    return {
+      message: `${fatigued.length} muscle groups are still fatigued. Consider a rest day or light cardio to aid recovery.`,
+      action: 'View Recovery',
+      actionHref: '/solo/recovery',
+    };
+  }
+
+  // Some fatigued, some recovered - suggest targeting recovered muscles
+  if (recovered.length > 0 && fatigued.length > 0) {
+    const readyMuscles = recovered
+      .slice(0, 3)
+      .map((m) => formatName(m.muscleGroup))
+      .join(', ');
+    const fatiguedMuscles = fatigued
+      .slice(0, 2)
+      .map((m) => formatName(m.muscleGroup))
+      .join(', ');
+    return {
+      message: `Your ${readyMuscles} are recovered and ready to train. Let ${fatiguedMuscles} rest a bit longer.`,
+      action: 'View Recovery',
+      actionHref: '/solo/recovery',
+    };
+  }
+
+  // Mostly recovering
+  if (recovering.length > 0) {
+    return {
+      message: `${recovering.length} muscle groups are recovering. A light session or active recovery could help.`,
+      ...defaultAction,
+    };
+  }
+
+  return {
+    message: 'Keep up the great work! Consistency is key to reaching your fitness goals.',
+    ...defaultAction,
+  };
+}
+
 // AI Coach Suggestion Card
 function AICoachSuggestion() {
   const { data: gamification } = useQuery<any>({
@@ -448,6 +518,11 @@ function AICoachSuggestion() {
 
   const { data: strengthSummary } = useQuery<any>({
     queryKey: ['/api/strength/summary'],
+    retry: false,
+  });
+
+  const { data: fatigueData } = useQuery<any[]>({
+    queryKey: ['/api/recovery/fatigue'],
     retry: false,
   });
 
@@ -474,14 +549,11 @@ function AICoachSuggestion() {
   });
 
   const rawInsight = aiInsights?.insights ?? aiInsights?.message ?? null;
-  const suggestion = {
-    message:
-      typeof rawInsight === 'string'
-        ? rawInsight
-        : 'Keep up the great work! Consistency is key to reaching your fitness goals.',
-    action: 'Chat with AI Coach',
-    actionHref: '/solo/coach',
-  };
+  const recoverySuggestion = getRecoverySuggestion(fatigueData);
+  const suggestion =
+    typeof rawInsight === 'string'
+      ? { message: rawInsight, action: 'Chat with AI Coach', actionHref: '/solo/coach' }
+      : recoverySuggestion;
 
   return (
     <motion.div
