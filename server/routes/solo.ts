@@ -123,7 +123,36 @@ router.get('/today-workout', async (req: Request, res: Response) => {
       });
     }
 
-    // No workout today - check for AI-generated recommendation
+    // No workout today — find the most recent saved workout for this user
+    const savedWorkout = await database
+      .select({
+        id: workouts.id,
+        title: workouts.title,
+        duration: workouts.duration,
+        category: workouts.category,
+      })
+      .from(workouts)
+      .where(eq(workouts.trainerId, userId))
+      .orderBy(desc(workouts.createdAt))
+      .limit(1);
+
+    if (savedWorkout.length > 0) {
+      const w = savedWorkout[0];
+      return res.json({
+        hasWorkoutToday: false,
+        suggestedWorkout: {
+          id: w.id,
+          workoutId: w.id,
+          name: w.title || 'Saved Workout',
+          estimatedTime: w.duration || 45,
+          exercises: [],
+          muscleGroups: [],
+          source: 'saved',
+        },
+      });
+    }
+
+    // No saved workouts — check for AI-generated recommendation
     const aiWorkout = await database
       .select()
       .from(aiGeneratedWorkouts)

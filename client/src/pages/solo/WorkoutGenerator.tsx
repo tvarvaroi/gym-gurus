@@ -275,7 +275,7 @@ export default function WorkoutGenerator() {
           name: ex.name,
           sets: ex.sets || 3,
           reps: ex.reps || '8-12',
-          rest: ex.restSeconds || 60,
+          rest: parseInt(String(ex.rest)) || ex.restSeconds || 60,
           muscleGroup: ex.targetMuscle || ex.muscleGroup || '',
         })),
         warmup: includeWarmup
@@ -301,7 +301,7 @@ export default function WorkoutGenerator() {
   };
 
   // Shared save logic: create workout record then attach exercises (matched from library or newly created)
-  const persistGeneratedWorkout = async (): Promise<void> => {
+  const persistGeneratedWorkout = async (): Promise<string> => {
     if (!generatedWorkout) return;
 
     // 1. Create the workout row with all required fields
@@ -392,6 +392,7 @@ export default function WorkoutGenerator() {
 
     // Bust the workouts cache so the list page shows the new entry immediately
     queryClient.invalidateQueries({ queryKey: ['/api/workouts'] });
+    return workout.id;
   };
 
   const handleSaveWorkout = async () => {
@@ -419,12 +420,12 @@ export default function WorkoutGenerator() {
     if (!generatedWorkout) return;
     setIsSaving(true);
     try {
-      await persistGeneratedWorkout();
+      const savedWorkoutId = await persistGeneratedWorkout();
       toast({
         title: 'Workout Saved & Ready',
-        description: 'Your workout has been saved. Find it in My Workouts to start!',
+        description: 'Starting your workout now!',
       });
-      navigate('/workouts');
+      navigate(`/workout-execution/${savedWorkoutId}`);
     } catch (err: any) {
       toast({
         variant: 'destructive',

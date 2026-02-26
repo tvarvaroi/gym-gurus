@@ -200,7 +200,13 @@ function TodaysWorkoutCard() {
       )}
 
       {!isCompleted && (
-        <Link href="/workouts">
+        <Link
+          href={
+            workout.workoutId || workout.source === 'saved'
+              ? `/workout-execution/${workout.workoutId || workout.id}`
+              : '/workouts'
+          }
+        >
           <a className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
             <Play className="w-5 h-5" />
             {isInProgress ? 'Continue Workout' : 'Start Workout'}

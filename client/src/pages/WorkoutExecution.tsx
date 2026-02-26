@@ -85,24 +85,11 @@ export default function WorkoutExecution() {
   const [, setLocationOriginal] = useLocation();
   const { isClient } = useUser();
 
-  // Custom navigation guard
-  const setLocation = useCallback(
-    (path: string) => {
-      const hasProgress = session?.exercises.some((ex) => ex.sets.some((s) => s.completed));
-      if (hasProgress && !showCompletion && path !== `/workout-execution/${workoutId}`) {
-        // Show confirmation before leaving
-        setPendingNavigation(path);
-      } else {
-        setLocationOriginal(path);
-      }
-    },
-    [session, showCompletion, workoutId, setLocationOriginal]
-  );
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const prefersReducedMotion = useReducedMotion();
 
-  // State
+  // State — declare all state before useCallback that references it
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
@@ -120,6 +107,20 @@ export default function WorkoutExecution() {
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [savedSessionData, setSavedSessionData] = useState<any>(null);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+
+  // Custom navigation guard — must be after state declarations
+  const setLocation = useCallback(
+    (path: string) => {
+      const hasProgress = session?.exercises.some((ex) => ex.sets.some((s) => s.completed));
+      if (hasProgress && !showCompletion && path !== `/workout-execution/${workoutId}`) {
+        // Show confirmation before leaving
+        setPendingNavigation(path);
+      } else {
+        setLocationOriginal(path);
+      }
+    },
+    [session, showCompletion, workoutId, setLocationOriginal]
+  );
 
   // Persist session state to sessionStorage for recovery on refresh
   const storageKey = `workout-session-${workoutId}`;

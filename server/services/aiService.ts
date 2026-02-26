@@ -5,8 +5,8 @@ import { generateText, generateObject, streamText, tool } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { getDb } from '../db';
-import { userFitnessProfile, workouts, users } from '../../shared/schema';
-import { eq, desc } from 'drizzle-orm';
+import { userFitnessProfile, workouts, workoutSessions, users } from '../../shared/schema';
+import { eq, desc, and } from 'drizzle-orm';
 
 // ---------- Provider Setup ----------
 
@@ -110,6 +110,7 @@ PERSONALIZATION:
 - NEVER ask for information that's already in their profile
 - If they ask "what do you know about me", summarize their profile data
 - Calculate SPECIFIC numbers rather than giving ranges: use their exact weight for protein calculations (e.g., "at 82kg you need 131-180g protein/day" not "eat 1.6-2.2g/kg")
+- IMPORTANT: Distinguish between COMPLETED WORKOUT SESSIONS (workouts actually performed) and SAVED WORKOUT TEMPLATES (plans created but not necessarily done). When asked about workout history, only reference completed sessions. If no sessions are completed, say so honestly — do NOT present saved templates as completed workouts.
 - When asked about calories, calculate their approximate TDEE from their profile data (weight, height, age, gender, activity level) using the Mifflin-St Jeor equation, then adjust for their goal
 - Suggest exercises that match their available equipment
 - Respect their injuries and dietary restrictions in ALL recommendations
@@ -221,18 +222,47 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
         }
       }
 
-      // Recent workouts created by this user (trainer or solo)
-      const recentWorkouts = await db
+      // Completed workout sessions (actually performed workouts)
+      const completedSessions = await db
+        .select({
+          workoutName: workoutSessions.workoutName,
+          startedAt: workoutSessions.startedAt,
+          endedAt: workoutSessions.endedAt,
+        })
+        .from(workoutSessions)
+        .where(and(eq(workoutSessions.userId, userId), eq(workoutSessions.isActive, false)))
+        .orderBy(desc(workoutSessions.startedAt))
+        .limit(10);
+
+      if (completedSessions.length > 0) {
+        parts.push(`\nCOMPLETED WORKOUT SESSIONS (workouts the user actually performed):`);
+        for (const s of completedSessions) {
+          const duration =
+            s.endedAt && s.startedAt
+              ? Math.round((s.endedAt.getTime() - s.startedAt.getTime()) / 60000)
+              : null;
+          parts.push(
+            `- ${s.workoutName || 'Workout'} on ${new Date(s.startedAt).toLocaleDateString()}${duration ? ` (${duration} min)` : ''}`
+          );
+        }
+      } else {
+        parts.push(
+          `\nCOMPLETED WORKOUT SESSIONS: None yet — the user has not completed any workouts.`
+        );
+      }
+
+      // Saved workout templates (plans the user created but may not have performed)
+      const savedTemplates = await db
         .select({ title: workouts.title, createdAt: workouts.createdAt })
         .from(workouts)
         .where(eq(workouts.trainerId, userId))
         .orderBy(desc(workouts.createdAt))
         .limit(5);
 
-      if (recentWorkouts.length > 0) {
-        parts.push(`\nRECENT WORKOUTS:`);
-        for (const w of recentWorkouts) {
-          parts.push(`- ${w.title} (${new Date(w.createdAt).toLocaleDateString()})`);
+      if (savedTemplates.length > 0) {
+        parts.push(`\nSAVED WORKOUT TEMPLATES (plans created, NOT necessarily completed):`);
+        for (const w of savedTemplates) {
+          parts.push(`- ${w.title} (saved ${new Date(w.createdAt).toLocaleDateString()})`);
         }
       }
     } catch (err) {
