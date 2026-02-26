@@ -5,38 +5,12 @@ import { onCLS, onFCP, onLCP, onTTFB, onINP, type Metric } from 'web-vitals';
  * @param metric - Web Vitals metric object
  */
 function sendToAnalytics(metric: Metric) {
-  // Log to console in development
+  // Log to console in development only.
+  // Production reporting is disabled because navigator.sendBeacon() bypasses
+  // the global fetch CSRF interceptor, causing 403 errors on every page load.
+  // Re-enable once the analytics endpoint supports beacon requests properly.
   if (import.meta.env.DEV) {
     console.log(`[Web Vitals] ${metric.name}:`, metric.value, metric);
-    return;
-  }
-
-  // Send to analytics endpoint in production
-  const body = JSON.stringify({
-    name: metric.name,
-    value: metric.value,
-    rating: metric.rating,
-    delta: metric.delta,
-    id: metric.id,
-    navigationType: metric.navigationType,
-    url: window.location.href,
-    userAgent: navigator.userAgent,
-  });
-
-  // Use `navigator.sendBeacon()` if available, falling back to `fetch()`
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon('/api/analytics/web-vitals', body);
-  } else {
-    fetch('/api/analytics/web-vitals', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body,
-      keepalive: true,
-    }).catch((error) => {
-      console.error('Failed to send web vitals:', error);
-    });
   }
 }
 
@@ -80,7 +54,10 @@ export const WEB_VITALS_THRESHOLDS = {
 /**
  * Rate a metric value
  */
-export function rateMetric(name: keyof typeof WEB_VITALS_THRESHOLDS, value: number): 'good' | 'needs-improvement' | 'poor' {
+export function rateMetric(
+  name: keyof typeof WEB_VITALS_THRESHOLDS,
+  value: number
+): 'good' | 'needs-improvement' | 'poor' {
   const threshold = WEB_VITALS_THRESHOLDS[name];
   if (value <= threshold.good) return 'good';
   if (value <= threshold.needsImprovement) return 'needs-improvement';
