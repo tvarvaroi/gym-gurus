@@ -45,6 +45,9 @@ initSentry();
 
 const app = express();
 
+// Trust Railway's reverse proxy so req.secure, req.ip, and cookies work correctly
+app.set('trust proxy', 1);
+
 // Skip middleware for WebSocket connections (Vite HMR)
 const skipForWebSocket = (middleware: any) => (req: Request, res: Response, next: NextFunction) => {
   if (req.headers.upgrade === 'websocket') return next();
@@ -109,6 +112,7 @@ app.use(cookieParser());
 const PgSession = connectPgSimple(session);
 const sessionPool = new pg.Pool({
   connectionString: env.DATABASE_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }, // Required for Railway PostgreSQL
 });
 
 app.use(

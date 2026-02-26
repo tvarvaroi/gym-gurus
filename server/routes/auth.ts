@@ -82,19 +82,25 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({ error });
     }
 
-    // Create session
+    // Create session — explicitly save before responding to avoid race conditions
     (req as any).session.userId = user.id;
+    (req as any).session.save((err: any) => {
+      if (err) {
+        console.error('Session save error (register):', err);
+        return res.status(500).json({ error: 'Failed to save session' });
+      }
 
-    // Send welcome email (async, don't wait)
-    if (user.email && user.firstName) {
-      sendWelcomeEmail(user.email, user.firstName, user.role).catch((err) =>
-        console.error('Failed to send welcome email:', err)
-      );
-    }
+      // Send welcome email (async, don't wait)
+      if (user.email && user.firstName) {
+        sendWelcomeEmail(user.email, user.firstName, user.role).catch((saveErr) =>
+          console.error('Failed to send welcome email:', saveErr)
+        );
+      }
 
-    // Return user without password
-    const { password: _, ...userWithoutPassword } = user;
-    res.status(201).json({ user: userWithoutPassword });
+      // Return user without password
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json({ user: userWithoutPassword });
+    });
   } catch (error) {
     console.error('Error in register route:', error);
     res.status(500).json({ error: 'Failed to register user' });
@@ -125,12 +131,16 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(401).json({ error: error || 'Authentication failed' });
     }
 
-    // Create session
+    // Create session — explicitly save before responding to avoid race conditions
     (req as any).session.userId = user.id;
-
-    // Return user without password
-    const { password: _, ...userWithoutPassword } = user;
-    res.json({ user: userWithoutPassword });
+    (req as any).session.save((err: any) => {
+      if (err) {
+        console.error('Session save error (login):', err);
+        return res.status(500).json({ error: 'Failed to save session' });
+      }
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
+    });
   } catch (error) {
     console.error('Error in login route:', error);
     res.status(500).json({ error: 'Failed to log in' });
@@ -364,11 +374,16 @@ router.post('/disciple-login', async (req: Request, res: Response) => {
       });
     }
 
-    // Create session
+    // Create session — explicitly save before responding to avoid race conditions
     (req as any).session.userId = user.id;
-
-    const { password: _, ...userWithoutPassword } = user;
-    res.json({ user: userWithoutPassword });
+    (req as any).session.save((err: any) => {
+      if (err) {
+        console.error('Session save error (disciple-login):', err);
+        return res.status(500).json({ error: 'Failed to save session' });
+      }
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
+    });
   } catch (error) {
     console.error('Error in disciple-login route:', error);
     res.status(500).json({ error: 'Failed to log in' });
