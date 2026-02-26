@@ -25,7 +25,7 @@ type UserLike = {
 export const AI_DAILY_LIMITS: Record<string, number> = {
   pro: 50,
   trainer: 0, // Trainer tier: no AI — upgrade to Pro
-  solo_ai: 20, // Ronin AI plan
+  solo_ai: 999, // Ronin AI plan — effectively unlimited
   solo: 0, // Ronin Standard: no AI — upgrade to solo_ai
   trial: 5,
   none: 0,

@@ -204,6 +204,25 @@ app.use((req, res, next) => {
     console.error('[Session] Failed to ensure session table exists:', err);
   }
 
+  // Seed: ensure test account has Ronin AI subscription for QA testing
+  try {
+    const seedResult = await sessionPool.query(
+      `UPDATE users
+       SET subscription_tier = 'solo_ai',
+           subscription_status = 'active'
+       WHERE email = 'test@test.com'
+         AND (subscription_tier IS DISTINCT FROM 'solo_ai'
+              OR subscription_status IS DISTINCT FROM 'active')
+       RETURNING id`
+    );
+    if (seedResult.rowCount && seedResult.rowCount > 0) {
+      log('Seed: test@test.com upgraded to Ronin AI (solo_ai/active)');
+    }
+  } catch (err) {
+    // Non-fatal — table may not exist yet
+    console.error('[Seed] Failed to update test account subscription:', err);
+  }
+
   const server = await registerRoutes(app);
 
   // Global error handler — structured error responses, DB error handling, env-aware
