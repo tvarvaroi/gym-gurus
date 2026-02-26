@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Timer, TrendingUp, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { LeadCapturePopup } from '@/components/LeadCapturePopup';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type TestMethod = 'cooper' | 'rockport' | 'beep' | 'manual';
 
@@ -183,10 +184,18 @@ export function VO2MaxCalculator() {
     },
   });
 
+  const profile = useFitnessProfile();
   const [method, setMethod] = useState<TestMethod>('cooper');
   const [age, setAge] = useState(30);
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [weight, setWeight] = useState(75);
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.age) setAge(profile.age);
+    if (profile.gender) setGender(profile.gender);
+    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cooper test inputs
   const [cooperDistance, setCooperDistance] = useState(2400);

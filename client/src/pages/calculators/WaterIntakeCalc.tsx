@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Droplets, Scale, Activity, Sun, ThermometerSun, Coffee, Beer, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { LeadCapturePopup } from '@/components/LeadCapturePopup';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type WeightUnit = 'kg' | 'lbs';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | 'athlete';
@@ -52,12 +53,23 @@ export function WaterIntakeCalculator() {
     },
   });
 
+  const profile = useFitnessProfile();
   const [weight, setWeight] = useState(70);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('kg');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
   const [climate, setClimate] = useState<Climate>('moderate');
   const [caffeineServings, setCaffeineServings] = useState(2);
   const [alcoholServings, setAlcoholServings] = useState(0);
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+    if (profile.activityLevel) {
+      const val = profile.activityLevel as ActivityLevel;
+      if (['sedentary', 'light', 'moderate', 'active', 'very_active', 'athlete'].includes(val))
+        setActivityLevel(val);
+    }
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const weightKg = weightUnit === 'lbs' ? weight * 0.453592 : weight;
 

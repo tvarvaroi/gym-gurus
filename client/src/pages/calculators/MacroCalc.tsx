@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calculator, Target, Scale, Activity } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { LeadCapturePopup } from '@/components/LeadCapturePopup';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
@@ -103,6 +104,7 @@ export function MacroCalculator() {
     },
   });
 
+  const profile = useFitnessProfile();
   const [gender, setGender] = useState<Gender>('male');
   const [age, setAge] = useState(25);
   const [weight, setWeight] = useState(75);
@@ -111,6 +113,19 @@ export function MacroCalculator() {
   const [goal, setGoal] = useState<Goal>('maintain');
   const [dietType, setDietType] = useState<DietType>('balanced');
   const [unit, setUnit] = useState<'metric' | 'imperial'>('metric');
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.gender) setGender(profile.gender);
+    if (profile.age) setAge(profile.age);
+    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+    if (profile.heightCm) setHeight(Math.round(profile.heightCm));
+    if (profile.activityLevel) {
+      const val = profile.activityLevel as ActivityLevel;
+      if (['sedentary', 'light', 'moderate', 'active', 'very_active'].includes(val))
+        setActivityLevel(val);
+    }
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const weightKg = unit === 'imperial' ? weight * 0.453592 : weight;
   const heightCm = unit === 'imperial' ? height * 2.54 : height;
@@ -124,10 +139,7 @@ export function MacroCalculator() {
     <div className="max-w-2xl mx-auto p-6">
       <Breadcrumbs
         showHome={false}
-        items={[
-          { label: 'All Calculators', href: '/calculators' },
-          { label: 'Macro Calculator' },
-        ]}
+        items={[{ label: 'All Calculators', href: '/calculators' }, { label: 'Macro Calculator' }]}
       />
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">

@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Scale, Ruler, User, Target, TrendingUp, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { LeadCapturePopup } from '@/components/LeadCapturePopup';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
 type HeightUnit = 'cm' | 'ft';
@@ -71,6 +72,7 @@ export function IdealWeightCalculator() {
     },
   });
 
+  const profile = useFitnessProfile();
   const [gender, setGender] = useState<Gender>('male');
   const [height, setHeight] = useState(170);
   const [heightUnit, setHeightUnit] = useState<HeightUnit>('cm');
@@ -79,6 +81,13 @@ export function IdealWeightCalculator() {
 
   // For feet/inches input
   const [feet, setFeet] = useState(5);
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.gender) setGender(profile.gender);
+    if (profile.heightCm) setHeight(Math.round(profile.heightCm));
+    if (profile.weightKg) setCurrentWeight(Math.round(profile.weightKg));
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
   const [inches, setInches] = useState(7);
 
   const heightCm = useMemo(() => {

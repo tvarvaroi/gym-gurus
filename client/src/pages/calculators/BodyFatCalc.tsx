@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Percent, Ruler, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { LeadCapturePopup } from '@/components/LeadCapturePopup';
+import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
 
@@ -109,6 +110,7 @@ export function BodyFatCalculator() {
     },
   });
 
+  const profile = useFitnessProfile();
   const [gender, setGender] = useState<Gender>('male');
   const [height, setHeight] = useState(175);
   const [weight, setWeight] = useState(75);
@@ -116,6 +118,13 @@ export function BodyFatCalculator() {
   const [neck, setNeck] = useState(38);
   const [hips, setHips] = useState(95);
   const [unit, setUnit] = useState<'metric' | 'imperial'>('metric');
+
+  useEffect(() => {
+    if (!profile.isLoaded) return;
+    if (profile.gender) setGender(profile.gender);
+    if (profile.heightCm) setHeight(Math.round(profile.heightCm));
+    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+  }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Convert to metric if imperial
   const heightCm = unit === 'imperial' ? height * 2.54 : height;
