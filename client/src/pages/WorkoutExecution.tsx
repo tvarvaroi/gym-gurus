@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useParams } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -179,14 +179,26 @@ export default function WorkoutExecution() {
         }
       }
 
-      const exercises: ExerciseSession[] = (workout.exercises || []).map(
-        (ex: any, index: number) => ({
+      const rawExercises = workout.exercises || [];
+      if (rawExercises.length === 0) {
+        toast({
+          title: 'No exercises found',
+          description: 'This workout has no exercises. Try generating a new one.',
+          variant: 'destructive',
+        });
+        setLocationOriginal('/workouts');
+        return;
+      }
+
+      const exercises: ExerciseSession[] = rawExercises.map((ex: any, index: number) => {
+        const numSets = Math.max(1, Number(ex.sets) || Number(ex.numSets) || 3);
+        return {
           exerciseId: ex.exerciseId || ex.id || `exercise-${index}`,
-          exerciseName: ex.name || 'Exercise',
-          muscleGroup: ex.muscleGroup || 'General',
-          targetSets: ex.sets || 3,
-          targetReps: ex.reps || '10',
-          sets: Array.from({ length: ex.sets || 3 }, (_, i) => ({
+          exerciseName: ex.name || ex.exerciseName || ex.title || 'Exercise',
+          muscleGroup: ex.muscleGroup || ex.targetMuscle || ex.category || 'General',
+          targetSets: numSets,
+          targetReps: String(ex.reps || ex.targetReps || '10'),
+          sets: Array.from({ length: numSets }, (_, i) => ({
             setNumber: i + 1,
             weight: 0,
             reps: 0,
@@ -194,8 +206,8 @@ export default function WorkoutExecution() {
           })),
           status: index === 0 ? 'in_progress' : 'pending',
           notes: ex.notes,
-        })
-      );
+        };
+      });
 
       setSession({
         workoutId,
@@ -209,10 +221,15 @@ export default function WorkoutExecution() {
     }
   }, [workout, session, workoutId, workoutStartTime]);
 
-  // Rest timer countdown
+  // Rest timer countdown — use ref to avoid re-creating interval on every tick
+  const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
+    if (restTimerRef.current) {
+      clearInterval(restTimerRef.current);
+      restTimerRef.current = null;
+    }
     if (isResting && restTimeLeft > 0) {
-      const timer = setInterval(() => {
+      restTimerRef.current = setInterval(() => {
         setRestTimeLeft((prev) => {
           if (prev <= 1) {
             setIsResting(false);
@@ -224,9 +241,14 @@ export default function WorkoutExecution() {
           return prev - 1;
         });
       }, 1000);
-      return () => clearInterval(timer);
     }
-  }, [isResting, restTimeLeft, soundEnabled]);
+    return () => {
+      if (restTimerRef.current) {
+        clearInterval(restTimerRef.current);
+        restTimerRef.current = null;
+      }
+    };
+  }, [isResting, soundEnabled]); // removed restTimeLeft to avoid re-creating interval every second
 
   // Navigation guard - prevent accidental data loss during active workout
   useEffect(() => {
@@ -332,6 +354,10 @@ export default function WorkoutExecution() {
 
   // Skip rest timer
   const skipRest = () => {
+    if (restTimerRef.current) {
+      clearInterval(restTimerRef.current);
+      restTimerRef.current = null;
+    }
     setIsResting(false);
     setRestTimeLeft(0);
   };
@@ -438,7 +464,21 @@ export default function WorkoutExecution() {
     );
   }
 
-  const currentExercise = session.exercises[currentExerciseIndex];
+  const currentExercise = session.exercises[currentExerciseIndex] || session.exercises[0];
+  if (!currentExercise) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0F0F0F] p-4">
+        <div className="text-center space-y-4 max-w-sm">
+          <h2 className="text-lg font-medium">No exercises available</h2>
+          <p className="text-sm text-muted-foreground">This workout has no exercises to execute.</p>
+          <Button variant="outline" onClick={() => setLocationOriginal('/workouts')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Workouts
+          </Button>
+        </div>
+      </div>
+    );
+  }
   const currentSetIndex = currentExercise.sets.findIndex((s) => !s.completed);
   const completedSets = currentExercise.sets.filter((s) => s.completed).length;
   const totalSets = currentExercise.sets.length;

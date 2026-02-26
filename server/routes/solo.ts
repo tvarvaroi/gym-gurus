@@ -1018,6 +1018,14 @@ router.get('/schedule', async (req: Request, res: Response) => {
 
     const freq = profile?.freq || 0;
 
+    // Fetch user's saved workouts to use their names on planned days
+    const savedWorkouts = await database
+      .select({ id: workouts.id, title: workouts.title, category: workouts.category })
+      .from(workouts)
+      .where(eq(workouts.trainerId, userId))
+      .orderBy(desc(workouts.createdAt))
+      .limit(10);
+
     // Day patterns for planned workouts
     const dayPatterns: Record<number, number[]> = {
       1: [1],
@@ -1057,6 +1065,7 @@ router.get('/schedule', async (req: Request, res: Response) => {
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
     const cursor = new Date(start);
+    let plannedIndex = 0;
     while (cursor <= end) {
       const dateStr = format(cursor, 'yyyy-MM-dd');
       const dayOfWeek = cursor.getDay(); // 0=Sun
@@ -1064,14 +1073,19 @@ router.get('/schedule', async (req: Request, res: Response) => {
       const hasCompleted = completedDates.has(dateStr);
 
       if (!hasCompleted && isPlanned && dateStr >= todayStr) {
+        // Cycle through saved workouts for planned day names
+        const workoutForDay =
+          savedWorkouts.length > 0 ? savedWorkouts[plannedIndex % savedWorkouts.length] : null;
         events.push({
           id: `planned-${dateStr}`,
-          title: 'Planned Workout',
+          title: workoutForDay?.title || 'Planned Workout',
           date: dateStr,
           time: '09:00',
           type: 'planned',
           status: 'pending',
+          workoutId: workoutForDay?.id || null,
         });
+        plannedIndex++;
       }
       cursor.setDate(cursor.getDate() + 1);
     }

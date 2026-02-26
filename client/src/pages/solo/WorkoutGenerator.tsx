@@ -251,25 +251,41 @@ export default function WorkoutGenerator() {
         cardio: ['cardiovascular system', 'full body conditioning'],
       };
 
-      const response = await fetch('/api/ai/generate-workout', {
+      const requestBody = JSON.stringify({
+        goal: goal === 'muscle' ? 'hypertrophy' : goal,
+        experienceLevel: difficulty,
+        availableEquipment: equipmentMap[equipment] || ['barbell', 'dumbbells'],
+        duration: duration[0],
+        focusMuscles: workoutFocus === 'full_body' ? undefined : focusMuscleMap[workoutFocus],
+        inspiredBy: inspiredBy !== 'none' ? inspiredBy : undefined,
+        recoveryContext: recoveryRecs
+          ? {
+              suggestedWorkout: recoveryRecs.suggestedWorkout,
+              readyToTrain: recoveryRecs.readyToTrain,
+              needsRest: recoveryRecs.needsRest.map((m) => m.muscleGroup),
+            }
+          : undefined,
+      });
+
+      let response = await fetch('/api/ai/generate-workout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          goal: goal === 'muscle' ? 'hypertrophy' : goal,
-          experienceLevel: difficulty,
-          availableEquipment: equipmentMap[equipment] || ['barbell', 'dumbbells'],
-          duration: duration[0],
-          focusMuscles: workoutFocus === 'full_body' ? undefined : focusMuscleMap[workoutFocus],
-          inspiredBy: inspiredBy !== 'none' ? inspiredBy : undefined,
-          recoveryContext: recoveryRecs
-            ? {
-                suggestedWorkout: recoveryRecs.suggestedWorkout,
-                readyToTrain: recoveryRecs.readyToTrain,
-                needsRest: recoveryRecs.needsRest.map((m) => m.muscleGroup),
-              }
-            : undefined,
-        }),
+        body: requestBody,
       });
+
+      // Retry once on 502 (Railway cold start timeout)
+      if (response.status === 502) {
+        toast({
+          title: 'Server warming up...',
+          description: 'Retrying generation automatically.',
+        });
+        await new Promise((r) => setTimeout(r, 2000));
+        response = await fetch('/api/ai/generate-workout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        });
+      }
 
       const data = await response.json();
 
@@ -540,7 +556,7 @@ export default function WorkoutGenerator() {
                       <p className="font-medium text-teal-400">
                         Suggested:{' '}
                         {recoveryRecs.suggestedWorkout === 'rest'
-                          ? 'Rest Day'
+                          ? 'Rest Day — all muscles fully recovered'
                           : `${recoveryRecs.suggestedWorkout.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} Day`}
                       </p>
                       {recoveryRecs.needsRest.length > 0 && (

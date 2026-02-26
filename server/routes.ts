@@ -896,8 +896,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Access denied to this workout' });
       }
 
-      const exercises = await storage.getWorkoutExercises(id);
-      res.json({ ...workout, exercises });
+      const rawExercises = await storage.getWorkoutExercises(id);
+
+      // Join with exercises library to get names and muscle groups
+      const db = await getDb();
+      const enrichedExercises = await Promise.all(
+        rawExercises.map(async (we) => {
+          if (we.exerciseId) {
+            const [libEx] = await db
+              .select({
+                name: exercises.name,
+                muscleGroup: sql<string>`(${exercises.muscleGroups})[1]`,
+              })
+              .from(exercises)
+              .where(eq(exercises.id, we.exerciseId))
+              .limit(1);
+            return { ...we, name: libEx?.name || null, muscleGroup: libEx?.muscleGroup || null };
+          }
+          return { ...we, name: null, muscleGroup: null };
+        })
+      );
+
+      res.json({ ...workout, exercises: enrichedExercises });
     } catch (error) {
       // Error logged internally
       res.status(500).json({ error: 'Failed to fetch workout' });

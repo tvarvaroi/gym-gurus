@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -63,7 +64,10 @@ function looksLikeWorkout(content: string): boolean {
       content
     );
   const hasNumberedList = /^\s*\d+[.)]/m.test(content);
-  return hasSetRep && hasExercisePhrases && hasNumberedList;
+  // Also detect markdown table formatted workouts (pipes with exercise data)
+  const hasMarkdownTable = /\|.*\|.*\|/m.test(content) && /\|[-\s:]+\|/m.test(content);
+  // Match if we have sets/reps + exercise names + (numbered list OR markdown table)
+  return hasSetRep && hasExercisePhrases && (hasNumberedList || hasMarkdownTable);
 }
 
 /** Best-effort parse of exercises from a workout message */
@@ -76,6 +80,17 @@ function parseExercises(content: string): { name: string; sets: number; reps: st
   while ((m = lineRe.exec(content)) !== null) {
     if (m[1]) {
       exercises.push({ name: m[1].trim(), sets: Number(m[2]) || 3, reps: m[3] || '8-12' });
+    }
+  }
+  // Fallback: parse markdown table rows — "| Exercise Name | 4 x 8-12 | 90s |"
+  if (exercises.length === 0) {
+    const tableRowRe = /\|\s*([A-Z][A-Za-z\s\-/()]+?)\s*\|\s*(\d+)\s*[×x]\s*([\d\-–]+)/gm;
+    let tr;
+    while ((tr = tableRowRe.exec(content)) !== null) {
+      const name = tr[1].trim();
+      if (name.length > 2 && !/^[-\s:]+$/.test(name)) {
+        exercises.push({ name, sets: Number(tr[2]) || 3, reps: tr[3] || '8-12' });
+      }
     }
   }
   // Fallback: extract exercise names from numbered lines
@@ -487,27 +502,15 @@ export default function AICoach() {
                             : 'bg-purple-500/20 rounded-tr-none'
                         }`}
                       >
-                        <p className="text-sm font-light whitespace-pre-wrap leading-relaxed">
-                          {message.content.split('\n').map((line, i) => {
-                            // Handle bold text
-                            const parts = line.split(/(\*\*[^*]+\*\*)/g);
-                            return (
-                              <span key={i}>
-                                {parts.map((part, j) => {
-                                  if (part.startsWith('**') && part.endsWith('**')) {
-                                    return (
-                                      <strong key={j} className="font-medium">
-                                        {part.slice(2, -2)}
-                                      </strong>
-                                    );
-                                  }
-                                  return part;
-                                })}
-                                {i < message.content.split('\n').length - 1 && <br />}
-                              </span>
-                            );
-                          })}
-                        </p>
+                        {message.role === 'assistant' ? (
+                          <div className="text-sm font-light leading-relaxed prose prose-invert prose-sm max-w-none prose-table:w-full prose-th:text-left prose-th:px-3 prose-th:py-1.5 prose-th:border prose-th:border-white/10 prose-th:bg-white/5 prose-td:px-3 prose-td:py-1.5 prose-td:border prose-td:border-white/10 prose-headings:font-medium prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-strong:font-medium">
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-sm font-light whitespace-pre-wrap leading-relaxed">
+                            {message.content}
+                          </p>
+                        )}
                         <p className="text-xs text-muted-foreground mt-1">
                           {message.timestamp.toLocaleTimeString([], {
                             hour: '2-digit',
