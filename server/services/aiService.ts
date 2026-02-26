@@ -4,8 +4,8 @@
 import { generateText, generateObject, streamText, tool } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
-import { db } from '../db';
-import { userFitnessProfile, workouts } from '../../shared/schema';
+import { getDb } from '../db';
+import { userFitnessProfile, workouts, users } from '../../shared/schema';
 import { eq, desc } from 'drizzle-orm';
 
 // ---------- Provider Setup ----------
@@ -84,7 +84,16 @@ RULES:
 - If asked about steroids, acknowledge they exist but decline usage advice
 - When uncertain, say so honestly
 - Cite reasoning: "This works because..." not just "Do this"
-- Use metric and imperial units based on user preference (default: both)`;
+- Use metric and imperial units based on user preference (default: both)
+
+PERSONALIZATION:
+- The USER PROFILE section below contains real data from the user's account — USE IT
+- Reference their specific weight, height, goals, and equipment when giving advice
+- NEVER ask for information that's already in their profile
+- If they ask "what do you know about me", summarize their profile data
+- Tailor calorie/macro recommendations to their actual body stats
+- Suggest exercises that match their available equipment
+- Respect their injuries and dietary restrictions in ALL recommendations`;
 
 async function buildUserContext(userId?: string, context?: UserContext): Promise<string> {
   const parts: string[] = ['\n\nUSER PROFILE:'];
@@ -101,6 +110,17 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
   // Enrich with real data from the database
   if (userId) {
     try {
+      const db = await getDb();
+
+      // Fetch user's name
+      const [user] = await db
+        .select({ firstName: users.firstName, lastName: users.lastName })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      if (user?.firstName)
+        parts.push(`Name: ${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`);
+
       // Fitness profile: weight, body fat, goal, experience, equipment, injuries, macro targets
       const [profile] = await db
         .select()
@@ -125,8 +145,12 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
           parts.push(`Primary goal: ${String(profile.primaryGoal).replace(/_/g, ' ')}`);
         if (profile.experienceLevel && !context?.experience)
           parts.push(`Experience: ${profile.experienceLevel}`);
+        if (profile.activityLevel)
+          parts.push(`Activity level: ${String(profile.activityLevel).replace(/_/g, ' ')}`);
         if (profile.workoutFrequencyPerWeek)
           parts.push(`Training frequency: ${profile.workoutFrequencyPerWeek}x/week`);
+        if (profile.workoutDurationMinutes)
+          parts.push(`Preferred session duration: ${profile.workoutDurationMinutes} min`);
         const equip = profile.availableEquipment as string[] | null;
         if (Array.isArray(equip) && equip.length && !context?.equipment?.length)
           parts.push(`Equipment: ${equip.join(', ')}`);
@@ -146,6 +170,8 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
           parts.push(`Daily calorie target: ${profile.dailyCalorieTarget} kcal`);
         if (profile.proteinTargetGrams)
           parts.push(`Protein target: ${profile.proteinTargetGrams}g`);
+        if (profile.carbsTargetGrams) parts.push(`Carbs target: ${profile.carbsTargetGrams}g`);
+        if (profile.fatTargetGrams) parts.push(`Fat target: ${profile.fatTargetGrams}g`);
       }
 
       // Recent workouts created by this user (trainer or solo)
