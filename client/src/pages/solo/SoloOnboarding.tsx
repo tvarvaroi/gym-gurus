@@ -271,9 +271,13 @@ export function SoloOnboarding() {
       if (!response.ok) throw new Error('Failed to save onboarding data');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      navigate('/solo');
+    onSuccess: async () => {
+      // Wait for the user query to refetch so onboardingCompleted is true
+      // before navigating — otherwise the AuthWrapper redirect will send
+      // the user back to /solo/onboarding because the stale user object
+      // still has onboardingCompleted: false.
+      await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      navigate('/dashboard');
     },
     onError: (error: Error) => {
       toast({
