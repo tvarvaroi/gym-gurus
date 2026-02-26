@@ -9,8 +9,11 @@ import {
   exercises,
   aiGeneratedWorkouts,
   userFitnessProfile,
+  userMuscleFatigue,
+  userMuscleVolume,
+  workoutRecoveryLog,
 } from '../../shared/schema';
-import { eq, and, desc, sql, gte, lte } from 'drizzle-orm';
+import { eq, and, desc, sql, gte, lte, inArray } from 'drizzle-orm';
 import { startOfWeek, endOfWeek, format, addDays } from 'date-fns';
 
 const router = Router();
@@ -91,20 +94,20 @@ router.get('/today-workout', async (req: Request, res: Response) => {
       const totalVolume = setLogs.reduce((sum, log) => {
         const weight = Number(log.log.weightKg) || 0;
         const reps = log.log.reps || 0;
-        return sum + (weight * reps);
+        return sum + weight * reps;
       }, 0);
 
       // Get unique exercises
-      const exercises_done = Array.from(new Set(setLogs.map(log => log.exercise.name)));
+      const exercises_done = Array.from(new Set(setLogs.map((log) => log.exercise.name)));
 
       return res.json({
         hasWorkoutToday: true,
         workout: {
           id: session.id,
-          name: session.workoutName || 'Today\'s Workout',
+          name: session.workoutName || "Today's Workout",
           estimatedTime: session.plannedDurationMinutes || 45,
           exercises: exercises_done,
-          muscleGroups: Array.from(new Set(setLogs.map(log => log.exercise.muscleGroup))),
+          muscleGroups: Array.from(new Set(setLogs.map((log) => log.exercise.muscleGroup))),
           status: session.isActive ? 'in_progress' : 'completed',
           completedAt: session.endedAt,
           stats: {
@@ -154,8 +157,8 @@ router.get('/today-workout', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Error getting today\'s workout:', error);
-    res.status(500).json({ error: 'Failed to get today\'s workout' });
+    console.error("Error getting today's workout:", error);
+    res.status(500).json({ error: "Failed to get today's workout" });
   }
 });
 
@@ -191,7 +194,7 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
     const activity: boolean[] = [];
     const sessionsByDate = new Map<string, boolean>();
 
-    sessions.forEach(session => {
+    sessions.forEach((session) => {
       const dateKey = format(session.startedAt, 'yyyy-MM-dd');
       sessionsByDate.set(dateKey, true);
     });
@@ -234,12 +237,7 @@ router.post('/sessions/start', async (req: Request, res: Response) => {
     const activeSession = await database
       .select()
       .from(workoutSessions)
-      .where(
-        and(
-          eq(workoutSessions.userId, userId),
-          eq(workoutSessions.isActive, true)
-        )
-      )
+      .where(and(eq(workoutSessions.userId, userId), eq(workoutSessions.isActive, true)))
       .limit(1);
 
     if (activeSession.length > 0) {
@@ -296,12 +294,7 @@ router.post('/sessions/:sessionId/log-set', async (req: Request, res: Response) 
     const session = await database
       .select()
       .from(workoutSessions)
-      .where(
-        and(
-          eq(workoutSessions.id, sessionId),
-          eq(workoutSessions.userId, userId)
-        )
-      )
+      .where(and(eq(workoutSessions.id, sessionId), eq(workoutSessions.userId, userId)))
       .limit(1);
 
     if (session.length === 0) {
@@ -351,12 +344,7 @@ router.patch('/sessions/:sessionId/complete', async (req: Request, res: Response
     const session = await database
       .select()
       .from(workoutSessions)
-      .where(
-        and(
-          eq(workoutSessions.id, sessionId),
-          eq(workoutSessions.userId, userId)
-        )
-      )
+      .where(and(eq(workoutSessions.id, sessionId), eq(workoutSessions.userId, userId)))
       .limit(1);
 
     if (session.length === 0) {
@@ -374,13 +362,11 @@ router.patch('/sessions/:sessionId/complete', async (req: Request, res: Response
     const totalVolume = setLogs.reduce((sum, log) => {
       const weight = Number(log.weightKg) || 0;
       const reps = log.reps || 0;
-      return sum + (weight * reps);
+      return sum + weight * reps;
     }, 0);
 
     const now = new Date();
-    const durationMinutes = Math.round(
-      (now.getTime() - session[0].startedAt.getTime()) / 60000
-    );
+    const durationMinutes = Math.round((now.getTime() - session[0].startedAt.getTime()) / 60000);
 
     // Update session
     const [updatedSession] = await database
@@ -408,6 +394,175 @@ router.patch('/sessions/:sessionId/complete', async (req: Request, res: Response
       await updateWorkoutStats(userId, totalVolume, totalReps, totalSets, durationMinutes);
     } catch (gamificationError) {
       console.warn('Gamification update failed (non-critical):', gamificationError);
+    }
+
+    // Update recovery fatigue system
+    try {
+      // Group set logs by exercise to get per-exercise stats
+      const exerciseStats: Record<
+        string,
+        { sets: number; totalReps: number; totalVolumeKg: number }
+      > = {};
+      for (const log of setLogs) {
+        const eid = log.exerciseId;
+        if (!exerciseStats[eid]) {
+          exerciseStats[eid] = { sets: 0, totalReps: 0, totalVolumeKg: 0 };
+        }
+        exerciseStats[eid].sets += 1;
+        exerciseStats[eid].totalReps += log.reps || 0;
+        exerciseStats[eid].totalVolumeKg += (Number(log.weightKg) || 0) * (log.reps || 0);
+      }
+
+      const exerciseIds = Object.keys(exerciseStats);
+      if (exerciseIds.length > 0) {
+        // Fetch exercises to get their muscle groups
+        const exerciseRecords = await database
+          .select({ id: exercises.id, muscleGroups: exercises.muscleGroups })
+          .from(exercises)
+          .where(inArray(exercises.id, exerciseIds));
+
+        // Build per-muscle fatigue/volume aggregation
+        const muscleData: Record<string, { sets: number; volumeKg: number; fatigue: number }> = {};
+
+        const RECOVERY_HOURS: Record<string, number> = {
+          chest: 48,
+          back: 48,
+          shoulders: 48,
+          biceps: 36,
+          triceps: 36,
+          forearms: 24,
+          quads: 72,
+          hamstrings: 72,
+          glutes: 72,
+          calves: 48,
+          abs: 24,
+          obliques: 24,
+          lower_back: 48,
+          traps: 48,
+          lats: 48,
+        };
+
+        for (const ex of exerciseRecords) {
+          const stats = exerciseStats[ex.id];
+          if (!stats || !ex.muscleGroups) continue;
+
+          const muscles = ex.muscleGroups;
+          const avgReps = stats.totalReps / Math.max(1, stats.sets);
+
+          // First muscle = primary (1.0), rest = secondary (0.5)
+          muscles.forEach((muscle, idx) => {
+            const weight = idx === 0 ? 1.0 : 0.5;
+            const fatigue = Math.min(100, (weight * stats.sets * avgReps * 0.7) / 1.4);
+
+            if (!muscleData[muscle]) {
+              muscleData[muscle] = { sets: 0, volumeKg: 0, fatigue: 0 };
+            }
+            muscleData[muscle].sets += Math.round(stats.sets * weight);
+            muscleData[muscle].volumeKg += stats.totalVolumeKg * weight;
+            muscleData[muscle].fatigue = Math.min(100, muscleData[muscle].fatigue + fatigue);
+          });
+        }
+
+        // Build musclesWorked array for recovery log
+        const musclesWorked = Object.entries(muscleData).map(([muscleGroup, data]) => ({
+          muscleGroup,
+          sets: data.sets,
+          volumeKg: Math.round(data.volumeKg * 100) / 100,
+          fatigueContribution: Math.round(data.fatigue * 100) / 100,
+        }));
+
+        // Update muscle fatigue records (upsert)
+        for (const mw of musclesWorked) {
+          const recoveryHours = RECOVERY_HOURS[mw.muscleGroup] || 48;
+          const estimatedRecovery = new Date(now.getTime() + recoveryHours * 60 * 60 * 1000);
+
+          const existing = await database
+            .select()
+            .from(userMuscleFatigue)
+            .where(
+              and(
+                eq(userMuscleFatigue.userId, userId),
+                eq(userMuscleFatigue.muscleGroup, mw.muscleGroup)
+              )
+            )
+            .limit(1);
+
+          if (existing.length > 0) {
+            await database
+              .update(userMuscleFatigue)
+              .set({
+                fatigueLevel: String(Math.min(100, mw.fatigueContribution)),
+                lastTrainedAt: now,
+                estimatedFullRecoveryAt: estimatedRecovery,
+                volumeLastSession: String(mw.volumeKg),
+                setsLastSession: mw.sets,
+                updatedAt: now,
+              })
+              .where(eq(userMuscleFatigue.id, existing[0].id));
+          } else {
+            await database.insert(userMuscleFatigue).values({
+              userId,
+              muscleGroup: mw.muscleGroup,
+              fatigueLevel: String(Math.min(100, mw.fatigueContribution)),
+              lastTrainedAt: now,
+              estimatedFullRecoveryAt: estimatedRecovery,
+              volumeLastSession: String(mw.volumeKg),
+              setsLastSession: mw.sets,
+              avgRecoveryHours: String(recoveryHours),
+            });
+          }
+        }
+
+        // Update muscle volume tracking (upsert)
+        for (const mw of musclesWorked) {
+          const existing = await database
+            .select()
+            .from(userMuscleVolume)
+            .where(
+              and(
+                eq(userMuscleVolume.userId, userId),
+                eq(userMuscleVolume.muscleGroup, mw.muscleGroup)
+              )
+            )
+            .limit(1);
+
+          if (existing.length > 0) {
+            await database
+              .update(userMuscleVolume)
+              .set({
+                volumeThisWeekKg: sql`${userMuscleVolume.volumeThisWeekKg} + ${mw.volumeKg}`,
+                setsThisWeek: sql`${userMuscleVolume.setsThisWeek} + ${mw.sets}`,
+                volumeThisMonthKg: sql`${userMuscleVolume.volumeThisMonthKg} + ${mw.volumeKg}`,
+                setsThisMonth: sql`${userMuscleVolume.setsThisMonth} + ${mw.sets}`,
+                totalVolumeKg: sql`${userMuscleVolume.totalVolumeKg} + ${mw.volumeKg}`,
+                totalSets: sql`${userMuscleVolume.totalSets} + ${mw.sets}`,
+                lastUpdated: now,
+              })
+              .where(eq(userMuscleVolume.id, existing[0].id));
+          } else {
+            await database.insert(userMuscleVolume).values({
+              userId,
+              muscleGroup: mw.muscleGroup,
+              volumeThisWeekKg: String(mw.volumeKg),
+              setsThisWeek: mw.sets,
+              volumeThisMonthKg: String(mw.volumeKg),
+              setsThisMonth: mw.sets,
+              totalVolumeKg: String(mw.volumeKg),
+              totalSets: mw.sets,
+            });
+          }
+        }
+
+        // Log recovery entry
+        await database.insert(workoutRecoveryLog).values({
+          userId,
+          workoutLogId: sessionId,
+          musclesWorked,
+          perceivedExertion: perceivedExertion || null,
+        });
+      }
+    } catch (recoveryError) {
+      console.warn('Recovery fatigue update failed (non-critical):', recoveryError);
     }
 
     res.json({
@@ -438,12 +593,7 @@ router.get('/sessions/active', async (req: Request, res: Response) => {
     const activeSession = await database
       .select()
       .from(workoutSessions)
-      .where(
-        and(
-          eq(workoutSessions.userId, userId),
-          eq(workoutSessions.isActive, true)
-        )
-      )
+      .where(and(eq(workoutSessions.userId, userId), eq(workoutSessions.isActive, true)))
       .limit(1);
 
     if (activeSession.length === 0) {

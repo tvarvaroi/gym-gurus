@@ -17,7 +17,7 @@ import {
   Info,
   Calendar,
   Dumbbell,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 
 interface MuscleFatigue {
@@ -42,7 +42,8 @@ const recoveryTips = [
   {
     icon: Moon,
     title: 'Sleep Quality',
-    description: 'Aim for 7-9 hours of quality sleep. Your muscles recover and grow during deep sleep.',
+    description:
+      'Aim for 7-9 hours of quality sleep. Your muscles recover and grow during deep sleep.',
     color: 'indigo',
   },
   {
@@ -66,7 +67,7 @@ const recoveryTips = [
 ];
 
 function formatMuscleGroupName(group: string): string {
-  return group.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return group.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatLastTrained(dateStr: string | null): string {
@@ -83,12 +84,18 @@ function formatLastTrained(dateStr: string | null): string {
 
 function getSuggestedWorkoutLabel(type: string): string {
   switch (type) {
-    case 'push': return 'Push Day (Chest, Shoulders, Triceps)';
-    case 'pull': return 'Pull Day (Back, Biceps)';
-    case 'legs': return 'Leg Day (Quads, Hamstrings, Glutes)';
-    case 'full_body': return 'Full Body Workout';
-    case 'rest': return 'Rest Day';
-    default: return type;
+    case 'push':
+      return 'Push Day (Chest, Shoulders, Triceps)';
+    case 'pull':
+      return 'Pull Day (Back, Biceps)';
+    case 'legs':
+      return 'Leg Day (Quads, Hamstrings, Glutes)';
+    case 'full_body':
+      return 'Full Body Workout';
+    case 'rest':
+      return 'Rest Day';
+    default:
+      return type;
   }
 }
 
@@ -104,25 +111,36 @@ export default function Recovery() {
   });
 
   // Calculate overall recovery score
-  const overallRecovery = fatigueData.length > 0
-    ? Math.round(fatigueData.reduce((acc, m) => acc + (100 - m.fatigueLevel), 0) / fatigueData.length)
-    : 100;
+  const overallRecovery =
+    fatigueData.length > 0
+      ? Math.round(
+          fatigueData.reduce((acc, m) => acc + (100 - m.fatigueLevel), 0) / fatigueData.length
+        )
+      : 100;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'recovered': return 'text-emerald-400';
-      case 'recovering': return 'text-amber-400';
-      case 'fatigued': return 'text-red-400';
-      default: return 'text-muted-foreground';
+      case 'recovered':
+        return 'text-emerald-400';
+      case 'recovering':
+        return 'text-amber-400';
+      case 'fatigued':
+        return 'text-red-400';
+      default:
+        return 'text-muted-foreground';
     }
   };
 
   const getStatusBg = (status: string) => {
     switch (status) {
-      case 'recovered': return 'bg-emerald-500/10 border-emerald-500/30';
-      case 'recovering': return 'bg-amber-500/10 border-amber-500/30';
-      case 'fatigued': return 'bg-red-500/10 border-red-500/30';
-      default: return 'bg-muted/50 border-border/50';
+      case 'recovered':
+        return 'bg-emerald-500/10 border-emerald-500/30';
+      case 'recovering':
+        return 'bg-amber-500/10 border-amber-500/30';
+      case 'fatigued':
+        return 'bg-red-500/10 border-red-500/30';
+      default:
+        return 'bg-muted/50 border-border/50';
     }
   };
 
@@ -143,14 +161,12 @@ export default function Recovery() {
     );
   }
 
-  // Group into display-friendly set (combine small groups)
-  const displayMuscles = fatigueData.filter(m =>
-    ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'quads', 'hamstrings', 'glutes', 'abs', 'calves'].includes(m.muscleGroup)
-  );
+  // Show all muscle groups from the API
+  const displayMuscles = fatigueData;
 
-  const recoveredCount = fatigueData.filter(m => m.recoveryStatus === 'recovered').length;
-  const recoveringCount = fatigueData.filter(m => m.recoveryStatus === 'recovering').length;
-  const fatiguedCount = fatigueData.filter(m => m.recoveryStatus === 'fatigued').length;
+  const recoveredCount = fatigueData.filter((m) => m.recoveryStatus === 'recovered').length;
+  const recoveringCount = fatigueData.filter((m) => m.recoveryStatus === 'recovering').length;
+  const fatiguedCount = fatigueData.filter((m) => m.recoveryStatus === 'fatigued').length;
 
   return (
     <div className="space-y-6">
@@ -165,9 +181,14 @@ export default function Recovery() {
             <div className="p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20">
               <Heart className="h-8 w-8 text-rose-400" />
             </div>
-            Recovery <span className="font-light bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">Status</span>
+            Recovery{' '}
+            <span className="font-light bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">
+              Status
+            </span>
           </h1>
-          <p className="text-muted-foreground font-light">Track your muscle recovery and optimize rest days</p>
+          <p className="text-muted-foreground font-light">
+            Track your muscle recovery and optimize rest days
+          </p>
         </div>
       </motion.div>
 
@@ -278,7 +299,11 @@ export default function Recovery() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.1 + index * 0.05 }}
-                    onClick={() => setSelectedMuscle(selectedMuscle === muscle.muscleGroup ? null : muscle.muscleGroup)}
+                    onClick={() =>
+                      setSelectedMuscle(
+                        selectedMuscle === muscle.muscleGroup ? null : muscle.muscleGroup
+                      )
+                    }
                     className={`p-4 rounded-xl border transition-all duration-300 text-left ${
                       selectedMuscle === muscle.muscleGroup
                         ? 'border-rose-500/50 bg-rose-500/10'
@@ -286,7 +311,9 @@ export default function Recovery() {
                     }`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className="font-medium text-sm">{formatMuscleGroupName(muscle.muscleGroup)}</span>
+                      <span className="font-medium text-sm">
+                        {formatMuscleGroupName(muscle.muscleGroup)}
+                      </span>
                       <Badge
                         variant="outline"
                         className={`text-xs ${getStatusColor(muscle.recoveryStatus)} border-current/30 bg-current/10`}
@@ -307,37 +334,48 @@ export default function Recovery() {
                           transition={{ duration: 0.8, delay: 0.2 + index * 0.05 }}
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground">{formatLastTrained(muscle.lastTrainedAt)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatLastTrained(muscle.lastTrainedAt)}
+                      </p>
                     </div>
                   </motion.button>
                 ))}
               </div>
 
               {/* Selected Muscle Details */}
-              {selectedMuscle && (() => {
-                const muscle = fatigueData.find(m => m.muscleGroup === selectedMuscle);
-                if (!muscle) return null;
-                return (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-4 p-4 rounded-xl bg-muted/20 border border-border/50"
-                  >
-                    <h4 className="font-medium mb-2">{formatMuscleGroupName(selectedMuscle)} Recovery Details</h4>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>Fatigue level: {muscle.fatigueLevel}%</p>
-                      <p>Last trained: {formatLastTrained(muscle.lastTrainedAt)}</p>
-                      {muscle.setsLastSession > 0 && (
-                        <p>Last session: {muscle.setsLastSession} sets, {muscle.volumeLastSession.toFixed(0)} kg volume</p>
-                      )}
-                      {muscle.estimatedFullRecoveryAt && (
-                        <p>Full recovery by: {new Date(muscle.estimatedFullRecoveryAt).toLocaleString()}</p>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })()}
+              {selectedMuscle &&
+                (() => {
+                  const muscle = fatigueData.find((m) => m.muscleGroup === selectedMuscle);
+                  if (!muscle) return null;
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-4 p-4 rounded-xl bg-muted/20 border border-border/50"
+                    >
+                      <h4 className="font-medium mb-2">
+                        {formatMuscleGroupName(selectedMuscle)} Recovery Details
+                      </h4>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>Fatigue level: {muscle.fatigueLevel}%</p>
+                        <p>Last trained: {formatLastTrained(muscle.lastTrainedAt)}</p>
+                        {muscle.setsLastSession > 0 && (
+                          <p>
+                            Last session: {muscle.setsLastSession} sets,{' '}
+                            {muscle.volumeLastSession.toFixed(0)} kg volume
+                          </p>
+                        )}
+                        {muscle.estimatedFullRecoveryAt && (
+                          <p>
+                            Full recovery by:{' '}
+                            {new Date(muscle.estimatedFullRecoveryAt).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })()}
             </CardContent>
           </Card>
         </motion.div>
@@ -397,16 +435,23 @@ export default function Recovery() {
                 {recommendations ? (
                   <>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Based on your recovery status, we recommend: <strong>{getSuggestedWorkoutLabel(recommendations.suggestedWorkout)}</strong>
+                      Based on your recovery status, we recommend:{' '}
+                      <strong>{getSuggestedWorkoutLabel(recommendations.suggestedWorkout)}</strong>
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {recommendations.readyToTrain.slice(0, 6).map(muscle => (
-                        <Badge key={muscle} className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                      {recommendations.readyToTrain.slice(0, 6).map((muscle) => (
+                        <Badge
+                          key={muscle}
+                          className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                        >
                           {formatMuscleGroupName(muscle)} - Ready
                         </Badge>
                       ))}
-                      {recommendations.needsRest.slice(0, 4).map(m => (
-                        <Badge key={m.muscleGroup} className="bg-red-500/20 text-red-400 border-red-500/30">
+                      {recommendations.needsRest.slice(0, 4).map((m) => (
+                        <Badge
+                          key={m.muscleGroup}
+                          className="bg-red-500/20 text-red-400 border-red-500/30"
+                        >
                           {formatMuscleGroupName(m.muscleGroup)} - Rest
                         </Badge>
                       ))}
