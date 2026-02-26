@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
@@ -29,7 +30,21 @@ import {
   ShoppingCart,
   Clock,
   Settings2,
+  Save,
+  Trash2,
+  History,
+  Download,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,10 +104,91 @@ export default function NutritionPlanner() {
   const prefersReducedMotion = useReducedMotion();
   const profile = useFitnessProfile();
 
+  const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
   const [mealPlan, setMealPlan] = useState<GeneratedMealPlan | null>(null);
   const [limitReached, setLimitReached] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Fetch saved meal plans
+  const { data: savedPlans = [] } = useQuery<any[]>({
+    queryKey: ['/api/solo/meal-plans'],
+    queryFn: async () => {
+      const res = await fetch('/api/solo/meal-plans', { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const handleSavePlan = async () => {
+    if (!mealPlan) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/solo/meal-plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: `${nutritionGoal.charAt(0).toUpperCase() + nutritionGoal.slice(1)} Plan - ${targetCalories} kcal`,
+          targetCalories: Number(targetCalories),
+          planData: mealPlan,
+          source: 'generator',
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      setIsSaved(true);
+      queryClient.invalidateQueries({ queryKey: ['/api/solo/meal-plans'] });
+      toast({
+        title: 'Meal plan saved!',
+        description: 'You can load it anytime from your history.',
+      });
+    } catch {
+      toast({
+        title: 'Save failed',
+        description: 'Could not save meal plan.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLoadPlan = async (planId: string) => {
+    try {
+      const res = await fetch(`/api/solo/meal-plans/${planId}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+      if (data.planData && data.planData.meals) {
+        setMealPlan(data.planData as GeneratedMealPlan);
+        setIsSaved(true);
+        toast({ title: 'Plan loaded!', description: data.name });
+      } else if (data.planData?.rawContent) {
+        toast({
+          title: 'AI Chat plan',
+          description: 'This plan was saved from AI Coach and cannot be displayed here.',
+        });
+      }
+    } catch {
+      toast({
+        title: 'Load failed',
+        description: 'Could not load meal plan.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeletePlan = async (planId: string) => {
+    try {
+      await fetch(`/api/solo/meal-plans/${planId}`, { method: 'DELETE', credentials: 'include' });
+      queryClient.invalidateQueries({ queryKey: ['/api/solo/meal-plans'] });
+      toast({ title: 'Plan deleted' });
+    } catch {
+      toast({ title: 'Delete failed', variant: 'destructive' });
+    }
+  };
 
   // Form state
   const [nutritionGoal, setNutritionGoal] = useState('maintain');
@@ -170,6 +266,7 @@ export default function NutritionPlanner() {
     setIsGenerating(true);
     setGenerateError(null);
     setLimitReached(false);
+    setIsSaved(false);
 
     try {
       const restrictions = dietaryRestrictions.filter((d) => d !== 'None');
@@ -617,16 +714,45 @@ export default function NutritionPlanner() {
                   )}
                 </div>
 
-                {/* Regenerate */}
-                <Button
-                  variant="outline"
-                  className="w-full border-border/50"
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Regenerate
-                </Button>
+                {/* Save + Regenerate */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-border/50"
+                    onClick={handleGenerate}
+                    disabled={isGenerating}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Regenerate
+                  </Button>
+                  <Button
+                    onClick={handleSavePlan}
+                    disabled={isSaving || isSaved}
+                    className={`flex-1 ${
+                      isSaved
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                    }`}
+                    variant={isSaved ? 'outline' : 'default'}
+                  >
+                    {isSaving ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : isSaved ? (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Saved!
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Plan
+                      </>
+                    )}
+                  </Button>
+                </div>
               </motion.div>
             ) : (
               <motion.div
@@ -664,6 +790,98 @@ export default function NutritionPlanner() {
           </AnimatePresence>
         </motion.div>
       </div>
+
+      {/* Saved Meal Plans History (F5) */}
+      {savedPlans.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-light flex items-center gap-2">
+                <History className="h-5 w-5 text-green-400" />
+                My Saved Plans
+              </CardTitle>
+              <CardDescription>
+                {savedPlans.length} saved meal plan{savedPlans.length !== 1 ? 's' : ''}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {savedPlans.map((plan: any) => (
+                  <div
+                    key={plan.id}
+                    className="p-3 rounded-xl border border-border/40 bg-card/30 hover:border-green-500/30 transition-colors group"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{plan.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {plan.targetCalories ? `${plan.targetCalories} kcal` : 'No calories set'}
+                        </p>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] shrink-0 ml-2 ${
+                          plan.source === 'ai_chat'
+                            ? 'border-purple-500/30 text-purple-400'
+                            : 'border-green-500/30 text-green-400'
+                        }`}
+                      >
+                        {plan.source === 'ai_chat' ? 'AI Chat' : 'Generated'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {new Date(plan.createdAt).toLocaleDateString()}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs h-7 border-green-500/20 text-green-400 hover:bg-green-500/10"
+                        onClick={() => handleLoadPlan(plan.id)}
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Load
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete meal plan?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete "{plan.name}".
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <div className="flex justify-end gap-3">
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeletePlan(plan.id)}
+                              className="bg-destructive text-destructive-foreground"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </div>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
     </div>
   );
 }

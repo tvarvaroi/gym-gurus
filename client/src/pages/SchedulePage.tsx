@@ -1,52 +1,96 @@
-import { useState, useMemo } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Calendar as CalendarIcon, Clock, User, MapPin, Video, Edit, Trash2, ChevronLeft, ChevronRight, Dumbbell, UserCircle, ClipboardCheck, Monitor, Repeat } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { TruncatedText } from "@/components/TruncatedText";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
-import CalendarView from "@/components/CalendarView";
-import { useUser } from "@/contexts/UserContext";
-import { LuxuryCard } from "@/components/LuxuryCard";
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  User,
+  MapPin,
+  Video,
+  Edit,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Dumbbell,
+  UserCircle,
+  ClipboardCheck,
+  Monitor,
+  Repeat,
+  CheckCircle2,
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { TruncatedText } from '@/components/TruncatedText';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
+import CalendarView from '@/components/CalendarView';
+import { useUser } from '@/contexts/UserContext';
 
 // Combined Appointment + Workout Assignment form schema
 const appointmentFormSchema = z.object({
-  clientId: z.string().min(1, "Client is required"),
-  title: z.string().min(1, "Title is required"),
+  clientId: z.string().min(1, 'Client is required'),
+  title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   date: z.date({
-    required_error: "Date is required",
+    required_error: 'Date is required',
   }),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
-  type: z.enum(["training", "consultation", "assessment", "online"]),
+  startTime: z.string().min(1, 'Start time is required'),
+  endTime: z.string().min(1, 'End time is required'),
+  type: z.enum(['training', 'consultation', 'assessment', 'online']),
   location: z.string().optional(),
-  meetingUrl: z.string().url().optional().or(z.literal("")),
+  meetingUrl: z.string().url().optional().or(z.literal('')),
   // Optional workout assignment fields
   workoutId: z.string().optional(),
   workoutDuration: z.number().optional(),
   workoutCustomTitle: z.string().optional(),
   workoutCustomNotes: z.string().optional(),
   // Recurring session fields
-  recurrencePattern: z.enum(["none", "weekly", "biweekly", "monthly"]).default("none"),
+  recurrencePattern: z.enum(['none', 'weekly', 'biweekly', 'monthly']).default('none'),
   recurrenceEndDate: z.date().optional(),
 });
 
@@ -61,10 +105,10 @@ interface Appointment {
   date: string;
   startTime: string;
   endTime: string;
-  type: "training" | "consultation" | "assessment" | "online";
+  type: 'training' | 'consultation' | 'assessment' | 'online';
   location?: string;
   meetingUrl?: string;
-  status: "scheduled" | "completed" | "cancelled";
+  status: 'scheduled' | 'completed' | 'cancelled';
   recurrencePattern?: string;
   parentAppointmentId?: string;
   client?: {
@@ -73,11 +117,127 @@ interface Appointment {
   };
 }
 
+// ─── Solo Schedule View (F1) ──────────────────────────────────────────────────
+
+function SoloScheduleView() {
+  const [currentDate] = useState<Date>(new Date());
+  const prefersReducedMotion = useReducedMotion();
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const startDate = format(new Date(year, month, 1), 'yyyy-MM-dd');
+  const endDate = format(new Date(year, month + 1, 0), 'yyyy-MM-dd');
+
+  const { data, isLoading } = useQuery<{ events: any[] }>({
+    queryKey: ['/api/solo/schedule', startDate, endDate],
+    queryFn: async () => {
+      const res = await fetch(`/api/solo/schedule?startDate=${startDate}&endDate=${endDate}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch schedule');
+      return res.json();
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const events = data?.events || [];
+
+  // Map events to CalendarView format
+  const calendarEvents = events.map((e: any) => ({
+    id: e.id,
+    title: e.title,
+    client: e.type === 'completed' ? `${e.duration || 0}min` : 'Tap to start',
+    time: e.time || '09:00',
+    type: e.type as 'completed' | 'planned' | 'rest',
+    status: e.status as 'completed' | 'pending' | 'confirmed',
+    date: e.date,
+  }));
+
+  // Count stats for the month
+  const completedCount = events.filter((e: any) => e.type === 'completed').length;
+  const plannedCount = events.filter((e: any) => e.type === 'planned').length;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <motion.div
+        className="space-y-3"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <h1 className="text-4xl md:text-6xl font-extralight tracking-tight">
+          My{' '}
+          <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+            Schedule
+          </span>
+        </h1>
+        <p className="text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
+          Track your completed workouts and planned training days
+        </p>
+      </motion.div>
+
+      {/* Stats Summary */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-2 gap-4"
+      >
+        <Card className="border-green-500/20 bg-gradient-to-br from-green-500/5 to-green-500/0">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{completedCount}</p>
+              <p className="text-xs text-muted-foreground">Completed this month</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-blue-500/0">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <CalendarIcon className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{plannedCount}</p>
+              <p className="text-xs text-muted-foreground">Planned remaining</p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Calendar */}
+      {isLoading ? (
+        <Card className="h-96 flex items-center justify-center border-border/50">
+          <motion.div
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity }}
+          >
+            <CalendarIcon className="w-12 h-12 text-muted-foreground/40" />
+          </motion.div>
+        </Card>
+      ) : (
+        <CalendarView events={calendarEvents} />
+      )}
+    </div>
+  );
+}
+
+// ─── Trainer/Client Schedule Page ─────────────────────────────────────────────
+
 export default function SchedulePage() {
+  const { isSolo } = useUser();
+  if (isSolo) return <SoloScheduleView />;
+  return <TrainerClientSchedule />;
+}
+
+function TrainerClientSchedule() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
-  const [viewMode, setViewMode] = useState<"week" | "day" | "calendar">("week");
+  const [viewMode, setViewMode] = useState<'week' | 'day' | 'calendar'>('week');
   const { toast } = useToast();
   const prefersReducedMotion = useReducedMotion();
 
@@ -85,14 +245,16 @@ export default function SchedulePage() {
   const { user, isLoading: userLoading, isClient, isTrainer } = useUser();
 
   // Fetch appointments - use different endpoint based on role
-  const { data: appointments = [], isLoading, error } = useQuery<Appointment[]>({
+  const {
+    data: appointments = [],
+    isLoading,
+    error,
+  } = useQuery<Appointment[]>({
     queryKey: ['/api/appointments', isClient],
     queryFn: async () => {
       // Use client-specific endpoint for clients, trainer endpoint for trainers
       // TrainerId is derived from session on the server — no ID in URL
-      const endpoint = isClient
-        ? `/api/appointments/client/${user?.id}`
-        : '/api/appointments';
+      const endpoint = isClient ? `/api/appointments/client/${user?.id}` : '/api/appointments';
 
       const response = await fetch(endpoint);
       if (!response.ok) {
@@ -113,11 +275,11 @@ export default function SchedulePage() {
     queryKey: ['/api/clients'],
     queryFn: async () => {
       const response = await fetch('/api/clients', {
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch clients');
       return response.json();
-    }
+    },
   });
 
   // Fetch workouts for assignment
@@ -125,7 +287,7 @@ export default function SchedulePage() {
     queryKey: ['/api/workouts'],
     queryFn: async () => {
       const response = await fetch('/api/workouts', {
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch workouts');
       return response.json();
@@ -138,7 +300,7 @@ export default function SchedulePage() {
     queryKey: ['/api/workout-assignments/trainer'],
     queryFn: async () => {
       const response = await fetch('/api/workout-assignments/trainer', {
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!response.ok) {
         if (response.status === 404) return [];
@@ -157,7 +319,7 @@ export default function SchedulePage() {
     }
 
     // Trainers see both appointments AND workout assignments
-    const appointmentEvents = appointments.map(apt => ({
+    const appointmentEvents = appointments.map((apt) => ({
       ...apt,
       type: 'appointment' as const,
     }));
@@ -180,24 +342,24 @@ export default function SchedulePage() {
   }, [appointments, workoutAssignments, isClient]);
 
   const form = useForm<AppointmentFormData>({
-    mode: "onTouched",
+    mode: 'onTouched',
     resolver: zodResolver(appointmentFormSchema),
     defaultValues: {
-      clientId: "",
-      title: "",
-      description: "",
+      clientId: '',
+      title: '',
+      description: '',
       date: new Date(),
-      startTime: "",
-      endTime: "",
-      type: "training",
-      location: "",
-      meetingUrl: "",
+      startTime: '',
+      endTime: '',
+      type: 'training',
+      location: '',
+      meetingUrl: '',
       // Workout assignment fields (optional)
-      workoutId: "",
+      workoutId: '',
       workoutDuration: 60,
-      workoutCustomTitle: "",
-      workoutCustomNotes: "",
-      recurrencePattern: "none" as const,
+      workoutCustomTitle: '',
+      workoutCustomNotes: '',
+      recurrencePattern: 'none' as const,
       recurrenceEndDate: undefined,
     },
   });
@@ -220,19 +382,24 @@ export default function SchedulePage() {
         location: data.location,
         meetingUrl: data.meetingUrl,
         trainerId: user?.id,
-        status: "scheduled",
+        status: 'scheduled',
         // Include workout assignment fields (backend will handle creating the workout assignment)
         workoutId: data.workoutId || undefined,
         workoutDuration: data.workoutDuration || undefined,
         workoutCustomTitle: data.workoutCustomTitle || undefined,
         workoutCustomNotes: data.workoutCustomNotes || undefined,
         // Recurring session fields
-        recurrencePattern: data.recurrencePattern || "none",
-        recurrenceEndDate: data.recurrenceEndDate ? format(data.recurrenceEndDate, 'yyyy-MM-dd') : undefined,
+        recurrencePattern: data.recurrencePattern || 'none',
+        recurrenceEndDate: data.recurrenceEndDate
+          ? format(data.recurrenceEndDate, 'yyyy-MM-dd')
+          : undefined,
       };
       console.log('📤 [SchedulePage] Sending appointment (with workout fields):', appointmentData);
       const appointment = await apiRequest('POST', '/api/appointments', appointmentData);
-      console.log('✅ [SchedulePage] Appointment created (backend handled workout assignment):', appointment);
+      console.log(
+        '✅ [SchedulePage] Appointment created (backend handled workout assignment):',
+        appointment
+      );
 
       return appointment;
     },
@@ -243,22 +410,22 @@ export default function SchedulePage() {
       queryClient.invalidateQueries({ queryKey: ['/api/client/workouts/weekly'] }); // Refresh client's My Workouts page
       setShowAddModal(false);
       form.reset();
-      const hasWorkout = variables.workoutId && variables.workoutId.trim() !== "";
+      const hasWorkout = variables.workoutId && variables.workoutId.trim() !== '';
       const recurringCount = result?.recurringCount;
       toast({
-        title: "Success",
+        title: 'Success',
         description: recurringCount
-          ? `${recurringCount} recurring appointments scheduled${hasWorkout ? " with workouts" : ""}`
+          ? `${recurringCount} recurring appointments scheduled${hasWorkout ? ' with workouts' : ''}`
           : hasWorkout
-            ? "Appointment scheduled and workout assigned successfully"
-            : "Appointment scheduled successfully",
+            ? 'Appointment scheduled and workout assigned successfully'
+            : 'Appointment scheduled successfully',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to schedule appointment",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to schedule appointment',
+        variant: 'destructive',
       });
     },
   });
@@ -277,15 +444,15 @@ export default function SchedulePage() {
       setEditingAppointment(null);
       form.reset();
       toast({
-        title: "Success",
-        description: "Appointment updated successfully",
+        title: 'Success',
+        description: 'Appointment updated successfully',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update appointment",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to update appointment',
+        variant: 'destructive',
       });
     },
   });
@@ -296,15 +463,15 @@ export default function SchedulePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
       toast({
-        title: "Success",
-        description: "Appointment cancelled successfully",
+        title: 'Success',
+        description: 'Appointment cancelled successfully',
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to cancel appointment",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to cancel appointment',
+        variant: 'destructive',
       });
     },
   });
@@ -322,13 +489,13 @@ export default function SchedulePage() {
     form.reset({
       clientId: appointment.clientId,
       title: appointment.title,
-      description: appointment.description || "",
+      description: appointment.description || '',
       date: parseISO(appointment.date),
       startTime: appointment.startTime,
       endTime: appointment.endTime,
       type: appointment.type,
-      location: appointment.location || "",
-      meetingUrl: appointment.meetingUrl || "",
+      location: appointment.location || '',
+      meetingUrl: appointment.meetingUrl || '',
     });
     setShowAddModal(true);
   };
@@ -340,7 +507,7 @@ export default function SchedulePage() {
   // Get appointments and workout assignments for selected date/week - sorted chronologically by time
   const getAppointmentsForDate = (date: Date) => {
     return allCalendarEvents
-      .filter(apt => isSameDay(parseISO(apt.date), date))
+      .filter((apt) => isSameDay(parseISO(apt.date), date))
       .sort((a, b) => {
         // Sort by start time in chronological order
         const timeA = a.startTime.split(':').map(Number);
@@ -362,52 +529,52 @@ export default function SchedulePage() {
   // Premium color scheme for appointment types
   const typeConfig = {
     training: {
-      color: "from-blue-500 to-blue-400",
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20",
-      text: "text-blue-600",
+      color: 'from-blue-500 to-blue-400',
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/20',
+      text: 'text-blue-600',
       icon: Dumbbell,
-      label: "Training"
+      label: 'Training',
     },
     consultation: {
-      color: "from-emerald-500 to-emerald-400",
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20",
-      text: "text-emerald-600",
+      color: 'from-emerald-500 to-emerald-400',
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/20',
+      text: 'text-emerald-600',
       icon: UserCircle,
-      label: "Consultation"
+      label: 'Consultation',
     },
     assessment: {
-      color: "from-purple-500 to-purple-400",
-      bg: "bg-purple-500/10",
-      border: "border-purple-500/20",
-      text: "text-purple-600",
+      color: 'from-purple-500 to-purple-400',
+      bg: 'bg-purple-500/10',
+      border: 'border-purple-500/20',
+      text: 'text-purple-600',
       icon: ClipboardCheck,
-      label: "Assessment"
+      label: 'Assessment',
     },
     online: {
-      color: "from-orange-500 to-orange-400",
-      bg: "bg-orange-500/10",
-      border: "border-orange-500/20",
-      text: "text-orange-600",
+      color: 'from-orange-500 to-orange-400',
+      bg: 'bg-orange-500/10',
+      border: 'border-orange-500/20',
+      text: 'text-orange-600',
       icon: Monitor,
-      label: "Online"
+      label: 'Online',
     },
     workout: {
-      color: "from-cyan-500 to-cyan-400",
-      bg: "bg-cyan-500/10",
-      border: "border-cyan-500/20",
-      text: "text-cyan-600",
+      color: 'from-cyan-500 to-cyan-400',
+      bg: 'bg-cyan-500/10',
+      border: 'border-cyan-500/20',
+      text: 'text-cyan-600',
       icon: Dumbbell,
-      label: "Workout"
+      label: 'Workout',
     },
     appointment: {
-      color: "from-blue-500 to-blue-400",
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20",
-      text: "text-blue-600",
+      color: 'from-blue-500 to-blue-400',
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/20',
+      text: 'text-blue-600',
       icon: CalendarIcon,
-      label: "Appointment"
+      label: 'Appointment',
     },
   };
 
@@ -422,12 +589,19 @@ export default function SchedulePage() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
-              Your <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Schedule</span>
+              Your{' '}
+              <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                Schedule
+              </span>
             </h1>
             <p className="text-base font-light text-muted-foreground/80 flex items-center gap-2">
               <motion.span
                 animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 1.5,
+                  repeat: prefersReducedMotion ? 0 : Infinity,
+                  ease: 'easeInOut',
+                }}
               >
                 Loading your appointments...
               </motion.span>
@@ -447,7 +621,12 @@ export default function SchedulePage() {
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
                 animate={{ x: ['-100%', '100%'] }}
-                transition={{ duration: 1.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "linear", delay: i * 0.1 }}
+                transition={{
+                  duration: 1.5,
+                  repeat: prefersReducedMotion ? 0 : Infinity,
+                  ease: 'linear',
+                  delay: i * 0.1,
+                }}
               />
             </motion.div>
           ))}
@@ -463,24 +642,25 @@ export default function SchedulePage() {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           >
             <CalendarIcon className="h-20 w-20 text-muted-foreground/50" />
           </motion.div>
           <motion.div
             className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
             animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
+            transition={{
+              duration: 2,
+              repeat: prefersReducedMotion ? 0 : Infinity,
+              ease: 'easeInOut',
+            }}
           />
         </div>
         <div className="space-y-2 text-center">
           <h2 className="text-2xl font-light">Unable to load schedule</h2>
           <p className="text-base font-light text-muted-foreground/80">Please try again later</p>
         </div>
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button
             onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/appointments'] })}
             className="shadow-premium hover:shadow-premium-lg transition-all duration-300"
@@ -503,16 +683,17 @@ export default function SchedulePage() {
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
         >
           <h1 className="text-4xl md:text-6xl font-extralight tracking-tight">
-            {isClient ? "My " : "Your "}
-            <span className={`font-light bg-gradient-to-r ${isClient ? 'from-cyan-500 via-teal-500 to-cyan-400' : 'from-primary via-primary/80 to-primary/60'} bg-clip-text text-transparent`}>
+            {isClient ? 'My ' : 'Your '}
+            <span
+              className={`font-light bg-gradient-to-r ${isClient ? 'from-cyan-500 via-teal-500 to-cyan-400' : 'from-primary via-primary/80 to-primary/60'} bg-clip-text text-transparent`}
+            >
               Schedule
             </span>
           </h1>
           <p className="text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
             {isClient
-              ? "View your upcoming training sessions and appointments"
-              : "Manage appointments and training sessions with precision"
-            }
+              ? 'View your upcoming training sessions and appointments'
+              : 'Manage appointments and training sessions with precision'}
           </p>
         </motion.div>
         <motion.div
@@ -557,13 +738,16 @@ export default function SchedulePage() {
           </Tabs>
           {isTrainer && (
             <div className="flex flex-col sm:flex-row gap-3">
-              <Dialog open={showAddModal} onOpenChange={(open) => {
-                setShowAddModal(open);
-                if (!open) {
-                  setEditingAppointment(null);
-                  form.reset();
-                }
-              }}>
+              <Dialog
+                open={showAddModal}
+                onOpenChange={(open) => {
+                  setShowAddModal(open);
+                  if (!open) {
+                    setEditingAppointment(null);
+                    form.reset();
+                  }
+                }}
+              >
                 <DialogTrigger asChild>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button
@@ -576,378 +760,421 @@ export default function SchedulePage() {
                     </Button>
                   </motion.div>
                 </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editingAppointment ? "Edit" : "Schedule"} Appointment</DialogTitle>
-                <DialogDescription>
-                  {editingAppointment ? "Update appointment details" : "Create a new appointment with a client"}
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="clientId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Client<span className="text-destructive ml-0.5">*</span></FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-client">
-                              <SelectValue placeholder="Select a client" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {clients.map((client: any) => (
-                              <SelectItem key={client.id} value={client.id}>
-                                {client.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title<span className="text-destructive ml-0.5">*</span></FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Personal Training Session" {...field} data-testid="input-title" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description (Optional)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Additional notes or session plan"
-                            {...field}
-                            data-testid="input-description"
-                            className="resize-none"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="date"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Date<span className="text-destructive ml-0.5">*</span></FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                  data-testid="button-select-date"
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date < new Date(new Date().setHours(0, 0, 0, 0))
-                                }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Type<span className="text-destructive ml-0.5">*</span></FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-type">
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="training">Training Session</SelectItem>
-                              <SelectItem value="consultation">Consultation</SelectItem>
-                              <SelectItem value="assessment">Assessment</SelectItem>
-                              <SelectItem value="online">Online Session</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="startTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Start Time<span className="text-destructive ml-0.5">*</span></FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} data-testid="input-start-time" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="endTime"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>End Time<span className="text-destructive ml-0.5">*</span></FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} data-testid="input-end-time" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Location (Optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., Gym Floor, Studio A, Client's Home"
-                            {...field}
-                            data-testid="input-location"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="meetingUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Meeting URL (For Online Sessions)</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="https://zoom.us/j/..."
-                            {...field}
-                            data-testid="input-meeting-url"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Recurring Session Section */}
-                  <div className="border-t pt-4 mt-6">
-                    <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                      <Repeat className="h-4 w-4" />
-                      Recurring Session (Optional)
-                    </h3>
-
-                    <FormField
-                      control={form.control}
-                      name="recurrencePattern"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Repeat</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="No repeat" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">Does not repeat</SelectItem>
-                              <SelectItem value="weekly">Weekly</SelectItem>
-                              <SelectItem value="biweekly">Every 2 weeks</SelectItem>
-                              <SelectItem value="monthly">Monthly</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {form.watch("recurrencePattern") !== "none" && (
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingAppointment ? 'Edit' : 'Schedule'} Appointment
+                    </DialogTitle>
+                    <DialogDescription>
+                      {editingAppointment
+                        ? 'Update appointment details'
+                        : 'Create a new appointment with a client'}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                       <FormField
                         control={form.control}
-                        name="recurrenceEndDate"
+                        name="clientId"
                         render={({ field }) => (
-                          <FormItem className="mt-3">
-                            <FormLabel>Repeat Until</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                                  >
-                                    {field.value ? format(field.value, "PPP") : "Select end date (max 12 weeks)"}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={(date) => date < new Date() || date > addDays(new Date(), 84)}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
+                          <FormItem>
+                            <FormLabel>
+                              Client<span className="text-destructive ml-0.5">*</span>
+                            </FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-client">
+                                  <SelectValue placeholder="Select a client" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {clients.map((client: any) => (
+                                  <SelectItem key={client.id} value={client.id}>
+                                    {client.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    )}
-                  </div>
 
-                  {/* Optional Workout Assignment Section */}
-                  <div className="border-t pt-4 mt-6">
-                    <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                      <Dumbbell className="h-4 w-4" />
-                      Assign Workout (Optional)
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Optionally assign a workout to this appointment
-                    </p>
-
-                    <FormField
-                      control={form.control}
-                      name="workoutId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Workout Template</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || undefined}>
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              Title<span className="text-destructive ml-0.5">*</span>
+                            </FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a workout (optional)" />
-                              </SelectTrigger>
+                              <Input
+                                placeholder="e.g., Personal Training Session"
+                                {...field}
+                                data-testid="input-title"
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {workouts.map((workout: any) => (
-                                <SelectItem key={workout.id} value={workout.id}>
-                                  {workout.title} ({workout.duration} min)
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="workoutDuration"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Workout Duration (minutes)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              {...field}
-                              onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description (Optional)</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Additional notes or session plan"
+                                {...field}
+                                data-testid="input-description"
+                                className="resize-none"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="workoutCustomTitle"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Custom Workout Title (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Upper Body Focus" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="date"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>
+                                Date<span className="text-destructive ml-0.5">*</span>
+                              </FormLabel>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <FormControl>
+                                    <Button
+                                      variant="outline"
+                                      className={cn(
+                                        'w-full pl-3 text-left font-normal',
+                                        !field.value && 'text-muted-foreground'
+                                      )}
+                                      data-testid="button-select-date"
+                                    >
+                                      {field.value ? (
+                                        format(field.value, 'PPP')
+                                      ) : (
+                                        <span>Pick a date</span>
+                                      )}
+                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                  </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) =>
+                                      date < new Date(new Date().setHours(0, 0, 0, 0))
+                                    }
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                    <FormField
-                      control={form.control}
-                      name="workoutCustomNotes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Workout Notes (Optional)</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Special instructions for this workout..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                        <FormField
+                          control={form.control}
+                          name="type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Type<span className="text-destructive ml-0.5">*</span>
+                              </FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-type">
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="training">Training Session</SelectItem>
+                                  <SelectItem value="consultation">Consultation</SelectItem>
+                                  <SelectItem value="assessment">Assessment</SelectItem>
+                                  <SelectItem value="online">Online Session</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
-                  <div className="flex justify-end gap-4 pt-4">
-                    <Button type="button" variant="outline" onClick={() => {
-                      setShowAddModal(false);
-                      setEditingAppointment(null);
-                      form.reset();
-                    }}>
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={createAppointmentMutation.isPending || updateAppointmentMutation.isPending}
-                      data-testid="button-submit-appointment"
-                    >
-                      {createAppointmentMutation.isPending || updateAppointmentMutation.isPending
-                        ? "Saving..."
-                        : editingAppointment ? "Update" : "Schedule"}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="startTime"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Start Time<span className="text-destructive ml-0.5">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input type="time" {...field} data-testid="input-start-time" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="endTime"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                End Time<span className="text-destructive ml-0.5">*</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input type="time" {...field} data-testid="input-end-time" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="location"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Location (Optional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="e.g., Gym Floor, Studio A, Client's Home"
+                                {...field}
+                                data-testid="input-location"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="meetingUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Meeting URL (For Online Sessions)</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="https://zoom.us/j/..."
+                                {...field}
+                                data-testid="input-meeting-url"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Recurring Session Section */}
+                      <div className="border-t pt-4 mt-6">
+                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                          <Repeat className="h-4 w-4" />
+                          Recurring Session (Optional)
+                        </h3>
+
+                        <FormField
+                          control={form.control}
+                          name="recurrencePattern"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Repeat</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="No repeat" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="none">Does not repeat</SelectItem>
+                                  <SelectItem value="weekly">Weekly</SelectItem>
+                                  <SelectItem value="biweekly">Every 2 weeks</SelectItem>
+                                  <SelectItem value="monthly">Monthly</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {form.watch('recurrencePattern') !== 'none' && (
+                          <FormField
+                            control={form.control}
+                            name="recurrenceEndDate"
+                            render={({ field }) => (
+                              <FormItem className="mt-3">
+                                <FormLabel>Repeat Until</FormLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          'w-full pl-3 text-left font-normal',
+                                          !field.value && 'text-muted-foreground'
+                                        )}
+                                      >
+                                        {field.value
+                                          ? format(field.value, 'PPP')
+                                          : 'Select end date (max 12 weeks)'}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.value}
+                                      onSelect={field.onChange}
+                                      disabled={(date) =>
+                                        date < new Date() || date > addDays(new Date(), 84)
+                                      }
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+
+                      {/* Optional Workout Assignment Section */}
+                      <div className="border-t pt-4 mt-6">
+                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                          <Dumbbell className="h-4 w-4" />
+                          Assign Workout (Optional)
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-4">
+                          Optionally assign a workout to this appointment
+                        </p>
+
+                        <FormField
+                          control={form.control}
+                          name="workoutId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Workout Template</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || undefined}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a workout (optional)" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {workouts.map((workout: any) => (
+                                    <SelectItem key={workout.id} value={workout.id}>
+                                      {workout.title} ({workout.duration} min)
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="workoutDuration"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Workout Duration (minutes)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="workoutCustomTitle"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Custom Workout Title (Optional)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g., Upper Body Focus" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="workoutCustomNotes"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Workout Notes (Optional)</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Special instructions for this workout..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-4 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setShowAddModal(false);
+                            setEditingAppointment(null);
+                            form.reset();
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={
+                            createAppointmentMutation.isPending ||
+                            updateAppointmentMutation.isPending
+                          }
+                          data-testid="button-submit-appointment"
+                        >
+                          {createAppointmentMutation.isPending ||
+                          updateAppointmentMutation.isPending
+                            ? 'Saving...'
+                            : editingAppointment
+                              ? 'Update'
+                              : 'Schedule'}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
               </Dialog>
             </div>
           )}
@@ -955,7 +1182,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Calendar Navigation */}
-      {viewMode !== "calendar" && (
+      {viewMode !== 'calendar' && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -970,9 +1197,8 @@ export default function SchedulePage() {
                     size="icon"
                     className="hover:bg-primary/10 transition-all duration-300"
                     onClick={() => {
-                      const newDate = viewMode === "week"
-                        ? addDays(selectedDate, -7)
-                        : addDays(selectedDate, -1);
+                      const newDate =
+                        viewMode === 'week' ? addDays(selectedDate, -7) : addDays(selectedDate, -1);
                       setSelectedDate(newDate);
                     }}
                     data-testid="button-prev"
@@ -981,7 +1207,7 @@ export default function SchedulePage() {
                   </Button>
                 </motion.div>
                 <h2 className="text-lg font-light tracking-wide">
-                  {viewMode === "week"
+                  {viewMode === 'week'
                     ? `${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
                     : format(selectedDate, 'EEEE, MMMM d, yyyy')}
                 </h2>
@@ -991,9 +1217,8 @@ export default function SchedulePage() {
                     size="icon"
                     className="hover:bg-primary/10 transition-all duration-300"
                     onClick={() => {
-                      const newDate = viewMode === "week"
-                        ? addDays(selectedDate, 7)
-                        : addDays(selectedDate, 1);
+                      const newDate =
+                        viewMode === 'week' ? addDays(selectedDate, 7) : addDays(selectedDate, 1);
                       setSelectedDate(newDate);
                     }}
                     data-testid="button-next"
@@ -1008,19 +1233,29 @@ export default function SchedulePage() {
       )}
 
       {/* Calendar View */}
-      {viewMode === "calendar" ? (
+      {viewMode === 'calendar' ? (
         <CalendarView
-          events={appointments.map(apt => ({
+          events={appointments.map((apt) => ({
             id: apt.id,
             title: apt.title,
             client: apt.client?.name || 'Unknown Client',
             time: apt.startTime,
-            type: apt.type === 'training' ? 'session' : apt.type === 'consultation' ? 'consultation' : 'check-in',
-            status: apt.status === 'scheduled' ? 'confirmed' : apt.status === 'completed' ? 'completed' : 'pending',
+            type:
+              apt.type === 'training'
+                ? 'session'
+                : apt.type === 'consultation'
+                  ? 'consultation'
+                  : 'check-in',
+            status:
+              apt.status === 'scheduled'
+                ? 'confirmed'
+                : apt.status === 'completed'
+                  ? 'completed'
+                  : 'pending',
             date: apt.date, // Pass the date so CalendarView can filter by date
           }))}
         />
-      ) : viewMode === "week" ? (
+      ) : viewMode === 'week' ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1038,18 +1273,19 @@ export default function SchedulePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: dayIndex * 0.05 }}
               >
-                <Card className={cn(
-                  "min-h-[280px] glass-strong border-border/50 transition-all duration-300 hover:shadow-premium-lg hover:-translate-y-1 group",
-                  isToday && "ring-2 ring-primary/50 shadow-premium"
-                )}>
+                <Card
+                  className={cn(
+                    'min-h-[280px] glass-strong border-border/50 transition-all duration-300 hover:shadow-premium-lg hover:-translate-y-1 group',
+                    isToday && 'ring-2 ring-primary/50 shadow-premium'
+                  )}
+                >
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
                       {format(day, 'EEE')}
                     </CardTitle>
-                    <CardDescription className={cn(
-                      "text-2xl font-bold",
-                      isToday && "text-primary"
-                    )}>
+                    <CardDescription
+                      className={cn('text-2xl font-bold', isToday && 'text-primary')}
+                    >
                       {format(day, 'd')}
                     </CardDescription>
                   </CardHeader>
@@ -1078,23 +1314,31 @@ export default function SchedulePage() {
                               transition={{ delay: index * 0.05 }}
                               whileHover={{ scale: 1.02, y: -2 }}
                               className={cn(
-                                "p-3 rounded-lg backdrop-blur-sm transition-all border",
+                                'p-3 rounded-lg backdrop-blur-sm transition-all border',
                                 config.bg,
                                 config.border,
-                                "hover:shadow-md",
-                                isTrainer && "cursor-pointer"
+                                'hover:shadow-md',
+                                isTrainer && 'cursor-pointer'
                               )}
                               onClick={isTrainer ? () => handleEdit(apt) : undefined}
                               data-testid={`appointment-${apt.id}`}
                             >
                               <div className="flex items-center gap-2 mb-1">
-                                <Icon className={cn("h-3 w-3", config.text)} />
-                                <div className={cn("text-xs font-semibold", config.text)}>
+                                <Icon className={cn('h-3 w-3', config.text)} />
+                                <div className={cn('text-xs font-semibold', config.text)}>
                                   {apt.startTime}
                                 </div>
                               </div>
-                              <TruncatedText as="div" text={apt.client?.name || ''} className="text-xs font-medium" />
-                              <TruncatedText as="div" text={apt.title} className="text-xs text-muted-foreground" />
+                              <TruncatedText
+                                as="div"
+                                text={apt.client?.name || ''}
+                                className="text-xs font-medium"
+                              />
+                              <TruncatedText
+                                as="div"
+                                text={apt.title}
+                                className="text-xs text-muted-foreground"
+                              />
                             </motion.div>
                           );
                         })
@@ -1121,14 +1365,18 @@ export default function SchedulePage() {
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                     >
                       <CalendarIcon className="h-20 w-20 text-muted-foreground/40" />
                     </motion.div>
                     <motion.div
                       className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
                       animate={{ opacity: [0.3, 0.6, 0.3] }}
-                      transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
+                      transition={{
+                        duration: 2,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
+                        ease: 'easeInOut',
+                      }}
                     />
                   </div>
                   <div className="space-y-2 text-center">
@@ -1157,35 +1405,44 @@ export default function SchedulePage() {
                             <CardContent className="p-5">
                               <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-4 flex-1">
-                                  <div className={cn(
-                                    "w-1 h-full rounded-full bg-gradient-to-b",
-                                    config.color
-                                  )} />
+                                  <div
+                                    className={cn(
+                                      'w-1 h-full rounded-full bg-gradient-to-b',
+                                      config.color
+                                    )}
+                                  />
                                   <div className="space-y-3 flex-1">
                                     <div className="flex items-center gap-3 flex-wrap">
-                                      <div className={cn(
-                                        "flex items-center gap-2 px-3 py-1.5 rounded-full",
-                                        config.bg,
-                                        config.border,
-                                        "border"
-                                      )}>
-                                        <Icon className={cn("h-4 w-4", config.text)} />
-                                        <span className={cn("text-sm font-medium", config.text)}>
+                                      <div
+                                        className={cn(
+                                          'flex items-center gap-2 px-3 py-1.5 rounded-full',
+                                          config.bg,
+                                          config.border,
+                                          'border'
+                                        )}
+                                      >
+                                        <Icon className={cn('h-4 w-4', config.text)} />
+                                        <span className={cn('text-sm font-medium', config.text)}>
                                           {config.label}
                                         </span>
                                       </div>
                                       <h4 className="font-semibold text-lg">{appointment.title}</h4>
-                                      {appointment.status === "cancelled" && (
+                                      {appointment.status === 'cancelled' && (
                                         <Badge variant="destructive" className="text-xs">
                                           Cancelled
                                         </Badge>
                                       )}
-                                      {appointment.recurrencePattern && appointment.recurrencePattern !== "none" && (
-                                        <Badge variant="outline" className="text-xs gap-1">
-                                          <Repeat className="h-3 w-3" />
-                                          {appointment.recurrencePattern === "weekly" ? "Weekly" : appointment.recurrencePattern === "biweekly" ? "Biweekly" : "Monthly"}
-                                        </Badge>
-                                      )}
+                                      {appointment.recurrencePattern &&
+                                        appointment.recurrencePattern !== 'none' && (
+                                          <Badge variant="outline" className="text-xs gap-1">
+                                            <Repeat className="h-3 w-3" />
+                                            {appointment.recurrencePattern === 'weekly'
+                                              ? 'Weekly'
+                                              : appointment.recurrencePattern === 'biweekly'
+                                                ? 'Biweekly'
+                                                : 'Monthly'}
+                                          </Badge>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
                                       <div className="flex items-center gap-2">
@@ -1227,7 +1484,10 @@ export default function SchedulePage() {
                                 </div>
                                 {isTrainer && (
                                   <div className="flex gap-2">
-                                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                    <motion.div
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                    >
                                       <Button
                                         variant="ghost"
                                         size="icon"
@@ -1240,7 +1500,10 @@ export default function SchedulePage() {
                                     </motion.div>
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
-                                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                                        <motion.div
+                                          whileHover={{ scale: 1.1 }}
+                                          whileTap={{ scale: 0.9 }}
+                                        >
                                           <Button
                                             variant="ghost"
                                             size="icon"
@@ -1255,7 +1518,9 @@ export default function SchedulePage() {
                                         <AlertDialogHeader>
                                           <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
                                           <AlertDialogDescription>
-                                            This will cancel the appointment with {appointment.client?.name}. This action cannot be undone.
+                                            This will cancel the appointment with{' '}
+                                            {appointment.client?.name}. This action cannot be
+                                            undone.
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <div className="flex justify-end gap-4">

@@ -363,6 +363,7 @@ router.post('/generate-workout', async (req: Request, res: Response) => {
       focusMuscles,
       excludeExercises,
       inspiredBy,
+      recoveryContext,
     } = req.body;
 
     if (!goal) {
@@ -378,6 +379,7 @@ router.post('/generate-workout', async (req: Request, res: Response) => {
       focusMuscles,
       excludeExercises,
       inspiredBy,
+      recoveryContext,
     });
 
     // Post-process rest periods based on exercise type and goal

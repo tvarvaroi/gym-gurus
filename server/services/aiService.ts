@@ -696,6 +696,11 @@ export async function aiGenerateWorkout(params: {
   focusMuscles?: string[];
   excludeExercises?: string[];
   inspiredBy?: string;
+  recoveryContext?: {
+    suggestedWorkout: string;
+    readyToTrain: string[];
+    needsRest: string[];
+  };
 }): Promise<z.infer<typeof workoutSchema>> {
   const model = getModel();
   if (!model) return generateFallbackWorkout(params);
@@ -768,6 +773,7 @@ Equipment available: ${params.availableEquipment.join(', ')}
 ${params.focusMuscles ? `Target muscles (ONLY include exercises for these muscle groups — do NOT include exercises for other muscle groups): ${params.focusMuscles.join(', ')}` : ''}
 ${params.excludeExercises ? `Exclude these exercises: ${params.excludeExercises.join(', ')}` : ''}
 ${params.inspiredBy ? `Training style: model this workout after "${params.inspiredBy}" training methodology (adapt volume, intensity, and exercise selection to match that style while respecting the user's experience level and equipment).` : ''}
+${params.recoveryContext ? `Recovery context: The user's recovery system suggests a ${params.recoveryContext.suggestedWorkout} workout today. Muscles ready to train: ${params.recoveryContext.readyToTrain.join(', ') || 'all recovered'}. Muscles needing rest (avoid heavy loading): ${params.recoveryContext.needsRest.join(', ') || 'none'}.` : ''}
 
 ${gp.restDetails}
 

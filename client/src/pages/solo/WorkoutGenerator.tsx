@@ -36,6 +36,7 @@ import {
   TrendingUp,
   Crown,
   AlertCircle,
+  Heart,
 } from 'lucide-react';
 
 // Workout focus options
@@ -145,6 +146,18 @@ export default function WorkoutGenerator() {
     queryKey: [`/api/clients/detail/${clientId}`],
     enabled: !!clientId,
   });
+
+  // Fetch recovery recommendations for smart defaults (solo users only)
+  const { data: recoveryRecs } = useQuery<{
+    readyToTrain: string[];
+    needsRest: { muscleGroup: string; recoveryProgress: number }[];
+    suggestedWorkout: string;
+  }>({
+    queryKey: ['/api/recovery/recommendations'],
+    enabled: !clientId,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedWorkout, setGeneratedWorkout] = useState<GeneratedWorkout | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -178,6 +191,22 @@ export default function WorkoutGenerator() {
     }
     return map;
   }, [libraryExercises]);
+
+  // Pre-fill workout focus from recovery recommendations (solo users)
+  useEffect(() => {
+    if (clientId || !recoveryRecs?.suggestedWorkout) return;
+    const suggestion = recoveryRecs.suggestedWorkout;
+    if (suggestion === 'rest') return;
+    const focusMap: Record<string, string> = {
+      push: 'push',
+      pull: 'pull',
+      legs: 'legs',
+      full_body: 'full_body',
+      upper_body: 'upper_body',
+      lower_body: 'lower_body',
+    };
+    if (focusMap[suggestion]) setWorkoutFocus(focusMap[suggestion]);
+  }, [recoveryRecs, clientId]);
 
   // Pre-fill from client data when generating for a client
   useEffect(() => {
@@ -232,6 +261,13 @@ export default function WorkoutGenerator() {
           duration: duration[0],
           focusMuscles: workoutFocus === 'full_body' ? undefined : focusMuscleMap[workoutFocus],
           inspiredBy: inspiredBy !== 'none' ? inspiredBy : undefined,
+          recoveryContext: recoveryRecs
+            ? {
+                suggestedWorkout: recoveryRecs.suggestedWorkout,
+                readyToTrain: recoveryRecs.readyToTrain,
+                needsRest: recoveryRecs.needsRest.map((m) => m.muscleGroup),
+              }
+            : undefined,
         }),
       });
 
@@ -491,6 +527,41 @@ export default function WorkoutGenerator() {
               <CardDescription>Customize your AI-generated workout</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Recovery-Aware Suggestion Banner */}
+              {recoveryRecs && !clientId && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-lg bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/20"
+                >
+                  <div className="flex items-start gap-2">
+                    <Heart className="h-4 w-4 text-teal-400 mt-0.5 shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium text-teal-400">
+                        Suggested:{' '}
+                        {recoveryRecs.suggestedWorkout === 'rest'
+                          ? 'Rest Day'
+                          : `${recoveryRecs.suggestedWorkout.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} Day`}
+                      </p>
+                      {recoveryRecs.needsRest.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Recovering:{' '}
+                          {recoveryRecs.needsRest
+                            .slice(0, 4)
+                            .map((m) => `${m.muscleGroup} (${Math.round(m.recoveryProgress)}%)`)
+                            .join(', ')}
+                        </p>
+                      )}
+                      {recoveryRecs.readyToTrain.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Ready: {recoveryRecs.readyToTrain.slice(0, 5).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Workout Focus */}
               <div className="space-y-2">
                 <Label>Workout Focus</Label>

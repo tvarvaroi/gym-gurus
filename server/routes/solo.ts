@@ -14,6 +14,7 @@ import {
   workoutRecoveryLog,
   workouts,
   workoutExercises,
+  savedMealPlans,
 } from '../../shared/schema';
 import { eq, and, desc, sql, gte, lte, inArray } from 'drizzle-orm';
 import { startOfWeek, endOfWeek, format, addDays } from 'date-fns';
@@ -221,28 +222,69 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
       )
       .orderBy(workoutSessions.startedAt);
 
+    // Get user's workout frequency for planned day detection
+    const [profile] = await database
+      .select({ freq: userFitnessProfile.workoutFrequencyPerWeek })
+      .from(userFitnessProfile)
+      .where(eq(userFitnessProfile.userId, userId))
+      .limit(1);
+
+    const freq = profile?.freq || 0;
+
+    // Default planned days based on frequency (spread evenly across the week)
+    const plannedDayIndices: Set<number> = new Set();
+    const dayPatterns: Record<number, number[]> = {
+      1: [0], // Mon
+      2: [0, 3], // Mon, Thu
+      3: [0, 2, 4], // Mon, Wed, Fri
+      4: [0, 1, 3, 4], // Mon, Tue, Thu, Fri
+      5: [0, 1, 2, 3, 4], // Mon-Fri
+      6: [0, 1, 2, 3, 4, 5], // Mon-Sat
+      7: [0, 1, 2, 3, 4, 5, 6], // Every day
+    };
+    if (freq > 0 && dayPatterns[freq]) {
+      dayPatterns[freq].forEach((d) => plannedDayIndices.add(d));
+    }
+
     // Build activity array for each day (Mon-Sun)
     const activity: boolean[] = [];
     const sessionsByDate = new Map<string, boolean>();
+    const todayStr = format(today, 'yyyy-MM-dd');
 
     sessions.forEach((session) => {
       const dateKey = format(session.startedAt, 'yyyy-MM-dd');
       sessionsByDate.set(dateKey, true);
     });
 
-    // Generate array for 7 days
+    // Build rich day status array
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const richDays = [];
     for (let i = 0; i < 7; i++) {
       const date = addDays(weekStart, i);
       const dateKey = format(date, 'yyyy-MM-dd');
-      activity.push(sessionsByDate.has(dateKey));
+      const hasSession = sessionsByDate.has(dateKey);
+      const isPlanned = plannedDayIndices.has(i);
+      const isToday = dateKey === todayStr;
+      const isFuture = date > today;
+
+      let status: string;
+      if (hasSession) status = 'completed';
+      else if (isToday && isPlanned) status = 'today_pending';
+      else if (isFuture && isPlanned) status = 'planned';
+      else status = 'rest';
+
+      activity.push(hasSession);
+      richDays.push({ day: dayNames[i], date: dateKey, status });
     }
 
     res.json({
       weekStart: format(weekStart, 'yyyy-MM-dd'),
       weekEnd: format(weekEnd, 'yyyy-MM-dd'),
-      days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      days: dayNames,
       activity,
+      richDays,
       totalWorkouts: sessions.length,
+      totalPlanned: plannedDayIndices.size,
     });
   } catch (error) {
     console.error('Error getting weekly activity:', error);
@@ -931,6 +973,211 @@ router.get('/stats', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error getting dashboard stats:', error);
     res.status(500).json({ error: 'Failed to get dashboard stats' });
+  }
+});
+
+// ==================== Solo Schedule Calendar (F1) ====================
+
+router.get('/schedule', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'startDate and endDate query params required' });
+    }
+
+    const database = await getDb();
+    const start = new Date(startDate as string);
+    const end = new Date(endDate as string);
+    end.setHours(23, 59, 59, 999);
+
+    // 1. Completed workout sessions in the date range
+    const completedSessions = await database
+      .select()
+      .from(workoutSessions)
+      .where(
+        and(
+          eq(workoutSessions.userId, userId),
+          gte(workoutSessions.startedAt, start),
+          lte(workoutSessions.startedAt, end),
+          eq(workoutSessions.isActive, false)
+        )
+      )
+      .orderBy(workoutSessions.startedAt);
+
+    // 2. Get workout frequency for planned day detection
+    const [profile] = await database
+      .select({ freq: userFitnessProfile.workoutFrequencyPerWeek })
+      .from(userFitnessProfile)
+      .where(eq(userFitnessProfile.userId, userId))
+      .limit(1);
+
+    const freq = profile?.freq || 0;
+
+    // Day patterns for planned workouts
+    const dayPatterns: Record<number, number[]> = {
+      1: [1],
+      2: [1, 4],
+      3: [1, 3, 5],
+      4: [1, 2, 4, 5],
+      5: [1, 2, 3, 4, 5],
+      6: [1, 2, 3, 4, 5, 6],
+      7: [0, 1, 2, 3, 4, 5, 6],
+    };
+    const plannedDays = new Set(dayPatterns[freq] || []);
+
+    // 3. Build event list
+    const events: any[] = [];
+    const completedDates = new Set<string>();
+
+    // Add completed sessions
+    for (const session of completedSessions) {
+      const dateStr = format(session.startedAt, 'yyyy-MM-dd');
+      completedDates.add(dateStr);
+      const duration = session.endedAt
+        ? Math.round((session.endedAt.getTime() - session.startedAt.getTime()) / 60000)
+        : session.plannedDurationMinutes || 45;
+      events.push({
+        id: `session-${session.id}`,
+        title: session.workoutName || 'Workout',
+        date: dateStr,
+        time: format(session.startedAt, 'HH:mm'),
+        type: 'completed',
+        status: 'completed',
+        duration,
+        volume: Math.round(Number(session.totalVolumeKg) || 0),
+      });
+    }
+
+    // Add planned/rest days for the date range
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      const dateStr = format(cursor, 'yyyy-MM-dd');
+      const dayOfWeek = cursor.getDay(); // 0=Sun
+      const isPlanned = plannedDays.has(dayOfWeek);
+      const hasCompleted = completedDates.has(dateStr);
+
+      if (!hasCompleted && isPlanned && dateStr >= todayStr) {
+        events.push({
+          id: `planned-${dateStr}`,
+          title: 'Planned Workout',
+          date: dateStr,
+          time: '09:00',
+          type: 'planned',
+          status: 'pending',
+        });
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    res.json({ events });
+  } catch (error) {
+    console.error('Error getting solo schedule:', error);
+    res.status(500).json({ error: 'Failed to get schedule' });
+  }
+});
+
+// ==================== Saved Meal Plans (F4/F5) ====================
+
+// Save a meal plan
+router.post('/meal-plans', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { name, targetCalories, planData, source } = req.body;
+    if (!planData) return res.status(400).json({ error: 'planData is required' });
+
+    const database = await getDb();
+    const [plan] = await database
+      .insert(savedMealPlans)
+      .values({
+        userId,
+        name: name || 'Meal Plan',
+        targetCalories: targetCalories || null,
+        planData,
+        source: source || 'generator',
+      })
+      .returning();
+
+    res.status(201).json(plan);
+  } catch (error) {
+    console.error('Error saving meal plan:', error);
+    res.status(500).json({ error: 'Failed to save meal plan' });
+  }
+});
+
+// List saved meal plans (abbreviated)
+router.get('/meal-plans', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const database = await getDb();
+    const plans = await database
+      .select({
+        id: savedMealPlans.id,
+        name: savedMealPlans.name,
+        targetCalories: savedMealPlans.targetCalories,
+        source: savedMealPlans.source,
+        createdAt: savedMealPlans.createdAt,
+      })
+      .from(savedMealPlans)
+      .where(eq(savedMealPlans.userId, userId))
+      .orderBy(desc(savedMealPlans.createdAt))
+      .limit(20);
+
+    res.json(plans);
+  } catch (error) {
+    console.error('Error listing meal plans:', error);
+    res.status(500).json({ error: 'Failed to list meal plans' });
+  }
+});
+
+// Get full meal plan detail
+router.get('/meal-plans/:id', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const database = await getDb();
+    const [plan] = await database
+      .select()
+      .from(savedMealPlans)
+      .where(and(eq(savedMealPlans.id, req.params.id), eq(savedMealPlans.userId, userId)))
+      .limit(1);
+
+    if (!plan) return res.status(404).json({ error: 'Meal plan not found' });
+    res.json(plan);
+  } catch (error) {
+    console.error('Error getting meal plan:', error);
+    res.status(500).json({ error: 'Failed to get meal plan' });
+  }
+});
+
+// Delete a meal plan
+router.delete('/meal-plans/:id', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const database = await getDb();
+    const deleted = await database
+      .delete(savedMealPlans)
+      .where(and(eq(savedMealPlans.id, req.params.id), eq(savedMealPlans.userId, userId)))
+      .returning();
+
+    if (deleted.length === 0) return res.status(404).json({ error: 'Meal plan not found' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting meal plan:', error);
+    res.status(500).json({ error: 'Failed to delete meal plan' });
   }
 });
 

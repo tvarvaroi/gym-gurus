@@ -385,7 +385,7 @@ function WeeklyActivityCard() {
   });
 
   const days = data?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const activity = data?.activity || [false, false, false, false, false, false, false];
+  const richDays: { day: string; date: string; status: string }[] = data?.richDays || [];
   const totalWorkouts = data?.totalWorkouts || 0;
   const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
   const todayIndex = today === 0 ? 6 : today - 1; // Convert to Monday-based index
@@ -429,28 +429,39 @@ function WeeklyActivityCard() {
         </div>
       ) : (
         <div className="flex justify-between">
-          {days.map((day, index) => (
-            <div key={day} className="flex flex-col items-center gap-2">
-              <span
-                className={`text-xs ${
-                  index === todayIndex ? 'font-bold text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                {day}
-              </span>
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                  activity[index]
-                    ? 'bg-green-500 text-white'
+          {days.map((day, index) => {
+            const status = richDays[index]?.status || 'rest';
+            const circleClass =
+              status === 'completed'
+                ? 'bg-green-500 text-white'
+                : status === 'today_pending'
+                  ? 'border-2 border-green-500 bg-transparent text-green-500 animate-pulse'
+                  : status === 'planned'
+                    ? 'border-2 border-primary/40 bg-transparent text-primary/60'
                     : index <= todayIndex
                       ? 'bg-secondary text-muted-foreground'
-                      : 'bg-secondary/50 text-muted-foreground/50'
-                }`}
-              >
-                {activity[index] ? '✓' : weekDates[index]}
+                      : 'bg-secondary/50 text-muted-foreground/50';
+            return (
+              <div key={day} className="flex flex-col items-center gap-2">
+                <span
+                  className={`text-xs ${
+                    index === todayIndex ? 'font-bold text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  {day}
+                </span>
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${circleClass}`}
+                >
+                  {status === 'completed'
+                    ? '✓'
+                    : status === 'today_pending'
+                      ? '!'
+                      : weekDates[index]}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </motion.div>

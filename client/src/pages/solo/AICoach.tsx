@@ -22,6 +22,9 @@ import {
   Crown,
   Lock,
   Save,
+  Play,
+  Heart,
+  TrendingUp,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -86,12 +89,54 @@ function parseExercises(content: string): { name: string; sets: number; reps: st
   return exercises.slice(0, 16); // cap at 16
 }
 
+// ─── Meal plan detection ──────────────────────────────────────────────────────
+
+function looksLikeMealPlan(content: string): boolean {
+  const hasCalories = /\d{3,4}\s*(?:kcal|calories|cal)/i.test(content);
+  const hasMealNames = /(breakfast|lunch|dinner|snack|meal\s*\d)/i.test(content);
+  const hasMacros = /(protein|carbs|fat|macros)/i.test(content);
+  return hasCalories && hasMealNames && hasMacros;
+}
+
+// ─── Action button detection (F6) ────────────────────────────────────────────
+
+interface ActionButton {
+  label: string;
+  href: string;
+  icon: typeof Dumbbell;
+}
+
+function detectActions(content: string, isWorkout: boolean, isMealPlan: boolean): ActionButton[] {
+  const actions: ActionButton[] = [];
+  if (isWorkout || isMealPlan) return actions; // Skip if already showing save buttons
+
+  const lower = content.toLowerCase();
+  if (/workout|training|program|exercise|split|routine/i.test(lower)) {
+    actions.push({ label: 'Generate Workout', href: '/solo/generate', icon: Dumbbell });
+  }
+  if (/meal|diet|nutrition|calories|protein|eating|food|macro/i.test(lower)) {
+    actions.push({ label: 'Meal Planner', href: '/solo/nutrition', icon: Apple });
+  }
+  if (/recovery|rest|fatigue|deload|sore|overtraining/i.test(lower)) {
+    actions.push({ label: 'View Recovery', href: '/solo/recovery', icon: Heart });
+  }
+  if (/progress|gains|pr|personal record|strength|improvement/i.test(lower)) {
+    actions.push({ label: 'View Progress', href: '/progress', icon: TrendingUp });
+  }
+  return actions.slice(0, 3);
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AICoach() {
   const prefersReducedMotion = useReducedMotion();
   const { toast } = useToast();
   const [savingMessageId, setSavingMessageId] = useState<string | null>(null);
+  const [namingMessageId, setNamingMessageId] = useState<string | null>(null);
+  const [workoutNameInput, setWorkoutNameInput] = useState('AI Coach Workout');
+  const [savedWorkoutIds, setSavedWorkoutIds] = useState<Map<string, string>>(new Map());
+  const [savedMealPlanIds, setSavedMealPlanIds] = useState<Set<string>>(new Set());
+  const [savingMealPlanId, setSavingMealPlanId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -149,7 +194,7 @@ export default function AICoach() {
     scrollToBottom();
   }, [messages]);
 
-  const saveWorkoutFromChat = async (message: Message) => {
+  const saveWorkoutFromChat = async (message: Message, name: string) => {
     const exercises = parseExercises(message.content);
     setSavingMessageId(message.id);
     try {
@@ -158,7 +203,7 @@ export default function AICoach() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          name: 'AI Coach Workout',
+          name,
           description: 'Workout suggested by AI Coach',
           exercises: exercises.map((ex) => ({
             exerciseName: ex.name,
@@ -169,7 +214,13 @@ export default function AICoach() {
         }),
       });
       if (!res.ok) throw new Error('Failed to save workout');
-      toast({ title: 'Workout saved!', description: 'Find it in My Workouts.' });
+      const data = await res.json();
+      const workoutId = data.id || data.workoutId;
+      if (workoutId) {
+        setSavedWorkoutIds((prev) => new Map(prev).set(message.id, workoutId));
+      }
+      setNamingMessageId(null);
+      toast({ title: 'Workout saved!', description: 'You can now start it immediately.' });
     } catch {
       toast({
         title: 'Save failed',
@@ -178,6 +229,33 @@ export default function AICoach() {
       });
     } finally {
       setSavingMessageId(null);
+    }
+  };
+
+  const saveMealPlanFromChat = async (message: Message) => {
+    setSavingMealPlanId(message.id);
+    try {
+      const res = await fetch('/api/solo/meal-plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: 'AI Coach Meal Plan',
+          planData: { rawContent: message.content },
+          source: 'ai_chat',
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to save meal plan');
+      setSavedMealPlanIds((prev) => new Set(prev).add(message.id));
+      toast({ title: 'Meal plan saved!', description: 'Find it in Nutrition Planner.' });
+    } catch {
+      toast({
+        title: 'Save failed',
+        description: 'Could not save meal plan.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingMealPlanId(null);
     }
   };
 
@@ -440,21 +518,119 @@ export default function AICoach() {
                       {/* Save as Workout button — shown on assistant workout messages */}
                       {message.role === 'assistant' &&
                         index > 0 &&
-                        looksLikeWorkout(message.content) && (
+                        looksLikeWorkout(message.content) &&
+                        !savedWorkoutIds.has(message.id) &&
+                        (namingMessageId === message.id ? (
+                          <div className="self-start flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={workoutNameInput}
+                              onChange={(e) => setWorkoutNameInput(e.target.value)}
+                              className="px-2 py-1 text-xs rounded-lg border border-purple-500/30 bg-background text-foreground w-44 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                              placeholder="Workout name"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter')
+                                  saveWorkoutFromChat(message, workoutNameInput);
+                                if (e.key === 'Escape') setNamingMessageId(null);
+                              }}
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => saveWorkoutFromChat(message, workoutNameInput)}
+                              disabled={savingMessageId === message.id}
+                              className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
+                            >
+                              {savingMessageId === message.id ? (
+                                <RefreshCw className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Save className="h-3 w-3" />
+                              )}
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNamingMessageId(null)}
+                              className="px-2 py-1 text-xs rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
                           <button
                             type="button"
-                            onClick={() => saveWorkoutFromChat(message)}
-                            disabled={savingMessageId === message.id}
-                            className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-colors disabled:opacity-50"
+                            onClick={() => {
+                              setWorkoutNameInput('AI Coach Workout');
+                              setNamingMessageId(message.id);
+                            }}
+                            className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-colors"
                           >
-                            {savingMessageId === message.id ? (
-                              <RefreshCw className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Save className="h-3 w-3" />
-                            )}
+                            <Save className="h-3 w-3" />
                             Save as Workout
                           </button>
+                        ))}
+                      {/* Start Now button — shown after workout is saved */}
+                      {message.role === 'assistant' && savedWorkoutIds.has(message.id) && (
+                        <div className="self-start flex items-center gap-2">
+                          <span className="text-xs text-green-400 flex items-center gap-1">
+                            <Save className="h-3 w-3" /> Saved!
+                          </span>
+                          <a
+                            href={`/workout-execution/${savedWorkoutIds.get(message.id)}`}
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 transition-colors"
+                          >
+                            <Play className="h-3 w-3" />
+                            Start Now
+                          </a>
+                        </div>
+                      )}
+                      {/* Save Meal Plan button (F4) — shown on assistant meal plan messages */}
+                      {message.role === 'assistant' &&
+                        index > 0 &&
+                        looksLikeMealPlan(message.content) &&
+                        !savedMealPlanIds.has(message.id) && (
+                          <button
+                            type="button"
+                            onClick={() => saveMealPlanFromChat(message)}
+                            disabled={savingMealPlanId === message.id}
+                            className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-green-500/30 text-green-400 hover:bg-green-500/10 transition-colors disabled:opacity-50"
+                          >
+                            {savingMealPlanId === message.id ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Apple className="h-3 w-3" />
+                            )}
+                            Save Meal Plan
+                          </button>
                         )}
+                      {message.role === 'assistant' && savedMealPlanIds.has(message.id) && (
+                        <span className="self-start text-xs text-green-400 flex items-center gap-1">
+                          <Apple className="h-3 w-3" /> Meal plan saved!
+                        </span>
+                      )}
+                      {/* Action buttons (F6) — contextual navigation */}
+                      {message.role === 'assistant' &&
+                        index > 0 &&
+                        (() => {
+                          const isWorkout = looksLikeWorkout(message.content);
+                          const isMealPlan = looksLikeMealPlan(message.content);
+                          const actions = detectActions(message.content, isWorkout, isMealPlan);
+                          if (actions.length === 0) return null;
+                          return (
+                            <div className="self-start flex items-center gap-1.5 mt-1">
+                              {actions.map((action) => (
+                                <a
+                                  key={action.href}
+                                  href={action.href}
+                                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full border border-border/50 text-muted-foreground hover:text-purple-400 hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
+                                >
+                                  <action.icon className="h-3 w-3" />
+                                  {action.label}
+                                </a>
+                              ))}
+                            </div>
+                          );
+                        })()}
                     </div>
                   </motion.div>
                 ))}

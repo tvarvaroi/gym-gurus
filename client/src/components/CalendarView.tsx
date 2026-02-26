@@ -1,20 +1,20 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Clock, User } from "lucide-react";
-import { useState, useMemo, memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { TruncatedText } from "./TruncatedText";
-import { useUser } from "@/contexts/UserContext";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ChevronLeft, ChevronRight, Clock, User } from 'lucide-react';
+import { useState, useMemo, memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { TruncatedText } from './TruncatedText';
+import { useUser } from '@/contexts/UserContext';
 
 interface CalendarEvent {
   id: string;
   title: string;
   client: string;
   time: string; // 24-hour format HH:MM
-  type: "session" | "consultation" | "check-in";
-  status: "confirmed" | "pending" | "completed";
+  type: 'session' | 'consultation' | 'check-in' | 'completed' | 'planned' | 'rest';
+  status: 'confirmed' | 'pending' | 'completed';
   date?: string; // Date in YYYY-MM-DD format
 }
 
@@ -25,14 +25,24 @@ interface CalendarViewProps {
 const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const { isClient } = useUser();
+  const _user = useUser();
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
-  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
@@ -41,7 +51,7 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
   const getEventsForDate = (day: number) => {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return events
-      .filter(event => event.date === dateStr)
+      .filter((event) => event.date === dateStr)
       .sort((a, b) => {
         // Parse 24-hour time format (HH:MM)
         const parseTime = (timeStr: string) => {
@@ -78,8 +88,7 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const today = new Date().getDate();
   const isCurrentMonth =
-    new Date().getMonth() === currentMonth &&
-    new Date().getFullYear() === currentYear;
+    new Date().getMonth() === currentMonth && new Date().getFullYear() === currentYear;
 
   const previousMonth = () => {
     setCurrentDate(new Date(currentYear, currentMonth - 1));
@@ -102,21 +111,42 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
       border: 'border-primary/25',
       text: 'text-primary',
       dot: 'bg-gradient-to-br from-primary to-accent',
-      glow: 'shadow-md shadow-primary/15'
+      glow: 'shadow-md shadow-primary/15',
     },
     consultation: {
       gradient: 'from-teal-600/15 via-teal-500/8 to-transparent',
       border: 'border-teal-600/25',
       text: 'text-teal-700 dark:text-teal-400',
       dot: 'bg-gradient-to-br from-teal-600 to-teal-700',
-      glow: 'shadow-md shadow-teal-600/15'
+      glow: 'shadow-md shadow-teal-600/15',
     },
-    "check-in": {
+    'check-in': {
       gradient: 'from-accent/15 via-accent/8 to-transparent',
       border: 'border-accent/25',
       text: 'text-accent-foreground',
       dot: 'bg-gradient-to-br from-accent to-primary',
-      glow: 'shadow-md shadow-accent/15'
+      glow: 'shadow-md shadow-accent/15',
+    },
+    completed: {
+      gradient: 'from-green-500/15 via-green-500/8 to-transparent',
+      border: 'border-green-500/25',
+      text: 'text-green-700 dark:text-green-400',
+      dot: 'bg-gradient-to-br from-green-500 to-green-600',
+      glow: 'shadow-md shadow-green-500/15',
+    },
+    planned: {
+      gradient: 'from-blue-500/10 via-blue-400/5 to-transparent',
+      border: 'border-blue-500/25 border-dashed',
+      text: 'text-blue-700 dark:text-blue-400',
+      dot: 'bg-gradient-to-br from-blue-500 to-blue-600',
+      glow: 'shadow-sm shadow-blue-500/10',
+    },
+    rest: {
+      gradient: 'from-gray-500/8 via-gray-400/4 to-transparent',
+      border: 'border-gray-400/20',
+      text: 'text-gray-500 dark:text-gray-500',
+      dot: 'bg-gray-400',
+      glow: '',
     },
   };
 
@@ -208,12 +238,17 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                   >
                     <div
                       className={cn(
-                        "relative group cursor-pointer h-[160px] p-4",
-                        "border rounded-3xl transition-all duration-500",
-                        "flex flex-col",
-                        isSelected && "ring-1 ring-primary/30 ring-offset-2 ring-offset-background shadow-lg shadow-primary/20 bg-gradient-to-br from-accent/40 to-background/30 dark:from-primary/10 dark:to-background/10",
-                        isToday && !isSelected && "bg-gradient-to-br from-accent/50 via-accent/30 to-white dark:from-primary/10 dark:via-primary/5 dark:to-background border-primary/20 shadow-md shadow-primary/10",
-                        !isToday && !isSelected && "bg-white/40 dark:bg-background/40 border-primary/8 hover:border-primary/15 hover:shadow-lg hover:shadow-primary/8 hover:bg-gradient-to-br hover:from-accent/30 hover:to-transparent"
+                        'relative group cursor-pointer h-[160px] p-4',
+                        'border rounded-3xl transition-all duration-500',
+                        'flex flex-col',
+                        isSelected &&
+                          'ring-1 ring-primary/30 ring-offset-2 ring-offset-background shadow-lg shadow-primary/20 bg-gradient-to-br from-accent/40 to-background/30 dark:from-primary/10 dark:to-background/10',
+                        isToday &&
+                          !isSelected &&
+                          'bg-gradient-to-br from-accent/50 via-accent/30 to-white dark:from-primary/10 dark:via-primary/5 dark:to-background border-primary/20 shadow-md shadow-primary/10',
+                        !isToday &&
+                          !isSelected &&
+                          'bg-white/40 dark:bg-background/40 border-primary/8 hover:border-primary/15 hover:shadow-lg hover:shadow-primary/8 hover:bg-gradient-to-br hover:from-accent/30 hover:to-transparent'
                       )}
                       data-testid={`calendar-day-${day}`}
                     >
@@ -224,12 +259,14 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
 
                       {/* Day header */}
                       <div className="relative flex items-center justify-between mb-4">
-                        <span className={cn(
-                          "text-lg font-light tracking-wide",
-                          isToday && "text-primary font-normal",
-                          !isToday && "text-primary/70",
-                          isSelected && "text-primary"
-                        )}>
+                        <span
+                          className={cn(
+                            'text-lg font-light tracking-wide',
+                            isToday && 'text-primary font-normal',
+                            !isToday && 'text-primary/70',
+                            isSelected && 'text-primary'
+                          )}
+                        >
                           {day}
                         </span>
                         {hasEvents && (
@@ -238,10 +275,13 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                             animate={{ scale: 1 }}
                             transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
                             className={cn(
-                              "text-[9px] font-medium px-2 py-0.5 rounded-full",
-                              "border backdrop-blur-sm",
-                              (isToday || isSelected) && "bg-primary/20 text-primary border-primary/30",
-                              !isToday && !isSelected && "bg-primary/10 text-primary/80 border-primary/20"
+                              'text-[9px] font-medium px-2 py-0.5 rounded-full',
+                              'border backdrop-blur-sm',
+                              (isToday || isSelected) &&
+                                'bg-primary/20 text-primary border-primary/30',
+                              !isToday &&
+                                !isSelected &&
+                                'bg-primary/10 text-primary/80 border-primary/20'
                             )}
                           >
                             {dayEvents.length}
@@ -262,10 +302,10 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                                 exit={{ opacity: 0, y: -5 }}
                                 transition={{ delay: idx * 0.08, duration: 0.4 }}
                                 className={cn(
-                                  "relative group/event p-2 rounded-2xl",
-                                  "bg-gradient-to-r backdrop-blur-sm",
-                                  "border transition-all duration-500",
-                                  "hover:shadow-md cursor-pointer",
+                                  'relative group/event p-2 rounded-2xl',
+                                  'bg-gradient-to-r backdrop-blur-sm',
+                                  'border transition-all duration-500',
+                                  'hover:shadow-md cursor-pointer',
                                   config.gradient,
                                   config.border,
                                   config.glow
@@ -274,11 +314,16 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                                 <div className="flex items-center gap-2 min-w-0">
                                   {/* Status dot */}
                                   <div className="relative flex-shrink-0">
-                                    <div className={cn("w-1.5 h-1.5 rounded-full", config.dot)} />
+                                    <div className={cn('w-1.5 h-1.5 rounded-full', config.dot)} />
                                   </div>
 
                                   {/* Time - 24-hour format displayed directly */}
-                                  <div className={cn("text-[11px] font-medium flex-shrink-0 tracking-wide", config.text)}>
+                                  <div
+                                    className={cn(
+                                      'text-[11px] font-medium flex-shrink-0 tracking-wide',
+                                      config.text
+                                    )}
+                                  >
                                     {event.time}
                                   </div>
 
@@ -287,9 +332,9 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                                     as="div"
                                     text={event.title}
                                     className={cn(
-                                      "text-[11px] font-normal flex-1 min-w-0 tracking-wide",
+                                      'text-[11px] font-normal flex-1 min-w-0 tracking-wide',
                                       config.text,
-                                      "opacity-90"
+                                      'opacity-90'
                                     )}
                                   />
                                 </div>
@@ -312,7 +357,7 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
         {selectedDate && selectedDayAppointments.length > 0 && (
           <motion.div
             initial={{ opacity: 0, height: 0, y: -10 }}
-            animate={{ opacity: 1, height: "auto", y: 0 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
             exit={{ opacity: 0, height: 0, y: -10 }}
             transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           >
@@ -324,14 +369,19 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
               <CardHeader className="relative pb-6 border-b border-primary/5">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-2xl font-extralight tracking-wider text-primary/90">
-                    Schedule for {new Date(selectedDate).toLocaleDateString('en-US', {
+                    Schedule for{' '}
+                    {new Date(selectedDate).toLocaleDateString('en-US', {
                       weekday: 'long',
                       month: 'long',
-                      day: 'numeric'
+                      day: 'numeric',
                     })}
                   </CardTitle>
-                  <Badge variant="outline" className="font-light px-3 py-1 tracking-wide border-primary/20 bg-primary/10 text-primary">
-                    {selectedDayAppointments.length} {selectedDayAppointments.length === 1 ? 'appointment' : 'appointments'}
+                  <Badge
+                    variant="outline"
+                    className="font-light px-3 py-1 tracking-wide border-primary/20 bg-primary/10 text-primary"
+                  >
+                    {selectedDayAppointments.length}{' '}
+                    {selectedDayAppointments.length === 1 ? 'appointment' : 'appointments'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -346,10 +396,10 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                       transition={{ delay: idx * 0.12, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                       whileHover={{ y: -2 }}
                       className={cn(
-                        "relative group p-5 rounded-3xl",
-                        "bg-gradient-to-r backdrop-blur-sm",
-                        "border shadow-md hover:shadow-lg",
-                        "transition-all duration-500 cursor-pointer",
+                        'relative group p-5 rounded-3xl',
+                        'bg-gradient-to-r backdrop-blur-sm',
+                        'border shadow-md hover:shadow-lg',
+                        'transition-all duration-500 cursor-pointer',
                         config.gradient,
                         config.border,
                         config.glow
@@ -362,15 +412,17 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
 
                       <div className="relative flex items-center gap-6">
                         {/* Time badge */}
-                        <div className={cn(
-                          "flex-shrink-0 px-4 py-2.5 rounded-2xl",
-                          "border backdrop-blur-sm shadow-sm",
-                          "flex items-center gap-2.5",
-                          config.border,
-                          "bg-white/40 dark:bg-background/40"
-                        )}>
-                          <Clock className={cn("w-4 h-4", config.text)} />
-                          <span className={cn("text-sm font-medium tracking-wide", config.text)}>
+                        <div
+                          className={cn(
+                            'flex-shrink-0 px-4 py-2.5 rounded-2xl',
+                            'border backdrop-blur-sm shadow-sm',
+                            'flex items-center gap-2.5',
+                            config.border,
+                            'bg-white/40 dark:bg-background/40'
+                          )}
+                        >
+                          <Clock className={cn('w-4 h-4', config.text)} />
+                          <span className={cn('text-sm font-medium tracking-wide', config.text)}>
                             {formatTime(event.time)}
                           </span>
                         </div>
@@ -378,11 +430,11 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                         {/* Event details */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
-                            <div className={cn("w-2 h-2 rounded-full", config.dot)} />
+                            <div className={cn('w-2 h-2 rounded-full', config.dot)} />
                             <TruncatedText
                               as="h3"
                               text={event.title}
-                              className={cn("font-medium text-base tracking-wide", config.text)}
+                              className={cn('font-medium text-base tracking-wide', config.text)}
                             />
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -395,10 +447,13 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                         <Badge
                           variant="outline"
                           className={cn(
-                            "flex-shrink-0 px-3 py-1 font-light tracking-wide border shadow-sm",
-                            event.status === 'confirmed' && "border-teal-600/25 bg-teal-500/10 text-teal-700 dark:text-teal-400",
-                            event.status === 'pending' && "border-amber-600/25 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-                            event.status === 'completed' && "border-gray-600/25 bg-gray-500/10 text-gray-700 dark:text-gray-400"
+                            'flex-shrink-0 px-3 py-1 font-light tracking-wide border shadow-sm',
+                            event.status === 'confirmed' &&
+                              'border-teal-600/25 bg-teal-500/10 text-teal-700 dark:text-teal-400',
+                            event.status === 'pending' &&
+                              'border-amber-600/25 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+                            event.status === 'completed' &&
+                              'border-gray-600/25 bg-gray-500/10 text-gray-700 dark:text-gray-400'
                           )}
                         >
                           {event.status}
@@ -416,6 +471,6 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
   );
 });
 
-CalendarView.displayName = "CalendarView";
+CalendarView.displayName = 'CalendarView';
 
 export default CalendarView;

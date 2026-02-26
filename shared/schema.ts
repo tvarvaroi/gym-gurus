@@ -1653,3 +1653,34 @@ export const insertClientIntakeSchema = createInsertSchema(clientIntake).omit({
 });
 export type InsertClientIntake = z.infer<typeof insertClientIntakeSchema>;
 export type ClientIntake = typeof clientIntake.$inferSelect;
+
+// ─── Saved Meal Plans (F4/F5) ────────────────────────────────────────────────
+
+export const savedMealPlans = pgTable(
+  'saved_meal_plans',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name').notNull(),
+    targetCalories: integer('target_calories'),
+    planData: jsonb('plan_data').notNull(), // Full meal plan object
+    source: varchar('source').notNull().default('generator'), // 'ai_chat' | 'generator'
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_saved_meal_plans_user_id').on(table.userId)]
+);
+
+export const savedMealPlansRelations = relations(savedMealPlans, ({ one }) => ({
+  user: one(users, { fields: [savedMealPlans.userId], references: [users.id] }),
+}));
+
+export const insertSavedMealPlanSchema = createInsertSchema(savedMealPlans).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertSavedMealPlan = z.infer<typeof insertSavedMealPlanSchema>;
+export type SavedMealPlan = typeof savedMealPlans.$inferSelect;
