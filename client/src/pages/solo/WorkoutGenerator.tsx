@@ -300,7 +300,7 @@ export default function WorkoutGenerator() {
     handleGenerate();
   };
 
-  // Shared save logic: create workout record then attach any exercises found in the library
+  // Shared save logic: create workout record then attach exercises (matched from library or newly created)
   const persistGeneratedWorkout = async (): Promise<void> => {
     if (!generatedWorkout) return;
 
@@ -322,7 +322,7 @@ export default function WorkoutGenerator() {
     if (!response.ok) throw new Error('Failed to save workout');
     const workout = await response.json();
 
-    // 2. Attach exercises that have a matching entry in the exercise library.
+    // 2. Attach exercises — match against library, or create a new library entry if unmatched.
     //    Normalize names for matching (lowercase, strip punctuation/extra words).
     const normalizeName = (name: string) =>
       name
@@ -331,35 +331,64 @@ export default function WorkoutGenerator() {
         .replace(/\s+/g, ' ')
         .trim();
 
-    await Promise.allSettled(
-      generatedWorkout.exercises.map(async (ex, index) => {
-        const normalizedAI = normalizeName(ex.name);
-        // Try exact → normalized → substring/contains fuzzy match
-        const libEx =
-          libraryByName.get(ex.name.toLowerCase()) ??
-          libraryByName.get(normalizedAI) ??
-          libraryExercises.find((libE) => {
-            const normalLib = normalizeName(libE.name);
-            // Require both sides to be meaningful (≥5 chars) to avoid spurious matches
-            if (normalLib.length < 5 || normalizedAI.length < 5) return false;
-            return normalLib.includes(normalizedAI) || normalizedAI.includes(normalLib);
+    // Process exercises sequentially to avoid race conditions when creating new library entries
+    for (let index = 0; index < generatedWorkout.exercises.length; index++) {
+      const ex = generatedWorkout.exercises[index];
+      const normalizedAI = normalizeName(ex.name);
+      // Try exact → normalized → substring/contains fuzzy match
+      let matchedEx =
+        libraryByName.get(ex.name.toLowerCase()) ??
+        libraryByName.get(normalizedAI) ??
+        libraryExercises.find((libE) => {
+          const normalLib = normalizeName(libE.name);
+          if (normalLib.length < 5 || normalizedAI.length < 5) return false;
+          return normalLib.includes(normalizedAI) || normalizedAI.includes(normalLib);
+        });
+
+      // No library match — create a new exercise entry so we can link it
+      if (!matchedEx) {
+        try {
+          const createRes = await fetch('/api/exercises', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              name: ex.name,
+              description: `AI-generated exercise targeting ${ex.muscleGroup}`,
+              category: 'strength',
+              difficulty: difficulty || 'intermediate',
+              muscleGroups: [ex.muscleGroup || 'full body'],
+              equipment: ['barbell'],
+              instructions: [`Perform ${ex.name} for ${ex.sets} sets of ${ex.reps} reps`],
+            }),
           });
-        if (!libEx) return; // no library match — skip rather than fail
-        const restSeconds = parseInt(String(ex.rest)) || 60;
+          if (createRes.ok) {
+            matchedEx = await createRes.json();
+          }
+        } catch {
+          // If creation fails, skip this exercise rather than fail the whole save
+        }
+      }
+
+      if (!matchedEx) continue;
+      const restSeconds = parseInt(String(ex.rest)) || 60;
+      try {
         await fetch(`/api/workouts/${workout.id}/exercises`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
-            exerciseId: libEx.id,
+            exerciseId: matchedEx.id,
             sets: ex.sets,
             reps: String(ex.reps),
             restTime: restSeconds,
             sortOrder: index,
           }),
         });
-      })
-    );
+      } catch {
+        // Continue with remaining exercises if one fails
+      }
+    }
 
     // Bust the workouts cache so the list page shows the new entry immediately
     queryClient.invalidateQueries({ queryKey: ['/api/workouts'] });
