@@ -48,6 +48,7 @@ import {
   generalRateLimit,
   strictRateLimit,
   authRateLimit,
+  loginRateLimit,
   exportRateLimit,
   aiRateLimit,
   writeRateLimit,
@@ -115,8 +116,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply general rate limiting to all API routes
   app.use('/api', generalRateLimit);
 
-  // Authentication routes (public, with auth rate limiting)
-  app.use('/api/auth', authRateLimit, authRoutes);
+  // Authentication routes — GET (session checks) use the general authRateLimit (100/15min),
+  // POST (login/register) gets the stricter loginRateLimit (10/15min) to prevent brute force.
+  // Previously all auth routes shared a 5/15min limit which locked users out after ~5 page views.
+  app.use('/api/auth', authRateLimit);
+  app.post('/api/auth/login', loginRateLimit);
+  app.post('/api/auth/register', loginRateLimit);
+  app.post('/api/auth/forgot-password', loginRateLimit);
+  app.post('/api/auth/reset-password', loginRateLimit);
+  app.post('/api/auth/disciple-login', loginRateLimit);
+  app.use('/api/auth', authRoutes);
 
   // Register new feature routes with tiered rate limiting
   app.use('/api/gamification', secureAuth, apiRateLimit, gamificationRoutes);

@@ -100,9 +100,15 @@ export const apiRateLimit = createRateLimiter({
 
 export const authRateLimit = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  // Allow more attempts in development for E2E testing
-  maxRequests: process.env.NODE_ENV === 'development' ? 1000 : 5,
+  maxRequests: process.env.NODE_ENV === 'development' ? 1000 : 100,
   message: 'Too many authentication attempts. Please try again later.',
+});
+
+// Strict rate limit for login/register — prevents brute force attacks
+export const loginRateLimit = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: process.env.NODE_ENV === 'development' ? 1000 : 10,
+  message: 'Too many login attempts. Please try again later.',
 });
 
 export const exportRateLimit = createRateLimiter({
