@@ -597,6 +597,7 @@ export default function WorkoutExecution() {
       queryClient.invalidateQueries({ queryKey: ['/api/gamification/profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/solo/stats'] });
       queryClient.invalidateQueries({ queryKey: ['/api/solo/today-workout'] });
+      setTimeout(() => setLocationRaw('/workouts'), 2000);
     },
     onError: (error: any) => {
       toast({
@@ -893,11 +894,8 @@ export default function WorkoutExecution() {
                   : 'Save & Exit'}
             </button>
             {saveWorkoutMutation.isSuccess && (
-              <p className="text-center text-sm text-neutral-500">Redirecting to dashboard...</p>
+              <p className="text-center text-sm text-neutral-500">Redirecting...</p>
             )}
-            {saveWorkoutMutation.isSuccess &&
-              setTimeout(() => setLocationRaw('/workouts'), 2000) &&
-              null}
           </motion.div>
         </div>
       </div>
@@ -1007,7 +1005,7 @@ export default function WorkoutExecution() {
               </div>
 
               {/* Set header row */}
-              <div className="grid grid-cols-[36px_1fr_1fr_48px] gap-2 mb-1 px-1">
+              <div className="grid grid-cols-[32px_1fr_1fr_48px] gap-1.5 mb-1 px-1">
                 <span className="text-[10px] text-neutral-600 uppercase">Set</span>
                 <span className="text-[10px] text-neutral-600 uppercase text-center">
                   Weight ({weightUnit})
@@ -1030,7 +1028,7 @@ export default function WorkoutExecution() {
                         opacity: set.completed ? 0.6 : 1,
                         scale: isActive ? 1 : 0.98,
                       }}
-                      className={`grid grid-cols-[36px_1fr_1fr_48px] gap-2 items-center rounded-xl px-2 py-2 transition-colors ${
+                      className={`grid grid-cols-[32px_1fr_1fr_48px] gap-1.5 items-center rounded-xl px-2 py-2 transition-colors ${
                         set.completed
                           ? 'bg-green-500/5 border border-green-500/20'
                           : isActive
