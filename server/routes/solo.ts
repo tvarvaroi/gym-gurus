@@ -1051,10 +1051,18 @@ router.get('/stats', async (req: Request, res: Response) => {
       weeklyVolumeKg: Math.round(weeklyVolume),
     });
   } catch (error: any) {
+    const dbHost = (() => {
+      try {
+        return new URL(process.env.DATABASE_URL || '').hostname;
+      } catch {
+        return 'unknown';
+      }
+    })();
     console.error('Error getting dashboard stats:', error);
     res.status(500).json({
       error: 'Failed to get dashboard stats',
       detail: error?.message || String(error),
+      dbHost,
     });
   }
 });
