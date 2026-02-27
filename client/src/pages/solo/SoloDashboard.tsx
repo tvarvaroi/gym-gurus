@@ -420,7 +420,7 @@ function WeeklyActivityCard() {
           This Week
         </h3>
         <span className="text-sm text-muted-foreground">
-          {isLoading ? '...' : `${totalWorkouts} workouts`}
+          {isLoading ? '...' : `${totalWorkouts} workout${totalWorkouts === 1 ? '' : 's'}`}
         </span>
       </div>
 
@@ -797,7 +797,7 @@ export function SoloDashboard() {
           icon={<Flame className="w-5 h-5 text-orange-500" />}
           label="This Week"
           value={workoutsThisWeek}
-          subtext="workouts"
+          subtext={workoutsThisWeek === 1 ? 'workout' : 'workouts'}
           color="bg-orange-500/10"
         />
         <StatCard

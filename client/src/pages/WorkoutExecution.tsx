@@ -402,7 +402,9 @@ export default function WorkoutExecution() {
         exercises: session.exercises.map((ex) => ({
           exerciseName: ex.exerciseName,
           muscleGroup: ex.muscleGroup,
-          sets: ex.sets.filter((s) => s.completed).map((s) => ({ weight: s.weight, reps: s.reps })),
+          sets: ex.sets
+            .filter((s) => s.completed)
+            .map((s) => ({ weight: lbsToKg(s.weight), reps: s.reps })),
         })),
       });
     },

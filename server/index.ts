@@ -247,6 +247,24 @@ app.use((req, res, next) => {
         created_at timestamp NOT NULL DEFAULT now()
       )`,
       'CREATE INDEX IF NOT EXISTS idx_saved_meal_plans_user_id ON saved_meal_plans(user_id)',
+      `CREATE TABLE IF NOT EXISTS workout_set_logs (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        session_id varchar NOT NULL REFERENCES workout_sessions(id) ON DELETE CASCADE,
+        exercise_id varchar NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+        set_number integer NOT NULL,
+        weight_kg decimal(6,2),
+        reps integer,
+        duration integer,
+        distance decimal(8,2),
+        rpe integer,
+        is_warmup boolean DEFAULT false,
+        is_drop_set boolean DEFAULT false,
+        is_failure boolean DEFAULT false,
+        notes text,
+        completed_at timestamp NOT NULL DEFAULT now()
+      )`,
+      'CREATE INDEX IF NOT EXISTS idx_workout_set_logs_session ON workout_set_logs(session_id)',
+      'CREATE INDEX IF NOT EXISTS idx_workout_set_logs_exercise ON workout_set_logs(exercise_id)',
     ];
     for (const stmt of migrations) {
       await pool.query(stmt);

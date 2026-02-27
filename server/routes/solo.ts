@@ -81,27 +81,38 @@ router.get('/today-workout', async (req: Request, res: Response) => {
       // Return existing session
       const session = todaySession[0];
 
-      // Get set logs for this session
-      const setLogs = await database
-        .select({
-          log: workoutSetLogs,
-          exercise: exercises,
-        })
-        .from(workoutSetLogs)
-        .innerJoin(exercises, eq(workoutSetLogs.exerciseId, exercises.id))
-        .where(eq(workoutSetLogs.sessionId, session.id))
-        .orderBy(workoutSetLogs.createdAt);
+      // For completed sessions, use summary data stored on the session record
+      // (set logs may not exist for sessions created via complete-solo)
+      let setLogs: any[] = [];
+      try {
+        setLogs = await database
+          .select({
+            log: workoutSetLogs,
+            exercise: exercises,
+          })
+          .from(workoutSetLogs)
+          .innerJoin(exercises, eq(workoutSetLogs.exerciseId, exercises.id))
+          .where(eq(workoutSetLogs.sessionId, session.id))
+          .orderBy(workoutSetLogs.completedAt);
+      } catch {
+        // workout_set_logs table may not exist yet — use session summary
+      }
 
-      // Calculate total sets and volume
-      const totalSets = setLogs.length;
-      const totalVolume = setLogs.reduce((sum, log) => {
-        const weight = Number(log.log.weightKg) || 0;
-        const reps = log.log.reps || 0;
-        return sum + weight * reps;
-      }, 0);
-
-      // Get unique exercises
-      const exercises_done = Array.from(new Set(setLogs.map((log) => log.exercise.name)));
+      const totalSets = setLogs.length > 0 ? setLogs.length : session.totalSets || 0;
+      const totalVolume =
+        setLogs.length > 0
+          ? setLogs.reduce((sum: number, log: any) => {
+              const weight = Number(log.log.weightKg) || 0;
+              const reps = log.log.reps || 0;
+              return sum + weight * reps;
+            }, 0)
+          : Number(session.totalVolumeKg) || 0;
+      const exercises_done =
+        setLogs.length > 0 ? Array.from(new Set(setLogs.map((log: any) => log.exercise.name))) : [];
+      const muscleGroups =
+        setLogs.length > 0
+          ? Array.from(new Set(setLogs.map((log: any) => log.exercise.muscleGroup)))
+          : [];
 
       return res.json({
         hasWorkoutToday: true,
@@ -110,7 +121,10 @@ router.get('/today-workout', async (req: Request, res: Response) => {
           name: session.workoutName || "Today's Workout",
           estimatedTime: session.plannedDurationMinutes || 45,
           exercises: exercises_done,
-          muscleGroups: Array.from(new Set(setLogs.map((log) => log.exercise.muscleGroup))),
+          exerciseCount: session.totalSets
+            ? Math.ceil(session.totalSets / 3)
+            : exercises_done.length,
+          muscleGroups,
           status: session.isActive ? 'in_progress' : 'completed',
           completedAt: session.endedAt,
           stats: {
