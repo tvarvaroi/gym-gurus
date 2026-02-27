@@ -682,30 +682,28 @@ router.put('/workouts/:id/complete-solo', async (req: Request, res: Response) =>
     const now = new Date();
     const duration = durationMinutes || 30;
 
+    // Calculate totals (used by both gamification and session record)
+    const totalSets = (clientExercises || []).reduce(
+      (sum: number, ex: any) => sum + (ex.sets?.length || 0),
+      0
+    );
+    const totalReps = (clientExercises || []).reduce(
+      (sum: number, ex: any) =>
+        sum + (ex.sets || []).reduce((s: number, set: any) => s + (set.reps || 0), 0),
+      0
+    );
+    const totalVolume = (clientExercises || []).reduce(
+      (sum: number, ex: any) =>
+        sum +
+        (ex.sets || []).reduce((s: number, set: any) => s + (set.weight || 0) * (set.reps || 0), 0),
+      0
+    );
+
     // Award XP and update gamification
     let gamificationResult = null;
     try {
       const { awardWorkoutCompletionXp, updateStreak, updateWorkoutStats } =
         await import('../services/gamification/xpService');
-
-      const totalSets = (clientExercises || []).reduce(
-        (sum: number, ex: any) => sum + (ex.sets?.length || 0),
-        0
-      );
-      const totalReps = (clientExercises || []).reduce(
-        (sum: number, ex: any) =>
-          sum + (ex.sets || []).reduce((s: number, set: any) => s + (set.reps || 0), 0),
-        0
-      );
-      const totalVolume = (clientExercises || []).reduce(
-        (sum: number, ex: any) =>
-          sum +
-          (ex.sets || []).reduce(
-            (s: number, set: any) => s + (set.weight || 0) * (set.reps || 0),
-            0
-          ),
-        0
-      );
 
       const xpResult = await awardWorkoutCompletionXp(userId, duration, false);
       const streakResult = await updateStreak(userId);
@@ -880,6 +878,28 @@ router.put('/workouts/:id/complete-solo', async (req: Request, res: Response) =>
       }
     } catch (recoveryError) {
       console.warn('Recovery fatigue update failed (non-critical):', recoveryError);
+    }
+
+    // Write completed session to workoutSessions so stats/progress/schedule can read it
+    try {
+      const startedAt = new Date(now.getTime() - duration * 60 * 1000);
+      await database.insert(workoutSessions).values({
+        userId,
+        workoutLogId: workoutId,
+        workoutName: workout.title,
+        workoutType: workout.category || null,
+        startedAt,
+        endedAt: now,
+        isActive: false,
+        actualDurationMinutes: duration,
+        plannedDurationMinutes: workout.duration || duration,
+        totalSets,
+        totalReps,
+        totalVolumeKg: String(totalVolume),
+        notes: notes || null,
+      });
+    } catch (sessionError) {
+      console.warn('Session record insert failed (non-critical):', sessionError);
     }
 
     res.json({
@@ -1224,8 +1244,13 @@ router.get('/meal-plans', async (req: Request, res: Response) => {
       .limit(20);
 
     res.json(plans);
-  } catch (error) {
-    console.error('Error listing meal plans:', error);
+  } catch (error: any) {
+    // If table doesn't exist yet (race with startup migration), return empty
+    if (error?.message?.includes('does not exist') || error?.code === '42P01') {
+      console.warn('saved_meal_plans table not ready yet, returning empty list');
+      return res.json([]);
+    }
+    console.error('Error listing meal plans:', error?.message || error);
     res.status(500).json({ error: 'Failed to list meal plans' });
   }
 });

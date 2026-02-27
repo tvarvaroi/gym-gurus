@@ -176,7 +176,12 @@ function TodaysWorkoutCard() {
           <div className="flex gap-4 mb-4 text-sm">
             <div className="flex items-center gap-1.5">
               <Activity className="w-4 h-4 text-muted-foreground" />
-              <span>{workout.exercises?.length || workout.exercises} exercises</span>
+              <span>
+                {Array.isArray(workout.exercises)
+                  ? workout.exercises.length
+                  : workout.exercises || 0}{' '}
+                exercises
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-muted-foreground" />
@@ -322,7 +327,7 @@ function RecoveryStatusCard() {
       .map((m: any) => {
         const recovery = 100 - m.fatigueLevel;
         return {
-          name: m.muscleGroup.charAt(0).toUpperCase() + m.muscleGroup.slice(1),
+          name: m.muscleGroup.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
           recovery,
           color: recovery >= 80 ? 'bg-green-500' : recovery >= 50 ? 'bg-yellow-500' : 'bg-red-500',
         };
@@ -522,7 +527,7 @@ function getContextualSuggestion(ctx: {
 
     if (fatigued.length >= 5) {
       return {
-        message: `${fatigued.length} muscle groups are still fatigued. Consider a rest day or light cardio to aid recovery.`,
+        message: `${fatigued.length} muscle group${fatigued.length === 1 ? ' is' : 's are'} still fatigued. Consider a rest day or light cardio to aid recovery.`,
         action: 'View Recovery',
         actionHref: '/solo/recovery',
       };
@@ -554,7 +559,7 @@ function getContextualSuggestion(ctx: {
 
     if (recovering.length > 0) {
       return {
-        message: `${recovering.length} muscle groups are recovering. A light session or active recovery could help.`,
+        message: `${recovering.length} muscle group${recovering.length === 1 ? ' is' : 's are'} recovering. A light session or active recovery could help.`,
         ...defaultAction,
       };
     }
