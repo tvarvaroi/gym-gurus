@@ -95,9 +95,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const db = await getDb();
       await db.execute(sql`SELECT 1`);
+      const dbHost = (() => {
+        try {
+          return new URL(process.env.DATABASE_URL || '').hostname;
+        } catch {
+          return 'unknown';
+        }
+      })();
       res.json({
         status: 'ok',
         db: 'connected',
+        dbHost,
         env: process.env.NODE_ENV,
         uptimeSeconds: Math.floor(process.uptime()),
         responseMs: Date.now() - start,
@@ -109,6 +117,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         db: 'disconnected',
         error: error instanceof Error ? error.message : 'Unknown DB error',
         timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  // Temporary migration endpoint to add missing workout_sessions columns
+  // TODO: Remove after migration is confirmed
+  app.post('/api/migrate-workout-sessions', async (_req: Request, res: Response) => {
+    try {
+      const { getPool } = await import('./db');
+      const pool = await getPool();
+      const alterStatements = [
+        'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS workout_name varchar',
+        'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS workout_type varchar',
+        'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS planned_duration_minutes integer',
+        'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS actual_duration_minutes integer',
+        'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS total_sets integer',
+        'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS total_reps integer',
+        'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS total_volume_kg varchar',
+        'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS perceived_exertion integer',
+        'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS notes text',
+      ];
+      const results: string[] = [];
+      for (const stmt of alterStatements) {
+        await pool.query(stmt);
+        results.push(stmt.split('IF NOT EXISTS ')[1] || stmt);
+      }
+      res.json({ status: 'ok', migrated: results });
+    } catch (error) {
+      res.status(500).json({
+        error: 'Migration failed',
+        detail: error instanceof Error ? error.message : String(error),
       });
     }
   });
