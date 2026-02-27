@@ -188,11 +188,9 @@ router.get('/today-workout', async (req: Request, res: Response) => {
         source: 'template',
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting today's workout:", error);
-    res
-      .status(500)
-      .json({ error: "Failed to get today's workout", detail: error?.message || String(error) });
+    res.status(500).json({ error: "Failed to get today's workout" });
   }
 });
 
@@ -288,11 +286,9 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
       totalWorkouts: sessions.length,
       totalPlanned: plannedDayIndices.size,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error getting weekly activity:', error);
-    res
-      .status(500)
-      .json({ error: 'Failed to get weekly activity', detail: error?.message || String(error) });
+    res.status(500).json({ error: 'Failed to get weekly activity' });
   }
 });
 
@@ -1050,20 +1046,9 @@ router.get('/stats', async (req: Request, res: Response) => {
       workoutsThisWeek,
       weeklyVolumeKg: Math.round(weeklyVolume),
     });
-  } catch (error: any) {
-    const dbHost = (() => {
-      try {
-        return new URL(process.env.DATABASE_URL || '').hostname;
-      } catch {
-        return 'unknown';
-      }
-    })();
+  } catch (error) {
     console.error('Error getting dashboard stats:', error);
-    res.status(500).json({
-      error: 'Failed to get dashboard stats',
-      detail: error?.message || String(error),
-      dbHost,
-    });
+    res.status(500).json({ error: 'Failed to get dashboard stats' });
   }
 });
 
