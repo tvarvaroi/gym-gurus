@@ -460,18 +460,9 @@ const WorkoutPlans = memo(() => {
     [createFromTemplateMutation]
   );
 
-  const handleStartWorkout = useCallback(
-    (workoutId: string) => {
-      // Navigate to workout logger for clients
-      toast({
-        title: 'Starting Workout',
-        description: 'Loading your workout...',
-      });
-      // Navigate to workout builder with client view
-      window.location.href = `/workout-builder/${workoutId}`;
-    },
-    [toast]
-  );
+  const handleStartWorkout = useCallback((workoutId: string) => {
+    window.location.href = `/workout-execution/${workoutId}`;
+  }, []);
 
   // Filter workouts based on search query - MOVED BEFORE EARLY RETURNS
   const filteredWorkouts = useMemo(() => {
