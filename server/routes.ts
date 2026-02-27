@@ -123,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Temporary migration endpoint to add missing workout_sessions columns
   // TODO: Remove after migration is confirmed
-  app.post('/api/migrate-workout-sessions', async (_req: Request, res: Response) => {
+  app.get('/api/migrate-workout-sessions', async (_req: Request, res: Response) => {
     try {
       const { getPool } = await import('./db');
       const pool = await getPool();
