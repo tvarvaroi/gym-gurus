@@ -556,7 +556,9 @@ export default function WorkoutGenerator() {
                       <p className="font-medium text-teal-400">
                         Suggested:{' '}
                         {recoveryRecs.suggestedWorkout === 'rest'
-                          ? 'Rest Day — all muscles fully recovered'
+                          ? recoveryRecs.needsRest.length > 0
+                            ? 'Rest Day — some muscles still recovering'
+                            : 'Rest Day — all muscles fully recovered'
                           : `${recoveryRecs.suggestedWorkout.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} Day`}
                       </p>
                       {recoveryRecs.needsRest.length > 0 && (
@@ -564,7 +566,10 @@ export default function WorkoutGenerator() {
                           Recovering:{' '}
                           {recoveryRecs.needsRest
                             .slice(0, 4)
-                            .map((m) => `${m.muscleGroup} (${Math.round(m.recoveryProgress)}%)`)
+                            .map(
+                              (m) =>
+                                `${m.muscleGroup} (${Math.round(100 - m.recoveryProgress)}% fatigued)`
+                            )
                             .join(', ')}
                         </p>
                       )}

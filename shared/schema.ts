@@ -1053,6 +1053,9 @@ export const workoutSessions = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     workoutLogId: varchar('workout_log_id'),
     workoutAssignmentId: varchar('workout_assignment_id').references(() => workoutAssignments.id),
+    workoutName: varchar('workout_name'), // Name of workout being performed
+    workoutType: varchar('workout_type'), // push, pull, legs, etc.
+    plannedDurationMinutes: integer('planned_duration_minutes'),
     startedAt: timestamp('started_at').defaultNow().notNull(),
     endedAt: timestamp('ended_at'),
     isActive: boolean('is_active').default(true),
@@ -1062,6 +1065,12 @@ export const workoutSessions = pgTable(
     restTimerEndAt: timestamp('rest_timer_end_at'),
     totalRestTime: integer('total_rest_time').default(0), // seconds
     totalActiveTime: integer('total_active_time').default(0), // seconds
+    actualDurationMinutes: integer('actual_duration_minutes'),
+    totalSets: integer('total_sets'),
+    totalReps: integer('total_reps'),
+    totalVolumeKg: varchar('total_volume_kg'), // stored as string for decimal precision
+    perceivedExertion: integer('perceived_exertion'), // RPE 1-10
+    notes: text('notes'),
   },
   (table) => [
     index('idx_workout_sessions_user_id').on(table.userId),

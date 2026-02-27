@@ -5,7 +5,13 @@ import { generateText, generateObject, streamText, tool } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { getDb } from '../db';
-import { userFitnessProfile, workouts, workoutSessions, users } from '../../shared/schema';
+import {
+  userFitnessProfile,
+  workouts,
+  workoutSessions,
+  users,
+  userMuscleFatigue,
+} from '../../shared/schema';
 import { eq, desc, and } from 'drizzle-orm';
 
 // ---------- Provider Setup ----------
@@ -90,6 +96,19 @@ PERSONALITY & TONE:
 - Be direct: "Do X" not "You might consider perhaps doing X"
 - When asked about influencer programs, explain accurately but note that enhanced athletes' programs may need adjusting for natural trainees
 - For exercise recommendations, include sets, reps, rest, and form cues
+
+FORMATTING:
+- When creating tables, use markdown table format with each row on its own line
+- ALWAYS include a blank line before and after any table
+- Each table row MUST end with a newline character
+- Example table format:
+
+| Exercise | Sets | Reps | Rest |
+|----------|------|------|------|
+| Bench Press | 4 | 8-12 | 120s |
+| OHP | 3 | 8-10 | 90s |
+
+- For workout plans, prefer numbered lists over tables for better mobile readability
 
 RULES:
 - NEVER give medical advice. For injuries/pain, say "see a doctor or physio"
@@ -263,6 +282,57 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
         parts.push(`\nSAVED WORKOUT TEMPLATES (plans created, NOT necessarily completed):`);
         for (const w of savedTemplates) {
           parts.push(`- ${w.title} (saved ${new Date(w.createdAt).toLocaleDateString()})`);
+        }
+      }
+
+      // Recovery status
+      const fatigueData = await db
+        .select()
+        .from(userMuscleFatigue)
+        .where(eq(userMuscleFatigue.userId, userId));
+
+      if (fatigueData.length > 0) {
+        const now = new Date();
+        const RECOVERY_HOURS: Record<string, number> = {
+          chest: 48,
+          back: 48,
+          shoulders: 48,
+          biceps: 36,
+          triceps: 36,
+          forearms: 24,
+          quads: 72,
+          hamstrings: 72,
+          glutes: 72,
+          calves: 48,
+          abs: 24,
+          obliques: 24,
+          lower_back: 48,
+          traps: 48,
+          lats: 48,
+        };
+        const recovering: string[] = [];
+        const recovered: string[] = [];
+        for (const f of fatigueData) {
+          const lastTrained = f.lastTrainedAt ? new Date(f.lastTrainedAt) : null;
+          const recoveryHrs = Number(f.avgRecoveryHours) || RECOVERY_HOURS[f.muscleGroup] || 48;
+          let currentFatigue = Number(f.fatigueLevel) || 0;
+          if (lastTrained) {
+            const hoursSince = (now.getTime() - lastTrained.getTime()) / (1000 * 60 * 60);
+            const progress = Math.min(1, hoursSince / recoveryHrs);
+            currentFatigue = Math.max(0, currentFatigue * (1 - progress));
+          }
+          if (currentFatigue >= 20) {
+            recovering.push(`${f.muscleGroup} (${Math.round(currentFatigue)}% fatigued)`);
+          } else {
+            recovered.push(f.muscleGroup);
+          }
+        }
+        parts.push(`\nCURRENT RECOVERY STATUS:`);
+        if (recovering.length > 0) {
+          parts.push(`Still recovering: ${recovering.join(', ')}`);
+        }
+        if (recovered.length > 0) {
+          parts.push(`Fully recovered: ${recovered.join(', ')}`);
         }
       }
     } catch (err) {

@@ -453,7 +453,7 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                             event.status === 'pending' &&
                               'border-amber-600/25 bg-amber-500/10 text-amber-700 dark:text-amber-400',
                             event.status === 'completed' &&
-                              'border-gray-600/25 bg-gray-500/10 text-gray-700 dark:text-gray-400'
+                              'border-green-600/25 bg-green-500/10 text-green-700 dark:text-green-400'
                           )}
                         >
                           {event.status}

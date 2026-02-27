@@ -92,6 +92,28 @@ export default function ProgressPage() {
     }
   }, [isClient, isTrainer, clientProfile, clients, selectedClient]);
 
+  // Fetch solo user progress data
+  const { data: soloProgress, isLoading: loadingSoloProgress } = useQuery<{
+    totalWorkouts: number;
+    totalVolumeKg: number;
+    totalDurationMinutes: number;
+    totalSets: number;
+    weeklyData: { week: string; volume: number; workouts: number }[];
+    history: {
+      id: string;
+      name: string;
+      date: string;
+      duration: number;
+      volume: number;
+      sets: number;
+      reps: number;
+    }[];
+  }>({
+    queryKey: ['/api/solo/progress'],
+    enabled: isSolo,
+    staleTime: 2 * 60 * 1000,
+  });
+
   // Fetch selected client's progress - using development endpoint that doesn't require auth
   const { data: progressData = [], isLoading: loadingProgress } = useQuery<ProgressEntry[]>({
     queryKey: [`/api/progress/${selectedClient}`],
@@ -311,8 +333,136 @@ export default function ProgressPage() {
         </motion.div>
       )}
 
-      {/* Solo users — no client/trainer progress system, show helpful empty state */}
-      {isSolo && (
+      {/* Solo users — show progress data or empty state */}
+      {isSolo && loadingSoloProgress && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="bg-card/50 backdrop-blur-sm border-border/50">
+              <CardContent className="p-6 space-y-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-8 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {isSolo && !loadingSoloProgress && soloProgress && soloProgress.totalWorkouts > 0 && (
+        <div className="space-y-6">
+          {/* Stats Cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground font-light">Total Workouts</p>
+                <p className="text-2xl font-bold mt-1">{soloProgress.totalWorkouts}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-teal-500/20 bg-gradient-to-br from-teal-500/5 to-transparent">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground font-light">Total Volume</p>
+                <p className="text-2xl font-bold mt-1">
+                  {soloProgress.totalVolumeKg.toLocaleString()}
+                  <span className="text-sm font-light text-muted-foreground ml-1">kg</span>
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground font-light">Total Time</p>
+                <p className="text-2xl font-bold mt-1">
+                  {soloProgress.totalDurationMinutes}
+                  <span className="text-sm font-light text-muted-foreground ml-1">min</span>
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground font-light">Total Sets</p>
+                <p className="text-2xl font-bold mt-1">{soloProgress.totalSets.toLocaleString()}</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Weekly Volume Chart */}
+          {soloProgress.weeklyData.some((w) => w.volume > 0) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
+                <CardHeader>
+                  <CardTitle className="text-lg font-light">Weekly Volume</CardTitle>
+                  <CardDescription>Total volume lifted per week (kg)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={soloProgress.weeklyData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
+                      <XAxis
+                        dataKey="week"
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Bar dataKey="volume" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Recent Workout History */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
+              <CardHeader>
+                <CardTitle className="text-lg font-light">Recent Workouts</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {soloProgress.history.map((workout) => (
+                  <div
+                    key={workout.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/20"
+                  >
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">{workout.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(workout.date).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>{workout.duration}min</span>
+                      <span>{workout.sets} sets</span>
+                      {workout.volume > 0 && <span>{workout.volume.toLocaleString()}kg</span>}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      )}
+
+      {isSolo && !loadingSoloProgress && (!soloProgress || soloProgress.totalWorkouts === 0) && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -332,15 +482,6 @@ export default function ProgressPage() {
                 >
                   <Dumbbell className="w-16 h-16 text-purple-500/60 mx-auto" />
                 </motion.div>
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500/10 to-transparent blur-xl"
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{
-                    duration: 2,
-                    repeat: prefersReducedMotion ? 0 : Infinity,
-                    ease: 'easeInOut',
-                  }}
-                />
               </div>
               <div className="space-y-3 max-w-md mx-auto">
                 <h3 className="text-xl font-light">

@@ -8,16 +8,40 @@ const router = Router();
 
 // Muscle groups for validation
 const MUSCLE_GROUPS = [
-  'chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms',
-  'quads', 'hamstrings', 'glutes', 'calves', 'abs', 'obliques',
-  'lower_back', 'traps', 'lats'
+  'chest',
+  'back',
+  'shoulders',
+  'biceps',
+  'triceps',
+  'forearms',
+  'quads',
+  'hamstrings',
+  'glutes',
+  'calves',
+  'abs',
+  'obliques',
+  'lower_back',
+  'traps',
+  'lats',
 ];
 
 // Default recovery hours by muscle group
 const DEFAULT_RECOVERY_HOURS: Record<string, number> = {
-  chest: 48, back: 48, shoulders: 48, biceps: 36, triceps: 36,
-  forearms: 24, quads: 72, hamstrings: 72, glutes: 72, calves: 48,
-  abs: 24, obliques: 24, lower_back: 48, traps: 48, lats: 48
+  chest: 48,
+  back: 48,
+  shoulders: 48,
+  biceps: 36,
+  triceps: 36,
+  forearms: 24,
+  quads: 72,
+  hamstrings: 72,
+  glutes: 72,
+  calves: 48,
+  abs: 24,
+  obliques: 24,
+  lower_back: 48,
+  traps: 48,
+  lats: 48,
 };
 
 // ==================== Muscle Fatigue ====================
@@ -39,9 +63,10 @@ router.get('/fatigue', async (req: Request, res: Response) => {
 
     // Calculate current fatigue based on time since last workout
     const now = new Date();
-    const result = fatigueData.map(f => {
+    const result = fatigueData.map((f) => {
       const lastTrained = f.lastTrainedAt ? new Date(f.lastTrainedAt) : null;
-      const recoveryHours = Number(f.avgRecoveryHours) || DEFAULT_RECOVERY_HOURS[f.muscleGroup] || 48;
+      const recoveryHours =
+        Number(f.avgRecoveryHours) || DEFAULT_RECOVERY_HOURS[f.muscleGroup] || 48;
 
       let currentFatigue = Number(f.fatigueLevel) || 0;
 
@@ -59,12 +84,13 @@ router.get('/fatigue', async (req: Request, res: Response) => {
         estimatedFullRecoveryAt: f.estimatedFullRecoveryAt,
         volumeLastSession: Number(f.volumeLastSession) || 0,
         setsLastSession: f.setsLastSession || 0,
-        recoveryStatus: currentFatigue < 20 ? 'recovered' : currentFatigue < 50 ? 'recovering' : 'fatigued'
+        recoveryStatus:
+          currentFatigue < 20 ? 'recovered' : currentFatigue < 50 ? 'recovering' : 'fatigued',
       };
     });
 
     // Add missing muscle groups with 0 fatigue
-    const existingMuscles = new Set(result.map(r => r.muscleGroup));
+    const existingMuscles = new Set(result.map((r) => r.muscleGroup));
     for (const muscle of MUSCLE_GROUPS) {
       if (!existingMuscles.has(muscle)) {
         result.push({
@@ -74,7 +100,7 @@ router.get('/fatigue', async (req: Request, res: Response) => {
           estimatedFullRecoveryAt: null,
           volumeLastSession: 0,
           setsLastSession: 0,
-          recoveryStatus: 'recovered'
+          recoveryStatus: 'recovered',
         });
       }
     }
@@ -118,10 +144,9 @@ router.post('/fatigue/update', async (req: Request, res: Response) => {
       const existing = await database
         .select()
         .from(userMuscleFatigue)
-        .where(and(
-          eq(userMuscleFatigue.userId, userId),
-          eq(userMuscleFatigue.muscleGroup, muscleGroup)
-        ))
+        .where(
+          and(eq(userMuscleFatigue.userId, userId), eq(userMuscleFatigue.muscleGroup, muscleGroup))
+        )
         .limit(1);
 
       if (existing.length > 0) {
@@ -134,7 +159,7 @@ router.post('/fatigue/update', async (req: Request, res: Response) => {
             estimatedFullRecoveryAt: estimatedRecovery,
             volumeLastSession: String(volumeKg),
             setsLastSession: sets,
-            updatedAt: now
+            updatedAt: now,
           })
           .where(eq(userMuscleFatigue.id, existing[0].id));
       } else {
@@ -147,7 +172,7 @@ router.post('/fatigue/update', async (req: Request, res: Response) => {
           estimatedFullRecoveryAt: estimatedRecovery,
           volumeLastSession: String(volumeKg),
           setsLastSession: sets,
-          avgRecoveryHours: String(recoveryHours)
+          avgRecoveryHours: String(recoveryHours),
         });
       }
     }
@@ -211,10 +236,9 @@ router.post('/volume/update', async (req: Request, res: Response) => {
       const existing = await database
         .select()
         .from(userMuscleVolume)
-        .where(and(
-          eq(userMuscleVolume.userId, userId),
-          eq(userMuscleVolume.muscleGroup, muscleGroup)
-        ))
+        .where(
+          and(eq(userMuscleVolume.userId, userId), eq(userMuscleVolume.muscleGroup, muscleGroup))
+        )
         .limit(1);
 
       if (existing.length > 0) {
@@ -228,7 +252,7 @@ router.post('/volume/update', async (req: Request, res: Response) => {
             setsThisMonth: sql`${userMuscleVolume.setsThisMonth} + ${sets}`,
             totalVolumeKg: sql`${userMuscleVolume.totalVolumeKg} + ${volumeKg}`,
             totalSets: sql`${userMuscleVolume.totalSets} + ${sets}`,
-            lastUpdated: new Date()
+            lastUpdated: new Date(),
           })
           .where(eq(userMuscleVolume.id, existing[0].id));
       } else {
@@ -241,7 +265,7 @@ router.post('/volume/update', async (req: Request, res: Response) => {
           volumeThisMonthKg: String(volumeKg),
           setsThisMonth: sets,
           totalVolumeKg: String(volumeKg),
-          totalSets: sets
+          totalSets: sets,
         });
       }
     }
@@ -268,7 +292,7 @@ router.post('/volume/reset-weekly', async (req: Request, res: Response) => {
       .set({
         volumeThisWeekKg: '0',
         setsThisWeek: 0,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       })
       .where(eq(userMuscleVolume.userId, userId));
 
@@ -289,7 +313,13 @@ router.post('/log', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { workoutLogId, musclesWorked, perceivedExertion, muscleSoreness, sleepQualityLastNight } = req.body;
+    const {
+      workoutLogId,
+      musclesWorked,
+      perceivedExertion,
+      muscleSoreness,
+      sleepQualityLastNight,
+    } = req.body;
 
     const database = await db;
 
@@ -299,7 +329,7 @@ router.post('/log', async (req: Request, res: Response) => {
       musclesWorked,
       perceivedExertion,
       muscleSoreness,
-      sleepQualityLastNight
+      sleepQualityLastNight,
     });
 
     res.json({ success: true });
@@ -352,10 +382,16 @@ router.get('/recommendations', async (req: Request, res: Response) => {
       .from(userMuscleFatigue)
       .where(eq(userMuscleFatigue.userId, userId));
 
-    // Calculate current recovery status for each muscle
-    const muscleStatus = fatigueData.map(f => {
+    // Calculate current recovery status for each muscle (including untrained)
+    const fatigueMap = new Map(fatigueData.map((f) => [f.muscleGroup, f]));
+    const muscleStatus = MUSCLE_GROUPS.map((muscle) => {
+      const f = fatigueMap.get(muscle);
+      if (!f) {
+        // Never trained — fully recovered
+        return { muscleGroup: muscle, recoveryProgress: 100, isRecovered: true, lastTrained: null };
+      }
       const lastTrained = f.lastTrainedAt ? new Date(f.lastTrainedAt) : null;
-      const recoveryHours = Number(f.avgRecoveryHours) || DEFAULT_RECOVERY_HOURS[f.muscleGroup] || 48;
+      const recoveryHours = Number(f.avgRecoveryHours) || DEFAULT_RECOVERY_HOURS[muscle] || 48;
 
       let recoveryProgress = 100;
 
@@ -365,24 +401,22 @@ router.get('/recommendations', async (req: Request, res: Response) => {
       }
 
       return {
-        muscleGroup: f.muscleGroup,
+        muscleGroup: muscle,
         recoveryProgress: Math.round(recoveryProgress),
         isRecovered: recoveryProgress >= 80,
-        lastTrained
+        lastTrained,
       };
     });
 
     // Find muscles that are recovered and ready to train
-    const readyToTrain = muscleStatus
-      .filter(m => m.isRecovered)
-      .map(m => m.muscleGroup);
+    const readyToTrain = muscleStatus.filter((m) => m.isRecovered).map((m) => m.muscleGroup);
 
-    // Find muscles that need more rest
+    // Find muscles that need more rest (only include actually fatigued muscles)
     const needsRest = muscleStatus
-      .filter(m => !m.isRecovered)
-      .map(m => ({
+      .filter((m) => !m.isRecovered)
+      .map((m) => ({
         muscleGroup: m.muscleGroup,
-        recoveryProgress: m.recoveryProgress
+        recoveryProgress: m.recoveryProgress,
       }));
 
     // Suggest workout type based on what's recovered
@@ -401,7 +435,7 @@ router.get('/recommendations', async (req: Request, res: Response) => {
       readyToTrain,
       needsRest,
       suggestedWorkout,
-      muscleStatus
+      muscleStatus,
     });
   } catch (error) {
     console.error('Error getting recommendations:', error);

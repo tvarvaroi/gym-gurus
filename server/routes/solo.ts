@@ -933,6 +933,82 @@ router.get('/sessions/active', async (req: Request, res: Response) => {
   }
 });
 
+// ==================== Solo Progress ====================
+
+router.get('/progress', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const database = await getDb();
+
+    // Completed workout sessions
+    const completedSessions = await database
+      .select()
+      .from(workoutSessions)
+      .where(and(eq(workoutSessions.userId, userId), eq(workoutSessions.isActive, false)))
+      .orderBy(desc(workoutSessions.startedAt))
+      .limit(50);
+
+    // Summary stats
+    const totalWorkouts = completedSessions.length;
+    const totalVolume = completedSessions.reduce(
+      (sum, s) => sum + (Number(s.totalVolumeKg) || 0),
+      0
+    );
+    const totalDuration = completedSessions.reduce(
+      (sum, s) => sum + (s.actualDurationMinutes || 0),
+      0
+    );
+    const totalSets = completedSessions.reduce((sum, s) => sum + (s.totalSets || 0), 0);
+
+    // Weekly volume chart data (last 8 weeks)
+    const eightWeeksAgo = new Date();
+    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
+    const recentSessions = completedSessions.filter((s) => s.startedAt >= eightWeeksAgo);
+
+    const weeklyData: { week: string; volume: number; workouts: number }[] = [];
+    for (let i = 7; i >= 0; i--) {
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - i * 7);
+      const ws = startOfWeek(weekStart, { weekStartsOn: 1 });
+      const we = new Date(ws);
+      we.setDate(we.getDate() + 7);
+      const weekSessions = recentSessions.filter((s) => s.startedAt >= ws && s.startedAt < we);
+      weeklyData.push({
+        week: format(ws, 'MMM d'),
+        volume: Math.round(
+          weekSessions.reduce((sum, s) => sum + (Number(s.totalVolumeKg) || 0), 0)
+        ),
+        workouts: weekSessions.length,
+      });
+    }
+
+    // Recent workout history
+    const history = completedSessions.slice(0, 20).map((s) => ({
+      id: s.id,
+      name: s.workoutName || 'Workout',
+      date: s.startedAt.toISOString(),
+      duration: s.actualDurationMinutes || 0,
+      volume: Math.round(Number(s.totalVolumeKg) || 0),
+      sets: s.totalSets || 0,
+      reps: s.totalReps || 0,
+    }));
+
+    res.json({
+      totalWorkouts,
+      totalVolumeKg: Math.round(totalVolume),
+      totalDurationMinutes: totalDuration,
+      totalSets,
+      weeklyData,
+      history,
+    });
+  } catch (error) {
+    console.error('Error getting solo progress:', error);
+    res.status(500).json({ error: 'Failed to get progress data' });
+  }
+});
+
 // ==================== Dashboard Stats ====================
 
 // Get consolidated dashboard stats for solo user
@@ -1192,6 +1268,104 @@ router.delete('/meal-plans/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting meal plan:', error);
     res.status(500).json({ error: 'Failed to delete meal plan' });
+  }
+});
+
+// ==================== AI Coach Workout Save ====================
+
+// Save a workout parsed from AI Coach chat (handles exercise matching + creation in one call)
+router.post('/save-ai-workout', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { title, exercises: parsedExercises } = req.body;
+    if (!title || !parsedExercises?.length) {
+      return res.status(400).json({ error: 'title and exercises are required' });
+    }
+
+    const database = await getDb();
+
+    // 1. Create the workout template
+    const [workout] = await database
+      .insert(workouts)
+      .values({
+        trainerId: userId,
+        title,
+        description: 'Workout suggested by AI Coach',
+        duration: 45,
+        difficulty: 'intermediate',
+        category: 'ai_coach',
+      })
+      .returning();
+
+    // 2. Match/create exercises and link them
+    const allLibExercises = await database.select().from(exercises);
+    const libByName = new Map<string, (typeof allLibExercises)[0]>();
+    for (const ex of allLibExercises) {
+      libByName.set(ex.name.toLowerCase(), ex);
+    }
+
+    const normalize = (name: string) =>
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    for (let i = 0; i < parsedExercises.length; i++) {
+      const ex = parsedExercises[i];
+      const normalizedName = normalize(ex.exerciseName || ex.name || '');
+
+      // Try to match existing library exercise
+      let matchedEx =
+        libByName.get((ex.exerciseName || ex.name || '').toLowerCase()) ??
+        libByName.get(normalizedName) ??
+        allLibExercises.find((libE) => {
+          const normalLib = normalize(libE.name);
+          if (normalLib.length < 5 || normalizedName.length < 5) return false;
+          return normalLib.includes(normalizedName) || normalizedName.includes(normalLib);
+        });
+
+      // Create new library exercise if no match
+      if (!matchedEx) {
+        try {
+          const [newEx] = await database
+            .insert(exercises)
+            .values({
+              name: ex.exerciseName || ex.name,
+              description: `Exercise from AI Coach`,
+              category: 'strength',
+              difficulty: 'intermediate',
+              muscleGroups: ['general'],
+              equipment: ['barbell'],
+              instructions: [`Perform ${ex.exerciseName || ex.name}`],
+            })
+            .returning();
+          matchedEx = newEx;
+          libByName.set(newEx.name.toLowerCase(), newEx);
+        } catch {
+          continue; // Skip if creation fails
+        }
+      }
+
+      if (!matchedEx) continue;
+
+      // Link exercise to workout
+      await database.insert(workoutExercises).values({
+        workoutId: workout.id,
+        exerciseId: matchedEx.id,
+        sets: ex.sets || 3,
+        reps: String(ex.reps || '8-12'),
+        restTime: ex.restSeconds || 60,
+        sortOrder: i,
+      });
+    }
+
+    res.status(201).json({ id: workout.id, title: workout.title });
+  } catch (error) {
+    console.error('Error saving AI Coach workout:', error);
+    res.status(500).json({ error: 'Failed to save workout' });
   }
 });
 

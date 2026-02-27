@@ -146,7 +146,10 @@ function SoloScheduleView() {
   const calendarEvents = events.map((e: any) => ({
     id: e.id,
     title: e.title,
-    client: e.type === 'completed' ? `${e.duration || 0}min` : 'Tap to start',
+    client:
+      e.type === 'completed'
+        ? `${e.duration || 0}min${e.volume ? ` · ${e.volume}kg` : ''}`
+        : 'Tap to start',
     time: e.time || '09:00',
     type: e.type as 'completed' | 'planned' | 'rest',
     status: e.status as 'completed' | 'pending' | 'confirmed',

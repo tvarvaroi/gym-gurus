@@ -29,6 +29,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -52,6 +53,21 @@ const quickPrompts = [
     prompt: 'Help me set realistic fitness goals for the next month',
   },
 ];
+
+// ─── Markdown preprocessing ──────────────────────────────────────────────────
+
+/** Fix markdown tables that arrive without proper newlines between rows */
+function fixMarkdownTables(text: string): string {
+  // Detect table-like content: sequences of | separated cells on one line
+  // Pattern: | text | text | ... | text | ... without newlines between rows
+  return text.replace(/(\|[^\n]*\|)(\s*)(\|)/g, (_, row, whitespace, nextPipe) => {
+    // If there's no newline between table rows, add one
+    if (!whitespace.includes('\n')) {
+      return row + '\n' + nextPipe;
+    }
+    return row + whitespace + nextPipe;
+  });
+}
 
 // ─── Workout detection helpers ────────────────────────────────────────────────
 
@@ -213,13 +229,12 @@ export default function AICoach() {
     const exercises = parseExercises(message.content);
     setSavingMessageId(message.id);
     try {
-      const res = await fetch('/api/workouts', {
+      const res = await fetch('/api/solo/save-ai-workout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          name,
-          description: 'Workout suggested by AI Coach',
+          title: name,
           exercises: exercises.map((ex) => ({
             exerciseName: ex.name,
             sets: ex.sets,
@@ -504,7 +519,9 @@ export default function AICoach() {
                       >
                         {message.role === 'assistant' ? (
                           <div className="text-sm font-light leading-relaxed prose prose-invert prose-sm max-w-none prose-table:w-full prose-th:text-left prose-th:px-3 prose-th:py-1.5 prose-th:border prose-th:border-white/10 prose-th:bg-white/5 prose-td:px-3 prose-td:py-1.5 prose-td:border prose-td:border-white/10 prose-headings:font-medium prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-strong:font-medium">
-                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {fixMarkdownTables(message.content)}
+                            </ReactMarkdown>
                           </div>
                         ) : (
                           <p className="text-sm font-light whitespace-pre-wrap leading-relaxed">
