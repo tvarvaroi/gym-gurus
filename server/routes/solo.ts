@@ -75,6 +75,7 @@ router.get('/today-workout', async (req: Request, res: Response) => {
           lte(workoutSessions.startedAt, todayEnd)
         )
       )
+      .orderBy(desc(workoutSessions.startedAt))
       .limit(1);
 
     if (todaySession.length > 0) {
