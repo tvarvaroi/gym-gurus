@@ -223,6 +223,39 @@ app.use((req, res, next) => {
     console.error('[Seed] Failed to update test account subscription:', err);
   }
 
+  // Run startup migrations to ensure schema is in sync
+  try {
+    const { getPool } = await import('./db');
+    const pool = await getPool();
+    const migrations = [
+      'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS workout_name varchar',
+      'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS workout_type varchar',
+      'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS planned_duration_minutes integer',
+      'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS actual_duration_minutes integer',
+      'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS total_sets integer',
+      'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS total_reps integer',
+      'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS total_volume_kg varchar',
+      'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS perceived_exertion integer',
+      'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS notes text',
+      `CREATE TABLE IF NOT EXISTS saved_meal_plans (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name varchar NOT NULL,
+        target_calories integer,
+        plan_data jsonb NOT NULL,
+        source varchar NOT NULL DEFAULT 'generator',
+        created_at timestamp NOT NULL DEFAULT now()
+      )`,
+      'CREATE INDEX IF NOT EXISTS idx_saved_meal_plans_user_id ON saved_meal_plans(user_id)',
+    ];
+    for (const stmt of migrations) {
+      await pool.query(stmt);
+    }
+    console.log('[Migration] Startup schema sync complete');
+  } catch (err) {
+    console.error('[Migration] Startup migration failed (non-fatal):', err);
+  }
+
   const server = await registerRoutes(app);
 
   // Global error handler — structured error responses, DB error handling, env-aware
