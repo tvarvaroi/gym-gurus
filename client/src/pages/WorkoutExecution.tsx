@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useParams } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -657,8 +658,8 @@ export default function WorkoutExecution() {
   // ═══════════════════════════════════════════════════════════
 
   if (workoutError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] p-4">
+    return createPortal(
+      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0A0A0A] p-4">
         <div className="text-center space-y-4 max-w-sm">
           <div className="w-14 h-14 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
             <X className="h-7 w-7 text-red-500" />
@@ -669,18 +670,20 @@ export default function WorkoutExecution() {
             Back to Workouts
           </Button>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
   if (isLoading || !session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A]">
+    return createPortal(
+      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0A0A0A]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-[#c9a855]/30 border-t-[#c9a855] rounded-full mx-auto mb-4 animate-spin" />
           <p className="text-neutral-500 text-sm">Loading workout...</p>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -692,8 +695,8 @@ export default function WorkoutExecution() {
     const durationMin = Math.round(elapsedSeconds / 60) || 1;
     const cals = estimateCalories(durationMin);
 
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] text-white relative overflow-hidden">
+    return createPortal(
+      <div className="fixed inset-0 z-[200] bg-[#0A0A0A] text-white overflow-y-auto">
         {/* CSS confetti */}
         <style>{`
           @keyframes confetti-fall {
@@ -902,7 +905,8 @@ export default function WorkoutExecution() {
             )}
           </motion.div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -912,9 +916,9 @@ export default function WorkoutExecution() {
 
   const isRestVisible = restTimeLeft > 0 || restJustFinished;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex flex-col bg-[#0A0A0A] text-white select-none overflow-hidden"
+      className="fixed inset-0 z-[200] flex flex-col bg-[#0A0A0A] text-white select-none overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -1476,6 +1480,7 @@ export default function WorkoutExecution() {
           </>
         )}
       </AnimatePresence>
-    </div>
+    </div>,
+    document.body
   );
 }
