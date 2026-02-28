@@ -74,7 +74,7 @@ function fixMarkdownTables(text: string): string {
 /** Returns true when an assistant message looks like a structured workout */
 function looksLikeWorkout(content: string): boolean {
   // Need multiple indicators: exercise lists + sets/reps pattern
-  const hasSetRep = /\d+\s*[×x]\s*\d+|\d+\s*sets?|\d+\s*reps?/i.test(content);
+  const hasSetRep = /\d+\s*[×x\u00d7]\s*\d+|\d+\s*sets?|\d+\s*reps?/i.test(content);
   const hasExercisePhrases =
     /(bench press|squat|deadlift|pull.?up|row|curl|press|lunge|plank|dip|fly|extension|raise|push.?up)/i.test(
       content
@@ -95,7 +95,7 @@ function parseExercises(content: string): { name: string; sets: number; reps: st
   // Handles: "**1. Barbell Bench Press**\n- 4 sets × 6-10 reps | Rest: 2 min"
   const nameRe =
     /^\s*\*{0,2}\s*(\d+)[.)]\s*\*{0,2}\s*([A-Za-z][A-Za-z\s\-/()',:.]+?)\s*\*{0,2}\s*$/;
-  const setsRepsRe = /(\d+)\s*(?:sets?\s*[×x]|[×x])\s*([\d\-–]+)/i;
+  const setsRepsRe = /(\d+)\s*(?:sets?\s*[×x\u00d7]|[×x\u00d7])\s*([\d\-–]+)/i;
   const setsOfRe = /(\d+)\s*sets?\s+(?:of\s+)?([\d\-–]+)\s*reps?/i;
   // "Sets: 4 | Reps: 8-10" or "Sets: 4, Reps: 8-10"
   const setsLabelRe = /sets\s*:\s*(\d+)[\s|,]+reps\s*:\s*([\d\-–]+)/i;
@@ -128,9 +128,10 @@ function parseExercises(content: string): { name: string; sets: number; reps: st
   }
 
   // Strategy 2: Single-line format — "1. Bench Press — 4 × 8-10"
+  // Also handles bold: "1. **Bench Press** — 4 × 8-10"
   if (exercises.length === 0) {
     const lineRe =
-      /(?:^|\n)\s*(?:\d+[.)]|-|\*)\s*([A-Za-z][A-Za-z\s\-/]+?)(?:\s*[—–:-]|\s{2,})\s*(\d+)\s*[×x]\s*([\d\-–]+)/gi;
+      /(?:^|\n)\s*(?:\d+[.)]|-|\*)\s*\*{0,2}\s*([A-Za-z][A-Za-z\s\-/]+?)\s*\*{0,2}\s*(?:\s*[—–:-]|\s{2,})\s*(\d+)\s*(?:sets?\s*)?[×x\u00d7]\s*([\d\-–]+)/gi;
     let m;
     while ((m = lineRe.exec(content)) !== null) {
       if (m[1]) {
@@ -141,7 +142,7 @@ function parseExercises(content: string): { name: string; sets: number; reps: st
 
   // Strategy 3: Markdown table rows — "| Exercise Name | 4 x 8-12 | 90s |"
   if (exercises.length === 0) {
-    const tableRowRe = /\|\s*([A-Z][A-Za-z\s\-/()]+?)\s*\|\s*(\d+)\s*[×x]\s*([\d\-–]+)/gm;
+    const tableRowRe = /\|\s*([A-Z][A-Za-z\s\-/()]+?)\s*\|\s*(\d+)\s*[×x\u00d7]\s*([\d\-–]+)/gm;
     let tr;
     while ((tr = tableRowRe.exec(content)) !== null) {
       const name = tr[1].trim();
