@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
+import { useToast } from '@/hooks/use-toast';
 import {
   Trophy,
   Star,
@@ -108,6 +109,8 @@ export default function Achievements() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
   const prefersReducedMotion = useReducedMotion();
+  const { toast } = useToast();
+  const toastsShownRef = useRef(false);
 
   const {
     data: achievements = [],
@@ -116,6 +119,29 @@ export default function Achievements() {
   } = useQuery<Achievement[]>({
     queryKey: ['/api/gamification/achievements'],
   });
+
+  // Show toasts for recently unlocked achievements (first load only)
+  useEffect(() => {
+    if (toastsShownRef.current || achievements.length === 0) return;
+    toastsShownRef.current = true;
+
+    const now = Date.now();
+    const newlyUnlocked = achievements.filter((a) => {
+      if (!a.earned || !a.earnedAt) return false;
+      const earnedTime = new Date(a.earnedAt).getTime();
+      // Unlocked within the last 10 seconds (retroactive awards)
+      return now - earnedTime < 10_000;
+    });
+
+    newlyUnlocked.slice(0, 5).forEach((a, i) => {
+      setTimeout(() => {
+        toast({
+          title: 'Achievement Unlocked!',
+          description: `${a.name}${a.xpReward ? ` (+${a.xpReward} XP)` : ''}`,
+        });
+      }, i * 400);
+    });
+  }, [achievements, toast]);
 
   // Map achievements with computed categories
   const mappedAchievements = achievements.map((a) => ({

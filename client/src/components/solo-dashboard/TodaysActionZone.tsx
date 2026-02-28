@@ -262,14 +262,17 @@ function AICoachSuggestionCard() {
   const { data: gamification } = useQuery<any>({
     queryKey: ['/api/gamification/profile'],
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: strengthSummary } = useQuery<any>({
     queryKey: ['/api/strength/summary'],
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: fatigueData } = useQuery<any[]>({
     queryKey: ['/api/recovery/fatigue'],
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: soloStats } = useQuery<any>({
     queryKey: ['/api/solo/stats'],

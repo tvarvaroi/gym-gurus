@@ -187,7 +187,7 @@ const AppSidebar = memo(() => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [workoutsOpen, setWorkoutsOpen] = useState(() => location.startsWith('/workout-builder/'));
   const { isTrainer, isClient, isSolo } = useUser();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
 
   // Auto-open My Workouts dropdown when navigating to a workout builder page
   useEffect(() => {
@@ -480,6 +480,7 @@ const AppSidebar = memo(() => {
                                 href={item.url}
                                 data-testid={`link-${item.title.toLowerCase().replace(' ', '-')}`}
                                 className={`flex items-center w-full ${isCollapsed ? 'justify-center !px-0' : 'gap-3 px-4'}`}
+                                onClick={() => isMobile && setOpenMobile(false)}
                               >
                                 <motion.div
                                   variants={iconVariants}
@@ -579,6 +580,7 @@ const AppSidebar = memo(() => {
                                             ? 'bg-purple-500/15 border border-purple-500/20 shadow-sm shadow-purple-500/10'
                                             : 'hover:bg-muted/20 border border-transparent'
                                         }`}
+                                        onClick={() => isMobile && setOpenMobile(false)}
                                       >
                                         {/* Connector dot */}
                                         <div

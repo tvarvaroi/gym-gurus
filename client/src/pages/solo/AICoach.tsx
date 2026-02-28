@@ -97,6 +97,10 @@ function parseExercises(content: string): { name: string; sets: number; reps: st
     /^\s*\*{0,2}\s*(\d+)[.)]\s*\*{0,2}\s*([A-Za-z][A-Za-z\s\-/()',:.]+?)\s*\*{0,2}\s*$/;
   const setsRepsRe = /(\d+)\s*(?:sets?\s*[×x]|[×x])\s*([\d\-–]+)/i;
   const setsOfRe = /(\d+)\s*sets?\s+(?:of\s+)?([\d\-–]+)\s*reps?/i;
+  // "Sets: 4 | Reps: 8-10" or "Sets: 4, Reps: 8-10"
+  const setsLabelRe = /sets\s*:\s*(\d+)[\s|,]+reps\s*:\s*([\d\-–]+)/i;
+  // "4 sets, 8-12 reps" (comma-separated)
+  const setsCommaRe = /(\d+)\s*sets?\s*,\s*([\d\-–]+)\s*reps?/i;
 
   for (let i = 0; i < lines.length; i++) {
     const nameMatch = nameRe.exec(lines[i]);
@@ -106,7 +110,11 @@ function parseExercises(content: string): { name: string; sets: number; reps: st
       let reps = '8-12';
       // Look ahead up to 4 lines for sets/reps info
       for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-        const sr = setsRepsRe.exec(lines[j]) || setsOfRe.exec(lines[j]);
+        const sr =
+          setsRepsRe.exec(lines[j]) ||
+          setsOfRe.exec(lines[j]) ||
+          setsLabelRe.exec(lines[j]) ||
+          setsCommaRe.exec(lines[j]);
         if (sr) {
           sets = Number(sr[1]) || 3;
           reps = sr[2] || '8-12';
@@ -143,12 +151,16 @@ function parseExercises(content: string): { name: string; sets: number; reps: st
     }
   }
 
-  // Strategy 4: Just extract exercise names with default sets/reps
+  // Strategy 4: Extract exercise names with best-effort set/rep extraction from surrounding text
   if (exercises.length === 0) {
+    // Try to find a global set count mentioned in the message (e.g. "4 sets per exercise")
+    const globalSetsMatch = content.match(/(\d+)\s*sets?\s*(?:per|each|for each)/i);
+    const globalSets = globalSetsMatch ? Number(globalSetsMatch[1]) || 3 : 3;
+
     const fallbackRe = /(?:^|\n)\s*\*{0,2}\s*\d+[.)]\s*\*{0,2}\s*([A-Z][A-Za-z\s\-/()]{2,40})/gm;
     let nm;
     while ((nm = fallbackRe.exec(content)) !== null) {
-      exercises.push({ name: nm[1].trim(), sets: 3, reps: '8-12' });
+      exercises.push({ name: nm[1].trim(), sets: globalSets, reps: '8-12' });
     }
   }
 

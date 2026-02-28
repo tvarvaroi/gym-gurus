@@ -857,7 +857,7 @@ export default function WorkoutExecution() {
             <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
               <Flame className="w-5 h-5 text-orange-400 mx-auto mb-2" />
               <p className="text-2xl font-bold">
-                ~<AnimatedNumber value={cals} />
+                <AnimatedNumber value={cals} />
               </p>
               <p className="text-xs text-neutral-500">Est. kcal</p>
             </div>

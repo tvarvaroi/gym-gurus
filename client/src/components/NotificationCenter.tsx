@@ -1,7 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { Bell, Check, CheckCheck, Trophy, Flame, Zap, Dumbbell, UserPlus, CreditCard, MessageCircle, AlertTriangle, Clock } from 'lucide-react';
+import {
+  Bell,
+  Check,
+  CheckCheck,
+  Trophy,
+  Flame,
+  Zap,
+  Dumbbell,
+  UserPlus,
+  CreditCard,
+  MessageCircle,
+  AlertTriangle,
+  Clock,
+  Trash2,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -101,15 +115,19 @@ export default function NotificationCenter() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
-  const { data: notifications = [], isLoading, error } = useQuery<Notification[]>({
+  const {
+    data: notifications = [],
+    isLoading,
+    error,
+  } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
-    queryFn: () => fetch('/api/notifications?limit=20').then(r => r.json()),
+    queryFn: () => fetch('/api/notifications?limit=20').then((r) => r.json()),
     refetchInterval: 30000,
   });
 
   const { data: unreadData } = useQuery<{ count: number }>({
     queryKey: ['/api/notifications/unread-count'],
-    queryFn: () => fetch('/api/notifications/unread-count').then(r => r.json()),
+    queryFn: () => fetch('/api/notifications/unread-count').then((r) => r.json()),
     refetchInterval: 15000,
   });
 
@@ -125,6 +143,14 @@ export default function NotificationCenter() {
 
   const markAllReadMutation = useMutation({
     mutationFn: () => fetch('/api/notifications/read-all', { method: 'PUT' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
+    },
+  });
+
+  const clearAllMutation = useMutation({
+    mutationFn: () => fetch('/api/notifications/clear-all', { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
@@ -180,15 +206,26 @@ export default function NotificationCenter() {
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <h3 className="text-sm font-semibold text-white">Notifications</h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={() => markAllReadMutation.mutate()}
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                >
-                  <CheckCheck className="w-3.5 h-3.5" />
-                  Mark all read
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={() => markAllReadMutation.mutate()}
+                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    Mark all read
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button
+                    onClick={() => clearAllMutation.mutate()}
+                    className="text-xs text-red-400/70 hover:text-red-300 transition-colors flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Notification list */}
@@ -235,7 +272,9 @@ export default function NotificationCenter() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-white/90 truncate">{notif.title}</p>
+                          <p className="text-sm font-medium text-white/90 truncate">
+                            {notif.title}
+                          </p>
                           {!notif.read && (
                             <span className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-400 mt-1.5" />
                           )}

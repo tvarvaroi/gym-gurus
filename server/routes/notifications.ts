@@ -5,6 +5,7 @@ import {
   getUnreadCount,
   markAsRead,
   markAllAsRead,
+  clearAllNotifications,
 } from '../services/notificationService';
 
 const router = Router();
@@ -72,6 +73,22 @@ router.put('/read-all', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error marking all as read:', error);
     res.status(500).json({ error: 'Failed to mark all as read' });
+  }
+});
+
+// Clear all notifications
+router.delete('/clear-all', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    await clearAllNotifications(userId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error clearing notifications:', error);
+    res.status(500).json({ error: 'Failed to clear notifications' });
   }
 });
 

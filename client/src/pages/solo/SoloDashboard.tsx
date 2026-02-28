@@ -75,9 +75,14 @@ export function SoloDashboard() {
         gamification={data.gamification}
         progress={data.progress}
         weeklyActivity={data.weeklyActivity}
+        loading={data.weeklyLoading}
       />
 
-      <RecoveryBodyStatus fatigueData={data.fatigueData} fitnessProfile={data.fitnessProfile} />
+      <RecoveryBodyStatus
+        fatigueData={data.fatigueData}
+        fitnessProfile={data.fitnessProfile}
+        loading={data.recoveryLoading}
+      />
 
       <FeatureWidgetsGrid />
 
@@ -85,6 +90,7 @@ export function SoloDashboard() {
         progress={data.progress}
         xpHistory={data.xpHistory}
         mealPlans={data.mealPlans}
+        loading={data.activityLoading}
       />
     </div>
   );

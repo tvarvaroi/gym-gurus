@@ -8,6 +8,7 @@ interface RecentActivityFeedProps {
   progress: any;
   xpHistory: any[] | undefined;
   mealPlans: any[] | undefined;
+  loading?: boolean;
 }
 
 interface ActivityItem {
@@ -54,8 +55,41 @@ function formatXpReason(reason: string): string {
   return map[reason] || reason.replace(/_/g, ' ');
 }
 
-export function RecentActivityFeed({ progress, xpHistory, mealPlans }: RecentActivityFeedProps) {
+function ActivityFeedSkeleton() {
+  return (
+    <div className="bg-card rounded-xl p-6 border border-border/50 animate-pulse">
+      <div className="flex items-center justify-between mb-4">
+        <div className="h-4 w-28 bg-muted rounded" />
+        <div className="h-3 w-16 bg-muted rounded" />
+      </div>
+      <div className="space-y-0">
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={i}
+            className={`flex items-center gap-3 py-3 ${i < 3 ? 'border-b border-border/30' : ''}`}
+          >
+            <div className="w-8 h-8 bg-muted rounded-lg flex-shrink-0" />
+            <div className="flex-1">
+              <div className="h-4 w-32 bg-muted rounded mb-1" />
+              <div className="h-3 w-24 bg-muted rounded" />
+            </div>
+            <div className="h-5 w-14 bg-muted rounded-full flex-shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function RecentActivityFeed({
+  progress,
+  xpHistory,
+  mealPlans,
+  loading,
+}: RecentActivityFeedProps) {
   const prefersReducedMotion = useReducedMotion();
+
+  if (loading) return <ActivityFeedSkeleton />;
 
   // Merge activities from multiple sources
   const activities: ActivityItem[] = [];

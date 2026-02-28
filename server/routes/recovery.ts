@@ -2,9 +2,136 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { userMuscleFatigue, userMuscleVolume, workoutRecoveryLog } from '../../shared/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, like } from 'drizzle-orm';
 
 const router = Router();
+
+// ==================== Compound Muscle Name Migration ====================
+// Normalizes old compound fatigue entries like "Back (Lats, Mid-Back, Traps)"
+// into individual entries. Runs once lazily on first GET /fatigue request.
+
+const COMPOUND_MUSCLE_MAP: Record<string, string> = {
+  pectorals: 'chest',
+  pecs: 'chest',
+  'mid-back': 'back',
+  mid_back: 'back',
+  'upper back': 'back',
+  upper_back: 'back',
+  deltoids: 'shoulders',
+  delts: 'shoulders',
+  'front delts': 'shoulders',
+  'rear delts': 'shoulders',
+  'side delts': 'shoulders',
+  quadriceps: 'quads',
+  hams: 'hamstrings',
+  gluteals: 'glutes',
+  core: 'abs',
+  abdominals: 'abs',
+  'lower back': 'lower_back',
+  'low back': 'lower_back',
+  trapezius: 'traps',
+  latissimus: 'lats',
+  'lats (back)': 'lats',
+};
+
+let migrationDone = false;
+
+async function normalizeCompoundFatigueEntries(database: any) {
+  if (migrationDone) return;
+  migrationDone = true;
+
+  try {
+    const allEntries = await database.select().from(userMuscleFatigue);
+    const compoundEntries = allEntries.filter(
+      (e: any) =>
+        e.muscleGroup.includes('(') || e.muscleGroup.includes(',') || e.muscleGroup.includes(' ')
+    );
+
+    if (compoundEntries.length === 0) return;
+
+    console.log(
+      `[Recovery Migration] Found ${compoundEntries.length} compound muscle entries to normalize`
+    );
+
+    for (const entry of compoundEntries) {
+      const raw = entry.muscleGroup as string;
+      const parsed: string[] = [];
+
+      // Extract sub-muscles from parentheses: "Back (Lats, Mid-Back, Traps)"
+      const parenMatch = raw.match(/\(([^)]+)\)/);
+      if (parenMatch) {
+        const subs = parenMatch[1].split(',').map((s: string) => s.trim().toLowerCase());
+        for (const sub of subs) {
+          const normalized = sub.replace(/[\s-]+/g, '_');
+          const mapped = COMPOUND_MUSCLE_MAP[sub] || COMPOUND_MUSCLE_MAP[normalized] || null;
+          if (mapped && MUSCLE_GROUPS.includes(mapped)) {
+            parsed.push(mapped);
+          }
+        }
+      }
+
+      // Also check the base name: "Back" → "back"
+      const baseName = raw
+        .replace(/\s*\([^)]*\)\s*/g, '')
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, '_');
+      const mappedBase =
+        COMPOUND_MUSCLE_MAP[baseName] || (MUSCLE_GROUPS.includes(baseName) ? baseName : null);
+      if (mappedBase && !parsed.includes(mappedBase)) {
+        parsed.push(mappedBase);
+      }
+
+      // Handle simple space/dash normalization (no parentheses)
+      if (parsed.length === 0) {
+        const simple = raw
+          .trim()
+          .toLowerCase()
+          .replace(/[\s-]+/g, '_');
+        const mappedSimple =
+          COMPOUND_MUSCLE_MAP[simple] || (MUSCLE_GROUPS.includes(simple) ? simple : null);
+        if (mappedSimple) {
+          parsed.push(mappedSimple);
+        }
+      }
+
+      // Create individual entries for each parsed muscle
+      for (const muscle of parsed) {
+        const existing = await database
+          .select()
+          .from(userMuscleFatigue)
+          .where(
+            and(
+              eq(userMuscleFatigue.userId, entry.userId),
+              eq(userMuscleFatigue.muscleGroup, muscle)
+            )
+          )
+          .limit(1);
+
+        if (existing.length === 0) {
+          await database.insert(userMuscleFatigue).values({
+            userId: entry.userId,
+            muscleGroup: muscle,
+            fatigueLevel: entry.fatigueLevel,
+            lastTrainedAt: entry.lastTrainedAt,
+            estimatedFullRecoveryAt: entry.estimatedFullRecoveryAt,
+            volumeLastSession: entry.volumeLastSession,
+            setsLastSession: entry.setsLastSession,
+            avgRecoveryHours: entry.avgRecoveryHours,
+          });
+        }
+      }
+
+      // Delete the compound entry
+      await database.delete(userMuscleFatigue).where(eq(userMuscleFatigue.id, entry.id));
+    }
+
+    console.log(`[Recovery Migration] Normalized ${compoundEntries.length} compound entries`);
+  } catch (error) {
+    console.error('[Recovery Migration] Error normalizing compound entries:', error);
+    migrationDone = false; // Allow retry on next request
+  }
+}
 
 // Muscle groups for validation
 const MUSCLE_GROUPS = [
@@ -55,6 +182,9 @@ router.get('/fatigue', async (req: Request, res: Response) => {
     }
 
     const database = await db;
+
+    // Run one-time compound name normalization
+    await normalizeCompoundFatigueEntries(database);
 
     const fatigueData = await database
       .select()

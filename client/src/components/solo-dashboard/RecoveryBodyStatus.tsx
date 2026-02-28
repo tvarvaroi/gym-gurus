@@ -7,6 +7,7 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 interface RecoveryBodyStatusProps {
   fatigueData: any[] | undefined;
   fitnessProfile: any;
+  loading?: boolean;
 }
 
 function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
@@ -223,7 +224,53 @@ function BodyStatsWidget({ fitnessProfile }: { fitnessProfile: any }) {
   );
 }
 
-export function RecoveryBodyStatus({ fatigueData, fitnessProfile }: RecoveryBodyStatusProps) {
+function RecoveryBodySkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
+      <div className="bg-card rounded-xl p-6 border border-border/50">
+        <div className="h-5 w-36 bg-muted rounded mb-4" />
+        <div className="flex flex-col items-center">
+          <div className="w-[140px] h-[140px] rounded-full border-[10px] border-muted mb-4" />
+          <div className="w-full space-y-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i}>
+                <div className="h-3 w-24 bg-muted rounded mb-1" />
+                <div className="h-1.5 bg-muted rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="bg-card rounded-xl p-6 border border-border/50">
+        <div className="h-5 w-28 bg-muted rounded mb-4" />
+        <div className="flex justify-around mb-5">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex flex-col items-center">
+              <div className="w-[72px] h-[72px] rounded-full border-[6px] border-muted" />
+              <div className="h-3 w-8 bg-muted rounded mt-1" />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex justify-between">
+              <div className="h-4 w-16 bg-muted rounded" />
+              <div className="h-4 w-12 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function RecoveryBodyStatus({
+  fatigueData,
+  fitnessProfile,
+  loading,
+}: RecoveryBodyStatusProps) {
+  if (loading) return <RecoveryBodySkeleton />;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <RecoveryWidget fatigueData={fatigueData} />

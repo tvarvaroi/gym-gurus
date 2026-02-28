@@ -37,11 +37,7 @@ export async function createNotification(
 }
 
 // Get notifications for a user (paginated)
-export async function getUserNotifications(
-  userId: string,
-  limit: number = 30,
-  offset: number = 0
-) {
+export async function getUserNotifications(userId: string, limit: number = 30, offset: number = 0) {
   const database = await db;
 
   return database
@@ -85,15 +81,20 @@ export async function markAllAsRead(userId: string): Promise<void> {
     .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
 }
 
+// Clear all notifications for a user
+export async function clearAllNotifications(userId: string): Promise<void> {
+  const database = await db;
+
+  await database.delete(notifications).where(eq(notifications.userId, userId));
+}
+
 // Delete old notifications (cleanup, keep last 90 days)
 export async function cleanupOldNotifications(): Promise<void> {
   const database = await db;
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 90);
 
-  await database
-    .delete(notifications)
-    .where(sql`${notifications.createdAt} < ${cutoff}`);
+  await database.delete(notifications).where(sql`${notifications.createdAt} < ${cutoff}`);
 }
 
 // --- Helper functions to create specific notification types ---
@@ -248,14 +249,18 @@ export async function notifyWeeklySummary(
   stats: { workoutsCompleted: number; xpEarned: number; streakDays: number; prsSet: number }
 ): Promise<void> {
   const lines: string[] = [];
-  if (stats.workoutsCompleted > 0) lines.push(`${stats.workoutsCompleted} workout${stats.workoutsCompleted > 1 ? 's' : ''} completed`);
+  if (stats.workoutsCompleted > 0)
+    lines.push(
+      `${stats.workoutsCompleted} workout${stats.workoutsCompleted > 1 ? 's' : ''} completed`
+    );
   if (stats.xpEarned > 0) lines.push(`+${stats.xpEarned} XP earned`);
   if (stats.streakDays > 0) lines.push(`${stats.streakDays}-day streak`);
   if (stats.prsSet > 0) lines.push(`${stats.prsSet} personal record${stats.prsSet > 1 ? 's' : ''}`);
 
-  const message = lines.length > 0
-    ? `This week: ${lines.join(' • ')}. Keep it up!`
-    : 'No workouts logged this week. Start fresh next week!';
+  const message =
+    lines.length > 0
+      ? `This week: ${lines.join(' • ')}. Keep it up!`
+      : 'No workouts logged this week. Start fresh next week!';
 
   await createNotification(
     userId,

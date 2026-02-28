@@ -58,6 +58,16 @@ export function useSoloDashboardData() {
   const isInitialLoading = soloStats.isLoading && gamification.isLoading;
   const hasError = soloStats.error;
 
+  // Per-section loading states for inline skeletons
+  const weeklyLoading =
+    soloStats.isLoading ||
+    strengthSummary.isLoading ||
+    gamification.isLoading ||
+    progress.isLoading ||
+    weeklyActivity.isLoading;
+  const recoveryLoading = fatigueData.isLoading || fitnessProfile.isLoading;
+  const activityLoading = progress.isLoading || xpHistory.isLoading || mealPlans.isLoading;
+
   return {
     soloStats: soloStats.data,
     gamification: gamification.data,
@@ -70,5 +80,8 @@ export function useSoloDashboardData() {
     mealPlans: mealPlans.data,
     isInitialLoading,
     hasError,
+    weeklyLoading,
+    recoveryLoading,
+    activityLoading,
   };
 }

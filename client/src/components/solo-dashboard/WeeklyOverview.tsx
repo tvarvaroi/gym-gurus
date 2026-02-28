@@ -10,6 +10,7 @@ interface WeeklyOverviewProps {
   gamification: any;
   progress: any;
   weeklyActivity: any;
+  loading?: boolean;
 }
 
 // Stat Card sub-component
@@ -177,13 +178,47 @@ function CalendarStrip({ weeklyActivity }: { weeklyActivity: any }) {
   );
 }
 
+function WeeklyOverviewSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-card rounded-xl p-4 border border-border/50">
+            <div className="w-9 h-9 bg-muted rounded-lg mb-3" />
+            <div className="h-7 w-12 bg-muted rounded mb-1" />
+            <div className="h-3 w-16 bg-muted rounded mb-1" />
+            <div className="h-3 w-10 bg-muted rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-card rounded-xl p-4 border border-border/50 h-[230px]" />
+        <div className="bg-card rounded-xl p-4 border border-border/50">
+          <div className="h-4 w-24 bg-muted rounded mb-4" />
+          <div className="flex justify-between">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <div className="w-6 h-3 bg-muted rounded" />
+                <div className="w-8 h-8 bg-muted rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function WeeklyOverview({
   stats,
   strengthSummary,
   gamification,
   progress,
   weeklyActivity,
+  loading,
 }: WeeklyOverviewProps) {
+  if (loading) return <WeeklyOverviewSkeleton />;
+
   const workoutsThisWeek = stats?.workoutsThisWeek || 0;
   const weeklyVolume = stats?.weeklyVolumeKg || 0;
   const totalPRs = strengthSummary?.totalPersonalRecords || 0;
