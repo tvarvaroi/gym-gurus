@@ -846,6 +846,16 @@
 }
 
 /* ================================================
+   HERO PHOTO CUTOUT
+   Soft radial mask + role glow for dashboard hero
+   ================================================ */
+.hero-photo-cutout {
+  mask-image: radial-gradient(circle, black 60%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle, black 60%, transparent 100%);
+  filter: drop-shadow(0 0 30px hsl(var(--primary) / 0.5));
+}
+
+/* ================================================
    REDUCED MOTION ACCESSIBILITY (WCAG 2.3.3)
    Disables decorative Tailwind animations for users
    who prefer reduced motion in their OS settings.
