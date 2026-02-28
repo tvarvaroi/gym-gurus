@@ -89,16 +89,49 @@ function looksLikeWorkout(content: string): boolean {
 /** Best-effort parse of exercises from a workout message */
 function parseExercises(content: string): { name: string; sets: number; reps: string }[] {
   const exercises: { name: string; sets: number; reps: string }[] = [];
-  // Match lines like: "1. Bench Press — 4 × 8-10" or "- Squat: 3 sets of 5"
-  const lineRe =
-    /(?:^|\n)\s*(?:\d+[.)]|-|\*)\s*([A-Za-z][A-Za-z\s\-/]+?)(?:\s*[—–:-]|\s{2,})\s*(\d+)\s*[×x]\s*([\d\-–]+)|(\d+)\s*sets?\s+(?:of\s+)?([\d\-–]+)\s*reps?/gi;
-  let m;
-  while ((m = lineRe.exec(content)) !== null) {
-    if (m[1]) {
-      exercises.push({ name: m[1].trim(), sets: Number(m[2]) || 3, reps: m[3] || '8-12' });
+  const lines = content.split('\n');
+
+  // Strategy 1: Two-pass approach for bold-wrapped exercises with sets/reps on next lines
+  // Handles: "**1. Barbell Bench Press**\n- 4 sets × 6-10 reps | Rest: 2 min"
+  const nameRe =
+    /^\s*\*{0,2}\s*(\d+)[.)]\s*\*{0,2}\s*([A-Za-z][A-Za-z\s\-/()',:.]+?)\s*\*{0,2}\s*$/;
+  const setsRepsRe = /(\d+)\s*(?:sets?\s*[×x]|[×x])\s*([\d\-–]+)/i;
+  const setsOfRe = /(\d+)\s*sets?\s+(?:of\s+)?([\d\-–]+)\s*reps?/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const nameMatch = nameRe.exec(lines[i]);
+    if (nameMatch) {
+      const name = nameMatch[2].trim();
+      let sets = 3;
+      let reps = '8-12';
+      // Look ahead up to 4 lines for sets/reps info
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        const sr = setsRepsRe.exec(lines[j]) || setsOfRe.exec(lines[j]);
+        if (sr) {
+          sets = Number(sr[1]) || 3;
+          reps = sr[2] || '8-12';
+          break;
+        }
+        // Stop if we hit another exercise heading
+        if (nameRe.test(lines[j])) break;
+      }
+      exercises.push({ name, sets, reps });
     }
   }
-  // Fallback: parse markdown table rows — "| Exercise Name | 4 x 8-12 | 90s |"
+
+  // Strategy 2: Single-line format — "1. Bench Press — 4 × 8-10"
+  if (exercises.length === 0) {
+    const lineRe =
+      /(?:^|\n)\s*(?:\d+[.)]|-|\*)\s*([A-Za-z][A-Za-z\s\-/]+?)(?:\s*[—–:-]|\s{2,})\s*(\d+)\s*[×x]\s*([\d\-–]+)/gi;
+    let m;
+    while ((m = lineRe.exec(content)) !== null) {
+      if (m[1]) {
+        exercises.push({ name: m[1].trim(), sets: Number(m[2]) || 3, reps: m[3] || '8-12' });
+      }
+    }
+  }
+
+  // Strategy 3: Markdown table rows — "| Exercise Name | 4 x 8-12 | 90s |"
   if (exercises.length === 0) {
     const tableRowRe = /\|\s*([A-Z][A-Za-z\s\-/()]+?)\s*\|\s*(\d+)\s*[×x]\s*([\d\-–]+)/gm;
     let tr;
@@ -109,14 +142,16 @@ function parseExercises(content: string): { name: string; sets: number; reps: st
       }
     }
   }
-  // Fallback: extract exercise names from numbered lines
+
+  // Strategy 4: Just extract exercise names with default sets/reps
   if (exercises.length === 0) {
-    const nameRe = /(?:^|\n)\s*\d+[.)]\s*\*{0,2}([A-Z][A-Za-z\s\-/]{2,40})\*{0,2}/gm;
+    const fallbackRe = /(?:^|\n)\s*\*{0,2}\s*\d+[.)]\s*\*{0,2}\s*([A-Z][A-Za-z\s\-/()]{2,40})/gm;
     let nm;
-    while ((nm = nameRe.exec(content)) !== null) {
+    while ((nm = fallbackRe.exec(content)) !== null) {
       exercises.push({ name: nm[1].trim(), sets: 3, reps: '8-12' });
     }
   }
+
   return exercises.slice(0, 16); // cap at 16
 }
 

@@ -766,11 +766,57 @@ router.put('/workouts/:id/complete-solo', async (req: Request, res: Response) =>
           lats: 48,
         };
 
+        // Parse compound muscle group names into individual muscles for recovery tracking
+        const KNOWN_MUSCLES = [
+          'chest',
+          'back',
+          'shoulders',
+          'biceps',
+          'triceps',
+          'forearms',
+          'quads',
+          'hamstrings',
+          'glutes',
+          'calves',
+          'abs',
+          'obliques',
+          'lower_back',
+          'traps',
+          'lats',
+        ];
+        function parseMuscleGroups(rawGroup: string): string[] {
+          const normalized = rawGroup.toLowerCase().trim();
+          // Direct match
+          const simple = normalized.replace(/\s+/g, '_');
+          if (KNOWN_MUSCLES.includes(simple)) return [simple];
+          // Parse compound: "Back (Lats, Mid-Back, Traps)" → ['back', 'lats', 'traps']
+          const results: string[] = [];
+          for (const muscle of KNOWN_MUSCLES) {
+            const readable = muscle.replace(/_/g, ' ');
+            if (normalized.includes(muscle) || normalized.includes(readable)) {
+              results.push(muscle);
+            }
+          }
+          // Also check for "mid-back" → 'back'
+          if (normalized.includes('mid-back') && !results.includes('back')) {
+            results.push('back');
+          }
+          return results.length > 0
+            ? [...new Set(results)]
+            : [
+                normalized
+                  .replace(/[^a-z_]/g, '_')
+                  .replace(/_+/g, '_')
+                  .replace(/^_|_$/g, ''),
+              ];
+        }
+
         // Build per-muscle fatigue aggregation from client-sent exercise data
         const muscleData: Record<string, { sets: number; volumeKg: number; fatigue: number }> = {};
 
         for (const ex of clientExercises) {
-          const muscleGroup = (ex.muscleGroup || 'general').toLowerCase().replace(/\s+/g, '_');
+          const rawMuscle = ex.muscleGroup || 'general';
+          const muscles = parseMuscleGroups(rawMuscle);
           const completedSets = ex.sets || [];
           const numSets = completedSets.length;
           if (numSets === 0) continue;
@@ -783,15 +829,18 @@ router.put('/workouts/:id/complete-solo', async (req: Request, res: Response) =>
           const avgReps = totalReps / Math.max(1, numSets);
           const fatigue = Math.min(100, (1.0 * numSets * avgReps * 0.7) / 1.4);
 
-          if (!muscleData[muscleGroup]) {
-            muscleData[muscleGroup] = { sets: 0, volumeKg: 0, fatigue: 0 };
+          // Distribute fatigue to each individual muscle in the group
+          for (const muscleGroup of muscles) {
+            if (!muscleData[muscleGroup]) {
+              muscleData[muscleGroup] = { sets: 0, volumeKg: 0, fatigue: 0 };
+            }
+            muscleData[muscleGroup].sets += numSets;
+            muscleData[muscleGroup].volumeKg += totalVol;
+            muscleData[muscleGroup].fatigue = Math.min(
+              100,
+              muscleData[muscleGroup].fatigue + fatigue
+            );
           }
-          muscleData[muscleGroup].sets += numSets;
-          muscleData[muscleGroup].volumeKg += totalVol;
-          muscleData[muscleGroup].fatigue = Math.min(
-            100,
-            muscleData[muscleGroup].fatigue + fatigue
-          );
         }
 
         const musclesWorked = Object.entries(muscleData).map(([muscleGroup, data]) => ({

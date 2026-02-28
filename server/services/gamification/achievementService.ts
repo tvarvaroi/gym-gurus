@@ -6,9 +6,77 @@ import {
   userGamification,
   personalRecords,
   userStrengthStandards,
+  workoutSessions,
 } from '../../../shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { awardXp } from './xpService';
+import { ACHIEVEMENT_SEEDS } from './achievementDefinitions';
+
+// Seed achievements into the database if table is empty (idempotent)
+let seeded = false;
+export async function seedAchievements(): Promise<void> {
+  if (seeded) return;
+  const database = await db;
+  const existing = await database.select({ id: achievements.id }).from(achievements).limit(1);
+  if (existing.length > 0) {
+    seeded = true;
+    return;
+  }
+  console.log('[achievements] Seeding achievement definitions...');
+  await database.insert(achievements).values(
+    ACHIEVEMENT_SEEDS.map((a) => ({
+      name: a.name,
+      description: a.description,
+      category: a.category,
+      requirementType: a.requirementType,
+      requirementValue: a.requirementValue,
+      xpReward: a.xpReward,
+      badgeIcon: a.badgeIcon,
+      isHidden: a.isHidden,
+    }))
+  );
+  seeded = true;
+  console.log(`[achievements] Seeded ${ACHIEVEMENT_SEEDS.length} achievements`);
+}
+
+// Compute workout stats from database for retroactive achievement checking
+export async function getRetroactiveWorkoutStats(userId: string) {
+  const database = await db;
+
+  // Aggregate from completed workout sessions
+  const sessionStats = await database
+    .select({
+      totalWorkouts: sql<number>`count(*)::int`,
+      totalVolume: sql<number>`coalesce(sum(${workoutSessions.totalVolumeKg}::numeric), 0)::int`,
+      totalSets: sql<number>`coalesce(sum(${workoutSessions.totalSets}), 0)::int`,
+      totalReps: sql<number>`coalesce(sum(${workoutSessions.totalReps}), 0)::int`,
+    })
+    .from(workoutSessions)
+    .where(and(eq(workoutSessions.userId, userId), eq(workoutSessions.isActive, false)));
+
+  // Get streak from gamification profile
+  const gamProfile = await database
+    .select({ streakDays: userGamification.currentStreakDays })
+    .from(userGamification)
+    .where(eq(userGamification.userId, userId))
+    .limit(1);
+
+  // Count PRs
+  const prStats = await database
+    .select({ count: sql<number>`count(*)::int` })
+    .from(personalRecords)
+    .where(eq(personalRecords.userId, userId));
+
+  const stats = sessionStats[0] || { totalWorkouts: 0, totalVolume: 0, totalSets: 0, totalReps: 0 };
+  return {
+    totalWorkouts: stats.totalWorkouts || 0,
+    totalVolume: stats.totalVolume || 0,
+    totalSets: stats.totalSets || 0,
+    totalReps: stats.totalReps || 0,
+    streakDays: gamProfile[0]?.streakDays || 0,
+    prCount: prStats[0]?.count || 0,
+  };
+}
 
 // Check and award achievements after workout completion
 export async function checkWorkoutAchievements(
@@ -70,7 +138,13 @@ export async function checkWorkoutAchievements(
 
       // Award XP
       if (achievement.xpReward && achievement.xpReward > 0) {
-        await awardXp(userId, achievement.xpReward, 'achievement_earned', achievement.id, 'achievement');
+        await awardXp(
+          userId,
+          achievement.xpReward,
+          'achievement_earned',
+          achievement.id,
+          'achievement'
+        );
         totalXp += achievement.xpReward;
       }
 
@@ -123,7 +197,13 @@ export async function checkStrengthAchievements(
 
       // Award XP
       if (achievement.xpReward && achievement.xpReward > 0) {
-        await awardXp(userId, achievement.xpReward, 'achievement_earned', achievement.id, 'achievement');
+        await awardXp(
+          userId,
+          achievement.xpReward,
+          'achievement_earned',
+          achievement.id,
+          'achievement'
+        );
         totalXp += achievement.xpReward;
       }
 
@@ -178,7 +258,13 @@ export async function checkClassificationAchievements(
 
       // Award XP
       if (achievement.xpReward && achievement.xpReward > 0) {
-        await awardXp(userId, achievement.xpReward, 'achievement_earned', achievement.id, 'achievement');
+        await awardXp(
+          userId,
+          achievement.xpReward,
+          'achievement_earned',
+          achievement.id,
+          'achievement'
+        );
         totalXp += achievement.xpReward;
       }
 
@@ -201,7 +287,9 @@ export async function updateAchievementProgress(
   const existing = await database
     .select()
     .from(userAchievements)
-    .where(and(eq(userAchievements.userId, userId), eq(userAchievements.achievementId, achievementId)))
+    .where(
+      and(eq(userAchievements.userId, userId), eq(userAchievements.achievementId, achievementId))
+    )
     .limit(1);
 
   if (existing.length > 0) {

@@ -106,8 +106,10 @@ function formatTime(totalSeconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function estimateCalories(durationMinutes: number): number {
-  return Math.round(durationMinutes * 7);
+function estimateCalories(durationMinutes: number, totalSets = 0): number {
+  const durationBased = Math.round(durationMinutes * 7);
+  const setsBased = totalSets * 8; // ~8 kcal per set floor
+  return Math.max(durationBased, setsBased);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -758,7 +760,7 @@ export default function WorkoutExecution() {
 
   if (showCompletion) {
     const durationMin = Math.round(elapsedSeconds / 60) || 1;
-    const cals = estimateCalories(durationMin);
+    const cals = estimateCalories(durationMin, allCompletedSets);
 
     return createPortal(
       <div className="fixed inset-0 z-[200] bg-[#0A0A0A] text-white overflow-y-auto">

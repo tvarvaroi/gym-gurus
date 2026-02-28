@@ -12,6 +12,8 @@ import {
   getUserEarnedAchievements,
   getAchievementStats,
   checkWorkoutAchievements,
+  seedAchievements,
+  getRetroactiveWorkoutStats,
 } from '../services/gamification/achievementService';
 
 const router = Router();
@@ -88,6 +90,13 @@ router.get('/achievements', async (req: Request, res: Response) => {
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+
+    // Ensure achievement definitions exist in DB (idempotent, runs once)
+    await seedAchievements();
+
+    // Retroactively award any earned-but-unchecked achievements
+    const stats = await getRetroactiveWorkoutStats(userId);
+    await checkWorkoutAchievements(userId, stats);
 
     const achievements = await getUserAchievementsWithProgress(userId);
     res.json(achievements);
@@ -206,13 +215,13 @@ router.post('/weekly-summary', async (req: Request, res: Response) => {
       .filter((t: any) => new Date(t.createdAt) >= oneWeekAgo)
       .reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
-    const weeklyWorkouts = transactions
-      .filter((t: any) => new Date(t.createdAt) >= oneWeekAgo && t.reason === 'workout_completed')
-      .length;
+    const weeklyWorkouts = transactions.filter(
+      (t: any) => new Date(t.createdAt) >= oneWeekAgo && t.reason === 'workout_completed'
+    ).length;
 
-    const weeklyPrs = transactions
-      .filter((t: any) => new Date(t.createdAt) >= oneWeekAgo && t.reason === 'personal_record')
-      .length;
+    const weeklyPrs = transactions.filter(
+      (t: any) => new Date(t.createdAt) >= oneWeekAgo && t.reason === 'personal_record'
+    ).length;
 
     const { notifyWeeklySummary } = await import('../services/notificationService');
     await notifyWeeklySummary(userId, {

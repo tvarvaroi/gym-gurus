@@ -239,7 +239,7 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
           parts.push(`\nCALCULATED STATS (Mifflin-St Jeor):`);
           parts.push(`BMR: ${Math.round(bmr)} kcal/day`);
           parts.push(`TDEE: ${tdee} kcal/day (maintenance)`);
-          parts.push(`Recommended protein: ${Math.round(weight * 1.8)}g/day (1.8g/kg bodyweight)`);
+          parts.push(`Recommended protein: ${Math.round(weight * 2.0)}g/day (2.0g/kg bodyweight)`);
         }
       }
 
