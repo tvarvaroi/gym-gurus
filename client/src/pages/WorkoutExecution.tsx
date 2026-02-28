@@ -62,6 +62,11 @@ interface WorkoutSession {
 
 type WeightUnit = 'kg' | 'lbs';
 
+interface PreviousPerformanceData {
+  unit: WeightUnit;
+  exercises: Record<string, { weight: number; reps: number }[]>;
+}
+
 // ═══════════════════════════════════════════════════════════
 // CONSTANTS & UTILS
 // ═══════════════════════════════════════════════════════════
@@ -176,6 +181,9 @@ export default function WorkoutExecution() {
   const [restTimeLeft, setRestTimeLeft] = useState(0);
   const [restDuration, setRestDuration] = useState(0);
   const [xpAwarded, setXpAwarded] = useState(0);
+  const [previousPerformance, setPreviousPerformance] = useState<PreviousPerformanceData | null>(
+    null
+  );
 
   // ─── Refs ───
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -268,6 +276,18 @@ export default function WorkoutExecution() {
     }
   }, [restJustFinished]);
 
+  // ─── Load previous performance from localStorage ───
+  useEffect(() => {
+    try {
+      const prevData = localStorage.getItem(`prev-perf-${workoutId}`);
+      if (prevData) {
+        setPreviousPerformance(JSON.parse(prevData));
+      }
+    } catch {
+      // ignore localStorage errors
+    }
+  }, [workoutId]);
+
   // ═══════════════════════════════════════════════════════════
   // DATA FETCHING
   // ═══════════════════════════════════════════════════════════
@@ -345,6 +365,28 @@ export default function WorkoutExecution() {
         status: index === 0 ? 'in_progress' : ('pending' as const),
       };
     });
+
+    // Pre-fill weights from previous performance
+    try {
+      const prevData = localStorage.getItem(`prev-perf-${workoutId}`);
+      if (prevData) {
+        const parsed: PreviousPerformanceData = JSON.parse(prevData);
+        const prevExercises = parsed.exercises || {};
+        for (const ex of exercises) {
+          const prev = prevExercises[ex.exerciseName];
+          if (prev) {
+            for (let i = 0; i < ex.sets.length; i++) {
+              const prevSet = prev[i] || prev[prev.length - 1];
+              if (prevSet) {
+                ex.sets[i].weight = prevSet.weight;
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore localStorage errors
+    }
 
     setSession({
       workoutId,
@@ -593,6 +635,29 @@ export default function WorkoutExecution() {
       } catch {
         // response may already be consumed
       }
+
+      // Save performance for next time (hints + pre-fill)
+      try {
+        if (session) {
+          const perfData: PreviousPerformanceData = {
+            unit: weightUnit,
+            exercises: {},
+          };
+          for (const ex of session.exercises) {
+            const completedSets = ex.sets.filter((s) => s.completed);
+            if (completedSets.length > 0) {
+              perfData.exercises[ex.exerciseName] = completedSets.map((s) => ({
+                weight: s.weight,
+                reps: s.reps,
+              }));
+            }
+          }
+          localStorage.setItem(`prev-perf-${workoutId}`, JSON.stringify(perfData));
+        }
+      } catch {
+        // ignore localStorage errors
+      }
+
       queryClient.invalidateQueries({ queryKey: ['/api/client/profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/recovery/fatigue'] });
       queryClient.invalidateQueries({ queryKey: ['/api/gamification/profile'] });
@@ -1028,6 +1093,10 @@ export default function WorkoutExecution() {
                   const isActive = sIdx === currentSetIndex;
                   const step = getWeightStep(currentExercise.exerciseName, weightUnit);
 
+                  const prevSets = previousPerformance?.exercises?.[currentExercise.exerciseName];
+                  const prevSet = prevSets?.[sIdx] || prevSets?.[prevSets.length - 1];
+                  const prevUnit = previousPerformance?.unit || 'kg';
+
                   return (
                     <motion.div
                       key={sIdx}
@@ -1058,44 +1127,52 @@ export default function WorkoutExecution() {
                       </span>
 
                       {/* Weight input with steppers */}
-                      <div className="flex items-center justify-center gap-0.5 sm:gap-1 min-w-0">
-                        <button
-                          onClick={() =>
-                            updateSet(currentExerciseIndex, sIdx, 'weight', set.weight - step)
-                          }
-                          className="w-7 sm:w-8 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                          aria-label={`Decrease weight by ${step} ${weightUnit}`}
-                          disabled={set.completed}
-                        >
-                          <span className="text-base font-light">-</span>
-                        </button>
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          value={set.weight || ''}
-                          onChange={(e) =>
-                            updateSet(
-                              currentExerciseIndex,
-                              sIdx,
-                              'weight',
-                              Number(e.target.value) || 0
-                            )
-                          }
-                          disabled={set.completed}
-                          className="w-11 sm:w-14 h-10 text-center text-base sm:text-lg font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          placeholder="0"
-                          aria-label={`Weight for set ${set.setNumber}`}
-                        />
-                        <button
-                          onClick={() =>
-                            updateSet(currentExerciseIndex, sIdx, 'weight', set.weight + step)
-                          }
-                          className="w-7 sm:w-8 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                          aria-label={`Increase weight by ${step} ${weightUnit}`}
-                          disabled={set.completed}
-                        >
-                          <span className="text-base font-light">+</span>
-                        </button>
+                      <div className="flex flex-col items-center min-w-0">
+                        <div className="flex items-center justify-center gap-0.5 sm:gap-1 min-w-0">
+                          <button
+                            onClick={() =>
+                              updateSet(currentExerciseIndex, sIdx, 'weight', set.weight - step)
+                            }
+                            className="w-7 sm:w-8 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                            aria-label={`Decrease weight by ${step} ${weightUnit}`}
+                            disabled={set.completed}
+                          >
+                            <span className="text-base font-light">-</span>
+                          </button>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            value={set.weight || ''}
+                            onChange={(e) =>
+                              updateSet(
+                                currentExerciseIndex,
+                                sIdx,
+                                'weight',
+                                Number(e.target.value) || 0
+                              )
+                            }
+                            disabled={set.completed}
+                            className="w-11 sm:w-14 h-10 text-center text-base sm:text-lg font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            placeholder="0"
+                            aria-label={`Weight for set ${set.setNumber}`}
+                          />
+                          <button
+                            onClick={() =>
+                              updateSet(currentExerciseIndex, sIdx, 'weight', set.weight + step)
+                            }
+                            className="w-7 sm:w-8 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                            aria-label={`Increase weight by ${step} ${weightUnit}`}
+                            disabled={set.completed}
+                          >
+                            <span className="text-base font-light">+</span>
+                          </button>
+                        </div>
+                        {prevSet && !set.completed && (
+                          <span className="text-[10px] text-neutral-600 mt-0.5 tabular-nums">
+                            Last: {prevSet.weight}
+                            {prevUnit} &times; {prevSet.reps}
+                          </span>
+                        )}
                       </div>
 
                       {/* Reps input with steppers */}

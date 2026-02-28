@@ -9,6 +9,8 @@ import {
   userFitnessProfile,
   workouts,
   workoutSessions,
+  workoutSetLogs,
+  exercises,
   users,
   userMuscleFatigue,
 } from '../../shared/schema';
@@ -255,14 +257,76 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
 
       if (completedSessions.length > 0) {
         parts.push(`\nCOMPLETED WORKOUT SESSIONS (workouts the user actually performed):`);
-        for (const s of completedSessions) {
+
+        // Also fetch session IDs for detailed exercise data
+        const sessionsWithIds = await db
+          .select({
+            id: workoutSessions.id,
+            workoutName: workoutSessions.workoutName,
+            startedAt: workoutSessions.startedAt,
+            endedAt: workoutSessions.endedAt,
+            totalSets: workoutSessions.totalSets,
+            totalVolumeKg: workoutSessions.totalVolumeKg,
+          })
+          .from(workoutSessions)
+          .where(and(eq(workoutSessions.userId, userId), eq(workoutSessions.isActive, false)))
+          .orderBy(desc(workoutSessions.startedAt))
+          .limit(5);
+
+        for (const s of sessionsWithIds) {
           const duration =
             s.endedAt && s.startedAt
               ? Math.round((s.endedAt.getTime() - s.startedAt.getTime()) / 60000)
               : null;
-          parts.push(
-            `- ${s.workoutName || 'Workout'} on ${new Date(s.startedAt).toLocaleDateString()}${duration ? ` (${duration} min)` : ''}`
-          );
+          let sessionLine = `- ${s.workoutName || 'Workout'} on ${new Date(s.startedAt).toLocaleDateString()}${duration ? ` (${duration} min)` : ''}`;
+          if (s.totalVolumeKg)
+            sessionLine += ` — ${Math.round(Number(s.totalVolumeKg))}kg total volume`;
+          parts.push(sessionLine);
+
+          // Fetch set logs for this session (exercise details)
+          try {
+            const setLogs = await db
+              .select({
+                exerciseName: exercises.name,
+                category: exercises.category,
+                weightKg: workoutSetLogs.weightKg,
+                reps: workoutSetLogs.reps,
+                setNumber: workoutSetLogs.setNumber,
+              })
+              .from(workoutSetLogs)
+              .innerJoin(exercises, eq(workoutSetLogs.exerciseId, exercises.id))
+              .where(eq(workoutSetLogs.sessionId, s.id))
+              .orderBy(workoutSetLogs.completedAt);
+
+            if (setLogs.length > 0) {
+              // Group sets by exercise
+              const byExercise = new Map<
+                string,
+                { category: string; sets: { weight: number; reps: number }[] }
+              >();
+              for (const log of setLogs) {
+                const name = log.exerciseName || 'Unknown';
+                if (!byExercise.has(name)) {
+                  byExercise.set(name, {
+                    category: log.category || '',
+                    sets: [],
+                  });
+                }
+                byExercise.get(name)!.sets.push({
+                  weight: Number(log.weightKg) || 0,
+                  reps: log.reps || 0,
+                });
+              }
+              Array.from(byExercise.entries()).forEach(([exName, data]) => {
+                const setsStr = data.sets
+                  .map((s: { weight: number; reps: number }) => `${s.weight}kg\u00d7${s.reps}`)
+                  .join(', ');
+                parts.push(`  - ${exName}: ${setsStr}`);
+              });
+            }
+          } catch {
+            // set logs may not exist for older sessions
+          }
         }
       } else {
         parts.push(

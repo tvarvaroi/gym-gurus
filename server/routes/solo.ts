@@ -896,25 +896,70 @@ router.put('/workouts/:id/complete-solo', async (req: Request, res: Response) =>
     }
 
     // Write completed session to workoutSessions so stats/progress/schedule can read it
+    let newSessionId: string | null = null;
     try {
       const startedAt = new Date(now.getTime() - duration * 60 * 1000);
-      await database.insert(workoutSessions).values({
-        userId,
-        workoutLogId: workoutId,
-        workoutName: workout.title,
-        workoutType: workout.category || null,
-        startedAt,
-        endedAt: now,
-        isActive: false,
-        actualDurationMinutes: duration,
-        plannedDurationMinutes: workout.duration || duration,
-        totalSets,
-        totalReps,
-        totalVolumeKg: String(totalVolume),
-        notes: notes || null,
-      });
+      const [newSession] = await database
+        .insert(workoutSessions)
+        .values({
+          userId,
+          workoutLogId: workoutId,
+          workoutName: workout.title,
+          workoutType: workout.category || null,
+          startedAt,
+          endedAt: now,
+          isActive: false,
+          actualDurationMinutes: duration,
+          plannedDurationMinutes: workout.duration || duration,
+          totalSets,
+          totalReps,
+          totalVolumeKg: String(totalVolume),
+          notes: notes || null,
+        })
+        .returning();
+      newSessionId = newSession?.id || null;
     } catch (sessionError) {
       console.warn('Session record insert failed (non-critical):', sessionError);
+    }
+
+    // Save individual set logs for AI Coach context and progress tracking
+    if (newSessionId && clientExercises) {
+      try {
+        // Get workout exercises to map names to exercise IDs
+        const workoutExs = await database
+          .select({
+            exerciseId: workoutExercises.exerciseId,
+            exerciseName: exercises.name,
+          })
+          .from(workoutExercises)
+          .innerJoin(exercises, eq(workoutExercises.exerciseId, exercises.id))
+          .where(eq(workoutExercises.workoutId, workoutId));
+
+        const nameToId = new Map<string, string>();
+        for (const we of workoutExs) {
+          if (we.exerciseName && we.exerciseId) {
+            nameToId.set(we.exerciseName.toLowerCase(), we.exerciseId);
+          }
+        }
+
+        for (const ex of clientExercises) {
+          const exerciseId = nameToId.get((ex.exerciseName || '').toLowerCase());
+          if (!exerciseId) continue;
+
+          for (let i = 0; i < (ex.sets || []).length; i++) {
+            const set = ex.sets[i];
+            await database.insert(workoutSetLogs).values({
+              sessionId: newSessionId,
+              exerciseId,
+              setNumber: i + 1,
+              weightKg: set.weight ? String(set.weight) : null,
+              reps: set.reps || null,
+            });
+          }
+        }
+      } catch (setLogError) {
+        console.warn('Set log insert failed (non-critical):', setLogError);
+      }
     }
 
     res.json({
