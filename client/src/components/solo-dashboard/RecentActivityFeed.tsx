@@ -20,7 +20,9 @@ interface ActivityItem {
 }
 
 function formatTimeAgo(date: Date): string {
+  if (isNaN(date.getTime())) return 'Recently';
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 0) return 'Recently';
   if (seconds < 60) return 'Just now';
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -97,13 +99,14 @@ export function RecentActivityFeed({
   // Add workout completions
   if (progress?.history) {
     for (const workout of progress.history.slice(0, 5)) {
+      const setsCount = workout.sets || workout.totalSets || 0;
+      const volumeKg = workout.volume || workout.totalVolumeKg || 0;
+      const dateStr = workout.date || workout.endedAt || workout.startedAt || workout.createdAt;
       activities.push({
         type: 'workout',
         title: workout.name || workout.workoutName || 'Workout',
-        subtitle: `${workout.totalSets || 0} sets · ${
-          workout.totalVolumeKg ? `${Number(workout.totalVolumeKg).toLocaleString()} kg` : ''
-        }`,
-        timestamp: new Date(workout.endedAt || workout.startedAt || workout.createdAt),
+        subtitle: `${setsCount} sets${volumeKg ? ` · ${Number(volumeKg).toLocaleString()} kg` : ''}`,
+        timestamp: dateStr ? new Date(dateStr) : new Date(),
         xpEarned: workout.xpEarned,
       });
     }
