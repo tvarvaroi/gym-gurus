@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { formatVolume } from '@/lib/format';
 import { useUser } from '@/contexts/UserContext';
 import {
   X,
@@ -112,6 +113,64 @@ function estimateCalories(durationMinutes: number, totalSets = 0): number {
   const durationBased = Math.round(durationMinutes * 7);
   const setsBased = totalSets * 8; // ~8 kcal per set floor
   return Math.max(durationBased, setsBased);
+}
+
+function getMuscleStyle(muscle: string): string {
+  const m = muscle.toLowerCase().replace(/_/g, ' ');
+  if (m.includes('chest')) return 'bg-red-500/15 text-red-400 border border-red-500/20';
+  if (m.includes('back') || m.includes('lat'))
+    return 'bg-blue-500/15 text-blue-400 border border-blue-500/20';
+  if (m.includes('shoulder') || m.includes('delt'))
+    return 'bg-orange-500/15 text-orange-400 border border-orange-500/20';
+  if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('calf'))
+    return 'bg-green-500/15 text-green-400 border border-green-500/20';
+  if (m.includes('bicep')) return 'bg-purple-500/15 text-purple-400 border border-purple-500/20';
+  if (m.includes('tricep')) return 'bg-violet-500/15 text-violet-400 border border-violet-500/20';
+  if (m.includes('core') || m.includes('ab'))
+    return 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20';
+  if (m.includes('glute')) return 'bg-pink-500/15 text-pink-400 border border-pink-500/20';
+  return 'bg-white/10 text-neutral-400 border border-white/10';
+}
+
+function getMuscleAccent(muscle: string): string {
+  const m = muscle.toLowerCase().replace(/_/g, ' ');
+  if (m.includes('chest')) return 'border-l-red-500';
+  if (m.includes('back') || m.includes('lat')) return 'border-l-blue-500';
+  if (m.includes('shoulder') || m.includes('delt')) return 'border-l-orange-500';
+  if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('calf'))
+    return 'border-l-green-500';
+  if (m.includes('bicep')) return 'border-l-purple-500';
+  if (m.includes('tricep')) return 'border-l-violet-500';
+  if (m.includes('core') || m.includes('ab')) return 'border-l-yellow-500';
+  if (m.includes('glute')) return 'border-l-pink-500';
+  return 'border-l-neutral-500';
+}
+
+function getMuscleColor(muscle: string): string {
+  const m = muscle.toLowerCase().replace(/_/g, ' ');
+  if (m.includes('chest')) return 'bg-red-500';
+  if (m.includes('back') || m.includes('lat')) return 'bg-blue-500';
+  if (m.includes('shoulder') || m.includes('delt')) return 'bg-orange-500';
+  if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('calf'))
+    return 'bg-green-500';
+  if (m.includes('bicep')) return 'bg-purple-500';
+  if (m.includes('tricep')) return 'bg-violet-500';
+  if (m.includes('core') || m.includes('ab')) return 'bg-yellow-500';
+  if (m.includes('glute')) return 'bg-pink-500';
+  return 'bg-neutral-500';
+}
+
+function formatMuscleGroup(group: string): string {
+  return group.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function abbreviateExerciseName(name: string): string {
+  return name
+    .replace(/^(barbell|cable|machine)\s+/i, '')
+    .replace(/^dumbbell\s+/i, 'DB ')
+    .split(/\s+/)
+    .slice(0, 2)
+    .join(' ');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -825,7 +884,7 @@ export default function WorkoutExecution() {
         {/* Confetti pieces — respect reduced motion, auto-stop after 3s */}
         {showConfetti &&
           !prefersReducedMotion &&
-          Array.from({ length: 30 }).map((_, i) => (
+          Array.from({ length: 40 }).map((_, i) => (
             <div
               key={i}
               className="confetti-piece rounded-sm"
@@ -861,17 +920,21 @@ export default function WorkoutExecution() {
               className="mb-6 inline-block"
             >
               <div
-                className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center"
+                className="w-24 h-24 rounded-full flex items-center justify-center"
                 style={{
+                  background:
+                    'radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)',
                   animation: prefersReducedMotion
                     ? 'none'
                     : 'pulse-primary 2s ease-in-out infinite',
                 }}
               >
-                <Trophy className="w-10 h-10 text-primary" />
+                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Trophy className="w-10 h-10 text-primary" />
+                </div>
               </div>
             </motion.div>
-            <h1 className="text-3xl font-bold font-['Playfair_Display'] mb-1">Workout Complete!</h1>
+            <h1 className="text-3xl font-bold font-['Playfair_Display'] mb-1">Workout Complete</h1>
             <p className="text-neutral-400">{session.workoutTitle}</p>
           </motion.div>
 
@@ -882,12 +945,24 @@ export default function WorkoutExecution() {
             transition={{ delay: 0.3 }}
             className="grid grid-cols-2 gap-3"
           >
-            <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
+            <div
+              className="rounded-xl p-4 text-center border border-white/[0.06]"
+              style={{
+                background:
+                  'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+              }}
+            >
               <Timer className="w-5 h-5 text-blue-400 mx-auto mb-2" />
               <p className="text-2xl font-bold tabular-nums">{formatTime(elapsedSeconds)}</p>
               <p className="text-xs text-neutral-500">Duration</p>
             </div>
-            <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
+            <div
+              className="rounded-xl p-4 text-center border border-white/[0.06]"
+              style={{
+                background:
+                  'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+              }}
+            >
               <Dumbbell className="w-5 h-5 text-cyan-400 mx-auto mb-2" />
               <p className="text-2xl font-bold">
                 {prefersReducedMotion ? (
@@ -898,14 +973,26 @@ export default function WorkoutExecution() {
               </p>
               <p className="text-xs text-neutral-500">Volume</p>
             </div>
-            <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
+            <div
+              className="rounded-xl p-4 text-center border border-white/[0.06]"
+              style={{
+                background:
+                  'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+              }}
+            >
               <Check className="w-5 h-5 text-green-400 mx-auto mb-2" />
               <p className="text-2xl font-bold">
                 {allCompletedSets}/{allTotalSets}
               </p>
               <p className="text-xs text-neutral-500">Sets</p>
             </div>
-            <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
+            <div
+              className="rounded-xl p-4 text-center border border-white/[0.06]"
+              style={{
+                background:
+                  'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+              }}
+            >
               <Flame className="w-5 h-5 text-orange-400 mx-auto mb-2" />
               <p className="text-2xl font-bold">
                 {prefersReducedMotion ? <>{cals}</> : <AnimatedNumber value={cals} />}
@@ -957,7 +1044,14 @@ export default function WorkoutExecution() {
               const reps = completedSets.map((s) => s.reps);
               const mainWeight = completedSets[0]?.weight || 0;
               return (
-                <div key={i} className="bg-white/5 rounded-lg px-4 py-3 border border-white/5">
+                <div
+                  key={i}
+                  className={`rounded-lg px-4 py-3 border border-white/[0.06] border-l-4 ${getMuscleAccent(ex.muscleGroup)}`}
+                  style={{
+                    background:
+                      'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">{ex.exerciseName}</span>
                     <span className="text-xs text-neutral-500">
@@ -987,7 +1081,7 @@ export default function WorkoutExecution() {
                 {musclesWorked.map((m) => (
                   <span
                     key={m}
-                    className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium border border-primary/20"
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${getMuscleStyle(m)}`}
                   >
                     {m}
                   </span>
@@ -1074,43 +1168,125 @@ export default function WorkoutExecution() {
       onTouchEnd={handleTouchEnd}
     >
       {/* ── Sticky Top Bar ── */}
-      <div className="flex-none h-14 flex items-center justify-between px-3 border-b border-white/5 bg-[#0A0A0A]/95 backdrop-blur-sm z-30">
-        <button
-          onClick={() => setShowExitDialog(true)}
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
-          aria-label="Exit workout"
-        >
-          <X className="w-5 h-5 text-neutral-400" />
-        </button>
-        <h1 className="text-sm font-semibold truncate max-w-[50%]">{session.workoutTitle}</h1>
-        <span className="text-lg font-mono tabular-nums text-[#c9a855] min-w-[52px] text-right">
-          {formatTime(elapsedSeconds)}
-        </span>
-      </div>
+      <div className="flex-none py-3 px-4 bg-gradient-to-b from-[#0A0A0A] via-[#0A0A0A] to-transparent z-30">
+        {/* Title row */}
+        <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={() => setShowExitDialog(true)}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors flex-none"
+            aria-label="Exit workout"
+          >
+            <X className="w-5 h-5 text-neutral-400" />
+          </button>
+          <div className="flex-1 min-w-0 mx-3 text-center">
+            <h1 className="text-base font-bold truncate">{session.workoutTitle}</h1>
+            <p className="text-[11px] text-neutral-500">
+              Exercise {currentExerciseIndex + 1}/{totalExercises}
+              {currentExercise && currentSetIndex >= 0 && (
+                <>
+                  {' '}
+                  &middot; Set {currentSetIndex + 1}/{currentExercise.sets.length}
+                </>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-none">
+            {/* Weight unit pill */}
+            <div className="flex rounded-md overflow-hidden">
+              <button
+                onClick={() => setWeightUnit('kg')}
+                className={`px-2 py-0.5 text-[10px] font-bold transition-colors ${
+                  weightUnit === 'kg' ? 'bg-[#c9a855] text-black' : 'bg-white/5 text-neutral-500'
+                }`}
+              >
+                KG
+              </button>
+              <button
+                onClick={() => setWeightUnit('lbs')}
+                className={`px-2 py-0.5 text-[10px] font-bold transition-colors ${
+                  weightUnit === 'lbs' ? 'bg-[#c9a855] text-black' : 'bg-white/5 text-neutral-500'
+                }`}
+              >
+                LBS
+              </button>
+            </div>
+            <span className="text-xl font-mono tabular-nums text-[#c9a855] min-w-[56px] text-right font-bold">
+              {formatTime(elapsedSeconds)}
+            </span>
+          </div>
+        </div>
 
-      {/* ── Progress Bar ── */}
-      <div className="flex-none px-4 pt-2 pb-1">
-        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+        {/* Progress bar with glow */}
+        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-[#c9a855] rounded-full"
             initial={false}
             animate={{ width: `${overallProgress}%` }}
             transition={{ duration: 0.3 }}
+            style={{ boxShadow: '0 0 8px rgba(201,168,85,0.4)' }}
           />
         </div>
-        <p className="text-xs text-neutral-500 mt-1.5">
-          Exercise {currentExerciseIndex + 1} of {totalExercises}
-          {currentExercise && currentSetIndex >= 0 && (
-            <>
-              {' '}
-              &middot; Set {currentSetIndex + 1} of {currentExercise.sets.length}
-            </>
-          )}
-        </p>
+
+        {/* Live stats row */}
+        <div className="flex items-center justify-between mt-2 text-[11px] text-neutral-500">
+          <span className="flex items-center gap-1">
+            <Dumbbell className="w-3 h-3" />
+            {formatVolume(Math.round(totalVolume))} {weightUnit}
+          </span>
+          <span className="flex items-center gap-1">
+            <Check className="w-3 h-3" />
+            {allCompletedSets}/{allTotalSets} sets
+          </span>
+          <span className="flex items-center gap-1">
+            <Flame className="w-3 h-3" />~
+            {estimateCalories(Math.round(elapsedSeconds / 60), allCompletedSets)} kcal
+          </span>
+        </div>
+      </div>
+
+      {/* ── Exercise Navigation Strip ── */}
+      <div className="flex-none px-3 py-2 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-1.5 min-w-max">
+          {session.exercises.map((ex, i) => {
+            const isActive = i === currentExerciseIndex;
+            const isDone = ex.status === 'completed';
+            return (
+              <button
+                key={i}
+                ref={(el) => {
+                  if (isActive && el)
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }}
+                onClick={() => goToExercise(i)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#c9a855]/15 text-[#c9a855] border border-[#c9a855]/30'
+                    : isDone
+                      ? 'bg-green-500/10 text-green-500/70 border border-green-500/20'
+                      : 'bg-white/[0.03] text-neutral-500 border border-white/5'
+                }`}
+                aria-label={`Go to exercise ${i + 1}: ${ex.exerciseName}`}
+              >
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-none ${
+                    isActive
+                      ? 'bg-[#c9a855] text-black'
+                      : isDone
+                        ? 'bg-green-500 text-white'
+                        : 'bg-white/10 text-neutral-500'
+                  }`}
+                >
+                  {isDone ? <Check className="w-3 h-3" strokeWidth={3} /> : i + 1}
+                </span>
+                {abbreviateExerciseName(ex.exerciseName)}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Scrollable Content ── */}
-      <div className="flex-1 overflow-y-auto overscroll-contain pb-20">
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-20 relative">
         <AnimatePresence mode="wait">
           {currentExercise && (
             <motion.div
@@ -1123,219 +1299,233 @@ export default function WorkoutExecution() {
             >
               {/* Exercise header */}
               <div className="mb-4">
-                <h2 className="text-xl font-bold leading-tight">{currentExercise.exerciseName}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-neutral-500">
-                    {currentExercise.muscleGroup
-                      .replace(/_/g, ' ')
-                      .replace(/\b\w/g, (c) => c.toUpperCase())}
-                  </span>
-                  <span className="text-xs text-neutral-600">·</span>
-                  <span className="text-xs text-neutral-600">
-                    Rest: {currentExercise.restSeconds}s
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getMuscleStyle(currentExercise.muscleGroup)}`}
+                  >
+                    {formatMuscleGroup(currentExercise.muscleGroup)}
                   </span>
                 </div>
+                <h2 className="text-2xl font-bold leading-tight">{currentExercise.exerciseName}</h2>
+                <p className="text-sm text-neutral-400 mt-1">
+                  {currentExercise.sets.length} sets &times; {currentExercise.targetReps} reps
+                  &middot; {currentExercise.restSeconds}s rest
+                </p>
               </div>
 
-              {/* Weight unit toggle */}
-              <div className="flex items-center justify-end mb-3 gap-1">
-                <button
-                  onClick={() => setWeightUnit('kg')}
-                  className={`px-3 py-1 rounded-l-md text-xs font-medium transition-colors ${
-                    weightUnit === 'kg'
-                      ? 'bg-[#c9a855] text-black'
-                      : 'bg-white/5 text-neutral-500 hover:bg-white/10'
-                  }`}
-                  aria-label="Use kilograms"
-                >
-                  KG
-                </button>
-                <button
-                  onClick={() => setWeightUnit('lbs')}
-                  className={`px-3 py-1 rounded-r-md text-xs font-medium transition-colors ${
-                    weightUnit === 'lbs'
-                      ? 'bg-[#c9a855] text-black'
-                      : 'bg-white/5 text-neutral-500 hover:bg-white/10'
-                  }`}
-                  aria-label="Use pounds"
-                >
-                  LBS
-                </button>
-              </div>
+              {/* Previous performance block */}
+              {previousPerformance?.exercises?.[currentExercise.exerciseName] && (
+                <div className="mb-4 rounded-xl bg-white/[0.03] border border-white/[0.06] px-4 py-3">
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-1.5">
+                    Previous Performance
+                  </p>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    {previousPerformance.exercises[currentExercise.exerciseName].map((prev, pi) => (
+                      <span key={pi} className="text-xs text-neutral-400 tabular-nums">
+                        {prev.weight}
+                        {previousPerformance.unit} &times; {prev.reps}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              {/* Set header row */}
-              <div className="grid grid-cols-[32px_1fr_1fr_48px] gap-1.5 mb-1 px-1">
-                <span className="text-[10px] text-neutral-600 uppercase">Set</span>
-                <span className="text-[10px] text-neutral-600 uppercase text-center">
-                  Weight ({weightUnit})
-                </span>
-                <span className="text-[10px] text-neutral-600 uppercase text-center">Reps</span>
-                <span />
-              </div>
-
-              {/* Set rows */}
-              <div className="space-y-2">
+              {/* Set cards */}
+              <div className="space-y-3">
                 {currentExercise.sets.map((set, sIdx) => {
                   const isActive = sIdx === currentSetIndex;
+                  const isUpcoming = !set.completed && !isActive;
                   const step = getWeightStep(currentExercise.exerciseName, weightUnit);
 
-                  const prevSets = previousPerformance?.exercises?.[currentExercise.exerciseName];
-                  const prevSet = prevSets?.[sIdx] || prevSets?.[prevSets.length - 1];
-                  const prevUnit = previousPerformance?.unit || 'kg';
+                  // Collapsed upcoming sets
+                  if (isUpcoming) {
+                    return (
+                      <motion.div
+                        key={sIdx}
+                        initial={false}
+                        animate={{ opacity: 0.5 }}
+                        className="rounded-2xl bg-white/[0.02] border border-white/5 px-4 py-3 flex items-center justify-between"
+                      >
+                        <span className="text-sm font-bold text-neutral-600">
+                          SET {set.setNumber}
+                        </span>
+                        <span className="text-xs text-neutral-600 tabular-nums">
+                          {set.weight > 0 ? `${set.weight} ${weightUnit}` : '—'} &times;{' '}
+                          {set.reps > 0 ? set.reps : '—'}
+                        </span>
+                      </motion.div>
+                    );
+                  }
 
                   return (
                     <motion.div
                       key={sIdx}
                       initial={false}
                       animate={{
-                        opacity: set.completed ? 0.6 : 1,
+                        opacity: set.completed ? 0.7 : 1,
                         scale: isActive ? 1 : 0.98,
                       }}
-                      className={`grid grid-cols-[32px_1fr_1fr_48px] gap-1.5 items-center rounded-xl px-2 py-2 transition-colors ${
+                      className={`rounded-2xl p-4 transition-colors ${
                         set.completed
                           ? 'bg-green-500/5 border border-green-500/20 border-l-4 border-l-green-500'
-                          : isActive
-                            ? 'bg-white/5 border border-[#c9a855]/30'
-                            : 'bg-white/[0.02] border border-white/5'
+                          : 'bg-white/[0.03] border border-[#c9a855]/30'
                       }`}
                     >
-                      {/* Set number */}
-                      <span
-                        className={`text-sm font-bold text-center ${
-                          set.completed
-                            ? 'text-green-500'
-                            : isActive
-                              ? 'text-[#c9a855]'
-                              : 'text-neutral-600'
-                        }`}
-                      >
-                        {set.setNumber}
-                      </span>
+                      {/* Top row: Set label + check */}
+                      <div className="flex items-center justify-between mb-3">
+                        <span
+                          className={`text-xs font-bold uppercase tracking-wider ${
+                            set.completed ? 'text-green-500' : 'text-[#c9a855]'
+                          }`}
+                        >
+                          SET {set.setNumber}
+                        </span>
+                        <motion.button
+                          onClick={() => toggleSetComplete(currentExerciseIndex, sIdx)}
+                          animate={
+                            prefersReducedMotion
+                              ? undefined
+                              : set.completed
+                                ? { scale: [1, 1.3, 1] }
+                                : { scale: 1 }
+                          }
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                          className={`w-11 h-11 flex items-center justify-center rounded-xl transition-colors ${
+                            set.completed
+                              ? 'bg-green-500 text-white'
+                              : 'border-2 border-white/20 hover:border-[#c9a855]/50 text-transparent hover:text-[#c9a855]/50'
+                          }`}
+                          aria-label={
+                            set.completed
+                              ? `Undo set ${set.setNumber}`
+                              : `Complete set ${set.setNumber}`
+                          }
+                        >
+                          {set.completed ? (
+                            <motion.div
+                              initial={prefersReducedMotion ? undefined : { scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
+                            >
+                              <Check className="w-5 h-5 text-white" strokeWidth={3} />
+                            </motion.div>
+                          ) : (
+                            <Check className="w-5 h-5" strokeWidth={3} />
+                          )}
+                        </motion.button>
+                      </div>
 
-                      {/* Weight input with steppers */}
-                      <div className="flex flex-col items-center min-w-0">
-                        <div className="flex items-center justify-center gap-0.5 sm:gap-1 min-w-0">
-                          <button
-                            onClick={() =>
-                              updateSet(currentExerciseIndex, sIdx, 'weight', set.weight - step)
-                            }
-                            className="w-7 sm:w-8 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                            aria-label={`Decrease weight by ${step} ${weightUnit}`}
-                            disabled={set.completed}
-                          >
-                            <span className="text-base font-light">-</span>
-                          </button>
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            value={set.weight || ''}
-                            onChange={(e) =>
-                              updateSet(
-                                currentExerciseIndex,
-                                sIdx,
-                                'weight',
-                                Number(e.target.value) || 0
-                              )
-                            }
-                            disabled={set.completed}
-                            className="w-11 sm:w-14 h-10 text-center text-base sm:text-lg font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            placeholder="0"
-                            aria-label={`Weight for set ${set.setNumber}`}
-                          />
-                          <button
-                            onClick={() =>
-                              updateSet(currentExerciseIndex, sIdx, 'weight', set.weight + step)
-                            }
-                            className="w-7 sm:w-8 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                            aria-label={`Increase weight by ${step} ${weightUnit}`}
-                            disabled={set.completed}
-                          >
-                            <span className="text-base font-light">+</span>
-                          </button>
+                      {/* Weight + Reps side by side */}
+                      <div className="flex items-start gap-3">
+                        {/* Weight */}
+                        <div className="flex-1">
+                          <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-1.5">
+                            Weight ({weightUnit})
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() =>
+                                updateSet(currentExerciseIndex, sIdx, 'weight', set.weight - step)
+                              }
+                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                              aria-label={`Decrease weight by ${step} ${weightUnit}`}
+                              disabled={set.completed}
+                            >
+                              <span className="text-lg font-light">−</span>
+                            </button>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              value={set.weight || ''}
+                              onChange={(e) =>
+                                updateSet(
+                                  currentExerciseIndex,
+                                  sIdx,
+                                  'weight',
+                                  Number(e.target.value) || 0
+                                )
+                              }
+                              disabled={set.completed}
+                              className="w-20 h-12 text-center text-xl font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              placeholder="0"
+                              aria-label={`Weight for set ${set.setNumber}`}
+                            />
+                            <button
+                              onClick={() =>
+                                updateSet(currentExerciseIndex, sIdx, 'weight', set.weight + step)
+                              }
+                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                              aria-label={`Increase weight by ${step} ${weightUnit}`}
+                              disabled={set.completed}
+                            >
+                              <span className="text-lg font-light">+</span>
+                            </button>
+                          </div>
                         </div>
-                        {prevSet && !set.completed && (
-                          <span className="text-[10px] text-neutral-600 mt-0.5 tabular-nums">
-                            Last: {prevSet.weight}
-                            {prevUnit} &times; {prevSet.reps}
-                          </span>
-                        )}
+
+                        {/* Divider */}
+                        <div className="w-px h-16 bg-white/10 self-center mt-5" />
+
+                        {/* Reps */}
+                        <div className="flex-1">
+                          <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-1.5">
+                            Reps
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() =>
+                                updateSet(currentExerciseIndex, sIdx, 'reps', set.reps - 1)
+                              }
+                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                              aria-label="Decrease reps by 1"
+                              disabled={set.completed}
+                            >
+                              <span className="text-lg font-light">−</span>
+                            </button>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              value={set.reps || ''}
+                              onChange={(e) =>
+                                updateSet(
+                                  currentExerciseIndex,
+                                  sIdx,
+                                  'reps',
+                                  Number(e.target.value) || 0
+                                )
+                              }
+                              disabled={set.completed}
+                              className="w-16 h-12 text-center text-xl font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              placeholder="0"
+                              aria-label={`Reps for set ${set.setNumber}`}
+                            />
+                            <button
+                              onClick={() =>
+                                updateSet(currentExerciseIndex, sIdx, 'reps', set.reps + 1)
+                              }
+                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                              aria-label="Increase reps by 1"
+                              disabled={set.completed}
+                            >
+                              <span className="text-lg font-light">+</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Reps input with steppers */}
-                      <div className="flex items-center justify-center gap-0.5 sm:gap-1 min-w-0">
-                        <button
-                          onClick={() =>
-                            updateSet(currentExerciseIndex, sIdx, 'reps', set.reps - 1)
-                          }
-                          className="w-7 sm:w-8 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                          aria-label="Decrease reps by 1"
-                          disabled={set.completed}
+                      {/* Complete Set CTA — active set only */}
+                      {isActive && !set.completed && (
+                        <motion.button
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          onClick={() => toggleSetComplete(currentExerciseIndex, sIdx)}
+                          className="mt-4 w-full h-12 rounded-xl bg-[#c9a855] text-black font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                          aria-label={`Complete set ${set.setNumber}`}
                         >
-                          <span className="text-base font-light">-</span>
-                        </button>
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          value={set.reps || ''}
-                          onChange={(e) =>
-                            updateSet(
-                              currentExerciseIndex,
-                              sIdx,
-                              'reps',
-                              Number(e.target.value) || 0
-                            )
-                          }
-                          disabled={set.completed}
-                          className="w-8 sm:w-10 h-10 text-center text-base sm:text-lg font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          placeholder="0"
-                          aria-label={`Reps for set ${set.setNumber}`}
-                        />
-                        <button
-                          onClick={() =>
-                            updateSet(currentExerciseIndex, sIdx, 'reps', set.reps + 1)
-                          }
-                          className="w-7 sm:w-8 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                          aria-label="Increase reps by 1"
-                          disabled={set.completed}
-                        >
-                          <span className="text-base font-light">+</span>
-                        </button>
-                      </div>
-
-                      {/* Complete button */}
-                      <motion.button
-                        onClick={() => toggleSetComplete(currentExerciseIndex, sIdx)}
-                        animate={
-                          prefersReducedMotion
-                            ? undefined
-                            : set.completed
-                              ? { scale: [1, 1.3, 1] }
-                              : { scale: 1 }
-                        }
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                        className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl transition-colors ${
-                          set.completed
-                            ? 'bg-green-500 border-2 border-green-500 text-white'
-                            : 'border-2 border-white/20 hover:border-primary/50 text-transparent hover:text-primary/50'
-                        }`}
-                        aria-label={
-                          set.completed
-                            ? `Undo set ${set.setNumber}`
-                            : `Complete set ${set.setNumber}`
-                        }
-                      >
-                        {set.completed ? (
-                          <motion.div
-                            initial={prefersReducedMotion ? undefined : { scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
-                          >
-                            <Check className="w-5 h-5 text-white" strokeWidth={3} />
-                          </motion.div>
-                        ) : (
-                          <Check className="w-5 h-5" strokeWidth={3} />
-                        )}
-                      </motion.button>
+                          <Check className="w-4 h-4" strokeWidth={3} />
+                          Complete Set
+                        </motion.button>
+                      )}
                     </motion.div>
                   );
                 })}
@@ -1348,139 +1538,179 @@ export default function WorkoutExecution() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     onClick={() => goToExercise(currentExerciseIndex + 1)}
-                    className="mt-4 w-full h-12 rounded-xl bg-[#c9a855]/10 border border-[#c9a855]/30 text-[#c9a855] font-medium flex items-center justify-center gap-2"
+                    className="mt-4 w-full h-12 rounded-xl bg-[#c9a855]/10 border border-[#c9a855]/30 text-[#c9a855] font-bold flex items-center justify-center gap-2"
                     aria-label="Go to next exercise"
                   >
-                    Next <ChevronRight className="w-4 h-4" />
+                    Next Exercise <ChevronRight className="w-4 h-4" />
                   </motion.button>
                 )}
 
-              {/* Navigation dots */}
-              <div className="flex items-center justify-center gap-1.5 mt-6 mb-4">
-                {session.exercises.map((ex, i) => (
-                  <button
-                    key={i}
-                    onClick={() => goToExercise(i)}
-                    className={`rounded-full transition-all ${
-                      i === currentExerciseIndex
-                        ? 'w-6 h-2 bg-[#c9a855]'
-                        : ex.status === 'completed'
-                          ? 'w-2 h-2 bg-green-500'
-                          : 'w-2 h-2 bg-white/20'
-                    }`}
-                    aria-label={`Go to exercise ${i + 1}: ${ex.exerciseName}`}
-                  />
-                ))}
-              </div>
+              {/* spacer for bottom bar */}
+              <div className="h-4" />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* ── Rest Timer Bar (floating) ── */}
+      {/* ── Rest Timer Overlay ── */}
       <AnimatePresence>
         {isRestVisible && (
           <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25 }}
-            className="fixed bottom-16 left-0 right-0 z-40 px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 z-30 bg-[#0A0A0A]/95 backdrop-blur-md flex flex-col items-center justify-center"
           >
-            <div
-              className={`rounded-2xl p-4 backdrop-blur-xl border transition-colors ${
-                restTimeLeft === 0
-                  ? 'bg-green-500/20 border-green-500/30'
-                  : 'bg-neutral-900/95 border-white/10'
-              }`}
-            >
-              {/* Progress ring */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-14 h-14">
-                    <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-                      <circle
-                        cx="28"
-                        cy="28"
-                        r="24"
-                        fill="none"
-                        stroke="rgba(255,255,255,0.1)"
-                        strokeWidth="4"
-                      />
-                      <circle
-                        cx="28"
-                        cy="28"
-                        r="24"
-                        fill="none"
-                        stroke={restTimeLeft === 0 ? '#22c55e' : '#c9a855'}
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        strokeDasharray={2 * Math.PI * 24}
-                        strokeDashoffset={
-                          2 *
-                          Math.PI *
-                          24 *
-                          (1 - (restDuration > 0 ? restTimeLeft / restDuration : 0))
-                        }
-                        style={{ transition: 'stroke-dashoffset 1s linear' }}
-                      />
-                    </svg>
-                    <span
-                      className={`absolute inset-0 flex items-center justify-center font-mono text-lg font-bold tabular-nums ${
-                        restTimeLeft === 0 ? 'text-green-400' : 'text-white'
-                      }`}
-                    >
-                      {restTimeLeft === 0 ? 'Go!' : formatTime(restTimeLeft)}
-                    </span>
-                  </div>
-                  <span className="text-sm text-neutral-400">
-                    {restTimeLeft === 0 ? 'Ready for next set' : 'Rest period'}
-                  </span>
+            {/* REST label */}
+            <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500 mb-6">
+              {restTimeLeft === 0 ? 'ready' : 'rest'}
+            </p>
+
+            {/* 160px ring */}
+            <div className="relative w-40 h-40 mb-6">
+              <svg className="w-40 h-40 -rotate-90" viewBox="0 0 160 160">
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="74"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.06)"
+                  strokeWidth={6}
+                />
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="74"
+                  fill="none"
+                  stroke={restTimeLeft === 0 ? '#22c55e' : '#c9a855'}
+                  strokeWidth={6}
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 74}
+                  strokeDashoffset={
+                    2 * Math.PI * 74 * (1 - (restDuration > 0 ? restTimeLeft / restDuration : 0))
+                  }
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
+                />
+              </svg>
+              <span
+                className={`absolute inset-0 flex items-center justify-center font-mono text-4xl font-bold tabular-nums ${
+                  restTimeLeft === 0 ? 'text-green-400' : 'text-white'
+                }`}
+                style={
+                  restTimeLeft === 0 && !prefersReducedMotion
+                    ? { animation: 'pulse-primary 1.5s ease-in-out infinite' }
+                    : undefined
+                }
+              >
+                {restTimeLeft === 0 ? 'GO!' : formatTime(restTimeLeft)}
+              </span>
+            </div>
+
+            {/* Up Next info */}
+            {currentExercise &&
+              currentSetIndex >= 0 &&
+              currentSetIndex < currentExercise.sets.length - 1 && (
+                <div className="text-center mb-8">
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">
+                    Next Up
+                  </p>
+                  <p className="text-sm text-neutral-300">
+                    Set {currentSetIndex + 2} of {currentExercise.sets.length}
+                  </p>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={addRestTime}
-                    className="h-10 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-sm text-neutral-300 transition-colors"
-                    aria-label="Add 30 seconds to rest timer"
-                  >
-                    +30s
-                  </button>
-                  <button
-                    onClick={skipRest}
-                    className="h-10 px-4 rounded-lg bg-[#c9a855] text-black text-sm font-semibold hover:bg-[#b89745] transition-colors"
-                    aria-label="Skip rest period"
-                  >
-                    Skip
-                  </button>
+              )}
+            {currentExercise &&
+              (currentSetIndex < 0 || currentSetIndex >= currentExercise.sets.length - 1) &&
+              currentExerciseIndex < totalExercises - 1 && (
+                <div className="text-center mb-8">
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">
+                    Up Next
+                  </p>
+                  <p className="text-sm text-neutral-300">
+                    {session.exercises[currentExerciseIndex + 1]?.exerciseName}
+                  </p>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    {session.exercises[currentExerciseIndex + 1]?.sets.length} sets &times;{' '}
+                    {session.exercises[currentExerciseIndex + 1]?.targetReps} reps
+                  </p>
                 </div>
-              </div>
+              )}
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={addRestTime}
+                className="h-12 px-6 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-neutral-300 font-medium transition-colors"
+                aria-label="Add 30 seconds to rest timer"
+              >
+                +30s
+              </button>
+              <button
+                onClick={skipRest}
+                className="h-12 px-8 rounded-xl bg-[#c9a855] text-black text-sm font-bold hover:bg-[#b89745] transition-colors flex items-center gap-2"
+                aria-label="Skip rest period"
+              >
+                Skip <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* ── Sticky Bottom Bar ── */}
-      <div className="flex-none h-16 flex items-center justify-between px-4 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-sm z-30">
+      <div className="flex-none h-16 flex items-center justify-between px-4 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-md z-30 gap-2">
+        {/* Exercise list */}
         <button
           onClick={() => setShowExerciseList(true)}
-          className="h-11 px-4 flex items-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-neutral-300 transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 transition-colors flex-none"
           aria-label="View exercise list"
         >
-          <ListChecks className="w-4 h-4" />
-          Exercises
+          <ListChecks className="w-5 h-5" />
         </button>
+
+        {/* Prev */}
+        <button
+          onClick={() => currentExerciseIndex > 0 && goToExercise(currentExerciseIndex - 1)}
+          disabled={currentExerciseIndex === 0}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 transition-colors flex-none disabled:opacity-30"
+          aria-label="Previous exercise"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        {/* Next */}
+        <button
+          onClick={() =>
+            currentExerciseIndex < totalExercises - 1 && goToExercise(currentExerciseIndex + 1)
+          }
+          disabled={currentExerciseIndex >= totalExercises - 1}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 transition-colors flex-none disabled:opacity-30"
+          aria-label="Next exercise"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        <div className="flex-1" />
+
+        {/* Finish */}
         <button
           onClick={handleFinishClick}
-          className={`h-11 px-6 rounded-xl font-semibold text-sm transition-all ${
+          className={`h-11 px-6 rounded-xl font-bold text-sm transition-all flex-none ${
             overallProgress >= 100
-              ? 'bg-[#c9a855] text-black animate-pulse'
+              ? 'bg-[#c9a855] text-black'
               : overallProgress >= 50
                 ? 'bg-[#c9a855] text-black'
                 : 'border border-white/20 text-neutral-400 hover:border-white/40'
           }`}
+          style={
+            overallProgress >= 100
+              ? { boxShadow: '0 0 20px rgba(201,168,85,0.4), 0 0 40px rgba(201,168,85,0.2)' }
+              : undefined
+          }
           aria-label="Finish workout"
         >
-          {overallProgress >= 100 ? 'Finish Workout!' : 'Finish Workout'}
+          {overallProgress >= 100 ? 'Finish Workout' : 'Finish'}
         </button>
       </div>
 
@@ -1614,48 +1844,58 @@ export default function WorkoutExecution() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="overflow-y-auto p-2">
-                {session.exercises.map((ex, i) => (
-                  <button
-                    key={i}
-                    onClick={() => goToExercise(i)}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors ${
-                      i === currentExerciseIndex ? 'bg-[#c9a855]/10' : 'hover:bg-white/5'
-                    }`}
-                    aria-label={`Go to ${ex.exerciseName}`}
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-none text-xs font-bold ${
-                        ex.status === 'completed'
-                          ? 'bg-green-500 text-white'
-                          : i === currentExerciseIndex
-                            ? 'bg-[#c9a855] text-black'
-                            : 'bg-white/10 text-neutral-500'
+              <div className="overflow-y-auto p-2 space-y-1">
+                {session.exercises.map((ex, i) => {
+                  const completedCount = ex.sets.filter((s) => s.completed).length;
+                  const pct = Math.round((completedCount / ex.sets.length) * 100);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => goToExercise(i)}
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-colors ${
+                        i === currentExerciseIndex ? 'bg-[#c9a855]/10' : 'hover:bg-white/5'
                       }`}
+                      aria-label={`Go to ${ex.exerciseName}`}
                     >
-                      {ex.status === 'completed' ? (
-                        <Check className="w-4 h-4" strokeWidth={3} />
-                      ) : (
-                        i + 1
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-sm font-medium truncate ${
-                          ex.status === 'completed' ? 'text-neutral-500' : 'text-white'
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center flex-none text-xs font-bold ${
+                          ex.status === 'completed'
+                            ? 'bg-green-500 text-white'
+                            : i === currentExerciseIndex
+                              ? 'bg-[#c9a855] text-black'
+                              : 'bg-white/10 text-neutral-500'
                         }`}
                       >
-                        {ex.exerciseName}
-                      </p>
-                      <p className="text-xs text-neutral-600">
-                        {ex.sets.filter((s) => s.completed).length}/{ex.sets.length} sets
-                      </p>
-                    </div>
-                    {i === currentExerciseIndex && (
-                      <ChevronRight className="w-4 h-4 text-[#c9a855] flex-none" />
-                    )}
-                  </button>
-                ))}
+                        {ex.status === 'completed' ? (
+                          <Check className="w-4 h-4" strokeWidth={3} />
+                        ) : (
+                          i + 1
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full flex-none ${getMuscleColor(ex.muscleGroup)}`}
+                          />
+                          <p
+                            className={`text-sm font-medium truncate ${
+                              ex.status === 'completed' ? 'text-neutral-500' : 'text-white'
+                            }`}
+                          >
+                            {ex.exerciseName}
+                          </p>
+                        </div>
+                        <p className="text-xs text-neutral-600 ml-4">
+                          {completedCount}/{ex.sets.length} sets
+                          {pct > 0 && pct < 100 ? ` · ${pct}%` : ''}
+                        </p>
+                      </div>
+                      {i === currentExerciseIndex && (
+                        <ChevronRight className="w-4 h-4 text-[#c9a855] flex-none" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </motion.div>
           </>
