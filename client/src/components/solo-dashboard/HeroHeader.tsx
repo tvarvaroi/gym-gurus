@@ -122,9 +122,9 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
   }
 
   return (
-    <motion.div {...animProps} className="pt-4">
-      <div className="flex flex-col-reverse md:flex-row items-center md:items-start gap-8">
-        {/* Left — Greeting, Name, Subtitle, Stats */}
+    <motion.div {...animProps} className="relative pt-4" style={{ overflow: 'visible' }}>
+      <div className="relative flex flex-col md:flex-row items-end md:items-start gap-6">
+        {/* Left Column — Greeting, Name, Subtitle, Stats */}
         <div className="flex-1 w-full text-center md:text-left">
           <p className="text-sm uppercase tracking-widest text-muted-foreground font-medium mb-2">
             {greeting}
@@ -165,30 +165,32 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
           </div>
         </div>
 
-        {/* Right — Profile Photo */}
-        <div className="relative flex-shrink-0">
-          {/* Ambient glow behind photo */}
-          <div
-            className="absolute inset-[-20px] blur-[50px] opacity-20"
-            style={{
-              background: 'radial-gradient(circle, hsl(var(--primary) / 0.7) 0%, transparent 60%)',
-            }}
-          />
-
+        {/* Right Column — Profile Photo (tall, dramatic) */}
+        <div className="relative flex-shrink-0 self-stretch flex items-end justify-center md:justify-end">
           {user?.profileImageUrl ? (
             <label className="relative cursor-pointer group block">
+              {/* Ambient glow behind photo */}
+              <div
+                className="absolute inset-[-30px] blur-[60px] opacity-20"
+                style={{
+                  background:
+                    'radial-gradient(circle, hsl(var(--primary) / 0.7) 0%, transparent 60%)',
+                }}
+              />
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative w-28 h-28 md:w-44 md:h-44 object-contain drop-shadow-2xl"
+                className="relative h-[200px] md:h-[340px] w-auto max-w-[280px] object-contain"
                 style={{
-                  filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.5))',
+                  filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
+                  marginBottom: '-24px',
                 }}
               />
               {/* Hover overlay */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="bg-black/50 rounded-full p-2.5 backdrop-blur-sm">
-                  <Camera className="w-4 h-4 text-white" />
+              <div className="absolute inset-0 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="bg-black/50 rounded-full px-3 py-1.5 backdrop-blur-sm flex items-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5 text-white" />
+                  <span className="text-xs text-white">Change</span>
                 </div>
               </div>
               <input
@@ -201,10 +203,14 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
 
               {/* Processing overlay */}
               {uploading && (
-                <div className="absolute inset-0 rounded-2xl bg-black/70 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
-                  <span className="text-xs text-white/80 font-medium">Removing background...</span>
-                  <span className="text-[10px] text-white/40 mt-1">This may take a moment</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                  <div className="bg-black/70 rounded-2xl px-6 py-4 backdrop-blur-sm flex flex-col items-center">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
+                    <span className="text-xs text-white/80 font-medium">
+                      Removing background...
+                    </span>
+                    <span className="text-[10px] text-white/40 mt-1">This may take a moment</span>
+                  </div>
                 </div>
               )}
             </label>
