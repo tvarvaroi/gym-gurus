@@ -169,7 +169,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
 
         {/* Photo — absolutely positioned, overflows downward */}
         {hasPhoto ? (
-          <div className="absolute right-0 bottom-0 translate-y-[40%] z-10 hidden md:block">
+          <div className="absolute -right-2 md:-right-4 bottom-0 translate-y-[40%] z-0 hidden md:block">
             <label className="relative cursor-pointer group block">
               {/* Ambient glow */}
               <div

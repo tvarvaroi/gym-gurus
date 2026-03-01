@@ -68,7 +68,9 @@ export function SoloDashboard() {
         fitnessProfile={data.fitnessProfile}
       />
 
-      <TodaysActionZone />
+      <div className="mt-16 md:mt-20 relative z-10">
+        <TodaysActionZone />
+      </div>
 
       <WeeklyOverview
         stats={data.soloStats}
