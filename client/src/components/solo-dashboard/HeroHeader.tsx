@@ -44,7 +44,13 @@ async function resizeImage(file: File, maxSize = 1024): Promise<Blob> {
       );
     };
     img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = URL.createObjectURL(file);
+    // Use data: URL instead of blob: URL to comply with CSP
+    const reader = new FileReader();
+    reader.onload = () => {
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
   });
 }
 
