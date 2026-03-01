@@ -127,7 +127,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
     <motion.div {...animProps} className="relative pt-4" style={{ overflow: 'visible' }}>
       <div className="relative">
         {/* Left column — determines section height */}
-        <div className={`text-center md:text-left ${hasPhoto ? 'pr-0 md:pr-[280px]' : ''}`}>
+        <div className={`text-center md:text-left ${hasPhoto ? 'pr-0 md:pr-[220px]' : ''}`}>
           <p className="text-sm uppercase tracking-widest text-muted-foreground font-medium mb-2">
             {greeting}
           </p>
@@ -169,7 +169,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
 
         {/* Photo — absolutely positioned, overflows downward */}
         {hasPhoto ? (
-          <div className="absolute -right-14 md:-right-20 bottom-0 translate-y-[15%] z-0 hidden md:block">
+          <div className="absolute right-0 bottom-0 translate-y-[15%] z-0 hidden md:block">
             <label className="relative cursor-pointer group block">
               {/* Ambient glow */}
               <div
@@ -182,7 +182,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative h-[215px] md:h-[275px] w-auto object-contain"
+                className="relative h-[210px] md:h-[270px] w-auto object-contain"
                 style={{
                   filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
                 }}
