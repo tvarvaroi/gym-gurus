@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User as UserIcon, Camera, Loader2 } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getXpToNextLevel } from '@/lib/constants/xpRewards';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -28,12 +27,26 @@ function getMotivationalSubtitle(gamification: any, fitnessProfile: any): string
   return 'Ready to train?';
 }
 
+async function resizeImage(file: File, maxSize = 800): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+      canvas.width = img.width * ratio;
+      canvas.height = img.height * ratio;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.85);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderProps) {
   const prefersReducedMotion = useReducedMotion();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   const greeting = getGreeting();
   const subtitle = getMotivationalSubtitle(gamification, fitnessProfile);
@@ -64,30 +77,11 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
-    setProgress(0);
-
-    let blobToUpload: Blob = file;
-    let bgRemoved = false;
-
     try {
-      // Try background removal
-      const { removeBackground } = await import('@imgly/background-removal');
-      const processedBlob = await removeBackground(file, {
-        progress: (_key: string, current: number, total: number) => {
-          setProgress(Math.round((current / total) * 100));
-        },
-      });
-      blobToUpload = processedBlob;
-      bgRemoved = true;
-    } catch (bgError) {
-      console.warn('Background removal unavailable, uploading original:', bgError);
-    }
+      const resized = await resizeImage(file, 800);
 
-    try {
-      // Upload the image (processed or original)
       const formData = new FormData();
-      formData.append('image', blobToUpload, bgRemoved ? 'profile.png' : file.name);
+      formData.append('image', resized, 'profile.jpg');
 
       const response = await fetch('/api/settings/profile-image-upload', {
         method: 'POST',
@@ -97,36 +91,20 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
 
       if (!response.ok) throw new Error('Upload failed');
 
-      // Refresh user data
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
 
-      toast({
-        title: bgRemoved ? 'Photo updated!' : 'Photo updated (without background removal)',
-        description: bgRemoved
-          ? 'Background removed successfully.'
-          : 'Background removal was unavailable.',
-      });
-    } catch (uploadError) {
-      console.error('Photo upload failed:', uploadError);
+      toast({ title: 'Photo updated!' });
+    } catch (error) {
+      console.error('Upload failed:', error);
       toast({
         title: 'Failed to upload photo',
         description: 'Please try again later.',
         variant: 'destructive',
       });
     } finally {
-      setUploading(false);
-      setProgress(0);
-      // Reset file input so same file can be re-selected
       e.target.value = '';
     }
   }
-
-  // Detect if photo is a processed PNG (transparent bg)
-  const hasProcessedPhoto =
-    user?.profileImageUrl &&
-    (user.profileImageUrl.includes('.webp') ||
-      user.profileImageUrl.includes('.png') ||
-      user.profileImageUrl.startsWith('data:'));
 
   return (
     <motion.div {...animProps} className="pt-4">
@@ -172,69 +150,43 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
           </div>
         </div>
 
-        {/* Right — Profile Photo (clickable for upload) */}
-        <div className="flex-shrink-0">
-          <label className="relative cursor-pointer group block">
-            {user?.profileImageUrl ? (
-              <>
-                <div className="relative">
-                  {/* Subtle glow behind photo */}
-                  <div
-                    className="absolute inset-0 blur-[50px] opacity-20"
-                    style={{
-                      background:
-                        'radial-gradient(circle, hsl(var(--primary) / 0.6) 0%, transparent 70%)',
-                    }}
-                  />
-                  <img
-                    src={user.profileImageUrl}
-                    alt={user.firstName || 'Profile'}
-                    className={`relative w-[100px] h-[100px] md:w-[180px] md:h-[180px] ${
-                      hasProcessedPhoto
-                        ? 'object-contain'
-                        : 'rounded-full object-cover border-2 border-primary/40'
-                    }`}
-                  />
-                </div>
-                {/* Hover overlay */}
-                <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
-                  <div className="opacity-0 group-hover:opacity-100 text-center transition-opacity">
-                    <Camera className="w-6 h-6 text-white mx-auto mb-1" />
-                    <span className="text-xs text-white font-medium">Change</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="w-[100px] h-[100px] md:w-[180px] md:h-[180px] rounded-full border-2 border-dashed border-primary/40 flex flex-col items-center justify-center gap-1 hover:border-primary/60 transition-colors">
-                <Camera className="w-8 h-8 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">Upload</span>
-              </div>
-            )}
+        {/* Right — Profile Photo */}
+        <div className="relative flex-shrink-0">
+          {/* Glow behind photo */}
+          <div
+            className="absolute inset-0 blur-[40px] opacity-25 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, hsl(var(--primary) / 0.6) 0%, transparent 60%)',
+            }}
+          />
 
-            {/* Upload progress overlay */}
-            {uploading && (
-              <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center z-10">
-                <Loader2 className="w-6 h-6 text-white animate-spin mb-2" />
-                <span className="text-xs text-white font-medium">
-                  {progress < 50 ? 'Loading AI...' : 'Removing background...'}
+          {user?.profileImageUrl ? (
+            <label className="relative cursor-pointer group block">
+              <img
+                src={user.profileImageUrl}
+                alt={user.firstName || 'Profile'}
+                className="relative w-28 h-28 md:w-44 md:h-44 rounded-2xl object-cover hero-photo-cutout"
+              />
+              {/* Hover overlay */}
+              <div className="absolute inset-0 rounded-2xl bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
+                <div className="opacity-0 group-hover:opacity-100 text-center transition-opacity">
+                  <Camera className="w-5 h-5 text-white mx-auto mb-1" />
+                  <span className="text-[10px] text-white/80">Change</span>
+                </div>
+              </div>
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            </label>
+          ) : (
+            <label className="relative cursor-pointer group block">
+              <div className="w-28 h-28 md:w-44 md:h-44 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-colors">
+                <Camera className="w-7 h-7 text-muted-foreground/40" />
+                <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
+                  Upload
                 </span>
-                <div className="w-16 h-1 bg-white/20 rounded-full mt-1.5 overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
               </div>
-            )}
-
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotoUpload}
-              disabled={uploading}
-            />
-          </label>
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            </label>
+          )}
         </div>
       </div>
     </motion.div>

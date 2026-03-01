@@ -364,6 +364,22 @@
  */
 @layer utilities {
 
+  /* Hero photo cutout — soft elliptical fade into dark background */
+  .hero-photo-cutout {
+    mask-image: radial-gradient(
+      ellipse 80% 85% at 50% 40%,
+      black 55%,
+      rgba(0, 0, 0, 0.6) 70%,
+      transparent 100%
+    );
+    -webkit-mask-image: radial-gradient(
+      ellipse 80% 85% at 50% 40%,
+      black 55%,
+      rgba(0, 0, 0, 0.6) 70%,
+      transparent 100%
+    );
+  }
+
   /* Hide ugly search cancel button in Chrome until we can style it properly */
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
