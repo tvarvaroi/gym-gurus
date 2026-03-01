@@ -168,24 +168,24 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
   );
 }
 
-// Helper: workout type → color-coded left border class
-function getTypeColor(type: string | null): string {
+// Helper: workout type → color-coded background class
+function getTypeBgColor(type: string | null): string {
   switch (type?.toLowerCase()) {
     case 'push':
-      return 'border-red-500/60';
+      return 'bg-red-500/60';
     case 'pull':
-      return 'border-blue-500/60';
+      return 'bg-blue-500/60';
     case 'legs':
-      return 'border-green-500/60';
+      return 'bg-green-500/60';
     case 'upper':
-      return 'border-amber-500/60';
+      return 'bg-amber-500/60';
     case 'lower':
-      return 'border-teal-500/60';
+      return 'bg-teal-500/60';
     case 'full':
     case 'full_body':
-      return 'border-purple-500/60';
+      return 'bg-purple-500/60';
     default:
-      return 'border-primary/40';
+      return 'bg-primary/40';
   }
 }
 
@@ -206,7 +206,7 @@ function formatCompactDuration(mins: number): string {
   return m > 0 ? `${h}h${m}` : `${h}h`;
 }
 
-// Weekly Training Log — data-dense 7-column day cards
+// Weekly Training Log — full-height data-dense 7-column day cards
 function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
   const prefersReducedMotion = useReducedMotion();
   const richDays: any[] = weeklyActivity?.richDays || [];
@@ -239,109 +239,169 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
       };
 
   return (
-    <motion.div {...animProps} className="bg-card rounded-2xl p-4 border border-border/20">
+    <motion.div
+      {...animProps}
+      className="bg-card rounded-2xl p-5 md:p-6 border border-border/20 h-full flex flex-col"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-[11px] uppercase tracking-widest text-muted-foreground/50 font-medium">
           This Week
-        </p>
-        {weekSummary && weekSummary.totalVolume > 0 && (
-          <div className="flex items-center gap-3 text-[10px] text-muted-foreground/50 tabular-nums">
-            <span>{formatVolume(weekSummary.totalVolume)} kg</span>
-            <span>{weekSummary.totalSets}s</span>
-            <span>{weekSummary.totalDuration}m</span>
-          </div>
-        )}
+        </span>
+        <span className="text-xs text-muted-foreground/40 tabular-nums">
+          {totalWorkouts} workout{totalWorkouts === 1 ? '' : 's'}
+        </span>
       </div>
 
-      {/* 7-column day grid — horizontal scroll on mobile */}
-      <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-        <div className="flex md:grid md:grid-cols-7 gap-1.5 min-w-max md:min-w-0">
+      {/* Day columns — takes ALL remaining space */}
+      <div className="flex-1 overflow-x-auto -mx-5 px-5 md:-mx-6 md:px-6">
+        <div className="flex md:grid md:grid-cols-7 gap-1 h-full min-w-max md:min-w-0">
           {Array.from({ length: 7 }).map((_, i) => {
             const richDay = richDays[i];
             const dayName = richDay?.day || dayNames[i];
             const status = richDay?.status || 'rest';
             const sessions: any[] = richDay?.sessions || [];
             const isToday = i === todayIndex;
+            const hasWorkout = status === 'completed' && sessions.length > 0;
             const primarySession = sessions[0];
 
             return (
               <div
                 key={i}
-                className={`rounded-xl p-2 min-h-[120px] min-w-[60px] flex-shrink-0 md:min-w-0 md:flex-shrink flex flex-col ${
-                  isToday ? 'bg-primary/5 ring-1 ring-primary/20' : 'bg-muted/5'
+                className={`rounded-xl p-2 min-w-[64px] flex-shrink-0 md:min-w-0 md:flex-shrink flex flex-col items-center ${
+                  isToday
+                    ? 'bg-primary/10 ring-1 ring-primary/30'
+                    : hasWorkout
+                      ? 'bg-white/[0.03] border border-white/[0.06]'
+                      : ''
                 }`}
               >
-                {/* Day header */}
-                <div className="text-center mb-1.5">
-                  <span
-                    className={`text-[10px] uppercase tracking-wider block ${
-                      isToday ? 'font-bold text-primary' : 'text-muted-foreground/50'
-                    }`}
-                  >
-                    {dayName}
-                  </span>
-                  <span
-                    className={`text-xs tabular-nums ${
-                      isToday ? 'font-bold' : 'text-muted-foreground/70'
-                    }`}
-                  >
-                    {weekDates[i]}
-                  </span>
-                </div>
+                {/* Day name */}
+                <span
+                  className={`text-[11px] uppercase tracking-wider ${
+                    isToday ? 'text-primary font-bold' : 'text-muted-foreground/40'
+                  }`}
+                >
+                  {dayName}
+                </span>
 
-                {/* Content */}
-                {status === 'completed' && primarySession ? (
-                  <div
-                    className={`flex-1 border-l-2 ${getTypeColor(primarySession.workoutType)} pl-1.5 space-y-0.5`}
-                  >
-                    <p className="text-[10px] font-medium truncate">
-                      {abbreviateWorkoutName(primarySession.workoutName)}
-                    </p>
-                    {primarySession.volume > 0 && (
-                      <p className="text-[9px] text-muted-foreground/50 tabular-nums">
-                        {formatVolume(primarySession.volume)} kg
-                      </p>
-                    )}
-                    {primarySession.duration != null && primarySession.duration > 0 && (
-                      <p className="text-[9px] text-muted-foreground/40 tabular-nums">
-                        {formatCompactDuration(primarySession.duration)}
-                      </p>
-                    )}
-                    {(primarySession.sets || primarySession.reps) && (
-                      <p className="text-[9px] text-muted-foreground/40 tabular-nums">
-                        {primarySession.sets || 0}s/{primarySession.reps || 0}r
-                      </p>
-                    )}
-                    {sessions.length > 1 && (
-                      <p className="text-[8px] text-primary/60 mt-0.5">
-                        +{sessions.length - 1} more
-                      </p>
-                    )}
-                  </div>
-                ) : isToday && status === 'today_pending' ? (
-                  <div className="flex-1 flex flex-col items-center justify-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse mb-1" />
-                    <span className="text-[9px] text-primary/60">Today</span>
-                  </div>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center">
-                    <span className="text-[9px] text-muted-foreground/20">Rest</span>
-                  </div>
-                )}
+                {/* Date — large */}
+                <span
+                  className={`text-lg font-bold mt-1 tabular-nums ${
+                    isToday
+                      ? 'text-primary'
+                      : hasWorkout
+                        ? 'text-foreground'
+                        : 'text-muted-foreground/20'
+                  }`}
+                >
+                  {weekDates[i]}
+                </span>
+
+                {/* Spacer + content fills remaining vertical space */}
+                <div className="flex-1 flex flex-col justify-center w-full mt-2">
+                  {hasWorkout && primarySession ? (
+                    <>
+                      {/* Color bar for workout type */}
+                      <div
+                        className={`h-1.5 rounded-full w-full mb-2 ${getTypeBgColor(primarySession.workoutType)}`}
+                      />
+
+                      {/* Workout name */}
+                      <span className="text-xs font-medium text-foreground/80 text-center leading-tight">
+                        {abbreviateWorkoutName(primarySession.workoutName)}
+                      </span>
+
+                      {/* Volume — hero number */}
+                      {primarySession.volume > 0 && (
+                        <>
+                          <span className="text-sm font-bold text-foreground text-center mt-1 tabular-nums">
+                            {formatVolume(primarySession.volume)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground/30 text-center">
+                            kg
+                          </span>
+                        </>
+                      )}
+
+                      {/* Duration */}
+                      {primarySession.duration != null && primarySession.duration > 0 && (
+                        <span className="text-xs text-muted-foreground/50 text-center mt-1">
+                          {primarySession.duration} min
+                        </span>
+                      )}
+
+                      {/* Sets x Reps */}
+                      {(primarySession.sets || primarySession.reps) && (
+                        <span className="text-[11px] text-muted-foreground/35 text-center mt-0.5 tabular-nums">
+                          {primarySession.sets || 0} sets &middot; {primarySession.reps || 0} reps
+                        </span>
+                      )}
+
+                      {/* Multiple sessions indicator */}
+                      {sessions.length > 1 && (
+                        <span className="text-[11px] text-primary/50 text-center mt-1 font-medium">
+                          +{sessions.length - 1} more
+                        </span>
+                      )}
+                    </>
+                  ) : isToday && status === 'today_pending' ? (
+                    <div className="flex flex-col items-center">
+                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse mb-1" />
+                      <span className="text-xs text-primary/40">Planned</span>
+                    </div>
+                  ) : status === 'planned' ? (
+                    <span className="text-xs text-muted-foreground/25 text-center">Planned</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground/15 text-center">Rest</span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Empty week motivational state */}
-      {!hasAnyWorkouts && (
-        <div className="text-center mt-3 pt-3 border-t border-border/10">
-          <p className="text-xs text-muted-foreground/50">
-            No workouts this week yet — start one to fill this board!
-          </p>
+      {/* Week summary — bottom bar */}
+      {weekSummary && weekSummary.totalVolume > 0 ? (
+        <div className="mt-4 pt-3 border-t border-border/10">
+          <div className="grid grid-cols-5 gap-1">
+            <div className="text-center">
+              <span className="text-base font-bold tabular-nums">{totalWorkouts}</span>
+              <span className="text-[10px] text-muted-foreground/30 block">sessions</span>
+            </div>
+            <div className="text-center">
+              <span className="text-base font-bold tabular-nums">{weekSummary.totalSets || 0}</span>
+              <span className="text-[10px] text-muted-foreground/30 block">sets</span>
+            </div>
+            <div className="text-center">
+              <span className="text-base font-bold tabular-nums">
+                {formatVolume(weekSummary.totalVolume)}
+              </span>
+              <span className="text-[10px] text-muted-foreground/30 block">kg vol</span>
+            </div>
+            <div className="text-center">
+              <span className="text-base font-bold tabular-nums">
+                {weekSummary.totalDuration || 0}
+              </span>
+              <span className="text-[10px] text-muted-foreground/30 block">min</span>
+            </div>
+            <div className="text-center">
+              <span className="text-base font-bold tabular-nums">
+                {weekSummary.avgRPE || '\u2014'}
+              </span>
+              <span className="text-[10px] text-muted-foreground/30 block">RPE</span>
+            </div>
+          </div>
         </div>
+      ) : (
+        !hasAnyWorkouts && (
+          <div className="mt-4 pt-3 border-t border-border/10 text-center">
+            <p className="text-xs text-muted-foreground/50">
+              No workouts this week yet — start one to fill this board!
+            </p>
+          </div>
+        )
       )}
     </motion.div>
   );
@@ -351,24 +411,33 @@ function WeeklyOverviewSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
       <div className="bg-card rounded-2xl p-6 border border-border/20 h-28" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
         <div className="bg-card rounded-2xl p-4 border border-border/20 h-[320px]" />
-        <div className="bg-card rounded-2xl p-4 border border-border/20">
-          <div className="h-3 w-20 bg-muted rounded mb-3" />
-          <div className="grid grid-cols-7 gap-1.5">
+        <div className="bg-card rounded-2xl p-5 md:p-6 border border-border/20 h-full flex flex-col">
+          <div className="h-3 w-20 bg-muted rounded mb-4" />
+          <div className="flex-1 grid grid-cols-7 gap-1">
             {[...Array(7)].map((_, i) => (
-              <div
-                key={i}
-                className="rounded-xl bg-muted/30 p-2 min-h-[120px] flex flex-col gap-1.5"
-              >
-                <div className="h-3 w-6 bg-muted rounded mx-auto" />
-                <div className="h-3 w-4 bg-muted rounded mx-auto" />
-                <div className="flex-1 space-y-1 mt-1">
-                  <div className="h-2 w-full bg-muted rounded" />
-                  <div className="h-2 w-3/4 bg-muted rounded" />
+              <div key={i} className="rounded-xl bg-muted/30 p-2 flex flex-col items-center gap-2">
+                <div className="h-3 w-6 bg-muted rounded" />
+                <div className="h-5 w-5 bg-muted rounded" />
+                <div className="flex-1 w-full space-y-1.5 mt-1">
+                  <div className="h-1.5 w-full bg-muted rounded-full" />
+                  <div className="h-3 w-full bg-muted rounded" />
+                  <div className="h-4 w-3/4 bg-muted rounded mx-auto" />
+                  <div className="h-3 w-full bg-muted rounded" />
                 </div>
               </div>
             ))}
+          </div>
+          <div className="mt-4 pt-3 border-t border-border/10">
+            <div className="grid grid-cols-5 gap-1">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-1">
+                  <div className="h-4 w-6 bg-muted rounded" />
+                  <div className="h-2 w-8 bg-muted rounded" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -401,7 +470,7 @@ export function WeeklyOverview({
         totalPRs={totalPRs}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
         {weeklyData && weeklyData.length > 0 ? (
           <VolumeChart weeklyData={weeklyData} />
         ) : (
