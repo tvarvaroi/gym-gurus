@@ -121,11 +121,13 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
     }
   }
 
+  const hasPhoto = !!user?.profileImageUrl;
+
   return (
     <motion.div {...animProps} className="relative pt-4" style={{ overflow: 'visible' }}>
-      <div className="relative flex flex-col md:flex-row items-end md:items-start gap-6">
-        {/* Left Column — Greeting, Name, Subtitle, Stats */}
-        <div className="flex-1 w-full text-center md:text-left">
+      <div className="relative">
+        {/* Left column — determines section height */}
+        <div className={`text-center md:text-left ${hasPhoto ? 'pr-0 md:pr-[280px]' : ''}`}>
           <p className="text-sm uppercase tracking-widest text-muted-foreground font-medium mb-2">
             {greeting}
           </p>
@@ -165,11 +167,11 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
           </div>
         </div>
 
-        {/* Right Column — Profile Photo (tall, dramatic) */}
-        <div className="relative flex-shrink-0 self-stretch flex items-end justify-center md:justify-end">
-          {user?.profileImageUrl ? (
+        {/* Photo — absolutely positioned, overflows downward */}
+        {hasPhoto ? (
+          <div className="absolute right-0 bottom-0 translate-y-[40%] z-10 hidden md:block">
             <label className="relative cursor-pointer group block">
-              {/* Ambient glow behind photo */}
+              {/* Ambient glow */}
               <div
                 className="absolute inset-[-30px] blur-[60px] opacity-20"
                 style={{
@@ -180,10 +182,9 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative h-[200px] md:h-[340px] w-auto max-w-[280px] object-contain"
+                className="relative h-[300px] md:h-[380px] w-auto object-contain"
                 style={{
                   filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
-                  marginBottom: '-24px',
                 }}
               />
               {/* Hover overlay */}
@@ -214,9 +215,11 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
                 </div>
               )}
             </label>
-          ) : (
+          </div>
+        ) : (
+          <div className="absolute right-0 top-0 hidden md:block">
             <label className="relative cursor-pointer group block">
-              <div className="w-28 h-28 md:w-44 md:h-44 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-colors">
+              <div className="w-44 h-44 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-colors">
                 <Camera className="w-7 h-7 text-muted-foreground/40" />
                 <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
                   Upload
@@ -239,9 +242,57 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
                 </div>
               )}
             </label>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* Mobile photo — normal flow, centered above text */}
+      {hasPhoto && (
+        <div className="flex justify-center mb-4 md:hidden">
+          <label className="relative cursor-pointer group block">
+            <img
+              src={user.profileImageUrl}
+              alt={user.firstName || 'Profile'}
+              className="h-[200px] w-auto object-contain"
+              style={{
+                filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
+              }}
+            />
+            <div className="absolute inset-0 flex items-end justify-center pb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="bg-black/50 rounded-full px-3 py-1.5 backdrop-blur-sm flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5 text-white" />
+                <span className="text-xs text-white">Change</span>
+              </div>
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+              disabled={uploading}
+            />
+          </label>
+        </div>
+      )}
+      {!hasPhoto && (
+        <div className="flex justify-center mb-4 md:hidden">
+          <label className="relative cursor-pointer group block">
+            <div className="w-28 h-28 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-colors">
+              <Camera className="w-7 h-7 text-muted-foreground/40" />
+              <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
+                Upload
+              </span>
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+              disabled={uploading}
+            />
+          </label>
+        </div>
+      )}
     </motion.div>
   );
 }
