@@ -169,7 +169,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
 
         {/* Photo — absolutely positioned, overflows downward */}
         {hasPhoto ? (
-          <div className="absolute -right-2 md:-right-4 bottom-0 translate-y-[40%] z-0 hidden md:block">
+          <div className="absolute -right-6 md:-right-10 bottom-0 translate-y-[40%] z-0 hidden md:block">
             <label className="relative cursor-pointer group block">
               {/* Ambient glow */}
               <div
@@ -182,7 +182,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative h-[300px] md:h-[380px] w-auto object-contain"
+                className="relative h-[240px] md:h-[300px] w-auto object-contain"
                 style={{
                   filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
                 }}
