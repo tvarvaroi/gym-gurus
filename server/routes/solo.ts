@@ -261,28 +261,74 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
       dayPatterns[freq].forEach((d) => plannedDayIndices.add(d));
     }
 
-    // Build activity array for each day (Mon-Sun)
+    // Build per-session arrays grouped by date
     const activity: boolean[] = [];
-    const sessionsByDate = new Map<
-      string,
-      { workoutType: string | null; workoutName: string | null; volume: number }
-    >();
+    interface SessionDetail {
+      workoutName: string | null;
+      workoutType: string | null;
+      duration: number | null;
+      sets: number | null;
+      reps: number | null;
+      volume: number;
+      rpe: number | null;
+      startedAt: string;
+      endedAt: string | null;
+    }
+    const sessionsByDate = new Map<string, SessionDetail[]>();
     const todayStr = format(today, 'yyyy-MM-dd');
+
+    // Week summary accumulators
+    let summaryVolume = 0;
+    let summarySets = 0;
+    let summaryReps = 0;
+    let summaryDuration = 0;
+    let summaryRpeSum = 0;
+    let summaryRpeCount = 0;
+    const completedDateSet = new Set<string>();
 
     sessions.forEach((session) => {
       const dateKey = format(session.startedAt, 'yyyy-MM-dd');
       const vol = session.totalVolumeKg ? parseFloat(String(session.totalVolumeKg)) : 0;
-      const existing = sessionsByDate.get(dateKey);
-      if (existing) {
-        existing.volume += vol;
+
+      const detail: SessionDetail = {
+        workoutName: session.workoutName || null,
+        workoutType: session.workoutType || null,
+        duration: session.actualDurationMinutes || null,
+        sets: session.totalSets || null,
+        reps: session.totalReps || null,
+        volume: Math.round(vol),
+        rpe: session.perceivedExertion || null,
+        startedAt: session.startedAt.toISOString(),
+        endedAt: session.endedAt ? session.endedAt.toISOString() : null,
+      };
+
+      const arr = sessionsByDate.get(dateKey);
+      if (arr) {
+        arr.push(detail);
       } else {
-        sessionsByDate.set(dateKey, {
-          workoutType: session.workoutType || null,
-          workoutName: session.workoutName || null,
-          volume: vol,
-        });
+        sessionsByDate.set(dateKey, [detail]);
       }
+
+      // Accumulate week summary
+      summaryVolume += vol;
+      summarySets += session.totalSets || 0;
+      summaryReps += session.totalReps || 0;
+      summaryDuration += session.actualDurationMinutes || 0;
+      if (session.perceivedExertion) {
+        summaryRpeSum += session.perceivedExertion;
+        summaryRpeCount++;
+      }
+      completedDateSet.add(dateKey);
     });
+
+    const weekSummary = {
+      totalVolume: Math.round(summaryVolume),
+      totalSets: summarySets,
+      totalReps: summaryReps,
+      totalDuration: summaryDuration,
+      avgRPE: summaryRpeCount > 0 ? parseFloat((summaryRpeSum / summaryRpeCount).toFixed(1)) : null,
+      completedDays: completedDateSet.size,
+    };
 
     // Build rich day status array
     const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -290,8 +336,8 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
     for (let i = 0; i < 7; i++) {
       const date = addDays(weekStart, i);
       const dateKey = format(date, 'yyyy-MM-dd');
-      const sessionInfo = sessionsByDate.get(dateKey);
-      const hasSession = !!sessionInfo;
+      const daySessions = sessionsByDate.get(dateKey) || [];
+      const hasSession = daySessions.length > 0;
       const isPlanned = plannedDayIndices.has(i);
       const isToday = dateKey === todayStr;
       const isFuture = date > today;
@@ -307,10 +353,12 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
         day: dayNames[i],
         date: dateKey,
         status,
-        ...(sessionInfo && {
-          workoutType: sessionInfo.workoutType,
-          workoutName: sessionInfo.workoutName,
-          volume: Math.round(sessionInfo.volume),
+        sessions: daySessions,
+        // Backward compat: keep flat fields from first session
+        ...(hasSession && {
+          workoutType: daySessions[0].workoutType,
+          workoutName: daySessions[0].workoutName,
+          volume: daySessions.reduce((sum, s) => sum + s.volume, 0),
         }),
       });
     }
@@ -323,6 +371,7 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
       richDays,
       totalWorkouts: sessions.length,
       totalPlanned: plannedDayIndices.size,
+      weekSummary,
     });
   } catch (error) {
     console.error('Error getting weekly activity:', error);

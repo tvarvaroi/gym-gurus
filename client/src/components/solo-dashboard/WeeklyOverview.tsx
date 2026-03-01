@@ -168,18 +168,51 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
   );
 }
 
-// Calendar Strip — clean bar indicators
-function CalendarStrip({ weeklyActivity }: { weeklyActivity: any }) {
+// Helper: workout type → color-coded left border class
+function getTypeColor(type: string | null): string {
+  switch (type?.toLowerCase()) {
+    case 'push':
+      return 'border-red-500/60';
+    case 'pull':
+      return 'border-blue-500/60';
+    case 'legs':
+      return 'border-green-500/60';
+    case 'upper':
+      return 'border-amber-500/60';
+    case 'lower':
+      return 'border-teal-500/60';
+    case 'full':
+    case 'full_body':
+      return 'border-purple-500/60';
+    default:
+      return 'border-primary/40';
+  }
+}
+
+// Helper: truncate workout name to fit small cards
+function abbreviateWorkoutName(name: string | null): string {
+  if (!name) return 'Workout';
+  const words = name.split(' ');
+  if (words.length <= 2 && name.length <= 12) return name;
+  const short = words.slice(0, 2).join(' ');
+  return short.length > 12 ? short.slice(0, 11) + '\u2026' : short;
+}
+
+// Helper: compact duration display
+function formatCompactDuration(mins: number): string {
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h}h${m}` : `${h}h`;
+}
+
+// Weekly Training Log — data-dense 7-column day cards
+function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
   const prefersReducedMotion = useReducedMotion();
-  const days = weeklyActivity?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const richDays: {
-    day: string;
-    date: string;
-    status: string;
-    workoutType?: string;
-    volume?: number;
-  }[] = weeklyActivity?.richDays || [];
+  const richDays: any[] = weeklyActivity?.richDays || [];
   const totalWorkouts = weeklyActivity?.totalWorkouts || 0;
+  const weekSummary = weeklyActivity?.weekSummary;
+
   const today = new Date().getDay();
   const todayIndex = today === 0 ? 6 : today - 1;
 
@@ -194,6 +227,9 @@ function CalendarStrip({ weeklyActivity }: { weeklyActivity: any }) {
     return d.getDate();
   });
 
+  const hasAnyWorkouts = totalWorkouts > 0;
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   const animProps = prefersReducedMotion
     ? {}
     : {
@@ -204,74 +240,109 @@ function CalendarStrip({ weeklyActivity }: { weeklyActivity: any }) {
 
   return (
     <motion.div {...animProps} className="bg-card rounded-2xl p-4 border border-border/20">
-      <div className="flex items-center justify-between mb-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
           This Week
         </p>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {totalWorkouts} workout{totalWorkouts === 1 ? '' : 's'}
-        </span>
+        {weekSummary && weekSummary.totalVolume > 0 && (
+          <div className="flex items-center gap-3 text-[10px] text-muted-foreground/50 tabular-nums">
+            <span>{formatVolume(weekSummary.totalVolume)} kg</span>
+            <span>{weekSummary.totalSets}s</span>
+            <span>{weekSummary.totalDuration}m</span>
+          </div>
+        )}
       </div>
-      <div className="flex justify-between">
-        {days.map((day: string, index: number) => {
-          const richDay = richDays[index];
-          const status = richDay?.status || 'rest';
-          const isToday = index === todayIndex;
-          const workoutType = richDay?.workoutType;
-          const volume = richDay?.volume;
 
-          // Capitalize and truncate workout type (e.g. "push" → "Push")
-          const typeLabel = workoutType
-            ? workoutType.charAt(0).toUpperCase() + workoutType.slice(1, 5)
-            : null;
+      {/* 7-column day grid — horizontal scroll on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="flex md:grid md:grid-cols-7 gap-1.5 min-w-max md:min-w-0">
+          {Array.from({ length: 7 }).map((_, i) => {
+            const richDay = richDays[i];
+            const dayName = richDay?.day || dayNames[i];
+            const status = richDay?.status || 'rest';
+            const sessions: any[] = richDay?.sessions || [];
+            const isToday = i === todayIndex;
+            const primarySession = sessions[0];
 
-          return (
-            <div
-              key={day}
-              className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl min-w-0 ${
-                isToday ? 'bg-primary/5' : ''
-              }`}
-            >
-              <span
-                className={`text-[11px] uppercase tracking-wider ${
-                  isToday ? 'font-bold text-primary' : 'text-muted-foreground/60'
-                }`}
-              >
-                {day}
-              </span>
-              <span
-                className={`text-sm tabular-nums ${isToday ? 'font-bold' : 'text-muted-foreground'}`}
-              >
-                {weekDates[index]}
-              </span>
+            return (
               <div
-                className={`h-1 w-6 rounded-full ${
-                  status === 'completed'
-                    ? 'bg-green-500'
-                    : status === 'today_pending'
-                      ? 'bg-primary/40'
-                      : 'bg-transparent'
+                key={i}
+                className={`rounded-xl p-2 min-h-[120px] min-w-[60px] flex-shrink-0 md:min-w-0 md:flex-shrink flex flex-col ${
+                  isToday ? 'bg-primary/5 ring-1 ring-primary/20' : 'bg-muted/5'
                 }`}
-              />
-              {/* Workout details for completed days */}
-              {status === 'completed' && typeLabel ? (
-                <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-muted-foreground/50 truncate max-w-[40px]">
-                    {typeLabel}
+              >
+                {/* Day header */}
+                <div className="text-center mb-1.5">
+                  <span
+                    className={`text-[10px] uppercase tracking-wider block ${
+                      isToday ? 'font-bold text-primary' : 'text-muted-foreground/50'
+                    }`}
+                  >
+                    {dayName}
                   </span>
-                  {volume != null && volume > 0 && (
-                    <span className="text-[9px] text-muted-foreground/30 tabular-nums">
-                      {formatVolume(volume)}
-                    </span>
-                  )}
+                  <span
+                    className={`text-xs tabular-nums ${
+                      isToday ? 'font-bold' : 'text-muted-foreground/70'
+                    }`}
+                  >
+                    {weekDates[i]}
+                  </span>
                 </div>
-              ) : (
-                <div className="h-[26px]" />
-              )}
-            </div>
-          );
-        })}
+
+                {/* Content */}
+                {status === 'completed' && primarySession ? (
+                  <div
+                    className={`flex-1 border-l-2 ${getTypeColor(primarySession.workoutType)} pl-1.5 space-y-0.5`}
+                  >
+                    <p className="text-[10px] font-medium truncate">
+                      {abbreviateWorkoutName(primarySession.workoutName)}
+                    </p>
+                    {primarySession.volume > 0 && (
+                      <p className="text-[9px] text-muted-foreground/50 tabular-nums">
+                        {formatVolume(primarySession.volume)} kg
+                      </p>
+                    )}
+                    {primarySession.duration != null && primarySession.duration > 0 && (
+                      <p className="text-[9px] text-muted-foreground/40 tabular-nums">
+                        {formatCompactDuration(primarySession.duration)}
+                      </p>
+                    )}
+                    {(primarySession.sets || primarySession.reps) && (
+                      <p className="text-[9px] text-muted-foreground/40 tabular-nums">
+                        {primarySession.sets || 0}s/{primarySession.reps || 0}r
+                      </p>
+                    )}
+                    {sessions.length > 1 && (
+                      <p className="text-[8px] text-primary/60 mt-0.5">
+                        +{sessions.length - 1} more
+                      </p>
+                    )}
+                  </div>
+                ) : isToday && status === 'today_pending' ? (
+                  <div className="flex-1 flex flex-col items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse mb-1" />
+                    <span className="text-[9px] text-primary/60">Today</span>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center">
+                    <span className="text-[9px] text-muted-foreground/20">Rest</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Empty week motivational state */}
+      {!hasAnyWorkouts && (
+        <div className="text-center mt-3 pt-3 border-t border-border/10">
+          <p className="text-xs text-muted-foreground/50">
+            No workouts this week yet — start one to fill this board!
+          </p>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -283,13 +354,19 @@ function WeeklyOverviewSkeleton() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-card rounded-2xl p-4 border border-border/20 h-[320px]" />
         <div className="bg-card rounded-2xl p-4 border border-border/20">
-          <div className="h-4 w-24 bg-muted rounded mb-4" />
-          <div className="flex justify-between">
+          <div className="h-3 w-20 bg-muted rounded mb-3" />
+          <div className="grid grid-cols-7 gap-1.5">
             {[...Array(7)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5">
-                <div className="w-6 h-3 bg-muted rounded" />
-                <div className="w-6 h-4 bg-muted rounded" />
-                <div className="w-6 h-1 bg-muted rounded-full" />
+              <div
+                key={i}
+                className="rounded-xl bg-muted/30 p-2 min-h-[120px] flex flex-col gap-1.5"
+              >
+                <div className="h-3 w-6 bg-muted rounded mx-auto" />
+                <div className="h-3 w-4 bg-muted rounded mx-auto" />
+                <div className="flex-1 space-y-1 mt-1">
+                  <div className="h-2 w-full bg-muted rounded" />
+                  <div className="h-2 w-3/4 bg-muted rounded" />
+                </div>
               </div>
             ))}
           </div>
@@ -332,7 +409,7 @@ export function WeeklyOverview({
             <p className="text-sm text-muted-foreground">Complete workouts to see volume trends</p>
           </div>
         )}
-        <CalendarStrip weeklyActivity={weeklyActivity} />
+        <WeeklyTrainingLog weeklyActivity={weeklyActivity} />
       </div>
     </div>
   );
