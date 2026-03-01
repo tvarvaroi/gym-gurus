@@ -72,8 +72,8 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
 
     try {
       // Try background removal
-      const { default: imglyRemoveBackground } = await import('@imgly/background-removal');
-      const processedBlob = await imglyRemoveBackground(file, {
+      const { removeBackground } = await import('@imgly/background-removal');
+      const processedBlob = await removeBackground(file, {
         progress: (_key: string, current: number, total: number) => {
           setProgress(Math.round((current / total) * 100));
         },
