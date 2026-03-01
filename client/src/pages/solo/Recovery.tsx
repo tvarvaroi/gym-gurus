@@ -293,53 +293,73 @@ export default function Recovery() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {displayMuscles.map((muscle, index) => (
-                  <motion.button
-                    key={muscle.muscleGroup}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 + index * 0.05 }}
-                    onClick={() =>
-                      setSelectedMuscle(
-                        selectedMuscle === muscle.muscleGroup ? null : muscle.muscleGroup
-                      )
-                    }
-                    className={`p-4 rounded-xl border transition-all duration-300 text-left ${
-                      selectedMuscle === muscle.muscleGroup
-                        ? 'border-rose-500/50 bg-rose-500/10'
-                        : getStatusBg(muscle.recoveryStatus)
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-medium text-sm">
-                        {formatMuscleGroupName(muscle.muscleGroup)}
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${getStatusColor(muscle.recoveryStatus)} border-current/30 bg-current/10`}
-                      >
-                        {muscle.recoveryStatus}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Fatigue</span>
-                        <span>{muscle.fatigueLevel}%</span>
+                {displayMuscles.map((muscle, index) => {
+                  const neverTrained = !muscle.lastTrainedAt && muscle.fatigueLevel === 0;
+                  return (
+                    <motion.button
+                      key={muscle.muscleGroup}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.1 + index * 0.05 }}
+                      onClick={() =>
+                        setSelectedMuscle(
+                          selectedMuscle === muscle.muscleGroup ? null : muscle.muscleGroup
+                        )
+                      }
+                      className={`p-4 rounded-xl transition-all duration-300 text-left ${
+                        neverTrained
+                          ? 'border border-dashed border-border/30 opacity-60'
+                          : selectedMuscle === muscle.muscleGroup
+                            ? 'border border-rose-500/50 bg-rose-500/10'
+                            : `border ${getStatusBg(muscle.recoveryStatus)}`
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-medium text-sm">
+                          {formatMuscleGroupName(muscle.muscleGroup)}
+                        </span>
+                        {neverTrained ? (
+                          <Badge
+                            variant="outline"
+                            className="text-xs text-muted-foreground/50 border-border/30"
+                          >
+                            Not yet trained
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${getStatusColor(muscle.recoveryStatus)} border-current/30 bg-current/10`}
+                          >
+                            {muscle.recoveryStatus}
+                          </Badge>
+                        )}
                       </div>
-                      <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
-                        <motion.div
-                          className={`h-full ${getProgressColor(muscle.fatigueLevel)}`}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${muscle.fatigueLevel}%` }}
-                          transition={{ duration: 0.8, delay: 0.2 + index * 0.05 }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {formatLastTrained(muscle.lastTrainedAt)}
-                      </p>
-                    </div>
-                  </motion.button>
-                ))}
+                      {neverTrained ? (
+                        <p className="text-xs text-muted-foreground/50">
+                          Train this muscle to start tracking
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Fatigue</span>
+                            <span>{muscle.fatigueLevel}%</span>
+                          </div>
+                          <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
+                            <motion.div
+                              className={`h-full ${getProgressColor(muscle.fatigueLevel)}`}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${muscle.fatigueLevel}%` }}
+                              transition={{ duration: 0.8, delay: 0.2 + index * 0.05 }}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {formatLastTrained(muscle.lastTrainedAt)}
+                          </p>
+                        </div>
+                      )}
+                    </motion.button>
+                  );
+                })}
               </div>
 
               {/* Selected Muscle Details */}

@@ -5,7 +5,7 @@
 
 import { motion } from 'framer-motion';
 import { useUser } from '@/contexts/UserContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { type ReactNode } from 'react';
 
 interface LuxuryCardProps {
@@ -47,9 +47,8 @@ export function LuxuryCard({
     >
       <Card
         className={`
-          ${isClient ? 'glass-luxury-client' : 'glass-luxury-trainer'}
           ${glow ? (isClient ? 'animate-glow-client' : 'animate-glow-trainer') : ''}
-          relative overflow-hidden
+          relative overflow-hidden bg-card text-card-foreground
           transition-all duration-500
         `}
         style={gradient ? { background: roleColors.gradient } : undefined}
@@ -105,9 +104,7 @@ export function LuxuryCard({
           </CardHeader>
         )}
 
-        <CardContent className={title ? '' : 'pt-6'}>
-          {children}
-        </CardContent>
+        <CardContent className={title ? '' : 'pt-6'}>{children}</CardContent>
       </Card>
     </motion.div>
   );

@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { ChevronRight } from 'lucide-react';
+import { formatNum } from '@/lib/format';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface BodyIntelligencePanelProps {
   data: any;
+  fitnessProfile?: any;
   loading?: boolean;
 }
 
@@ -37,7 +39,11 @@ function BodyIntelligenceSkeleton() {
   );
 }
 
-export function BodyIntelligencePanel({ data, loading }: BodyIntelligencePanelProps) {
+export function BodyIntelligencePanel({
+  data,
+  fitnessProfile,
+  loading,
+}: BodyIntelligencePanelProps) {
   const prefersReducedMotion = useReducedMotion();
 
   if (loading) return <BodyIntelligenceSkeleton />;
@@ -51,15 +57,24 @@ export function BodyIntelligencePanel({ data, loading }: BodyIntelligencePanelPr
   if (computed.bmi) {
     metrics.push({
       label: 'BMI',
-      value: `${computed.bmi.value}`,
+      value: formatNum(computed.bmi.value),
       sub: computed.bmi.category,
+    });
+  }
+
+  // Body Fat % from fitness profile (moved from removed Body Stats widget)
+  if (fitnessProfile?.bodyFatPercentage) {
+    metrics.push({
+      label: 'Body Fat',
+      value: `${formatNum(fitnessProfile.bodyFatPercentage)}%`,
+      sub: 'measured',
     });
   }
 
   if (computed.bmr) {
     metrics.push({
       label: 'BMR',
-      value: computed.bmr.value.toLocaleString(),
+      value: formatNum(computed.bmr.value),
       sub: 'kcal/day',
     });
   }
@@ -67,7 +82,7 @@ export function BodyIntelligencePanel({ data, loading }: BodyIntelligencePanelPr
   if (computed.tdee) {
     metrics.push({
       label: 'TDEE',
-      value: computed.tdee.value.toLocaleString(),
+      value: formatNum(computed.tdee.value),
       sub: 'kcal/day',
     });
   }
@@ -75,28 +90,28 @@ export function BodyIntelligencePanel({ data, loading }: BodyIntelligencePanelPr
   if (computed.macros) {
     metrics.push({
       label: 'Protein',
-      value: `${computed.macros.protein.grams}g`,
+      value: `${formatNum(computed.macros.protein.grams)}g`,
       sub: '/day',
     });
     metrics.push({
       label: 'Water',
-      value: computed.waterIntake ? `${computed.waterIntake.value}L` : '\u2014',
+      value: computed.waterIntake ? `${formatNum(computed.waterIntake.value)}L` : '\u2014',
       sub: '/day',
     });
     metrics.push({
       label: 'Fat',
-      value: `${computed.macros.fat.grams}g`,
+      value: `${formatNum(computed.macros.fat.grams)}g`,
       sub: '/day',
     });
     metrics.push({
       label: 'Carbs',
-      value: `${computed.macros.carbs.grams}g`,
+      value: `${formatNum(computed.macros.carbs.grams)}g`,
       sub: '/day',
     });
   } else if (computed.waterIntake) {
     metrics.push({
       label: 'Water',
-      value: `${computed.waterIntake.value}L`,
+      value: `${formatNum(computed.waterIntake.value)}L`,
       sub: '/day',
     });
   }
@@ -104,7 +119,7 @@ export function BodyIntelligencePanel({ data, loading }: BodyIntelligencePanelPr
   if (computed.idealWeight) {
     metrics.push({
       label: 'Ideal Weight',
-      value: `${computed.idealWeight.value} kg`,
+      value: `${formatNum(computed.idealWeight.value)} kg`,
       sub: 'Devine formula',
     });
   }
@@ -112,7 +127,7 @@ export function BodyIntelligencePanel({ data, loading }: BodyIntelligencePanelPr
   if (computed.ffmi) {
     metrics.push({
       label: 'FFMI',
-      value: `${computed.ffmi.value}`,
+      value: formatNum(computed.ffmi.value),
       sub: computed.ffmi.category,
     });
   } else if (computed.macros) {

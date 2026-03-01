@@ -386,9 +386,11 @@ export default function ProgressPage() {
             </Card>
             <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground font-light">Total Time</p>
+                <p className="text-xs text-muted-foreground font-light">Avg Duration</p>
                 <p className="text-2xl font-bold mt-1">
-                  {soloProgress.totalDurationMinutes}
+                  {soloProgress.totalWorkouts > 1
+                    ? Math.round(soloProgress.totalDurationMinutes / soloProgress.totalWorkouts)
+                    : soloProgress.totalDurationMinutes}
                   <span className="text-sm font-light text-muted-foreground ml-1">min</span>
                 </p>
               </CardContent>
@@ -498,95 +500,97 @@ export default function ProgressPage() {
             </motion.div>
           )}
 
-          {/* Workout Frequency Heatmap */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle className="text-lg font-light flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-primary" />
-                  Workout Frequency
-                </CardTitle>
-                <CardDescription>
-                  {soloProgress.history.length} workouts in the last 12 weeks
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {(() => {
-                  // Build 12-week heatmap grid
-                  const today = new Date();
-                  const weeks = 12;
-                  const dayMs = 86400000;
-                  const startDate = new Date(today.getTime() - weeks * 7 * dayMs);
+          {/* Workout Frequency Heatmap — only show when enough data */}
+          {soloProgress.history.length >= 7 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
+                <CardHeader>
+                  <CardTitle className="text-lg font-light flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Workout Frequency
+                  </CardTitle>
+                  <CardDescription>
+                    {soloProgress.history.length} workouts in the last 12 weeks
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    // Build 12-week heatmap grid
+                    const today = new Date();
+                    const weeks = 12;
+                    const dayMs = 86400000;
+                    const startDate = new Date(today.getTime() - weeks * 7 * dayMs);
 
-                  // Count workouts per day
-                  const dayCounts: Record<string, number> = {};
-                  for (const w of soloProgress.history) {
-                    const key = new Date(w.date).toISOString().slice(0, 10);
-                    dayCounts[key] = (dayCounts[key] || 0) + 1;
-                  }
+                    // Count workouts per day
+                    const dayCounts: Record<string, number> = {};
+                    for (const w of soloProgress.history) {
+                      const key = new Date(w.date).toISOString().slice(0, 10);
+                      dayCounts[key] = (dayCounts[key] || 0) + 1;
+                    }
 
-                  // Build grid data: rows = days of week (0=Sun..6=Sat), cols = weeks
-                  const grid: { date: string; count: number }[][] = Array.from(
-                    { length: 7 },
-                    () => []
-                  );
-                  const cursor = new Date(startDate);
-                  // Align to start of week (Sunday)
-                  cursor.setDate(cursor.getDate() - cursor.getDay());
+                    // Build grid data: rows = days of week (0=Sun..6=Sat), cols = weeks
+                    const grid: { date: string; count: number }[][] = Array.from(
+                      { length: 7 },
+                      () => []
+                    );
+                    const cursor = new Date(startDate);
+                    // Align to start of week (Sunday)
+                    cursor.setDate(cursor.getDate() - cursor.getDay());
 
-                  while (cursor <= today) {
-                    const dayOfWeek = cursor.getDay();
-                    const key = cursor.toISOString().slice(0, 10);
-                    grid[dayOfWeek].push({ date: key, count: dayCounts[key] || 0 });
-                    cursor.setDate(cursor.getDate() + 1);
-                  }
+                    while (cursor <= today) {
+                      const dayOfWeek = cursor.getDay();
+                      const key = cursor.toISOString().slice(0, 10);
+                      grid[dayOfWeek].push({ date: key, count: dayCounts[key] || 0 });
+                      cursor.setDate(cursor.getDate() + 1);
+                    }
 
-                  const maxCount = Math.max(1, ...Object.values(dayCounts));
-                  const dayLabels = ['Sun', '', 'Tue', '', 'Thu', '', 'Sat'];
+                    const maxCount = Math.max(1, ...Object.values(dayCounts));
+                    const dayLabels = ['Sun', '', 'Tue', '', 'Thu', '', 'Sat'];
 
-                  return (
-                    <div className="flex gap-1">
-                      <div className="flex flex-col gap-1 mr-1 text-[10px] text-muted-foreground">
-                        {dayLabels.map((label, i) => (
-                          <div key={i} className="h-3 flex items-center">
-                            {label}
-                          </div>
-                        ))}
+                    return (
+                      <div className="flex gap-1">
+                        <div className="flex flex-col gap-1 mr-1 text-[10px] text-muted-foreground">
+                          {dayLabels.map((label, i) => (
+                            <div key={i} className="h-3 flex items-center">
+                              {label}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-1 overflow-x-auto">
+                          {Array.from({ length: grid[0]?.length || 0 }, (_, weekIdx) => (
+                            <div key={weekIdx} className="flex flex-col gap-1">
+                              {grid.map((row, dayIdx) => {
+                                const cell = row[weekIdx];
+                                if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
+                                const intensity = cell.count / maxCount;
+                                return (
+                                  <div
+                                    key={dayIdx}
+                                    className="w-3 h-3 rounded-sm"
+                                    style={{
+                                      backgroundColor:
+                                        cell.count === 0
+                                          ? 'hsl(var(--muted) / 0.3)'
+                                          : `hsl(var(--primary) / ${0.3 + intensity * 0.7})`,
+                                    }}
+                                    title={`${cell.date}: ${cell.count} workout${cell.count !== 1 ? 's' : ''}`}
+                                  />
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex gap-1 overflow-x-auto">
-                        {Array.from({ length: grid[0]?.length || 0 }, (_, weekIdx) => (
-                          <div key={weekIdx} className="flex flex-col gap-1">
-                            {grid.map((row, dayIdx) => {
-                              const cell = row[weekIdx];
-                              if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
-                              const intensity = cell.count / maxCount;
-                              return (
-                                <div
-                                  key={dayIdx}
-                                  className="w-3 h-3 rounded-sm"
-                                  style={{
-                                    backgroundColor:
-                                      cell.count === 0
-                                        ? 'hsl(var(--muted) / 0.3)'
-                                        : `hsl(var(--primary) / ${0.3 + intensity * 0.7})`,
-                                  }}
-                                  title={`${cell.date}: ${cell.count} workout${cell.count !== 1 ? 's' : ''}`}
-                                />
-                              );
-                            })}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
-          </motion.div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* Personal Records Table */}
           <motion.div

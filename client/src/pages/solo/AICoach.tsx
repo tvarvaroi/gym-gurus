@@ -439,7 +439,7 @@ export default function AICoach() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto pt-4">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -703,6 +703,31 @@ export default function AICoach() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+
+              {/* Suggested prompts shown when only the welcome message exists */}
+              {messages.length <= 1 && !isTyping && (
+                <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                  <p className="text-xs text-muted-foreground/60 uppercase tracking-wider">
+                    Try asking
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
+                    {[
+                      'Create a push workout for intermediate lifters',
+                      'What should I eat on rest days?',
+                      'How often should I train each muscle group?',
+                      'Help me break through a bench press plateau',
+                    ].map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => handleSend(prompt)}
+                        className="text-left px-3 py-2.5 rounded-lg border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-all"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Typing Indicator */}
               <AnimatePresence>

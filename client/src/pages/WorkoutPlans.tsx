@@ -180,14 +180,24 @@ const TrainerWorkoutCard = memo(
 
           <CardContent className="relative space-y-4">
             <div className="flex items-center justify-between text-sm text-muted-foreground/80 font-light">
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-primary/70" />
-                <span>{workout.duration} min</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4 text-primary/70" />
+                  <span>{workout.duration} min</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Target className="h-4 w-4 text-primary/70" />
+                  <span>{formatCategory(workout.category)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Target className="h-4 w-4 text-primary/70" />
-                <span>{formatCategory(workout.category)}</span>
-              </div>
+              {workout.createdAt && (
+                <span className="text-xs text-muted-foreground/50">
+                  {new Date(workout.createdAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              )}
             </div>
 
             <div className="flex gap-2">

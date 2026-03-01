@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ChevronRight } from 'lucide-react';
+import { formatVolume } from '@/lib/format';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface WeeklyOverviewProps {
@@ -41,7 +42,7 @@ function ConsolidatedStats({
       sub: 'this week',
     },
     {
-      value: weeklyVolume > 1000 ? `${(weeklyVolume / 1000).toFixed(1)}k` : weeklyVolume,
+      value: formatVolume(weeklyVolume),
       label: 'Volume',
       sub: 'kg lifted',
     },
@@ -113,7 +114,7 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
             Weekly Volume
           </p>
           <p className="text-3xl font-bold tabular-nums leading-tight">
-            {totalVolume > 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume}
+            {formatVolume(totalVolume)}
             <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>
           </p>
         </div>

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Camera } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getXpToNextLevel } from '@/lib/constants/xpRewards';
+import { formatNum } from '@/lib/format';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useToast } from '@/hooks/use-toast';
 
@@ -10,6 +11,7 @@ interface HeroHeaderProps {
   user: any;
   gamification: any;
   fitnessProfile: any;
+  computedTdee?: number;
 }
 
 function getGreeting(): string {
@@ -54,7 +56,7 @@ async function resizeImage(file: File, maxSize = 1024): Promise<Blob> {
   });
 }
 
-export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderProps) {
+export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }: HeroHeaderProps) {
   const prefersReducedMotion = useReducedMotion();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -78,11 +80,11 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
   // Build stats array — only include metrics that exist
   const stats: { label: string; value: string; unit?: string; xpBar?: boolean }[] = [];
   if (fitnessProfile?.weightKg)
-    stats.push({ label: 'Weight', value: `${fitnessProfile.weightKg}`, unit: 'kg' });
+    stats.push({ label: 'Weight', value: formatNum(fitnessProfile.weightKg), unit: 'kg' });
   if (fitnessProfile?.heightCm)
-    stats.push({ label: 'Height', value: `${fitnessProfile.heightCm}`, unit: 'cm' });
-  if (fitnessProfile?.dailyCalorieTarget)
-    stats.push({ label: 'kcal/day', value: `${fitnessProfile.dailyCalorieTarget}` });
+    stats.push({ label: 'Height', value: formatNum(fitnessProfile.heightCm), unit: 'cm' });
+  const kcalValue = fitnessProfile?.dailyCalorieTarget || computedTdee;
+  if (kcalValue) stats.push({ label: 'kcal/day', value: formatNum(kcalValue) });
   stats.push({ label: 'Level', value: `${currentLevel}`, xpBar: true });
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -253,7 +255,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
             <img
               src={user.profileImageUrl}
               alt={user.firstName || 'Profile'}
-              className="h-[200px] w-auto object-contain"
+              className="h-[160px] w-auto object-contain"
               style={{
                 filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
               }}

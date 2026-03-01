@@ -195,8 +195,12 @@ function SoloScheduleView() {
               <CheckCircle2 className="w-5 h-5 text-green-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{completedCount}</p>
-              <p className="text-xs text-muted-foreground">Completed this month</p>
+              <p className="text-2xl font-bold tabular-nums">{completedCount}</p>
+              <p className="text-xs text-muted-foreground">
+                {completedCount === 0
+                  ? 'None yet this month'
+                  : `of ${completedCount + plannedCount} planned`}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -206,8 +210,12 @@ function SoloScheduleView() {
               <CalendarIcon className="w-5 h-5 text-blue-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{plannedCount}</p>
-              <p className="text-xs text-muted-foreground">Planned remaining</p>
+              <p className="text-2xl font-bold tabular-nums">{plannedCount}</p>
+              <p className="text-xs text-muted-foreground">
+                {plannedCount === 0 && completedCount === 0
+                  ? 'Set workout frequency in settings'
+                  : `session${plannedCount !== 1 ? 's' : ''} left`}
+              </p>
             </div>
           </CardContent>
         </Card>

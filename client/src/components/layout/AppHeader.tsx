@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
@@ -35,216 +35,15 @@ function useRoleColors() {
   };
 }
 
-// Premium header center text with mouse tracking gradient
+// Compact header center text
 function HeaderCenterText() {
-  const prefersReducedMotion = useReducedMotion();
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
-  const textRef = useRef<HTMLDivElement>(null);
-
-  const colors = useRoleColors();
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!textRef.current) return;
-
-    const rect = textRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    setMousePosition({ x, y });
-  };
-
   return (
-    <motion.div
-      ref={textRef}
-      className="hidden md:flex cursor-default select-none"
-      initial={{ opacity: 0, scale: 0.9, y: -10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
+    <span
+      className="hidden md:inline text-sm tracking-[0.2em] font-light text-muted-foreground/60 select-none cursor-default whitespace-nowrap"
+      style={{ fontFamily: '"Playfair Display", serif' }}
     >
-      <div
-        className="relative px-6 md:px-10 py-3 md:py-3.5 rounded-2xl backdrop-blur-xl border overflow-visible group"
-        style={{
-          background: `linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--accent) / 0.15))`,
-          borderColor: `hsl(var(--primary) / 0.3)`,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-        }}
-      >
-        {/* Premium noise texture overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.015] mix-blend-overlay rounded-2xl"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
-          }}
-        />
-
-        {/* Mouse tracking gradient */}
-        <motion.div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
-          style={{
-            background: `radial-gradient(600px circle at ${mousePosition.x}% ${mousePosition.y}%, hsl(var(--primary) / 0.15), transparent 50%)`,
-          }}
-        />
-
-        {/* Animated border glow */}
-        <motion.div
-          className="absolute inset-0 rounded-2xl -z-10"
-          initial={false}
-          animate={{
-            boxShadow: isHovering
-              ? `0 0 30px hsl(var(--primary) / 0.4), 0 0 60px hsl(var(--primary) / 0.2), 0 0 90px hsl(var(--accent) / 0.1)`
-              : `0 0 0px hsl(var(--primary) / 0)`,
-          }}
-          transition={{ duration: 0.4 }}
-        />
-
-        {/* Decorative corner accents */}
-        <div
-          className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 rounded-tl-2xl opacity-40"
-          style={{ borderColor: `hsl(var(--primary) / 0.6)` }}
-        />
-        <div
-          className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 rounded-tr-2xl opacity-40"
-          style={{ borderColor: `hsl(var(--accent) / 0.6)` }}
-        />
-        <div
-          className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 rounded-bl-2xl opacity-40"
-          style={{ borderColor: `hsl(var(--accent) / 0.6)` }}
-        />
-        <div
-          className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 rounded-br-2xl opacity-40"
-          style={{ borderColor: `hsl(var(--primary) / 0.6)` }}
-        />
-
-        <div className="relative flex items-center justify-center gap-3">
-          {/* Left ornamental dot */}
-          <motion.div
-            className="w-1.5 h-1.5 rounded-full"
-            style={{
-              background: `linear-gradient(135deg, hsl(var(--primary) / 0.8), hsl(var(--primary) / 0.5))`,
-              boxShadow: `0 0 6px hsl(var(--primary) / 0.6)`,
-            }}
-            animate={{
-              scale: isHovering ? [1, 1.3, 1] : 1,
-              opacity: isHovering ? [0.6, 1, 0.6] : 0.7,
-            }}
-            transition={{
-              duration: 2,
-              repeat: isHovering && !prefersReducedMotion ? Infinity : 0,
-              ease: 'easeInOut',
-            }}
-          />
-
-          <motion.span
-            className="text-lg md:text-xl lg:text-2xl font-light whitespace-nowrap"
-            style={{
-              fontFamily: '"Playfair Display", serif',
-              letterSpacing: '0.08em',
-              fontWeight: 300,
-              background: `linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 25%, #ffffff 50%, hsl(var(--accent)) 75%, hsl(var(--accent)) 100%)`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              backgroundSize: '200% 100%',
-              textShadow: `0 0 20px hsl(var(--primary) / 0.3)`,
-            }}
-            animate={{
-              backgroundPosition: isHovering ? ['0% 0%', '100% 0%', '0% 0%'] : '0% 0%',
-            }}
-            transition={{
-              duration: 5,
-              repeat: isHovering && !prefersReducedMotion ? Infinity : 0,
-              ease: 'linear',
-            }}
-          >
-            GYM GURUS — Elite Fitness Platform
-          </motion.span>
-
-          {/* Right ornamental dot */}
-          <motion.div
-            className="w-1.5 h-1.5 rounded-full"
-            style={{
-              background: `linear-gradient(135deg, hsl(var(--accent) / 0.8), hsl(var(--accent) / 0.5))`,
-              boxShadow: `0 0 6px hsl(var(--accent) / 0.6)`,
-            }}
-            animate={{
-              scale: isHovering ? [1, 1.3, 1] : 1,
-              opacity: isHovering ? [0.6, 1, 0.6] : 0.7,
-            }}
-            transition={{
-              duration: 2,
-              repeat: isHovering && !prefersReducedMotion ? Infinity : 0,
-              ease: 'easeInOut',
-              delay: 0.5,
-            }}
-          />
-
-          {/* Sparkle effects on hover */}
-          <AnimatePresence>
-            {isHovering && (
-              <>
-                <motion.div
-                  className="absolute -right-3 -top-3"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <motion.div
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{
-                      background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)))`,
-                      boxShadow: `0 0 12px hsl(var(--primary) / 0.6), 0 0 24px hsl(var(--primary) / 0.3)`,
-                    }}
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      opacity: [0.7, 1, 0.7],
-                      rotate: [0, 180, 360],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: prefersReducedMotion ? 0 : Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  />
-                </motion.div>
-
-                <motion.div
-                  className="absolute -left-3 -bottom-3"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 }}
-                >
-                  <motion.div
-                    className="w-2 h-2 rounded-full"
-                    style={{
-                      background: `linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent)))`,
-                      boxShadow: `0 0 10px hsl(var(--accent) / 0.6), 0 0 20px hsl(var(--accent) / 0.3)`,
-                    }}
-                    animate={{
-                      scale: [1, 1.4, 1],
-                      opacity: [0.7, 1, 0.7],
-                      rotate: [360, 180, 0],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: prefersReducedMotion ? 0 : Infinity,
-                      ease: 'easeInOut',
-                      delay: 1,
-                    }}
-                  />
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    </motion.div>
+      GYM GURUS
+    </span>
   );
 }
 
@@ -340,7 +139,7 @@ function UserMenu() {
 
           {/* Avatar container */}
           <div
-            className="relative h-11 w-11 md:h-12 md:w-12 rounded-full border-2 transition-all duration-300 overflow-hidden"
+            className="relative h-9 w-9 md:h-10 md:w-10 rounded-full border-2 transition-all duration-300 overflow-hidden"
             style={{
               background: `linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--accent) / 0.15))`,
               borderColor: `hsl(var(--primary) / 0.3)`,
@@ -572,12 +371,9 @@ function UserMenu() {
 
 // Main app header component with role-based colors
 export default function AppHeader() {
-  const prefersReducedMotion = useReducedMotion();
-  const colors = useRoleColors();
-
   return (
     <header
-      className="sticky top-0 z-40 h-16 md:h-20 shrink-0 border-b relative overflow-hidden"
+      className="sticky top-0 z-40 h-12 md:h-14 shrink-0 border-b relative"
       role="banner"
       aria-label="App header"
       style={{
@@ -586,60 +382,26 @@ export default function AppHeader() {
         boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05)',
       }}
     >
-      {/* Premium multi-layered glass background */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* Glass background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(135deg, hsl(var(--primary) / 0.15) 0%, hsl(var(--accent) / 0.15) 100%)`,
+            background: `linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--accent) / 0.1) 100%)`,
           }}
         />
         <div
           className="absolute inset-0"
           style={{
-            background:
-              'radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.08), transparent 50%)',
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.15))',
-          }}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.02] mix-blend-overlay"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
+            background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.15))',
           }}
         />
 
-        {/* Animated shimmer effect */}
-        <motion.div
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.06) 50%, transparent 100%)`,
-            backgroundSize: '200% 100%',
-          }}
-          animate={{ backgroundPosition: ['0% 0%', '200% 0%'] }}
-          transition={{ duration: 8, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
-        />
-
-        {/* Premium top accent line */}
+        {/* Top accent line */}
         <div
           className="absolute top-0 left-0 right-0 h-[1px]"
           style={{
-            background: `linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.5) 20%, hsl(var(--primary) / 0.8) 50%, hsl(var(--accent) / 0.8) 50%, hsl(var(--accent) / 0.5) 80%, transparent 100%)`,
-          }}
-        />
-
-        {/* Inner glow border */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            boxShadow:
-              'inset 0 1px 2px rgba(255, 255, 255, 0.06), inset 0 -1px 2px rgba(0, 0, 0, 0.15)',
+            background: `linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.4) 30%, hsl(var(--accent) / 0.4) 70%, transparent 100%)`,
           }}
         />
       </div>
@@ -657,7 +419,7 @@ export default function AppHeader() {
             <SidebarTrigger
               data-testid="button-sidebar-toggle"
               aria-label="Toggle sidebar navigation"
-              className="hover-elevate transition-all duration-300 rounded-xl border h-10 w-10 md:h-12 md:w-12"
+              className="hover-elevate transition-all duration-300 rounded-xl border h-8 w-8 md:h-10 md:w-10"
               style={{
                 background: `linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--accent) / 0.12))`,
                 borderColor: `hsl(var(--primary) / 0.25)`,

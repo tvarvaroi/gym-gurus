@@ -390,7 +390,14 @@ export default function Achievements() {
                               <span className="text-muted-foreground">Progress</span>
                               <span className="text-muted-foreground">{achievement.progress}%</span>
                             </div>
-                            <Progress value={achievement.progress} className="h-1.5" />
+                            <div className="h-1.5 w-full rounded-full bg-muted/30 overflow-hidden">
+                              {achievement.progress > 0 && (
+                                <div
+                                  className="h-full rounded-full bg-primary transition-all"
+                                  style={{ width: `${achievement.progress}%` }}
+                                />
+                              )}
+                            </div>
                           </div>
                         )}
 
@@ -505,7 +512,14 @@ export default function Achievements() {
                         <span className="text-muted-foreground">Progress</span>
                         <span className="font-medium">{achievement.progress}%</span>
                       </div>
-                      <Progress value={achievement.progress} className="h-2" />
+                      <div className="h-2 w-full rounded-full bg-muted/30 overflow-hidden">
+                        {achievement.progress > 0 && (
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: `${achievement.progress}%` }}
+                          />
+                        )}
+                      </div>
                       <p className="text-xs text-amber-400 text-center mt-1">
                         {achievement.progress >= 75
                           ? "Almost there! You're so close!"

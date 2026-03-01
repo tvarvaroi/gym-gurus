@@ -66,6 +66,7 @@ export function SoloDashboard() {
         user={user}
         gamification={data.gamification}
         fitnessProfile={data.fitnessProfile}
+        computedTdee={data.bodyIntelligence?.computed?.tdee?.value}
       />
 
       <div className="mt-16 md:mt-20 relative z-10">
@@ -81,13 +82,13 @@ export function SoloDashboard() {
         loading={data.weeklyLoading}
       />
 
-      <RecoveryBodyStatus
-        fatigueData={data.fatigueData}
-        fitnessProfile={data.fitnessProfile}
-        loading={data.recoveryLoading}
-      />
+      <RecoveryBodyStatus fatigueData={data.fatigueData} loading={data.recoveryLoading} />
 
-      <BodyIntelligencePanel data={data.bodyIntelligence} loading={data.bodyIntelLoading} />
+      <BodyIntelligencePanel
+        data={data.bodyIntelligence}
+        fitnessProfile={data.fitnessProfile}
+        loading={data.bodyIntelLoading}
+      />
 
       <FeatureWidgetsGrid />
 

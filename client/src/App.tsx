@@ -39,6 +39,7 @@ import { TestLoginPage } from '@/components/TestLoginPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import NotificationCenter from '@/components/NotificationCenter';
 import AppHeaderComponent from '@/components/layout/AppHeader';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { TrialBanner } from '@/components/TrialBanner';
 
 // Lazy load only secondary pages for code splitting
@@ -1070,7 +1071,7 @@ function AppLayout() {
                 <TrialBanner />
                 <main
                   id="main-content"
-                  className="flex-1 overflow-y-auto overflow-x-hidden"
+                  className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0"
                   role="main"
                 >
                   <div className="p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20 min-h-full">
@@ -1082,6 +1083,7 @@ function AppLayout() {
                   </div>
                   <Footer />
                 </main>
+                <MobileBottomNav />
               </div>
             </div>
           </SidebarProvider>
