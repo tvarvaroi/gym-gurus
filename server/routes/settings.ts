@@ -131,7 +131,7 @@ router.patch('/profile-image', async (req: Request, res: Response) => {
 // POST /api/settings/profile-image-upload — upload profile image file
 const profileUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
     else cb(new Error('Only images allowed'));
@@ -141,7 +141,7 @@ const profileUpload = multer({
 function handleUploadError(err: any, _req: Request, res: Response, next: NextFunction) {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'File too large. Maximum size is 5MB.' });
+      return res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
     }
     return res.status(400).json({ error: err.message });
   }
@@ -161,15 +161,29 @@ router.post(
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
       if (!req.file) return res.status(400).json({ error: 'No file provided' });
 
+      let processedBuffer: Buffer = req.file.buffer;
+      let mimeType = req.file.mimetype;
+
+      try {
+        // Server-side background removal (model cached after first call)
+        const { removeBackground } = await import('@imgly/background-removal-node');
+        const inputBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
+        const resultBlob = await removeBackground(inputBlob);
+        const arrayBuffer = await resultBlob.arrayBuffer();
+        processedBuffer = Buffer.from(arrayBuffer);
+        mimeType = 'image/png';
+        console.log('Background removal successful');
+      } catch (bgError) {
+        console.error('Background removal failed, using original:', bgError);
+      }
+
       let imageUrl: string;
 
       if (isR2Configured()) {
-        // Upload to Cloudflare R2
-        imageUrl = await uploadImage(req.file.buffer, 'profiles', req.file.mimetype, 1024);
+        imageUrl = await uploadImage(processedBuffer, 'profiles', mimeType, 1024);
       } else {
-        // Fallback: base64 data URL
-        const base64 = req.file.buffer.toString('base64');
-        imageUrl = `data:${req.file.mimetype};base64,${base64}`;
+        const base64 = processedBuffer.toString('base64');
+        imageUrl = `data:${mimeType};base64,${base64}`;
       }
 
       // Save to user profile

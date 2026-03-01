@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Camera } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -27,18 +28,22 @@ function getMotivationalSubtitle(gamification: any, fitnessProfile: any): string
   return 'Ready to train?';
 }
 
-async function resizeImage(file: File, maxSize = 800): Promise<Blob> {
-  return new Promise((resolve) => {
+async function resizeImage(file: File, maxSize = 1024): Promise<Blob> {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
-      canvas.width = img.width * ratio;
-      canvas.height = img.height * ratio;
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.85);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
+        'image/png'
+      );
     };
+    img.onerror = () => reject(new Error('Failed to load image'));
     img.src = URL.createObjectURL(file);
   });
 }
@@ -47,6 +52,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
   const prefersReducedMotion = useReducedMotion();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
 
   const greeting = getGreeting();
   const subtitle = getMotivationalSubtitle(gamification, fitnessProfile);
@@ -77,11 +83,13 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploading(true);
+
     try {
-      const resized = await resizeImage(file, 800);
+      const resized = await resizeImage(file, 1024);
 
       const formData = new FormData();
-      formData.append('image', resized, 'profile.jpg');
+      formData.append('image', resized, 'profile.png');
 
       const response = await fetch('/api/settings/profile-image-upload', {
         method: 'POST',
@@ -93,7 +101,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
 
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
 
-      toast({ title: 'Photo updated!' });
+      toast({ title: 'Photo updated — background removed!' });
     } catch (error) {
       console.error('Upload failed:', error);
       toast({
@@ -102,6 +110,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
         variant: 'destructive',
       });
     } finally {
+      setUploading(false);
       e.target.value = '';
     }
   }
@@ -152,11 +161,11 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
 
         {/* Right — Profile Photo */}
         <div className="relative flex-shrink-0">
-          {/* Glow behind photo */}
+          {/* Ambient glow behind photo */}
           <div
-            className="absolute inset-0 blur-[40px] opacity-25 rounded-full"
+            className="absolute inset-[-20px] blur-[50px] opacity-20"
             style={{
-              background: 'radial-gradient(circle, hsl(var(--primary) / 0.6) 0%, transparent 60%)',
+              background: 'radial-gradient(circle, hsl(var(--primary) / 0.7) 0%, transparent 60%)',
             }}
           />
 
@@ -165,16 +174,33 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative w-28 h-28 md:w-44 md:h-44 rounded-2xl object-cover hero-photo-cutout"
+                className="relative w-28 h-28 md:w-44 md:h-44 object-contain drop-shadow-2xl"
+                style={{
+                  filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.5))',
+                }}
               />
               {/* Hover overlay */}
-              <div className="absolute inset-0 rounded-2xl bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
-                <div className="opacity-0 group-hover:opacity-100 text-center transition-opacity">
-                  <Camera className="w-5 h-5 text-white mx-auto mb-1" />
-                  <span className="text-[10px] text-white/80">Change</span>
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="bg-black/50 rounded-full p-2.5 backdrop-blur-sm">
+                  <Camera className="w-4 h-4 text-white" />
                 </div>
               </div>
-              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={uploading}
+              />
+
+              {/* Processing overlay */}
+              {uploading && (
+                <div className="absolute inset-0 rounded-2xl bg-black/70 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
+                  <span className="text-xs text-white/80 font-medium">Removing background...</span>
+                  <span className="text-[10px] text-white/40 mt-1">This may take a moment</span>
+                </div>
+              )}
             </label>
           ) : (
             <label className="relative cursor-pointer group block">
@@ -184,7 +210,22 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
                   Upload
                 </span>
               </div>
-              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={uploading}
+              />
+
+              {/* Processing overlay for empty state */}
+              {uploading && (
+                <div className="absolute inset-0 rounded-2xl bg-black/70 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
+                  <span className="text-xs text-white/80 font-medium">Removing background...</span>
+                  <span className="text-[10px] text-white/40 mt-1">This may take a moment</span>
+                </div>
+              )}
             </label>
           )}
         </div>
