@@ -125,7 +125,7 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
 
   return (
     <motion.div {...animProps} className="relative pt-4" style={{ overflow: 'visible' }}>
-      <div className="relative">
+      <div className="relative md:mr-[-40px]">
         {/* Left column — determines section height */}
         <div className={`text-center md:text-left ${hasPhoto ? 'pr-0 md:pr-[140px]' : ''}`}>
           <p className="text-sm uppercase tracking-widest text-muted-foreground font-medium mb-2">
