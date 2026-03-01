@@ -4,6 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 import { useToast } from '@/hooks/use-toast';
@@ -205,7 +212,7 @@ export default function Achievements() {
         className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
       >
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extralight tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
             <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20">
               <Trophy className="h-8 w-8 text-amber-400" />
             </div>
@@ -403,35 +410,7 @@ export default function Achievements() {
                       </div>
                     </div>
 
-                    {/* Expanded Details */}
-                    <AnimatePresence>
-                      {selectedAchievement === achievement.id && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="pt-4 mt-4 border-t border-border/50">
-                            <div className="text-sm text-muted-foreground space-y-2">
-                              <p>
-                                <strong>Category:</strong>{' '}
-                                {categories.find((c) => c.id === achievement.category)?.label}
-                              </p>
-                              <p>
-                                <strong>Rarity:</strong>{' '}
-                                <span className={`capitalize ${rarity.text}`}>{rarityKey}</span>
-                              </p>
-                              {!achievement.earned && (
-                                <p className="text-amber-400">
-                                  Keep going! You're {achievement.progress}% there.
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {/* Inline expansion removed — uses Dialog instead */}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -439,6 +418,109 @@ export default function Achievements() {
           })}
         </AnimatePresence>
       </motion.div>
+
+      {/* Achievement Detail Dialog */}
+      <Dialog
+        open={selectedAchievement !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedAchievement(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          {(() => {
+            const achievement = mappedAchievements.find((a) => a.id === selectedAchievement);
+            if (!achievement) return null;
+            const rarityKey = achievement.rarity || 'common';
+            const rarity = rarityColors[rarityKey] || rarityColors.common;
+            const AchIcon = getAchievementIcon(achievement.category, achievement.rarity);
+            const rarityPercent: Record<string, string> = {
+              common: '85%',
+              uncommon: '40%',
+              rare: '15%',
+              epic: '5%',
+              legendary: '1%',
+            };
+            return (
+              <>
+                <DialogHeader className="text-center items-center">
+                  <div className={`p-4 rounded-2xl ${rarity.bg} mb-2`}>
+                    {achievement.earned ? (
+                      <AchIcon className={`h-10 w-10 ${rarity.text}`} />
+                    ) : (
+                      <Lock className="h-10 w-10 text-muted-foreground" />
+                    )}
+                  </div>
+                  <DialogTitle className="text-xl font-medium">{achievement.name}</DialogTitle>
+                  <DialogDescription className="text-sm">
+                    {achievement.description}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 pt-2">
+                  {/* Rarity & Category badges */}
+                  <div className="flex items-center justify-center gap-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${rarity.bg} ${rarity.text} border ${rarity.border}`}
+                    >
+                      {rarityKey} ({rarityPercent[rarityKey] || '?'} of users)
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground">
+                      {categories.find((c) => c.id === achievement.category)?.label ||
+                        achievement.category}
+                    </span>
+                  </div>
+
+                  {/* XP Reward */}
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap
+                      className={`h-4 w-4 ${achievement.earned ? 'text-amber-400' : 'text-muted-foreground'}`}
+                    />
+                    <span
+                      className={`text-sm font-medium ${achievement.earned ? 'text-amber-400' : 'text-muted-foreground'}`}
+                    >
+                      {(achievement.xpReward || 0).toLocaleString()} XP
+                    </span>
+                  </div>
+
+                  {/* Earned or Progress */}
+                  {achievement.earned ? (
+                    <div className="text-center space-y-1 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                      <div className="flex items-center justify-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-400" />
+                        <span className="text-sm font-medium text-green-400">Unlocked</span>
+                      </div>
+                      {achievement.earnedAt && (
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(achievement.earnedAt).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2 p-3 rounded-xl bg-muted/20 border border-border/50">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="font-medium">{achievement.progress}%</span>
+                      </div>
+                      <Progress value={achievement.progress} className="h-2" />
+                      <p className="text-xs text-amber-400 text-center mt-1">
+                        {achievement.progress >= 75
+                          ? "Almost there! You're so close!"
+                          : achievement.progress >= 50
+                            ? 'Great progress — keep pushing!'
+                            : 'Keep going, every workout counts!'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       {/* Rarity Legend */}
       <motion.div

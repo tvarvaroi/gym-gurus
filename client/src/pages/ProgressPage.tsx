@@ -12,6 +12,8 @@ import {
   Target,
   Users,
   Dumbbell,
+  Trophy,
+  CheckCircle,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProgressFormModal from '../components/ProgressFormModal';
@@ -114,6 +116,18 @@ export default function ProgressPage() {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Fetch personal records for solo users
+  const { data: personalRecords = [] } = useQuery<
+    {
+      pr: { weightKg: string; reps: number; estimated1rm: string; achievedAt: string };
+      exercise: { name: string };
+    }[]
+  >({
+    queryKey: ['/api/strength/personal-records'],
+    enabled: isSolo,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Fetch selected client's progress - using development endpoint that doesn't require auth
   const { data: progressData = [], isLoading: loadingProgress } = useQuery<ProgressEntry[]>({
     queryKey: [`/api/progress/${selectedClient}`],
@@ -184,7 +198,7 @@ export default function ProgressPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
         >
-          <h1 className="text-4xl md:text-6xl font-extralight tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
             {isClient || isSolo ? 'My ' : 'Progress '}
             <span
               className={`font-light bg-gradient-to-r ${isClient || isSolo ? 'from-cyan-500 via-teal-500 to-cyan-400' : 'from-primary via-primary/80 to-primary/60'} bg-clip-text text-transparent`}
@@ -423,11 +437,229 @@ export default function ProgressPage() {
             </motion.div>
           )}
 
-          {/* Recent Workout History */}
+          {/* Volume Trend AreaChart */}
+          {soloProgress.history.length >= 3 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
+                <CardHeader>
+                  <CardTitle className="text-lg font-light flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    Volume Trend
+                  </CardTitle>
+                  <CardDescription>Per-session volume over time (kg)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <AreaChart
+                      data={[...soloProgress.history]
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                        .map((w) => ({
+                          date: new Date(w.date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          }),
+                          volume: w.volume,
+                        }))}
+                    >
+                      <defs>
+                        <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="volume"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        fill="url(#volumeGradient)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Workout Frequency Heatmap */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
+          >
+            <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
+              <CardHeader>
+                <CardTitle className="text-lg font-light flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-primary" />
+                  Workout Frequency
+                </CardTitle>
+                <CardDescription>
+                  {soloProgress.history.length} workouts in the last 12 weeks
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  // Build 12-week heatmap grid
+                  const today = new Date();
+                  const weeks = 12;
+                  const dayMs = 86400000;
+                  const startDate = new Date(today.getTime() - weeks * 7 * dayMs);
+
+                  // Count workouts per day
+                  const dayCounts: Record<string, number> = {};
+                  for (const w of soloProgress.history) {
+                    const key = new Date(w.date).toISOString().slice(0, 10);
+                    dayCounts[key] = (dayCounts[key] || 0) + 1;
+                  }
+
+                  // Build grid data: rows = days of week (0=Sun..6=Sat), cols = weeks
+                  const grid: { date: string; count: number }[][] = Array.from(
+                    { length: 7 },
+                    () => []
+                  );
+                  const cursor = new Date(startDate);
+                  // Align to start of week (Sunday)
+                  cursor.setDate(cursor.getDate() - cursor.getDay());
+
+                  while (cursor <= today) {
+                    const dayOfWeek = cursor.getDay();
+                    const key = cursor.toISOString().slice(0, 10);
+                    grid[dayOfWeek].push({ date: key, count: dayCounts[key] || 0 });
+                    cursor.setDate(cursor.getDate() + 1);
+                  }
+
+                  const maxCount = Math.max(1, ...Object.values(dayCounts));
+                  const dayLabels = ['Sun', '', 'Tue', '', 'Thu', '', 'Sat'];
+
+                  return (
+                    <div className="flex gap-1">
+                      <div className="flex flex-col gap-1 mr-1 text-[10px] text-muted-foreground">
+                        {dayLabels.map((label, i) => (
+                          <div key={i} className="h-3 flex items-center">
+                            {label}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-1 overflow-x-auto">
+                        {Array.from({ length: grid[0]?.length || 0 }, (_, weekIdx) => (
+                          <div key={weekIdx} className="flex flex-col gap-1">
+                            {grid.map((row, dayIdx) => {
+                              const cell = row[weekIdx];
+                              if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
+                              const intensity = cell.count / maxCount;
+                              return (
+                                <div
+                                  key={dayIdx}
+                                  className="w-3 h-3 rounded-sm"
+                                  style={{
+                                    backgroundColor:
+                                      cell.count === 0
+                                        ? 'hsl(var(--muted) / 0.3)'
+                                        : `hsl(var(--primary) / ${0.3 + intensity * 0.7})`,
+                                  }}
+                                  title={`${cell.date}: ${cell.count} workout${cell.count !== 1 ? 's' : ''}`}
+                                />
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Personal Records Table */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
+              <CardHeader>
+                <CardTitle className="text-lg font-light flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-primary" />
+                  Personal Records
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {personalRecords.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Complete workouts to set your first PR!
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border/30">
+                          <th className="text-left py-2 text-muted-foreground font-medium">
+                            Exercise
+                          </th>
+                          <th className="text-right py-2 text-muted-foreground font-medium">
+                            Weight
+                          </th>
+                          <th className="text-right py-2 text-muted-foreground font-medium">
+                            Reps
+                          </th>
+                          <th className="text-right py-2 text-muted-foreground font-medium">
+                            Est. 1RM
+                          </th>
+                          <th className="text-right py-2 text-muted-foreground font-medium">
+                            Date
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {personalRecords.slice(0, 10).map((record, i) => (
+                          <tr key={i} className="border-b border-border/10">
+                            <td className="py-2 font-medium">{record.exercise.name}</td>
+                            <td className="py-2 text-right">
+                              {parseFloat(record.pr.weightKg).toFixed(1)} kg
+                            </td>
+                            <td className="py-2 text-right">{record.pr.reps}</td>
+                            <td className="py-2 text-right text-primary font-medium">
+                              {parseFloat(record.pr.estimated1rm).toFixed(1)} kg
+                            </td>
+                            <td className="py-2 text-right text-muted-foreground">
+                              {new Date(record.pr.achievedAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Recent Workout History */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
           >
             <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
               <CardHeader>
@@ -437,22 +669,25 @@ export default function ProgressPage() {
                 {soloProgress.history.map((workout) => (
                   <div
                     key={workout.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/20"
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border-l-4 border-primary border border-border/20"
                   >
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">{workout.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(workout.date).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">{workout.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(workout.date).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span>{workout.duration}min</span>
-                      <span>{workout.sets} sets</span>
                       {workout.volume > 0 && <span>{workout.volume.toLocaleString()}kg</span>}
+                      <span>{workout.sets} sets</span>
                     </div>
                   </div>
                 ))}

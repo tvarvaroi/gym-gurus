@@ -55,6 +55,29 @@ const PageTransition = memo(({ children }: { children: React.ReactNode }) => (
 ));
 PageTransition.displayName = 'PageTransition';
 
+function formatCategory(category: string): string {
+  const map: Record<string, string> = {
+    ai_coach: 'AI Coach',
+    ai_generated: 'AI Generated',
+    manual: 'Manual',
+    template: 'Template',
+  };
+  return map[category] || category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+const categoryBorder: Record<string, string> = {
+  push: 'border-l-purple-500',
+  pull: 'border-l-blue-500',
+  legs: 'border-l-green-500',
+  upper_body: 'border-l-purple-500',
+  lower_body: 'border-l-green-500',
+  full_body: 'border-l-primary',
+  ai_coach: 'border-l-indigo-500',
+  strength: 'border-l-red-500',
+  hypertrophy: 'border-l-amber-500',
+  cardio: 'border-l-cyan-500',
+};
+
 // Memoized WorkoutCard component - Trainer version
 const TrainerWorkoutCard = memo(
   ({
@@ -79,7 +102,9 @@ const TrainerWorkoutCard = memo(
         whileHover={{ y: -4, scale: 1.01 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       >
-        <Card className="group relative overflow-hidden border border-border/30 bg-background/40 backdrop-blur-xl transition-all duration-500 hover:border-primary/40 hover:shadow-premium-lg hover:shadow-primary/10">
+        <Card
+          className={`group relative overflow-hidden border border-border/30 border-l-4 ${categoryBorder[workout.category] || 'border-l-primary'} bg-background/40 backdrop-blur-xl transition-all duration-500 hover:border-primary/40 hover:shadow-premium-lg hover:shadow-primary/10`}
+        >
           {/* Premium gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -161,7 +186,7 @@ const TrainerWorkoutCard = memo(
               </div>
               <div className="flex items-center gap-1.5">
                 <Target className="h-4 w-4 text-primary/70" />
-                <span className="capitalize">{workout.category}</span>
+                <span>{formatCategory(workout.category)}</span>
               </div>
             </div>
 
@@ -178,12 +203,12 @@ const TrainerWorkoutCard = memo(
               </Button>
               <Button
                 size="sm"
-                className="flex-1 transition-all duration-300"
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300"
                 onClick={() => (window.location.href = `/workout-execution/${workout.id}`)}
                 data-testid={`button-start-workout-${workout.id}`}
               >
-                <Play className="h-3.5 w-3.5 mr-1.5" />
-                Start
+                <Play className="h-4 w-4 mr-1.5" />
+                Start Workout
               </Button>
             </div>
           </CardContent>
@@ -263,7 +288,7 @@ const ClientWorkoutCard = memo(
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Target className="h-4 w-4 text-cyan-500/70" />
-                  <span className="capitalize">{workout.category}</span>
+                  <span>{formatCategory(workout.category)}</span>
                 </div>
               </div>
 
@@ -288,6 +313,7 @@ ClientWorkoutCard.displayName = 'ClientWorkoutCard';
 const WorkoutPlans = memo(() => {
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
   const [showTemplates, setShowTemplates] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<any | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -464,19 +490,35 @@ const WorkoutPlans = memo(() => {
     window.location.href = `/workout-execution/${workoutId}`;
   }, []);
 
-  // Filter workouts based on search query - MOVED BEFORE EARLY RETURNS
+  // Filter workouts based on search query and category filter
   const filteredWorkouts = useMemo(() => {
-    if (!searchQuery.trim()) return workouts || [];
+    let result = workouts || [];
 
-    const query = searchQuery.toLowerCase();
-    return (workouts || []).filter(
-      (workout: any) =>
-        workout.title?.toLowerCase().includes(query) ||
-        workout.description?.toLowerCase().includes(query) ||
-        workout.category?.toLowerCase().includes(query) ||
-        workout.difficulty?.toLowerCase().includes(query)
-    );
-  }, [workouts, searchQuery]);
+    if (activeFilter !== 'All') {
+      const filterKey = activeFilter.toLowerCase().replace(/ /g, '_');
+      result = result.filter((workout: any) => workout.category === filterKey);
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (workout: any) =>
+          workout.title?.toLowerCase().includes(query) ||
+          workout.description?.toLowerCase().includes(query) ||
+          workout.category?.toLowerCase().includes(query) ||
+          workout.difficulty?.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [workouts, searchQuery, activeFilter]);
+
+  // Derive available categories from workouts
+  const availableCategories = useMemo(() => {
+    if (!workouts?.length) return ['All'];
+    const cats = new Set(workouts.map((w: any) => w.category).filter(Boolean));
+    return ['All', ...Array.from(cats).map((c) => formatCategory(c as string))];
+  }, [workouts]);
 
   // Improved loading state with skeletons
   if (userLoading || isLoading) {
@@ -555,7 +597,7 @@ const WorkoutPlans = memo(() => {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
             <div className="space-y-2 sm:space-y-3">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extralight tracking-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extralight tracking-tight font-['Playfair_Display']">
                 <span className="text-foreground">My </span>
                 <span
                   className={
@@ -648,6 +690,25 @@ const WorkoutPlans = memo(() => {
             />
           </div>
         </div>
+
+        {/* Category Filter Pills */}
+        {!isClient && availableCategories.length > 1 && (
+          <div className="flex flex-wrap gap-2">
+            {availableCategories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveFilter(cat)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  activeFilter === cat
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Templates Section */}
         {showTemplates && templates && (

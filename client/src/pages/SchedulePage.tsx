@@ -58,6 +58,8 @@ import {
   Monitor,
   Repeat,
   CheckCircle2,
+  List,
+  Moon,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
@@ -169,7 +171,7 @@ function SoloScheduleView() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="text-4xl md:text-6xl font-extralight tracking-tight">
+        <h1 className="text-4xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
           My{' '}
           <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
             Schedule
@@ -240,7 +242,10 @@ function TrainerClientSchedule() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
-  const [viewMode, setViewMode] = useState<'week' | 'day' | 'calendar'>('week');
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const [viewMode, setViewMode] = useState<'week' | 'day' | 'calendar' | 'list'>(
+    isMobile ? 'list' : 'week'
+  );
   const { toast } = useToast();
   const prefersReducedMotion = useReducedMotion();
 
@@ -685,7 +690,7 @@ function TrainerClientSchedule() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
         >
-          <h1 className="text-4xl md:text-6xl font-extralight tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
             {isClient ? 'My ' : 'Your '}
             <span
               className={`font-light bg-gradient-to-r ${isClient ? 'from-cyan-500 via-teal-500 to-cyan-400' : 'from-primary via-primary/80 to-primary/60'} bg-clip-text text-transparent`}
@@ -736,6 +741,17 @@ function TrainerClientSchedule() {
                 }`}
               >
                 Month
+              </TabsTrigger>
+              <TabsTrigger
+                value="list"
+                className={`transition-all duration-300 font-light ${
+                  isClient
+                    ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
+                    : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
+                }`}
+              >
+                <List className="h-4 w-4 mr-1" />
+                List
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -1185,7 +1201,7 @@ function TrainerClientSchedule() {
       </div>
 
       {/* Calendar Navigation */}
-      {viewMode !== 'calendar' && (
+      {viewMode !== 'calendar' && viewMode !== 'list' && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1347,6 +1363,126 @@ function TrainerClientSchedule() {
                         })
                       )}
                     </AnimatePresence>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      ) : viewMode === 'list' ? (
+        // List View — mobile-friendly chronological week
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="space-y-2"
+        >
+          {/* List view week navigation */}
+          <Card className="glass-strong border-border/50 shadow-premium">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-primary/10"
+                  onClick={() => setSelectedDate(addDays(selectedDate, -7))}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <h2 className="text-lg font-light tracking-wide">
+                  {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} -{' '}
+                  {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-primary/10"
+                  onClick={() => setSelectedDate(addDays(selectedDate, 7))}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Day-by-day list */}
+          {getWeekDays().map((day, dayIndex) => {
+            const dayAppointments = getAppointmentsForDate(day);
+            const isToday = isSameDay(day, new Date());
+
+            return (
+              <motion.div
+                key={day.toISOString()}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: dayIndex * 0.04 }}
+              >
+                <Card
+                  className={cn(
+                    'transition-all duration-200 border-border/50',
+                    isToday && 'border-l-4 border-l-primary shadow-sm'
+                  )}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Date column */}
+                      <div className={cn('text-center min-w-[48px]', isToday && 'text-primary')}>
+                        <p className="text-xs font-medium text-muted-foreground uppercase">
+                          {format(day, 'EEE')}
+                        </p>
+                        <p
+                          className={cn(
+                            'text-2xl font-light',
+                            isToday && 'text-primary font-medium'
+                          )}
+                        >
+                          {format(day, 'd')}
+                        </p>
+                      </div>
+
+                      {/* Events column */}
+                      <div className="flex-1 space-y-2">
+                        {dayAppointments.length === 0 ? (
+                          <div className="flex items-center gap-2 py-2">
+                            <Moon className="h-4 w-4 text-muted-foreground/40" />
+                            <span className="text-sm text-muted-foreground/60 font-light">
+                              No appointments
+                            </span>
+                          </div>
+                        ) : (
+                          dayAppointments.map((apt) => {
+                            const config = typeConfig[apt.type];
+                            const Icon = config?.icon || Dumbbell;
+                            const textColor = config?.text || 'text-foreground';
+                            const bgColor = config?.bg || 'bg-muted/10';
+                            return (
+                              <div
+                                key={apt.id}
+                                className={cn(
+                                  'flex items-center gap-3 p-2.5 rounded-lg',
+                                  bgColor,
+                                  isTrainer && 'cursor-pointer hover:brightness-110'
+                                )}
+                                onClick={isTrainer ? () => handleEdit(apt) : undefined}
+                              >
+                                <Icon className={cn('h-4 w-4 shrink-0', textColor)} />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{apt.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {apt.startTime}
+                                    {apt.endTime ? ` - ${apt.endTime}` : ''}
+                                    {apt.client?.name ? ` · ${apt.client.name}` : ''}
+                                  </p>
+                                </div>
+                                {apt.status === 'completed' && (
+                                  <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>

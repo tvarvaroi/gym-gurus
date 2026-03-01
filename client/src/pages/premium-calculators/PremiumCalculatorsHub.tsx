@@ -9,6 +9,14 @@ import {
   Zap,
   Scale,
   Dumbbell,
+  Flame,
+  BarChart3,
+  Apple,
+  Wind,
+  Target,
+  Droplets,
+  Weight,
+  type LucideIcon,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useUser } from '@/contexts/UserContext';
@@ -17,11 +25,18 @@ import { useQuery } from '@tanstack/react-query';
 import { fadeInUp, staggerContainer } from '@/lib/premiumAnimations';
 import { useSEO } from '@/lib/seo';
 
-const calculators = [
+const calculators: {
+  id: string;
+  name: string;
+  Icon: LucideIcon;
+  category: string;
+  description: string;
+  gradient: string;
+}[] = [
   {
     id: 'tdee',
     name: 'TDEE Calculator',
-    icon: '🔥',
+    Icon: Flame,
     category: 'Nutrition',
     description: 'Total Daily Energy Expenditure',
     gradient: 'from-orange-500/20 to-red-500/20',
@@ -29,7 +44,7 @@ const calculators = [
   {
     id: 'bmi',
     name: 'BMI Calculator',
-    icon: '⚖️',
+    Icon: Scale,
     category: 'Body Metrics',
     description: 'Body Mass Index',
     gradient: 'from-blue-500/20 to-cyan-500/20',
@@ -37,7 +52,7 @@ const calculators = [
   {
     id: 'body-fat',
     name: 'Body Fat Calculator',
-    icon: '📊',
+    Icon: BarChart3,
     category: 'Body Metrics',
     description: 'Body fat percentage',
     gradient: 'from-purple-500/20 to-pink-500/20',
@@ -45,7 +60,7 @@ const calculators = [
   {
     id: 'macros',
     name: 'Macro Calculator',
-    icon: '🍎',
+    Icon: Apple,
     category: 'Nutrition',
     description: 'Macronutrient breakdown',
     gradient: 'from-green-500/20 to-emerald-500/20',
@@ -53,7 +68,7 @@ const calculators = [
   {
     id: '1rm',
     name: 'One Rep Max',
-    icon: '💪',
+    Icon: Dumbbell,
     category: 'Strength',
     description: '1RM estimator',
     gradient: 'from-red-500/20 to-orange-500/20',
@@ -61,7 +76,7 @@ const calculators = [
   {
     id: 'plates',
     name: 'Plate Calculator',
-    icon: '🏋️',
+    Icon: Weight,
     category: 'Strength',
     description: 'Barbell plate loader',
     gradient: 'from-gray-500/20 to-slate-500/20',
@@ -69,7 +84,7 @@ const calculators = [
   {
     id: 'strength-standards',
     name: 'Strength Standards',
-    icon: '📈',
+    Icon: TrendingUp,
     category: 'Strength',
     description: 'Compare your lifts',
     gradient: 'from-amber-500/20 to-yellow-500/20',
@@ -77,7 +92,7 @@ const calculators = [
   {
     id: 'vo2max',
     name: 'VO2 Max',
-    icon: '🫁',
+    Icon: Wind,
     category: 'Cardio',
     description: 'Aerobic fitness',
     gradient: 'from-sky-500/20 to-blue-500/20',
@@ -85,7 +100,7 @@ const calculators = [
   {
     id: 'heart-rate-zones',
     name: 'Heart Rate Zones',
-    icon: '❤️',
+    Icon: Heart,
     category: 'Cardio',
     description: 'Training zones',
     gradient: 'from-rose-500/20 to-red-500/20',
@@ -93,7 +108,7 @@ const calculators = [
   {
     id: 'calories-burned',
     name: 'Calories Burned',
-    icon: '🔥',
+    Icon: Flame,
     category: 'Activity',
     description: 'Exercise calorie counter',
     gradient: 'from-orange-500/20 to-amber-500/20',
@@ -101,7 +116,7 @@ const calculators = [
   {
     id: 'ideal-weight',
     name: 'Ideal Weight',
-    icon: '🎯',
+    Icon: Target,
     category: 'Body Metrics',
     description: 'Healthy weight range',
     gradient: 'from-teal-500/20 to-cyan-500/20',
@@ -109,12 +124,16 @@ const calculators = [
   {
     id: 'water-intake',
     name: 'Water Intake',
-    icon: '💧',
+    Icon: Droplets,
     category: 'Nutrition',
     description: 'Hydration guide',
     gradient: 'from-blue-500/20 to-indigo-500/20',
   },
 ];
+
+const calculatorDisplayNames: Record<string, string> = Object.fromEntries(
+  calculators.map((c) => [c.id, c.name])
+);
 
 export default function PremiumCalculatorsHub() {
   const { user } = useUser();
@@ -197,8 +216,9 @@ export default function PremiumCalculatorsHub() {
                       <div className="p-3 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors cursor-pointer">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium capitalize">
-                              {result.calculatorType.replace(/_/g, ' ')}
+                            <p className="font-medium">
+                              {calculatorDisplayNames[result.calculatorType] ||
+                                result.calculatorType.replace(/_/g, ' ')}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {new Date(result.createdAt).toLocaleDateString()}
@@ -266,7 +286,9 @@ export default function PremiumCalculatorsHub() {
                 />
 
                 <div className="relative">
-                  <div className="text-5xl mb-3">{calc.icon}</div>
+                  <div className="p-3 bg-primary/10 rounded-xl w-fit mb-3">
+                    <calc.Icon className="w-7 h-7 text-primary" />
+                  </div>
                   <div className="mb-2">
                     <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
                       {calc.category}

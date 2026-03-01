@@ -27,7 +27,9 @@ import {
   Star,
   Zap,
   ListChecks,
+  Share2,
 } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -186,6 +188,8 @@ export default function WorkoutExecution() {
   const [previousPerformance, setPreviousPerformance] = useState<PreviousPerformanceData | null>(
     null
   );
+  const [showConfetti, setShowConfetti] = useState(true);
+  const prefersReducedMotion = useReducedMotion();
 
   // ─── Refs ───
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -277,6 +281,14 @@ export default function WorkoutExecution() {
       return () => clearTimeout(t);
     }
   }, [restJustFinished]);
+
+  // ─── Stop confetti after 3 seconds ───
+  useEffect(() => {
+    if (showCompletion && showConfetti) {
+      const t = setTimeout(() => setShowConfetti(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [showCompletion, showConfetti]);
 
   // ─── Load previous performance from localStorage ───
   useEffect(() => {
@@ -665,7 +677,7 @@ export default function WorkoutExecution() {
       queryClient.invalidateQueries({ queryKey: ['/api/gamification/profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/solo/stats'] });
       queryClient.invalidateQueries({ queryKey: ['/api/solo/today-workout'] });
-      setTimeout(() => setLocationRaw('/workouts'), 3000);
+      setTimeout(() => setLocationRaw('/dashboard'), 3000);
     },
     onError: (error: any) => {
       toast({
@@ -720,6 +732,29 @@ export default function WorkoutExecution() {
     ];
   }, [session]);
 
+  // PR detection: compare current best weight per exercise vs previous performance
+  const personalRecords = useMemo(() => {
+    if (!session || !previousPerformance) return [];
+    const prs: { exerciseName: string; newWeight: number; previousWeight: number }[] = [];
+    for (const ex of session.exercises) {
+      const completedSets = ex.sets.filter((s) => s.completed);
+      if (completedSets.length === 0) continue;
+      const bestWeight = Math.max(...completedSets.map((s) => s.weight));
+      const prevSets = previousPerformance.exercises[ex.exerciseName];
+      if (prevSets && prevSets.length > 0) {
+        const prevBest = Math.max(...prevSets.map((s) => s.weight));
+        if (bestWeight > prevBest) {
+          prs.push({
+            exerciseName: ex.exerciseName,
+            newWeight: bestWeight,
+            previousWeight: prevBest,
+          });
+        }
+      }
+    }
+    return prs;
+  }, [session, previousPerformance]);
+
   // ═══════════════════════════════════════════════════════════
   // RENDER: Loading
   // ═══════════════════════════════════════════════════════════
@@ -764,7 +799,7 @@ export default function WorkoutExecution() {
 
     return createPortal(
       <div className="fixed inset-0 z-[200] bg-[#0A0A0A] text-white overflow-y-auto">
-        {/* CSS confetti */}
+        {/* CSS animations */}
         <style>{`
           @keyframes confetti-fall {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
@@ -777,54 +812,66 @@ export default function WorkoutExecution() {
             top: -10px;
             animation: confetti-fall linear forwards;
           }
-          @keyframes gold-shimmer {
+          @keyframes shimmer {
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
           }
-          @keyframes pulse-gold {
-            0%, 100% { box-shadow: 0 0 20px rgba(201,168,85,0.3); }
-            50% { box-shadow: 0 0 40px rgba(201,168,85,0.6); }
+          @keyframes pulse-primary {
+            0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.3); }
+            50% { box-shadow: 0 0 40px hsl(var(--primary) / 0.6); }
           }
         `}</style>
 
-        {/* Confetti pieces */}
-        {Array.from({ length: 30 }).map((_, i) => (
-          <div
-            key={i}
-            className="confetti-piece rounded-sm"
-            style={{
-              left: `${Math.random() * 100}%`,
-              backgroundColor: ['#c9a855', '#22c55e', '#3b82f6', '#ef4444', '#a855f7'][i % 5],
-              animationDuration: `${2 + Math.random() * 3}s`,
-              animationDelay: `${Math.random() * 2}s`,
-              width: `${6 + Math.random() * 6}px`,
-              height: `${6 + Math.random() * 6}px`,
-            }}
-          />
-        ))}
+        {/* Confetti pieces — respect reduced motion, auto-stop after 3s */}
+        {showConfetti &&
+          !prefersReducedMotion &&
+          Array.from({ length: 30 }).map((_, i) => (
+            <div
+              key={i}
+              className="confetti-piece rounded-sm"
+              style={{
+                left: `${Math.random() * 100}%`,
+                backgroundColor: [
+                  'hsl(var(--primary))',
+                  '#22c55e',
+                  '#3b82f6',
+                  '#ef4444',
+                  '#a855f7',
+                ][i % 5],
+                animationDuration: `${2 + Math.random() * 3}s`,
+                animationDelay: `${Math.random() * 2}s`,
+                width: `${6 + Math.random() * 6}px`,
+                height: `${6 + Math.random() * 6}px`,
+              }}
+            />
+          ))}
 
         <div className="relative z-10 max-w-lg mx-auto px-4 py-8 space-y-8">
           {/* Header */}
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={prefersReducedMotion ? undefined : { scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', damping: 15 }}
             className="text-center pt-8"
           >
             <motion.div
-              initial={{ scale: 0, rotate: -180 }}
+              initial={prefersReducedMotion ? undefined : { scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.2, type: 'spring', damping: 12 }}
               className="mb-6 inline-block"
             >
               <div
-                className="w-20 h-20 rounded-full bg-[#c9a855]/20 flex items-center justify-center"
-                style={{ animation: 'pulse-gold 2s ease-in-out infinite' }}
+                className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center"
+                style={{
+                  animation: prefersReducedMotion
+                    ? 'none'
+                    : 'pulse-primary 2s ease-in-out infinite',
+                }}
               >
-                <Trophy className="w-10 h-10 text-[#c9a855]" />
+                <Trophy className="w-10 h-10 text-primary" />
               </div>
             </motion.div>
-            <h1 className="text-3xl font-bold mb-1">Workout Complete!</h1>
+            <h1 className="text-3xl font-bold font-['Playfair_Display'] mb-1">Workout Complete!</h1>
             <p className="text-neutral-400">{session.workoutTitle}</p>
           </motion.div>
 
@@ -843,7 +890,11 @@ export default function WorkoutExecution() {
             <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
               <Dumbbell className="w-5 h-5 text-cyan-400 mx-auto mb-2" />
               <p className="text-2xl font-bold">
-                <AnimatedNumber value={Math.round(totalVolume)} suffix=" kg" />
+                {prefersReducedMotion ? (
+                  <>{Math.round(totalVolume)} kg</>
+                ) : (
+                  <AnimatedNumber value={Math.round(totalVolume)} suffix=" kg" />
+                )}
               </p>
               <p className="text-xs text-neutral-500">Volume</p>
             </div>
@@ -857,11 +908,38 @@ export default function WorkoutExecution() {
             <div className="bg-white/5 rounded-xl p-4 text-center border border-white/5">
               <Flame className="w-5 h-5 text-orange-400 mx-auto mb-2" />
               <p className="text-2xl font-bold">
-                <AnimatedNumber value={cals} />
+                {prefersReducedMotion ? <>{cals}</> : <AnimatedNumber value={cals} />}
               </p>
               <p className="text-xs text-neutral-500">Est. kcal</p>
             </div>
           </motion.div>
+
+          {/* Personal Records */}
+          {personalRecords.length > 0 && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="rounded-xl border border-primary/30 bg-primary/5 p-4"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="w-5 h-5 text-primary" />
+                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
+                  New PR{personalRecords.length > 1 ? 's' : ''}!
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {personalRecords.map((pr) => (
+                  <div key={pr.exerciseName} className="flex items-center justify-between text-sm">
+                    <span className="text-white/80">{pr.exerciseName}</span>
+                    <span className="text-primary font-semibold">
+                      {pr.previousWeight} → {pr.newWeight} {weightUnit}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {/* Exercise breakdown */}
           <motion.div
@@ -876,7 +954,6 @@ export default function WorkoutExecution() {
             {session.exercises.map((ex, i) => {
               const completedSets = ex.sets.filter((s) => s.completed);
               if (completedSets.length === 0) return null;
-              const weights = completedSets.map((s) => `${s.weight}${weightUnit}`);
               const reps = completedSets.map((s) => s.reps);
               const mainWeight = completedSets[0]?.weight || 0;
               return (
@@ -910,7 +987,7 @@ export default function WorkoutExecution() {
                 {musclesWorked.map((m) => (
                   <span
                     key={m}
-                    className="px-3 py-1 bg-[#c9a855]/10 text-[#c9a855] rounded-full text-xs font-medium border border-[#c9a855]/20"
+                    className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium border border-primary/20"
                   >
                     {m}
                   </span>
@@ -927,20 +1004,18 @@ export default function WorkoutExecution() {
             className="text-center py-4"
           >
             <div
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#c9a855]/30"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-primary/30"
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, rgba(201,168,85,0.1), transparent)',
+                  'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)',
                 backgroundSize: '200% 100%',
-                animation: 'gold-shimmer 3s linear infinite',
+                animation: prefersReducedMotion ? 'none' : 'shimmer 3s linear infinite',
               }}
             >
-              <Star className="w-5 h-5 text-[#c9a855]" />
-              <span className="text-[#c9a855] font-bold">
+              <Star className="w-5 h-5 text-primary" />
+              <span className="text-primary font-bold">
                 {xpAwarded > 0 ? (
-                  <>
-                    +<AnimatedNumber value={xpAwarded} /> XP
-                  </>
+                  <>+{prefersReducedMotion ? xpAwarded : <AnimatedNumber value={xpAwarded} />} XP</>
                 ) : (
                   <>~{allCompletedSets * 5} XP</>
                 )}
@@ -958,7 +1033,7 @@ export default function WorkoutExecution() {
             <button
               onClick={() => saveWorkoutMutation.mutate()}
               disabled={saveWorkoutMutation.isPending || saveWorkoutMutation.isSuccess}
-              className="w-full h-14 rounded-xl bg-[#c9a855] hover:bg-[#b89745] text-black font-semibold text-base transition-colors disabled:opacity-50"
+              className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base transition-colors disabled:opacity-50"
               aria-label="Save workout and exit"
             >
               {saveWorkoutMutation.isPending
@@ -966,6 +1041,15 @@ export default function WorkoutExecution() {
                 : saveWorkoutMutation.isSuccess
                   ? 'Saved! Redirecting...'
                   : 'Save & Exit'}
+            </button>
+            <button
+              onClick={() =>
+                toast({ title: 'Coming soon!', description: 'Share your results with friends.' })
+              }
+              className="w-full h-12 rounded-xl border border-white/10 hover:bg-white/5 text-white/70 font-medium text-sm transition-colors flex items-center justify-center gap-2"
+            >
+              <Share2 className="w-4 h-4" />
+              Share Results
             </button>
             {saveWorkoutMutation.isSuccess && (
               <p className="text-center text-sm text-neutral-500">Redirecting...</p>
@@ -1109,7 +1193,7 @@ export default function WorkoutExecution() {
                       }}
                       className={`grid grid-cols-[32px_1fr_1fr_48px] gap-1.5 items-center rounded-xl px-2 py-2 transition-colors ${
                         set.completed
-                          ? 'bg-green-500/5 border border-green-500/20'
+                          ? 'bg-green-500/5 border border-green-500/20 border-l-4 border-l-green-500'
                           : isActive
                             ? 'bg-white/5 border border-[#c9a855]/30'
                             : 'bg-white/[0.02] border border-white/5'
@@ -1219,12 +1303,20 @@ export default function WorkoutExecution() {
                       </div>
 
                       {/* Complete button */}
-                      <button
+                      <motion.button
                         onClick={() => toggleSetComplete(currentExerciseIndex, sIdx)}
-                        className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl transition-all active:scale-90 ${
+                        animate={
+                          prefersReducedMotion
+                            ? undefined
+                            : set.completed
+                              ? { scale: [1, 1.3, 1] }
+                              : { scale: 1 }
+                        }
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl transition-colors ${
                           set.completed
-                            ? 'bg-green-500 text-white'
-                            : 'border-2 border-white/20 hover:border-[#c9a855]/50 text-transparent hover:text-[#c9a855]/50'
+                            ? 'bg-green-500 border-2 border-green-500 text-white'
+                            : 'border-2 border-white/20 hover:border-primary/50 text-transparent hover:text-primary/50'
                         }`}
                         aria-label={
                           set.completed
@@ -1232,8 +1324,18 @@ export default function WorkoutExecution() {
                             : `Complete set ${set.setNumber}`
                         }
                       >
-                        <Check className="w-5 h-5" strokeWidth={3} />
-                      </button>
+                        {set.completed ? (
+                          <motion.div
+                            initial={prefersReducedMotion ? undefined : { scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
+                          >
+                            <Check className="w-5 h-5 text-white" strokeWidth={3} />
+                          </motion.div>
+                        ) : (
+                          <Check className="w-5 h-5" strokeWidth={3} />
+                        )}
+                      </motion.button>
                     </motion.div>
                   );
                 })}

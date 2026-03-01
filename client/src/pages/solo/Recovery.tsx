@@ -177,7 +177,7 @@ export default function Recovery() {
         className="flex items-center justify-between"
       >
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extralight tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
             <div className="p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20">
               <Heart className="h-8 w-8 text-rose-400" />
             </div>
