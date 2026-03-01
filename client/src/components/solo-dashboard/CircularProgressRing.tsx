@@ -38,17 +38,23 @@ export const CircularProgressRing = memo(function CircularProgressRing({
   const prefersReducedMotion = useReducedMotion();
   const shouldAnimate = animated && !prefersReducedMotion;
 
+  const center = size / 2;
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const clampedValue = Math.max(0, Math.min(100, value));
-  const offset = circumference - (clampedValue / 100) * circumference;
   const resolvedColor = color || getAutoColor(clampedValue);
   const gradientId = `ring-grad-${id}`;
+
+  // Open-ring with gap at 12 o'clock (Apple Watch style)
+  const gapFraction = 0.08; // 8% gap (~29°)
+  const arcLength = circumference * (1 - gapFraction);
+  const startAngle = -90 + (gapFraction * 360) / 2; // offset so gap centers at top
+  const progressLength = arcLength * (clampedValue / 100);
 
   return (
     <div className="relative inline-flex flex-col items-center justify-center">
       <div className="relative inline-flex items-center justify-center">
-        <svg width={size} height={size} className="transform -rotate-90">
+        <svg width={size} height={size} style={{ transform: `rotate(${startAngle}deg)` }}>
           {gradient && (
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
@@ -57,42 +63,49 @@ export const CircularProgressRing = memo(function CircularProgressRing({
               </linearGradient>
             </defs>
           )}
+          {/* Background track with gap */}
           <circle
-            cx={size / 2}
-            cy={size / 2}
+            cx={center}
+            cy={center}
             r={radius}
             stroke="currentColor"
             strokeWidth={strokeWidth}
             fill="none"
             className={trackColor}
+            strokeLinecap="round"
+            strokeDasharray={`${arcLength} ${circumference - arcLength}`}
           />
+          {/* Progress arc */}
           {shouldAnimate ? (
             <motion.circle
-              cx={size / 2}
-              cy={size / 2}
+              cx={center}
+              cy={center}
               r={radius}
               stroke={gradient ? `url(#${gradientId})` : 'currentColor'}
               strokeWidth={strokeWidth}
               fill="none"
-              strokeDasharray={circumference}
               strokeLinecap="round"
               className={gradient ? undefined : resolvedColor}
-              initial={{ strokeDashoffset: circumference }}
-              animate={{ strokeDashoffset: offset }}
+              strokeDasharray={`${progressLength} ${circumference - progressLength}`}
+              initial={{
+                strokeDasharray: `0 ${circumference}`,
+              }}
+              animate={{
+                strokeDasharray: `${progressLength} ${circumference - progressLength}`,
+              }}
               transition={{ duration: 1, ease: 'easeOut' }}
             />
           ) : (
             <circle
-              cx={size / 2}
-              cy={size / 2}
+              cx={center}
+              cy={center}
               r={radius}
               stroke={gradient ? `url(#${gradientId})` : 'currentColor'}
               strokeWidth={strokeWidth}
               fill="none"
-              strokeDasharray={circumference}
-              strokeDashoffset={offset}
               strokeLinecap="round"
               className={gradient ? undefined : resolvedColor}
+              strokeDasharray={`${progressLength} ${circumference - progressLength}`}
             />
           )}
         </svg>

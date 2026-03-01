@@ -210,7 +210,7 @@ export function BodyIntelligencePanel({
       {/* Macro bar visualization */}
       {computed.macros && (
         <div className="mt-6">
-          <div className="h-1 w-full rounded-full overflow-hidden flex">
+          <div className="h-2 w-full rounded-full overflow-hidden flex">
             <div
               className="h-full bg-primary"
               style={{ width: `${computed.macros.protein.percent}%` }}
@@ -224,10 +224,21 @@ export function BodyIntelligencePanel({
               style={{ width: `${computed.macros.carbs.percent}%` }}
             />
           </div>
-          <div className="flex justify-between mt-1.5 text-[10px] text-muted-foreground/40">
-            <span>Protein {computed.macros.protein.percent}%</span>
-            <span>Fat {computed.macros.fat.percent}%</span>
-            <span>Carbs {computed.macros.carbs.percent}%</span>
+          <div className="relative h-5 mt-1.5">
+            <span className="absolute left-0 text-[10px] text-primary/70">
+              Protein {computed.macros.protein.percent}%
+            </span>
+            <span
+              className="absolute text-[10px] text-amber-500/70 -translate-x-1/2"
+              style={{
+                left: `${computed.macros.protein.percent + computed.macros.fat.percent / 2}%`,
+              }}
+            >
+              Fat {computed.macros.fat.percent}%
+            </span>
+            <span className="absolute right-0 text-[10px] text-blue-500/70">
+              Carbs {computed.macros.carbs.percent}%
+            </span>
           </div>
         </div>
       )}

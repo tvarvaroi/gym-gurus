@@ -172,7 +172,13 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
 function CalendarStrip({ weeklyActivity }: { weeklyActivity: any }) {
   const prefersReducedMotion = useReducedMotion();
   const days = weeklyActivity?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const richDays: { day: string; date: string; status: string }[] = weeklyActivity?.richDays || [];
+  const richDays: {
+    day: string;
+    date: string;
+    status: string;
+    workoutType?: string;
+    volume?: number;
+  }[] = weeklyActivity?.richDays || [];
   const totalWorkouts = weeklyActivity?.totalWorkouts || 0;
   const today = new Date().getDay();
   const todayIndex = today === 0 ? 6 : today - 1;
@@ -208,13 +214,21 @@ function CalendarStrip({ weeklyActivity }: { weeklyActivity: any }) {
       </div>
       <div className="flex justify-between">
         {days.map((day: string, index: number) => {
-          const status = richDays[index]?.status || 'rest';
+          const richDay = richDays[index];
+          const status = richDay?.status || 'rest';
           const isToday = index === todayIndex;
+          const workoutType = richDay?.workoutType;
+          const volume = richDay?.volume;
+
+          // Capitalize and truncate workout type (e.g. "push" → "Push")
+          const typeLabel = workoutType
+            ? workoutType.charAt(0).toUpperCase() + workoutType.slice(1, 5)
+            : null;
 
           return (
             <div
               key={day}
-              className={`flex flex-col items-center gap-1.5 px-2 py-2 rounded-xl ${
+              className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl min-w-0 ${
                 isToday ? 'bg-primary/5' : ''
               }`}
             >
@@ -239,6 +253,21 @@ function CalendarStrip({ weeklyActivity }: { weeklyActivity: any }) {
                       : 'bg-transparent'
                 }`}
               />
+              {/* Workout details for completed days */}
+              {status === 'completed' && typeLabel ? (
+                <div className="flex flex-col items-center">
+                  <span className="text-[9px] text-muted-foreground/50 truncate max-w-[40px]">
+                    {typeLabel}
+                  </span>
+                  {volume != null && volume > 0 && (
+                    <span className="text-[9px] text-muted-foreground/30 tabular-nums">
+                      {formatVolume(volume)}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="h-[26px]" />
+              )}
             </div>
           );
         })}

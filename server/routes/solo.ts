@@ -263,12 +263,25 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
 
     // Build activity array for each day (Mon-Sun)
     const activity: boolean[] = [];
-    const sessionsByDate = new Map<string, boolean>();
+    const sessionsByDate = new Map<
+      string,
+      { workoutType: string | null; workoutName: string | null; volume: number }
+    >();
     const todayStr = format(today, 'yyyy-MM-dd');
 
     sessions.forEach((session) => {
       const dateKey = format(session.startedAt, 'yyyy-MM-dd');
-      sessionsByDate.set(dateKey, true);
+      const vol = session.totalVolumeKg ? parseFloat(String(session.totalVolumeKg)) : 0;
+      const existing = sessionsByDate.get(dateKey);
+      if (existing) {
+        existing.volume += vol;
+      } else {
+        sessionsByDate.set(dateKey, {
+          workoutType: session.workoutType || null,
+          workoutName: session.workoutName || null,
+          volume: vol,
+        });
+      }
     });
 
     // Build rich day status array
@@ -277,7 +290,8 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
     for (let i = 0; i < 7; i++) {
       const date = addDays(weekStart, i);
       const dateKey = format(date, 'yyyy-MM-dd');
-      const hasSession = sessionsByDate.has(dateKey);
+      const sessionInfo = sessionsByDate.get(dateKey);
+      const hasSession = !!sessionInfo;
       const isPlanned = plannedDayIndices.has(i);
       const isToday = dateKey === todayStr;
       const isFuture = date > today;
@@ -289,7 +303,16 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
       else status = 'rest';
 
       activity.push(hasSession);
-      richDays.push({ day: dayNames[i], date: dateKey, status });
+      richDays.push({
+        day: dayNames[i],
+        date: dateKey,
+        status,
+        ...(sessionInfo && {
+          workoutType: sessionInfo.workoutType,
+          workoutName: sessionInfo.workoutName,
+          volume: Math.round(sessionInfo.volume),
+        }),
+      });
     }
 
     res.json({

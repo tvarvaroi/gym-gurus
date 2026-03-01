@@ -88,17 +88,42 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
             </CircularProgressRing>
           </div>
 
-          {/* Compact inline muscle tags */}
-          <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1.5 text-xs">
-            {muscleStatus.map((muscle) => (
-              <span key={muscle.name} className="flex items-center gap-1">
-                <span
-                  className={`inline-block w-1.5 h-1.5 rounded-full ${muscle.dotColor.replace('text-', 'bg-')}`}
-                />
-                <span className="text-muted-foreground">{muscle.name}</span>
-                <span className="tabular-nums font-medium">{muscle.recovery}%</span>
-              </span>
-            ))}
+          {/* Compact inline muscle tags + recommendation */}
+          <div className="flex-1">
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1.5 text-xs">
+              {muscleStatus.map((muscle) => (
+                <span key={muscle.name} className="flex items-center gap-1">
+                  <span
+                    className={`inline-block w-1.5 h-1.5 rounded-full ${muscle.dotColor.replace('text-', 'bg-')}`}
+                  />
+                  <span className="text-muted-foreground">{muscle.name}</span>
+                  <span className="tabular-nums font-medium">{muscle.recovery}%</span>
+                </span>
+              ))}
+            </div>
+
+            {/* Ready to train recommendation */}
+            {(() => {
+              const readyMuscles =
+                fatigueData
+                  ?.filter((m: any) => m.lastTrainedAt && 100 - (m.fatigueLevel || 0) >= 80)
+                  .map((m: any) =>
+                    m.muscleGroup
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, (c: string) => c.toUpperCase())
+                  )
+                  .slice(0, 3) || [];
+
+              if (readyMuscles.length === 0) return null;
+              return (
+                <div className="mt-4 pt-3 border-t border-border/10">
+                  <p className="text-xs text-muted-foreground/60">
+                    <span className="text-green-500 font-medium">Ready to train: </span>
+                    {readyMuscles.join(', ')}
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
