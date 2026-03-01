@@ -9,6 +9,7 @@ import { HeroHeader } from '@/components/solo-dashboard/HeroHeader';
 import { TodaysActionZone } from '@/components/solo-dashboard/TodaysActionZone';
 import { WeeklyOverview } from '@/components/solo-dashboard/WeeklyOverview';
 import { RecoveryBodyStatus } from '@/components/solo-dashboard/RecoveryBodyStatus';
+import { BodyIntelligencePanel } from '@/components/solo-dashboard/BodyIntelligencePanel';
 import { FeatureWidgetsGrid } from '@/components/solo-dashboard/FeatureWidgetsGrid';
 import { RecentActivityFeed } from '@/components/solo-dashboard/RecentActivityFeed';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -83,6 +84,8 @@ export function SoloDashboard() {
         fitnessProfile={data.fitnessProfile}
         loading={data.recoveryLoading}
       />
+
+      <BodyIntelligencePanel data={data.bodyIntelligence} loading={data.bodyIntelLoading} />
 
       <FeatureWidgetsGrid />
 

@@ -55,6 +55,12 @@ export function useSoloDashboardData() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const bodyIntelligence = useQuery<any>({
+    queryKey: ['/api/solo/body-intelligence'],
+    retry: false,
+    staleTime: 10 * 60 * 1000,
+  });
+
   const isInitialLoading = soloStats.isLoading && gamification.isLoading;
   const hasError = soloStats.error;
 
@@ -67,6 +73,7 @@ export function useSoloDashboardData() {
     weeklyActivity.isLoading;
   const recoveryLoading = fatigueData.isLoading || fitnessProfile.isLoading;
   const activityLoading = progress.isLoading || xpHistory.isLoading || mealPlans.isLoading;
+  const bodyIntelLoading = bodyIntelligence.isLoading;
 
   return {
     soloStats: soloStats.data,
@@ -78,10 +85,12 @@ export function useSoloDashboardData() {
     progress: progress.data,
     xpHistory: xpHistory.data,
     mealPlans: mealPlans.data,
+    bodyIntelligence: bodyIntelligence.data,
     isInitialLoading,
     hasError,
     weeklyLoading,
     recoveryLoading,
     activityLoading,
+    bodyIntelLoading,
   };
 }

@@ -1503,4 +1503,203 @@ router.post('/save-ai-workout', async (req: Request, res: Response) => {
   }
 });
 
+// ==================== Body Intelligence ====================
+
+// GET /api/solo/body-intelligence — auto-computed metrics from profile data
+router.get('/body-intelligence', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const database = await getDb();
+    const [profile] = await database
+      .select()
+      .from(userFitnessProfile)
+      .where(eq(userFitnessProfile.userId, userId))
+      .limit(1);
+
+    if (!profile) {
+      return res.json({
+        profile: null,
+        computed: {
+          bmi: null,
+          bmr: null,
+          tdee: null,
+          macros: null,
+          idealWeight: null,
+          waterIntake: null,
+          ffmi: null,
+        },
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    const weight = profile.weightKg ? Number(profile.weightKg) : null;
+    const height = profile.heightCm ? Number(profile.heightCm) : null;
+    const bodyFat = profile.bodyFatPercentage ? Number(profile.bodyFatPercentage) : null;
+    const gender = profile.gender as string | null;
+
+    // Compute age from dateOfBirth
+    let age: number | null = null;
+    if (profile.dateOfBirth) {
+      const dob = new Date(profile.dateOfBirth);
+      const now = new Date();
+      age = now.getFullYear() - dob.getFullYear();
+      const monthDiff = now.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+        age--;
+      }
+    }
+
+    // Activity multiplier from workoutFrequencyPerWeek
+    const freq = profile.workoutFrequencyPerWeek ? Number(profile.workoutFrequencyPerWeek) : null;
+    let activityMultiplier = 1.55; // default moderate
+    if (freq !== null) {
+      if (freq <= 2) activityMultiplier = 1.2;
+      else if (freq === 3) activityMultiplier = 1.375;
+      else if (freq === 4) activityMultiplier = 1.55;
+      else if (freq === 5) activityMultiplier = 1.725;
+      else activityMultiplier = 1.9;
+    } else if (profile.activityLevel) {
+      // Fallback to activityLevel string
+      const levelMap: Record<string, number> = {
+        sedentary: 1.2,
+        lightly_active: 1.375,
+        moderately_active: 1.55,
+        active: 1.725,
+        very_active: 1.9,
+      };
+      activityMultiplier = levelMap[profile.activityLevel as string] || 1.55;
+    }
+
+    // BMI
+    let bmi = null;
+    if (weight && height) {
+      const bmiValue = weight / Math.pow(height / 100, 2);
+      let category = 'Normal';
+      if (bmiValue < 18.5) category = 'Underweight';
+      else if (bmiValue < 25) category = 'Normal';
+      else if (bmiValue < 30) category = 'Overweight';
+      else category = 'Obese';
+      bmi = {
+        value: Math.round(bmiValue * 10) / 10,
+        category,
+        range: '18.5-24.9',
+      };
+    }
+
+    // BMR (Mifflin-St Jeor)
+    let bmr = null;
+    if (weight && height && age && gender) {
+      const bmrValue = 10 * weight + 6.25 * height - 5 * age + (gender === 'male' ? 5 : -161);
+      bmr = { value: Math.round(bmrValue), unit: 'kcal/day' };
+    }
+
+    // TDEE
+    let tdee = null;
+    if (bmr) {
+      tdee = {
+        value: Math.round(bmr.value * activityMultiplier),
+        unit: 'kcal/day',
+        multiplier: activityMultiplier,
+      };
+    }
+
+    // Macros
+    let macros = null;
+    if (tdee && weight) {
+      const proteinGrams = Math.round(weight * 2);
+      const fatGrams = Math.round(weight * 0.8);
+      const proteinCals = proteinGrams * 4;
+      const fatCals = fatGrams * 9;
+      const carbsCals = Math.max(0, tdee.value - proteinCals - fatCals);
+      const carbsGrams = Math.round(carbsCals / 4);
+      const total = proteinCals + fatCals + carbsCals;
+      macros = {
+        protein: {
+          grams: proteinGrams,
+          calories: proteinCals,
+          percent: Math.round((proteinCals / total) * 100),
+        },
+        fat: {
+          grams: fatGrams,
+          calories: fatCals,
+          percent: Math.round((fatCals / total) * 100),
+        },
+        carbs: {
+          grams: carbsGrams,
+          calories: carbsCals,
+          percent: Math.round((carbsCals / total) * 100),
+        },
+      };
+    }
+
+    // Ideal Weight (Devine formula)
+    let idealWeight = null;
+    if (height && gender) {
+      const heightInches = height / 2.54;
+      const idealKg =
+        gender === 'male' ? 50 + 2.3 * (heightInches - 60) : 45.5 + 2.3 * (heightInches - 60);
+      idealWeight = {
+        value: Math.round(idealKg * 10) / 10,
+        unit: 'kg',
+        formula: 'Devine',
+      };
+    }
+
+    // Water Intake
+    let waterIntake = null;
+    if (weight) {
+      let liters = weight * 0.033;
+      // Adjust for activity
+      if (activityMultiplier >= 1.725) liters += 0.5;
+      else if (activityMultiplier >= 1.55) liters += 0.3;
+      waterIntake = {
+        value: Math.round(liters * 10) / 10,
+        unit: 'liters/day',
+      };
+    }
+
+    // FFMI (requires body fat)
+    let ffmi = null;
+    if (weight && height && bodyFat) {
+      const leanMass = weight * (1 - bodyFat / 100);
+      const heightM = height / 100;
+      const ffmiValue = leanMass / Math.pow(heightM, 2) + 6.1 * (1.8 - heightM);
+      ffmi = {
+        value: Math.round(ffmiValue * 10) / 10,
+        unit: '',
+        category:
+          ffmiValue < 18
+            ? 'Below Average'
+            : ffmiValue < 20
+              ? 'Average'
+              : ffmiValue < 22
+                ? 'Above Average'
+                : ffmiValue < 25
+                  ? 'Excellent'
+                  : 'Superior',
+      };
+    }
+
+    res.json({
+      profile: {
+        weight,
+        height,
+        age,
+        gender,
+        bodyFat,
+        activityLevel: profile.activityLevel || null,
+      },
+      computed: { bmi, bmr, tdee, macros, idealWeight, waterIntake, ffmi },
+      updatedAt: profile.updatedAt || new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error computing body intelligence:', error);
+    res.status(500).json({ error: 'Failed to compute body intelligence' });
+  }
+});
+
 export default router;
