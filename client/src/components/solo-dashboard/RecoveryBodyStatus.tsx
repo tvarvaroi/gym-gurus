@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
-import { Heart, Activity, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { CircularProgressRing } from './CircularProgressRing';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
@@ -17,16 +17,14 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
     fatigueData
       ?.filter((m: any) => m.fatigueLevel > 0 || m.lastTrainedAt)
       .sort((a: any, b: any) => b.fatigueLevel - a.fatigueLevel)
-      .slice(0, 5)
+      .slice(0, 6)
       .map((m: any) => {
         const recovery = 100 - m.fatigueLevel;
         return {
           name: m.muscleGroup.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
           recovery,
           dotColor:
-            recovery >= 80 ? 'bg-green-500' : recovery >= 50 ? 'bg-amber-500' : 'bg-red-500',
-          barColor:
-            recovery >= 80 ? 'bg-green-500' : recovery >= 50 ? 'bg-amber-500' : 'bg-red-500',
+            recovery >= 80 ? 'text-green-500' : recovery >= 50 ? 'text-amber-500' : 'text-red-500',
         };
       }) || [];
 
@@ -44,20 +42,19 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
   const animProps = prefersReducedMotion
     ? {}
     : {
-        initial: { opacity: 0, y: 20 },
+        initial: { opacity: 0, y: 8 },
         animate: { opacity: 1, y: 0 },
-        transition: { delay: 0.3 },
+        transition: { delay: 0.1 },
       };
 
   return (
-    <motion.div {...animProps} className="bg-card rounded-xl p-6 border border-border/50 h-full">
+    <motion.div {...animProps} className="bg-card rounded-2xl p-6 border border-border/20 h-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold flex items-center gap-2">
-          <Heart className="w-5 h-5 text-rose-500" />
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
           Recovery Status
-        </h3>
+        </p>
         <Link href="/solo/recovery">
-          <a className="text-xs text-primary hover:underline flex items-center gap-1">
+          <a className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
             Full View <ChevronRight className="w-3 h-3" />
           </a>
         </Link>
@@ -70,35 +67,38 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
         </div>
       ) : (
         <div className="flex flex-col items-center">
-          {/* Large Recovery Ring */}
-          <div className="mb-4">
+          {/* Large Recovery Ring with gradient */}
+          <div className="mb-5">
             <CircularProgressRing
               value={overallRecovery}
-              size={140}
+              size={180}
               strokeWidth={10}
-              label="Overall"
+              gradient
+              id="recovery"
               animated={!prefersReducedMotion}
-            />
+            >
+              <div className="flex flex-col items-center">
+                <span className="text-[40px] font-bold tabular-nums leading-none">
+                  {overallRecovery}
+                </span>
+                <span className="text-base text-muted-foreground">%</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mt-1">
+                  recovered
+                </span>
+              </div>
+            </CircularProgressRing>
           </div>
 
-          {/* Muscle Group List */}
-          <div className="w-full space-y-2.5">
+          {/* Compact inline muscle tags */}
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 text-xs">
             {muscleStatus.map((muscle) => (
-              <div key={muscle.name}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${muscle.dotColor}`} />
-                    <span className="font-medium">{muscle.name}</span>
-                  </span>
-                  <span className="text-muted-foreground">{muscle.recovery}%</span>
-                </div>
-                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${muscle.barColor} rounded-full transition-all duration-500`}
-                    style={{ width: `${muscle.recovery}%` }}
-                  />
-                </div>
-              </div>
+              <span key={muscle.name} className="flex items-center gap-1">
+                <span
+                  className={`inline-block w-1.5 h-1.5 rounded-full ${muscle.dotColor.replace('text-', 'bg-')}`}
+                />
+                <span className="text-muted-foreground">{muscle.name}</span>
+                <span className="tabular-nums font-medium">{muscle.recovery}%</span>
+              </span>
             ))}
           </div>
         </div>
@@ -114,36 +114,34 @@ function BodyStatsWidget({ fitnessProfile }: { fitnessProfile: any }) {
   const height = fitnessProfile?.heightCm;
   const bodyFat = fitnessProfile?.bodyFatPercentage;
   const tdee = fitnessProfile?.dailyCalorieTarget;
-
-  // Calculate BMI
   const bmi = weight && height ? (weight / Math.pow(height / 100, 2)).toFixed(1) : null;
-  const bmiPercent = bmi ? Math.min(100, ((parseFloat(bmi) - 15) / 25) * 100) : 0;
-
-  // Body fat ring (0-50% scale)
-  const bodyFatPercent = bodyFat ? Math.min(100, (bodyFat / 50) * 100) : 0;
-
-  // TDEE ring (out of 4000)
-  const tdeePercent = tdee ? Math.min(100, (tdee / 4000) * 100) : 0;
 
   const animProps = prefersReducedMotion
     ? {}
     : {
-        initial: { opacity: 0, y: 20 },
+        initial: { opacity: 0, y: 8 },
         animate: { opacity: 1, y: 0 },
-        transition: { delay: 0.35 },
+        transition: { delay: 0.15 },
       };
 
   const hasAnyData = weight || height || tdee;
 
+  const rows: { label: string; value: string | null; unit?: string }[] = [
+    { label: 'BMI', value: bmi, unit: '' },
+    { label: 'Body Fat', value: bodyFat ? `${bodyFat}` : null, unit: '%' },
+    { label: 'TDEE', value: tdee ? `${tdee}` : null, unit: 'kcal' },
+    { label: 'Weight', value: weight ? `${weight}` : null, unit: 'kg' },
+    { label: 'Height', value: height ? `${height}` : null, unit: 'cm' },
+  ];
+
   return (
-    <motion.div {...animProps} className="bg-card rounded-xl p-6 border border-border/50 h-full">
+    <motion.div {...animProps} className="bg-card rounded-2xl p-6 border border-border/20 h-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold flex items-center gap-2">
-          <Activity className="w-5 h-5 text-blue-500" />
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
           Body Stats
-        </h3>
+        </p>
         <Link href="/settings">
-          <a className="text-xs text-primary hover:underline flex items-center gap-1">
+          <a className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
             Update <ChevronRight className="w-3 h-3" />
           </a>
         </Link>
@@ -153,72 +151,36 @@ function BodyStatsWidget({ fitnessProfile }: { fitnessProfile: any }) {
         <div className="text-center py-8 text-sm text-muted-foreground">
           <p>No body stats set</p>
           <Link href="/solo/onboarding">
-            <a className="text-primary hover:underline text-xs mt-1 block">Complete your profile</a>
+            <a className="text-primary hover:text-primary/80 text-xs mt-1 block transition-colors">
+              Complete your profile
+            </a>
           </Link>
         </div>
       ) : (
-        <>
-          {/* Mini Gauges Row */}
-          <div className="flex justify-around mb-5">
-            <div className="flex flex-col items-center">
-              <CircularProgressRing
-                value={bmiPercent}
-                size={72}
-                strokeWidth={6}
-                displayValue={bmi || '--'}
-                color="text-primary"
-                animated={!prefersReducedMotion}
-              />
-              <span className="text-[10px] text-muted-foreground mt-1">BMI</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <CircularProgressRing
-                value={bodyFatPercent}
-                size={72}
-                strokeWidth={6}
-                displayValue={bodyFat ? `${bodyFat}%` : '--'}
-                color="text-primary"
-                animated={!prefersReducedMotion}
-              />
-              <span className="text-[10px] text-muted-foreground mt-1">Body Fat</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <CircularProgressRing
-                value={tdeePercent}
-                size={72}
-                strokeWidth={6}
-                displayValue={tdee ? `${(tdee / 1000).toFixed(1)}k` : '--'}
-                color="text-primary"
-                animated={!prefersReducedMotion}
-              />
-              <span className="text-[10px] text-muted-foreground mt-1">TDEE</span>
-            </div>
-          </div>
-
-          {/* Key Stats */}
-          <div className="space-y-2 text-sm">
-            {weight && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Weight</span>
-                <span className="font-medium">{weight} kg</span>
-              </div>
-            )}
-            {height && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Height</span>
-                <span className="font-medium">{height} cm</span>
-              </div>
-            )}
-            {fitnessProfile?.primaryGoal && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Goal</span>
-                <span className="font-medium capitalize">
-                  {fitnessProfile.primaryGoal.replace(/_/g, ' ')}
+        <div className="space-y-3">
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              className="flex items-center justify-between py-1.5 border-b border-border/10 last:border-0"
+            >
+              <span className="text-sm text-muted-foreground">{row.label}</span>
+              {row.value ? (
+                <span className="text-sm font-medium tabular-nums">
+                  {row.value}
+                  {row.unit && (
+                    <span className="text-muted-foreground/60 ml-0.5 font-normal">{row.unit}</span>
+                  )}
                 </span>
-              </div>
-            )}
-          </div>
-        </>
+              ) : (
+                <Link href="/settings">
+                  <a className="text-xs text-primary hover:text-primary/80 transition-colors">
+                    Set
+                  </a>
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </motion.div>
   );
@@ -226,33 +188,22 @@ function BodyStatsWidget({ fitnessProfile }: { fitnessProfile: any }) {
 
 function RecoveryBodySkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
-      <div className="bg-card rounded-xl p-6 border border-border/50">
-        <div className="h-5 w-36 bg-muted rounded mb-4" />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
+      <div className="bg-card rounded-2xl p-6 border border-border/20">
+        <div className="h-3 w-28 bg-muted rounded mb-6" />
         <div className="flex flex-col items-center">
-          <div className="w-[140px] h-[140px] rounded-full border-[10px] border-muted mb-4" />
-          <div className="w-full space-y-3">
+          <div className="w-[180px] h-[180px] rounded-full border-[10px] border-muted mb-5" />
+          <div className="flex flex-wrap justify-center gap-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i}>
-                <div className="h-3 w-24 bg-muted rounded mb-1" />
-                <div className="h-1.5 bg-muted rounded-full" />
-              </div>
+              <div key={i} className="h-4 w-20 bg-muted rounded" />
             ))}
           </div>
         </div>
       </div>
-      <div className="bg-card rounded-xl p-6 border border-border/50">
-        <div className="h-5 w-28 bg-muted rounded mb-4" />
-        <div className="flex justify-around mb-5">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <div className="w-[72px] h-[72px] rounded-full border-[6px] border-muted" />
-              <div className="h-3 w-8 bg-muted rounded mt-1" />
-            </div>
-          ))}
-        </div>
-        <div className="space-y-2">
-          {[...Array(3)].map((_, i) => (
+      <div className="bg-card rounded-2xl p-6 border border-border/20">
+        <div className="h-3 w-20 bg-muted rounded mb-6" />
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
             <div key={i} className="flex justify-between">
               <div className="h-4 w-16 bg-muted rounded" />
               <div className="h-4 w-12 bg-muted rounded" />
@@ -272,7 +223,7 @@ export function RecoveryBodyStatus({
   if (loading) return <RecoveryBodySkeleton />;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <RecoveryWidget fatigueData={fatigueData} />
       <BodyStatsWidget fitnessProfile={fitnessProfile} />
     </div>

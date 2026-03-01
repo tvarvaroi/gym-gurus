@@ -12,6 +12,8 @@ interface CircularProgressRingProps {
   label?: string;
   animated?: boolean;
   children?: React.ReactNode;
+  gradient?: boolean;
+  id?: string;
 }
 
 function getAutoColor(value: number): string {
@@ -30,6 +32,8 @@ export const CircularProgressRing = memo(function CircularProgressRing({
   label,
   animated = true,
   children,
+  gradient = false,
+  id = 'default',
 }: CircularProgressRingProps) {
   const prefersReducedMotion = useReducedMotion();
   const shouldAnimate = animated && !prefersReducedMotion;
@@ -39,11 +43,20 @@ export const CircularProgressRing = memo(function CircularProgressRing({
   const clampedValue = Math.max(0, Math.min(100, value));
   const offset = circumference - (clampedValue / 100) * circumference;
   const resolvedColor = color || getAutoColor(clampedValue);
+  const gradientId = `ring-grad-${id}`;
 
   return (
     <div className="relative inline-flex flex-col items-center justify-center">
       <div className="relative inline-flex items-center justify-center">
         <svg width={size} height={size} className="transform -rotate-90">
+          {gradient && (
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+              </linearGradient>
+            </defs>
+          )}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -58,12 +71,12 @@ export const CircularProgressRing = memo(function CircularProgressRing({
               cx={size / 2}
               cy={size / 2}
               r={radius}
-              stroke="currentColor"
+              stroke={gradient ? `url(#${gradientId})` : 'currentColor'}
               strokeWidth={strokeWidth}
               fill="none"
               strokeDasharray={circumference}
               strokeLinecap="round"
-              className={resolvedColor}
+              className={gradient ? undefined : resolvedColor}
               initial={{ strokeDashoffset: circumference }}
               animate={{ strokeDashoffset: offset }}
               transition={{ duration: 1, ease: 'easeOut' }}
@@ -73,13 +86,13 @@ export const CircularProgressRing = memo(function CircularProgressRing({
               cx={size / 2}
               cy={size / 2}
               r={radius}
-              stroke="currentColor"
+              stroke={gradient ? `url(#${gradientId})` : 'currentColor'}
               strokeWidth={strokeWidth}
               fill="none"
               strokeDasharray={circumference}
               strokeDashoffset={offset}
               strokeLinecap="round"
-              className={resolvedColor}
+              className={gradient ? undefined : resolvedColor}
             />
           )}
         </svg>

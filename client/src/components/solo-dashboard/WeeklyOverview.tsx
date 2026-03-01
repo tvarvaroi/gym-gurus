@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
-import { Flame, Dumbbell, Target, Trophy, Calendar, ChevronRight } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { ChevronRight } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface WeeklyOverviewProps {
@@ -13,108 +13,163 @@ interface WeeklyOverviewProps {
   loading?: boolean;
 }
 
-// Stat Card sub-component
-function StatCard({
-  icon,
-  label,
-  value,
-  subtext,
-  color,
-  delay,
+// Consolidated Stats Card — one card, four numbers
+function ConsolidatedStats({
+  workoutsThisWeek,
+  weeklyVolume,
+  streak,
+  totalPRs,
 }: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  subtext: string;
-  color: string;
-  delay: number;
+  workoutsThisWeek: number;
+  weeklyVolume: number;
+  streak: number;
+  totalPRs: number;
 }) {
   const prefersReducedMotion = useReducedMotion();
-  const motionProps = prefersReducedMotion
+  const animProps = prefersReducedMotion
     ? {}
     : {
-        initial: { opacity: 0, y: 16 },
+        initial: { opacity: 0, y: 8 },
         animate: { opacity: 1, y: 0 },
-        transition: { delay },
-        whileHover: { y: -2, transition: { duration: 0.15 } },
+        transition: { duration: 0.3 },
       };
 
+  const stats = [
+    {
+      value: workoutsThisWeek,
+      label: 'Workouts',
+      sub: 'this week',
+    },
+    {
+      value: weeklyVolume > 1000 ? `${(weeklyVolume / 1000).toFixed(1)}k` : weeklyVolume,
+      label: 'Volume',
+      sub: 'kg lifted',
+    },
+    {
+      value: streak,
+      label: 'Streak',
+      sub: (
+        <span className="flex items-center gap-0.5 justify-center md:justify-start">
+          {Array.from({ length: Math.min(streak, 7) }).map((_, i) => (
+            <span key={i} className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
+          ))}
+          {streak === 0 && <span>days</span>}
+        </span>
+      ),
+    },
+    {
+      value: totalPRs,
+      label: 'PRs',
+      sub: 'all time',
+    },
+  ];
+
   return (
-    <motion.div {...motionProps} className="bg-card rounded-xl p-4 border border-border/50">
-      <div className={`w-9 h-9 ${color} rounded-lg flex items-center justify-center mb-3`}>
-        {icon}
+    <motion.div {...animProps} className="bg-card rounded-2xl border border-border/20 p-6">
+      <div className="grid grid-cols-2 md:flex md:items-center md:justify-between gap-6 md:gap-0">
+        {stats.map((stat, index) => (
+          <div key={stat.label} className="flex items-center gap-0 md:gap-8">
+            {index > 0 && <div className="hidden md:block h-14 w-px bg-border/30" />}
+            <div className="flex flex-col items-center md:items-start md:pl-8 first:md:pl-0">
+              <span className="text-3xl md:text-4xl font-bold tabular-nums leading-none">
+                {stat.value}
+              </span>
+              <span className="text-xs text-muted-foreground/60 mt-1">{stat.label}</span>
+              <span className="text-[11px] text-muted-foreground/40 mt-0.5">{stat.sub}</span>
+            </div>
+          </div>
+        ))}
       </div>
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-xs text-muted-foreground/60">{subtext}</p>
     </motion.div>
   );
 }
 
-// Volume Chart
+// Volume Chart — AreaChart with gradient fill
 function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
+  const prefersReducedMotion = useReducedMotion();
   if (!weeklyData || weeklyData.length === 0) return null;
 
-  // Take last 8 weeks, format for chart
   const chartData = weeklyData.slice(-8).map((w: any) => ({
     week: w.week || w.label || '',
     volume: Math.round(w.volume || w.totalVolume || 0),
   }));
 
+  const totalVolume = chartData.reduce((sum, d) => sum + d.volume, 0);
+  const avg = Math.round(totalVolume / chartData.length);
+
+  const animProps = prefersReducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.3, delay: 0.05 },
+      };
+
   return (
-    <div className="bg-card rounded-xl p-4 border border-border/50">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="font-bold text-sm flex items-center gap-2">
-          <Dumbbell className="w-4 h-4 text-primary" />
-          Weekly Volume
-        </h4>
+    <motion.div {...animProps} className="bg-card rounded-2xl p-4 border border-border/20">
+      <div className="flex items-center justify-between mb-1">
+        <div>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+            Weekly Volume
+          </p>
+          <p className="text-3xl font-bold tabular-nums leading-tight">
+            {totalVolume > 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume}
+            <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>
+          </p>
+        </div>
         <Link href="/progress">
-          <a className="text-xs text-primary hover:underline flex items-center gap-1">
+          <a className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
             View All <ChevronRight className="w-3 h-3" />
           </a>
         </Link>
       </div>
-      <ResponsiveContainer width="100%" height={180}>
-        <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-          <XAxis
-            dataKey="week"
-            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
-          />
-          <Tooltip
-            contentStyle={{
-              background: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              fontSize: '12px',
-            }}
-            formatter={(value: number) => [`${value.toLocaleString()} kg`, 'Volume']}
-          />
-          <Bar dataKey="volume" radius={[4, 4, 0, 0]}>
-            {chartData.map((_, index) => (
-              <Cell
-                key={index}
-                fill={
-                  index === chartData.length - 1 ? 'hsl(271, 81%, 56%)' : 'hsl(271, 81%, 56% / 0.4)'
-                }
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+      <div className="h-[220px] md:h-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+            <defs>
+              <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis
+              dataKey="week"
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              contentStyle={{
+                background: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                fontSize: '12px',
+              }}
+              formatter={(value: number) => [`${value.toLocaleString()} kg`, 'Volume']}
+            />
+            <ReferenceLine
+              y={avg}
+              strokeDasharray="4 4"
+              stroke="hsl(var(--muted-foreground))"
+              strokeOpacity={0.3}
+            />
+            <Area
+              type="monotone"
+              dataKey="volume"
+              stroke="hsl(var(--primary))"
+              strokeWidth={2}
+              fill="url(#volumeGradient)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </motion.div>
   );
 }
 
-// Calendar Strip
+// Calendar Strip — clean bar indicators
 function CalendarStrip({ weeklyActivity }: { weeklyActivity: any }) {
+  const prefersReducedMotion = useReducedMotion();
   const days = weeklyActivity?.days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const richDays: { day: string; date: string; status: string }[] = weeklyActivity?.richDays || [];
   const totalWorkouts = weeklyActivity?.totalWorkouts || 0;
@@ -132,74 +187,79 @@ function CalendarStrip({ weeklyActivity }: { weeklyActivity: any }) {
     return d.getDate();
   });
 
+  const animProps = prefersReducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.3, delay: 0.1 },
+      };
+
   return (
-    <div className="bg-card rounded-xl p-4 border border-border/50">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="font-bold text-sm flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-blue-500" />
+    <motion.div {...animProps} className="bg-card rounded-2xl p-4 border border-border/20">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
           This Week
-        </h4>
-        <span className="text-xs text-muted-foreground">
+        </p>
+        <span className="text-xs text-muted-foreground tabular-nums">
           {totalWorkouts} workout{totalWorkouts === 1 ? '' : 's'}
         </span>
       </div>
       <div className="flex justify-between">
         {days.map((day: string, index: number) => {
           const status = richDays[index]?.status || 'rest';
-          const circleClass =
-            status === 'completed'
-              ? 'bg-green-500 text-white'
-              : status === 'today_pending'
-                ? 'border-2 border-green-500 bg-transparent text-green-500 animate-pulse'
-                : status === 'planned'
-                  ? 'border-2 border-primary/40 bg-transparent text-primary/60'
-                  : index <= todayIndex
-                    ? 'bg-secondary text-muted-foreground'
-                    : 'bg-secondary/50 text-muted-foreground/50';
+          const isToday = index === todayIndex;
+
           return (
-            <div key={day} className="flex flex-col items-center gap-1.5">
+            <div
+              key={day}
+              className={`flex flex-col items-center gap-1.5 px-2 py-2 rounded-xl ${
+                isToday ? 'bg-primary/5' : ''
+              }`}
+            >
               <span
-                className={`text-[10px] ${
-                  index === todayIndex ? 'font-bold text-primary' : 'text-muted-foreground'
+                className={`text-[11px] uppercase tracking-wider ${
+                  isToday ? 'font-bold text-primary' : 'text-muted-foreground/60'
                 }`}
               >
                 {day}
               </span>
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${circleClass}`}
+              <span
+                className={`text-sm tabular-nums ${isToday ? 'font-bold' : 'text-muted-foreground'}`}
               >
-                {status === 'completed' ? '✓' : weekDates[index]}
-              </div>
+                {weekDates[index]}
+              </span>
+              <div
+                className={`h-1 w-6 rounded-full ${
+                  status === 'completed'
+                    ? 'bg-green-500'
+                    : status === 'today_pending'
+                      ? 'bg-primary/40'
+                      : 'bg-transparent'
+                }`}
+              />
             </div>
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 function WeeklyOverviewSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-card rounded-xl p-4 border border-border/50">
-            <div className="w-9 h-9 bg-muted rounded-lg mb-3" />
-            <div className="h-7 w-12 bg-muted rounded mb-1" />
-            <div className="h-3 w-16 bg-muted rounded mb-1" />
-            <div className="h-3 w-10 bg-muted rounded" />
-          </div>
-        ))}
-      </div>
+      <div className="bg-card rounded-2xl p-6 border border-border/20 h-28" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-card rounded-xl p-4 border border-border/50 h-[230px]" />
-        <div className="bg-card rounded-xl p-4 border border-border/50">
+        <div className="bg-card rounded-2xl p-4 border border-border/20 h-[320px]" />
+        <div className="bg-card rounded-2xl p-4 border border-border/20">
           <div className="h-4 w-24 bg-muted rounded mb-4" />
           <div className="flex justify-between">
             {[...Array(7)].map((_, i) => (
               <div key={i} className="flex flex-col items-center gap-1.5">
                 <div className="w-6 h-3 bg-muted rounded" />
-                <div className="w-8 h-8 bg-muted rounded-full" />
+                <div className="w-6 h-4 bg-muted rounded" />
+                <div className="w-6 h-1 bg-muted rounded-full" />
               </div>
             ))}
           </div>
@@ -227,48 +287,18 @@ export function WeeklyOverview({
 
   return (
     <div className="space-y-4">
-      {/* Stat Cards Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard
-          icon={<Flame className="w-4 h-4 text-orange-500" />}
-          label="This Week"
-          value={workoutsThisWeek}
-          subtext={workoutsThisWeek === 1 ? 'workout' : 'workouts'}
-          color="bg-orange-500/10"
-          delay={0.15}
-        />
-        <StatCard
-          icon={<Dumbbell className="w-4 h-4 text-blue-500" />}
-          label="Volume"
-          value={weeklyVolume > 1000 ? `${(weeklyVolume / 1000).toFixed(1)}k` : weeklyVolume}
-          subtext="kg lifted"
-          color="bg-blue-500/10"
-          delay={0.2}
-        />
-        <StatCard
-          icon={<Target className="w-4 h-4 text-green-500" />}
-          label="Streak"
-          value={streak}
-          subtext="days"
-          color="bg-green-500/10"
-          delay={0.25}
-        />
-        <StatCard
-          icon={<Trophy className="w-4 h-4 text-amber-500" />}
-          label="PRs"
-          value={totalPRs}
-          subtext="all time"
-          color="bg-amber-500/10"
-          delay={0.3}
-        />
-      </div>
+      <ConsolidatedStats
+        workoutsThisWeek={workoutsThisWeek}
+        weeklyVolume={weeklyVolume}
+        streak={streak}
+        totalPRs={totalPRs}
+      />
 
-      {/* Volume Chart + Calendar side by side on desktop */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {weeklyData && weeklyData.length > 0 ? (
           <VolumeChart weeklyData={weeklyData} />
         ) : (
-          <div className="bg-card rounded-xl p-4 border border-border/50 flex items-center justify-center h-[230px]">
+          <div className="bg-card rounded-2xl p-4 border border-border/20 flex items-center justify-center h-[320px]">
             <p className="text-sm text-muted-foreground">Complete workouts to see volume trends</p>
           </div>
         )}

@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
-import { Dumbbell, Zap, UtensilsCrossed, ChevronRight, Clock } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { ChevronRight } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface RecentActivityFeedProps {
@@ -19,34 +18,6 @@ interface ActivityItem {
   xpEarned?: number;
 }
 
-function formatTimeAgo(date: Date): string {
-  if (isNaN(date.getTime())) return 'Recently';
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 0) return 'Recently';
-  if (seconds < 60) return 'Just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
-}
-
-function getActivityIcon(type: string) {
-  switch (type) {
-    case 'workout':
-      return <Dumbbell className="w-4 h-4 text-primary" />;
-    case 'xp':
-      return <Zap className="w-4 h-4 text-amber-500" />;
-    case 'meal_plan':
-      return <UtensilsCrossed className="w-4 h-4 text-green-500" />;
-    default:
-      return <Clock className="w-4 h-4 text-muted-foreground" />;
-  }
-}
-
 function formatXpReason(reason: string): string {
   const map: Record<string, string> = {
     workout_completed: 'Workout Completed',
@@ -57,28 +28,30 @@ function formatXpReason(reason: string): string {
   return map[reason] || reason.replace(/_/g, ' ');
 }
 
+function getDayLabel(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((today.getTime() - target.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 function ActivityFeedSkeleton() {
   return (
-    <div className="bg-card rounded-xl p-6 border border-border/50 animate-pulse">
-      <div className="flex items-center justify-between mb-4">
-        <div className="h-4 w-28 bg-muted rounded" />
-        <div className="h-3 w-16 bg-muted rounded" />
-      </div>
-      <div className="space-y-0">
-        {[...Array(4)].map((_, i) => (
-          <div
-            key={i}
-            className={`flex items-center gap-3 py-3 ${i < 3 ? 'border-b border-border/30' : ''}`}
-          >
-            <div className="w-8 h-8 bg-muted rounded-lg flex-shrink-0" />
-            <div className="flex-1">
-              <div className="h-4 w-32 bg-muted rounded mb-1" />
-              <div className="h-3 w-24 bg-muted rounded" />
-            </div>
-            <div className="h-5 w-14 bg-muted rounded-full flex-shrink-0" />
+    <div className="animate-pulse space-y-4">
+      <div className="h-3 w-24 bg-muted rounded" />
+      {[...Array(3)].map((_, i) => (
+        <div key={i}>
+          <div className="h-2.5 w-16 bg-muted rounded mb-2" />
+          <div className="flex items-center justify-between py-2">
+            <div className="h-4 w-36 bg-muted rounded" />
+            <div className="h-4 w-12 bg-muted rounded" />
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -96,7 +69,6 @@ export function RecentActivityFeed({
   // Merge activities from multiple sources
   const activities: ActivityItem[] = [];
 
-  // Add workout completions
   if (progress?.history) {
     for (const workout of progress.history.slice(0, 5)) {
       const setsCount = workout.sets || workout.totalSets || 0;
@@ -105,14 +77,13 @@ export function RecentActivityFeed({
       activities.push({
         type: 'workout',
         title: workout.name || workout.workoutName || 'Workout',
-        subtitle: `${setsCount} sets${volumeKg ? ` · ${Number(volumeKg).toLocaleString()} kg` : ''}`,
+        subtitle: `${setsCount} sets${volumeKg ? ` \u00B7 ${Number(volumeKg).toLocaleString()} kg` : ''}`,
         timestamp: dateStr ? new Date(dateStr) : new Date(),
         xpEarned: workout.xpEarned,
       });
     }
   }
 
-  // Add XP events (non-workout ones to avoid duplication)
   if (xpHistory) {
     for (const tx of xpHistory.slice(0, 10)) {
       if (tx.reason !== 'workout_completed') {
@@ -127,7 +98,6 @@ export function RecentActivityFeed({
     }
   }
 
-  // Add meal plans
   if (mealPlans) {
     for (const plan of mealPlans.slice(0, 3)) {
       activities.push({
@@ -139,58 +109,73 @@ export function RecentActivityFeed({
     }
   }
 
-  // Sort by timestamp desc and take top 5
   activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   const recentActivities = activities.slice(0, 5);
+
+  // Group by day
+  const grouped: { label: string; items: ActivityItem[] }[] = [];
+  for (const activity of recentActivities) {
+    const label = getDayLabel(activity.timestamp);
+    const existing = grouped.find((g) => g.label === label);
+    if (existing) {
+      existing.items.push(activity);
+    } else {
+      grouped.push({ label, items: [activity] });
+    }
+  }
 
   const animProps = prefersReducedMotion
     ? {}
     : {
-        initial: { opacity: 0, y: 20 },
+        initial: { opacity: 0, y: 8 },
         animate: { opacity: 1, y: 0 },
-        transition: { delay: 0.5 },
+        transition: { delay: 0.2 },
       };
 
   return (
-    <motion.div {...animProps} className="bg-card rounded-xl p-6 border border-border/50">
+    <motion.div {...animProps}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-sm">Recent Activity</h3>
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+          Recent Activity
+        </p>
         <Link href="/progress">
-          <a className="text-xs text-primary hover:underline flex items-center gap-1">
-            View All <ChevronRight className="w-3 h-3" />
+          <a className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
+            View all <ChevronRight className="w-3 h-3" />
           </a>
         </Link>
       </div>
 
       {recentActivities.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-6">No recent activity</p>
+        <p className="text-sm text-muted-foreground py-6">No recent activity</p>
       ) : (
-        <div className="space-y-0">
-          {recentActivities.map((activity, index) => (
-            <div
-              key={`${activity.type}-${index}`}
-              className={`flex items-center gap-3 py-3 ${
-                index < recentActivities.length - 1 ? 'border-b border-border/30' : ''
-              }`}
-            >
-              <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
-                {getActivityIcon(activity.type)}
+        <div className="space-y-4">
+          {grouped.map((group) => (
+            <div key={group.label}>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground/40 mb-2">
+                {group.label}
+              </p>
+              <div className="space-y-0">
+                {group.items.map((activity, index) => (
+                  <div
+                    key={`${activity.type}-${index}`}
+                    className={`flex items-center justify-between py-2.5 ${
+                      index < group.items.length - 1 ? 'border-b border-border/10' : ''
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{activity.title}</p>
+                      <p className="text-xs text-muted-foreground/60 truncate">
+                        {activity.subtitle}
+                      </p>
+                    </div>
+                    {activity.xpEarned && activity.xpEarned > 0 && (
+                      <span className="text-xs text-muted-foreground tabular-nums flex-shrink-0 ml-3">
+                        +{activity.xpEarned} XP
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{activity.title}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {formatTimeAgo(activity.timestamp)}
-                  {activity.subtitle ? ` · ${activity.subtitle}` : ''}
-                </p>
-              </div>
-              {activity.xpEarned && activity.xpEarned > 0 && (
-                <Badge
-                  variant="outline"
-                  className="bg-primary/10 text-primary border-primary/20 text-xs flex-shrink-0"
-                >
-                  +{activity.xpEarned} XP
-                </Badge>
-              )}
             </div>
           ))}
         </div>

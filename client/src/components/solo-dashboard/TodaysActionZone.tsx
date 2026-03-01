@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { Dumbbell, Sparkles, Bot, Play, Activity, Clock, ChevronRight, Zap } from 'lucide-react';
+import { Dumbbell, Play, ChevronRight } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 // Build a contextual coaching suggestion based on workout history and recovery
@@ -121,16 +121,16 @@ function TodaysWorkoutCard() {
 
   const animProps = prefersReducedMotion
     ? {}
-    : { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } };
+    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 } };
 
   if (isLoading) {
     return (
       <motion.div
         {...animProps}
-        className="bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl p-6 border border-primary/30 h-52 flex items-center justify-center"
+        className="bg-card rounded-2xl p-6 border border-border/20 h-48 flex items-center justify-center"
       >
         <div className="text-center">
-          <Dumbbell className="w-8 h-8 text-primary mx-auto mb-2 animate-pulse" />
+          <Dumbbell className="w-6 h-6 text-muted-foreground mx-auto mb-2 animate-pulse" />
           <p className="text-sm text-muted-foreground">Loading workout...</p>
         </div>
       </motion.div>
@@ -143,97 +143,86 @@ function TodaysWorkoutCard() {
 
   if (!workout) {
     return (
-      <motion.div
-        {...animProps}
-        className="bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl p-6 border border-primary/30"
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <Dumbbell className="w-5 h-5 text-primary" />
-          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            No Workout Planned
-          </p>
-        </div>
-        <p className="text-muted-foreground text-sm mb-4">
+      <motion.div {...animProps} className="bg-card rounded-2xl p-6 border border-border/20">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium mb-2">
+          No Workout Planned
+        </p>
+        <p className="text-muted-foreground text-sm mb-5">
           Based on your recovery, generate a smart workout.
         </p>
         <Link href="/solo/generate">
-          <a className="inline-flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-xl text-lg font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
-            <Sparkles className="w-5 h-5" />
+          <motion.a
+            whileHover={prefersReducedMotion ? undefined : { scale: 1.01 }}
+            whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+            className="flex items-center justify-center gap-2 w-full py-3.5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
+          >
             Generate Workout
-          </a>
+          </motion.a>
         </Link>
       </motion.div>
     );
   }
 
+  const exerciseCount = Array.isArray(workout.exercises)
+    ? workout.exercises.length
+    : workout.exercises || 0;
+  const muscleText =
+    workout.muscleGroups && workout.muscleGroups.length > 0
+      ? workout.muscleGroups
+          .slice(0, 4)
+          .map((m: string) => m.replace(/_/g, ' '))
+          .join(' \u00B7 ')
+      : null;
+
   return (
     <motion.div
       {...animProps}
-      className={`rounded-xl p-6 border ${
-        isCompleted
-          ? 'bg-gradient-to-br from-green-500/20 to-green-500/5 border-green-500/30'
-          : 'bg-gradient-to-br from-primary/20 to-primary/5 border-primary/30'
+      className={`rounded-2xl p-6 border ${
+        isCompleted ? 'bg-green-500/5 border-green-500/20' : 'bg-card border-border/20'
       }`}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-            {isCompleted ? 'Completed Today' : isInProgress ? 'In Progress' : "Today's Workout"}
-          </p>
-          <h2 className="text-xl font-bold">{workout.name}</h2>
-        </div>
-        <div className={`p-3 rounded-xl ${isCompleted ? 'bg-green-500/20' : 'bg-primary/20'}`}>
-          <Dumbbell className={`w-6 h-6 ${isCompleted ? 'text-green-500' : 'text-primary'}`} />
-        </div>
+      {/* Label + meta row */}
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+          {isCompleted ? 'Completed Today' : isInProgress ? 'In Progress' : "Today's Workout"}
+        </p>
+        {!isCompleted && (
+          <span className="text-xs text-muted-foreground">
+            {exerciseCount} exercises{' '}
+            {workout.estimatedTime ? `\u00B7 ~${workout.estimatedTime} min` : ''}
+          </span>
+        )}
       </div>
 
+      {/* Workout name */}
+      <h2 className="text-xl font-bold mb-2">{workout.name}</h2>
+
+      {/* Completed stats */}
       {isCompleted && workout.stats ? (
-        <div className="grid grid-cols-3 gap-3 mb-4 text-sm">
-          <div className="bg-card/50 rounded-lg p-2 text-center">
-            <p className="font-bold">{workout.stats.duration}min</p>
-            <p className="text-xs text-muted-foreground">Duration</p>
+        <div className="flex gap-6 mb-4 text-sm">
+          <div>
+            <span className="font-bold tabular-nums">{workout.stats.duration}</span>
+            <span className="text-muted-foreground ml-1">min</span>
           </div>
-          <div className="bg-card/50 rounded-lg p-2 text-center">
-            <p className="font-bold">{workout.stats.totalSets}</p>
-            <p className="text-xs text-muted-foreground">Sets</p>
+          <div>
+            <span className="font-bold tabular-nums">{workout.stats.totalSets}</span>
+            <span className="text-muted-foreground ml-1">sets</span>
           </div>
-          <div className="bg-card/50 rounded-lg p-2 text-center">
-            <p className="font-bold">{workout.stats.totalVolume}kg</p>
-            <p className="text-xs text-muted-foreground">Volume</p>
+          <div>
+            <span className="font-bold tabular-nums">{workout.stats.totalVolume}</span>
+            <span className="text-muted-foreground ml-1">kg</span>
           </div>
         </div>
       ) : (
         <>
-          <div className="flex gap-4 mb-4 text-sm">
-            <div className="flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-muted-foreground" />
-              <span>
-                {Array.isArray(workout.exercises)
-                  ? workout.exercises.length
-                  : workout.exercises || 0}{' '}
-                exercises
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <span>~{workout.estimatedTime} min</span>
-            </div>
-          </div>
-          {workout.muscleGroups && workout.muscleGroups.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {workout.muscleGroups.slice(0, 4).map((muscle: string) => (
-                <span
-                  key={muscle}
-                  className="px-2 py-1 bg-primary/20 rounded-full text-xs font-medium capitalize"
-                >
-                  {muscle}
-                </span>
-              ))}
-            </div>
+          {/* Muscle groups as middot-joined text */}
+          {muscleText && (
+            <p className="text-sm text-muted-foreground capitalize mb-4">{muscleText}</p>
           )}
         </>
       )}
 
+      {/* Start / Continue button */}
       {!isCompleted && (
         <Link
           href={
@@ -243,9 +232,9 @@ function TodaysWorkoutCard() {
           }
         >
           <motion.a
-            whileHover={prefersReducedMotion ? undefined : { scale: 1.02 }}
+            whileHover={prefersReducedMotion ? undefined : { scale: 1.01 }}
             whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-            className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-primary-foreground rounded-xl text-lg font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30 cursor-pointer"
+            className="flex items-center justify-center gap-2 w-full py-3.5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
           >
             <Play className="w-5 h-5" />
             {isInProgress ? 'Continue Workout' : 'Start Workout'}
@@ -256,8 +245,8 @@ function TodaysWorkoutCard() {
   );
 }
 
-// AI Coach Suggestion Card — self-contained with own queries
-function AICoachSuggestionCard() {
+// AI Coach Suggestion — inline text, not a card
+function AICoachSuggestion() {
   const prefersReducedMotion = useReducedMotion();
   const { data: gamification } = useQuery<any>({
     queryKey: ['/api/gamification/profile'],
@@ -306,6 +295,9 @@ function AICoachSuggestionCard() {
     staleTime: 10 * 60 * 1000,
   });
 
+  // Hide entirely while loading
+  if (isLoading) return null;
+
   const rawInsight = aiInsights?.insights ?? aiInsights?.message ?? null;
   const contextualSuggestion = getContextualSuggestion({
     fatigueData: fatigueData ?? undefined,
@@ -316,54 +308,35 @@ function AICoachSuggestionCard() {
   });
   const suggestion =
     typeof rawInsight === 'string'
-      ? { message: rawInsight, action: 'Chat with AI Coach', actionHref: '/solo/coach' }
+      ? { message: rawInsight, action: 'Ask AI Coach', actionHref: '/solo/coach' }
       : contextualSuggestion;
 
   const animProps = prefersReducedMotion
     ? {}
     : {
-        initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0 },
-        transition: { delay: 0.1 },
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        transition: { delay: 0.15 },
       };
 
   return (
-    <motion.div
-      {...animProps}
-      className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-xl p-6 border border-primary/20 h-full flex flex-col"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <div className="p-2 bg-primary/20 rounded-lg">
-          {isLoading ? (
-            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-          ) : (
-            <Bot className="w-4 h-4 text-primary" />
-          )}
-        </div>
-        <h3 className="font-bold text-sm">AI Coach Tip</h3>
-      </div>
-      <p className="text-sm text-muted-foreground flex-1 mb-3">
-        {isLoading ? 'Analyzing your progress...' : `"${suggestion.message}"`}
-      </p>
+    <motion.p {...animProps} className="text-sm text-muted-foreground">
+      {suggestion.message}{' '}
       <Link href={suggestion.actionHref}>
-        <a className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+        <a className="inline-flex items-center gap-0.5 text-primary font-medium hover:text-primary/80 transition-colors">
           {suggestion.action}
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3.5 h-3.5" />
         </a>
       </Link>
-    </motion.div>
+    </motion.p>
   );
 }
 
 export function TodaysActionZone() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-      <div className="md:col-span-3">
-        <TodaysWorkoutCard />
-      </div>
-      <div className="md:col-span-2">
-        <AICoachSuggestionCard />
-      </div>
+    <div className="space-y-3">
+      <TodaysWorkoutCard />
+      <AICoachSuggestion />
     </div>
   );
 }
