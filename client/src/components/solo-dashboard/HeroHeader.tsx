@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User as UserIcon } from 'lucide-react';
+import { User as UserIcon, Camera, Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getXpToNextLevel } from '@/lib/constants/xpRewards';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { useToast } from '@/hooks/use-toast';
 
 interface HeroHeaderProps {
   user: any;
@@ -27,6 +30,11 @@ function getMotivationalSubtitle(gamification: any, fitnessProfile: any): string
 
 export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderProps) {
   const prefersReducedMotion = useReducedMotion();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
   const greeting = getGreeting();
   const subtitle = getMotivationalSubtitle(gamification, fitnessProfile);
 
@@ -51,6 +59,74 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
   if (fitnessProfile?.dailyCalorieTarget)
     stats.push({ label: 'kcal/day', value: `${fitnessProfile.dailyCalorieTarget}` });
   stats.push({ label: 'Level', value: `${currentLevel}`, xpBar: true });
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setProgress(0);
+
+    let blobToUpload: Blob = file;
+    let bgRemoved = false;
+
+    try {
+      // Try background removal
+      const { default: imglyRemoveBackground } = await import('@imgly/background-removal');
+      const processedBlob = await imglyRemoveBackground(file, {
+        progress: (_key: string, current: number, total: number) => {
+          setProgress(Math.round((current / total) * 100));
+        },
+      });
+      blobToUpload = processedBlob;
+      bgRemoved = true;
+    } catch (bgError) {
+      console.warn('Background removal unavailable, uploading original:', bgError);
+    }
+
+    try {
+      // Upload the image (processed or original)
+      const formData = new FormData();
+      formData.append('image', blobToUpload, bgRemoved ? 'profile.png' : file.name);
+
+      const response = await fetch('/api/settings/profile-image-upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+
+      // Refresh user data
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+
+      toast({
+        title: bgRemoved ? 'Photo updated!' : 'Photo updated (without background removal)',
+        description: bgRemoved
+          ? 'Background removed successfully.'
+          : 'Background removal was unavailable.',
+      });
+    } catch (uploadError) {
+      console.error('Photo upload failed:', uploadError);
+      toast({
+        title: 'Failed to upload photo',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+      setProgress(0);
+      // Reset file input so same file can be re-selected
+      e.target.value = '';
+    }
+  }
+
+  // Detect if photo is a processed PNG (transparent bg)
+  const hasProcessedPhoto =
+    user?.profileImageUrl &&
+    (user.profileImageUrl.includes('.webp') ||
+      user.profileImageUrl.includes('.png') ||
+      user.profileImageUrl.startsWith('data:'));
 
   return (
     <motion.div {...animProps} className="pt-4">
@@ -82,7 +158,6 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
                   <span className="text-[11px] uppercase tracking-wider text-muted-foreground/60 mt-1">
                     {stat.label}
                   </span>
-                  {/* Inline XP bar under Level */}
                   {stat.xpBar && (
                     <div className="w-16 h-[2px] bg-muted rounded-full mt-1.5 overflow-hidden">
                       <div
@@ -97,19 +172,69 @@ export function HeroHeader({ user, gamification, fitnessProfile }: HeroHeaderPro
           </div>
         </div>
 
-        {/* Right — Profile Photo */}
+        {/* Right — Profile Photo (clickable for upload) */}
         <div className="flex-shrink-0">
-          {user?.profileImageUrl ? (
-            <img
-              src={user.profileImageUrl}
-              alt={user.firstName || 'Profile'}
-              className="w-[100px] h-[100px] md:w-[180px] md:h-[180px] rounded-full object-cover border-2 border-primary/40"
+          <label className="relative cursor-pointer group block">
+            {user?.profileImageUrl ? (
+              <>
+                <div className="relative">
+                  {/* Subtle glow behind photo */}
+                  <div
+                    className="absolute inset-0 blur-[50px] opacity-20"
+                    style={{
+                      background:
+                        'radial-gradient(circle, hsl(var(--primary) / 0.6) 0%, transparent 70%)',
+                    }}
+                  />
+                  <img
+                    src={user.profileImageUrl}
+                    alt={user.firstName || 'Profile'}
+                    className={`relative w-[100px] h-[100px] md:w-[180px] md:h-[180px] ${
+                      hasProcessedPhoto
+                        ? 'object-contain'
+                        : 'rounded-full object-cover border-2 border-primary/40'
+                    }`}
+                  />
+                </div>
+                {/* Hover overlay */}
+                <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all duration-200">
+                  <div className="opacity-0 group-hover:opacity-100 text-center transition-opacity">
+                    <Camera className="w-6 h-6 text-white mx-auto mb-1" />
+                    <span className="text-xs text-white font-medium">Change</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="w-[100px] h-[100px] md:w-[180px] md:h-[180px] rounded-full border-2 border-dashed border-primary/40 flex flex-col items-center justify-center gap-1 hover:border-primary/60 transition-colors">
+                <Camera className="w-8 h-8 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">Upload</span>
+              </div>
+            )}
+
+            {/* Upload progress overlay */}
+            {uploading && (
+              <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center z-10">
+                <Loader2 className="w-6 h-6 text-white animate-spin mb-2" />
+                <span className="text-xs text-white font-medium">
+                  {progress < 50 ? 'Loading AI...' : 'Removing background...'}
+                </span>
+                <div className="w-16 h-1 bg-white/20 rounded-full mt-1.5 overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+              disabled={uploading}
             />
-          ) : (
-            <div className="w-[100px] h-[100px] md:w-[180px] md:h-[180px] rounded-full bg-primary/10 border-2 border-primary/40 flex items-center justify-center">
-              <UserIcon className="w-10 h-10 md:w-16 md:h-16 text-primary/50" />
-            </div>
-          )}
+          </label>
         </div>
       </div>
     </motion.div>

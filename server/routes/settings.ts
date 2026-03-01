@@ -1,8 +1,10 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import { db } from '../db';
 import { users, clients, workouts } from '../../shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import { getUserById } from '../auth';
+import { uploadImage, isR2Configured } from '../services/fileUpload';
 
 const router = Router();
 
@@ -125,6 +127,65 @@ router.patch('/profile-image', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to update profile image' });
   }
 });
+
+// POST /api/settings/profile-image-upload — upload profile image file
+const profileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only images allowed'));
+  },
+});
+
+function handleUploadError(err: any, _req: Request, res: Response, next: NextFunction) {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File too large. Maximum size is 5MB.' });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+  if (err?.message === 'Only images allowed') {
+    return res.status(400).json({ error: 'Only images are allowed' });
+  }
+  next(err);
+}
+
+router.post(
+  '/profile-image-upload',
+  profileUpload.single('image'),
+  handleUploadError,
+  async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+      if (!req.file) return res.status(400).json({ error: 'No file provided' });
+
+      let imageUrl: string;
+
+      if (isR2Configured()) {
+        // Upload to Cloudflare R2
+        imageUrl = await uploadImage(req.file.buffer, 'profiles', req.file.mimetype, 1024);
+      } else {
+        // Fallback: base64 data URL
+        const base64 = req.file.buffer.toString('base64');
+        imageUrl = `data:${req.file.mimetype};base64,${base64}`;
+      }
+
+      // Save to user profile
+      await db
+        .update(users)
+        .set({ profileImageUrl: imageUrl, updatedAt: new Date() })
+        .where(eq(users.id, user.id));
+
+      const updatedUser = await getUserById(user.id);
+      res.json({ imageUrl, user: updatedUser });
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+      res.status(500).json({ error: 'Failed to upload profile image' });
+    }
+  }
+);
 
 // PATCH /api/settings/notifications — update notification preferences
 router.patch('/notifications', async (req: Request, res: Response) => {
