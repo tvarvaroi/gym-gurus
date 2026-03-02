@@ -179,7 +179,7 @@ export default function Achievements() {
             <div className="h-9 w-20 bg-muted rounded-lg animate-pulse" />
           </div>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i} className="bg-card/30 border-border/30">
               <CardContent className="p-6 space-y-3">
@@ -253,7 +253,7 @@ export default function Achievements() {
             <Button
               key={category.id}
               variant={selectedCategory === category.id ? 'default' : 'outline'}
-              size="sm"
+              size="default"
               onClick={() => setSelectedCategory(category.id)}
               className={
                 selectedCategory === category.id
@@ -273,7 +273,7 @@ export default function Achievements() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+        className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
       >
         {filteredAchievements.length === 0 && (
           <div className="col-span-full flex flex-col items-center py-12 text-center space-y-3">

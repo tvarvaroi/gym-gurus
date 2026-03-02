@@ -624,28 +624,30 @@ function TrainerClientSchedule() {
             </p>
           </motion.div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="h-64 glass-strong rounded-2xl overflow-hidden relative"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.4 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+        <div className="overflow-x-auto -mx-4 px-4">
+          <div className="grid grid-cols-7 gap-4">
+            {Array.from({ length: 7 }).map((_, i) => (
               <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
-                animate={{ x: ['-100%', '100%'] }}
-                transition={{
-                  duration: 1.5,
-                  repeat: prefersReducedMotion ? 0 : Infinity,
-                  ease: 'linear',
-                  delay: i * 0.1,
-                }}
-              />
-            </motion.div>
-          ))}
+                key={i}
+                className="h-64 min-w-[80px] glass-strong rounded-2xl overflow-hidden relative"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.4 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
+                  animate={{ x: ['-100%', '100%'] }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: prefersReducedMotion ? 0 : Infinity,
+                    ease: 'linear',
+                    delay: i * 0.1,
+                  }}
+                />
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -1283,100 +1285,102 @@ function TrainerClientSchedule() {
           }))}
         />
       ) : viewMode === 'week' ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4"
-        >
-          {getWeekDays().map((day, dayIndex) => {
-            const dayAppointments = getAppointmentsForDate(day);
-            const isToday = isSameDay(day, new Date());
+        <div className="overflow-x-auto -mx-4 px-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="grid grid-cols-7 gap-4"
+          >
+            {getWeekDays().map((day, dayIndex) => {
+              const dayAppointments = getAppointmentsForDate(day);
+              const isToday = isSameDay(day, new Date());
 
-            return (
-              <motion.div
-                key={day.toISOString()}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: dayIndex * 0.05 }}
-              >
-                <Card
-                  className={cn(
-                    'min-h-[280px] glass-strong border-border/50 transition-all duration-300 hover:shadow-premium-lg hover:-translate-y-1 group',
-                    isToday && 'ring-2 ring-primary/50 shadow-premium'
-                  )}
+              return (
+                <motion.div
+                  key={day.toISOString()}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: dayIndex * 0.05 }}
                 >
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {format(day, 'EEE')}
-                    </CardTitle>
-                    <CardDescription
-                      className={cn('text-2xl font-bold', isToday && 'text-primary')}
-                    >
-                      {format(day, 'd')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <AnimatePresence>
-                      {dayAppointments.length === 0 ? (
-                        <motion.p
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="text-xs text-muted-foreground text-center py-8"
-                        >
-                          No appointments
-                        </motion.p>
-                      ) : (
-                        dayAppointments.map((apt, index) => {
-                          const config = typeConfig[apt.type];
-                          const Icon = config.icon;
+                  <Card
+                    className={cn(
+                      'min-h-[280px] min-w-[80px] glass-strong border-border/50 transition-all duration-300 hover:shadow-premium-lg hover:-translate-y-1 group',
+                      isToday && 'ring-2 ring-primary/50 shadow-premium'
+                    )}
+                  >
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        {format(day, 'EEE')}
+                      </CardTitle>
+                      <CardDescription
+                        className={cn('text-2xl font-bold', isToday && 'text-primary')}
+                      >
+                        {format(day, 'd')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <AnimatePresence>
+                        {dayAppointments.length === 0 ? (
+                          <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="text-xs text-muted-foreground text-center py-8"
+                          >
+                            No appointments
+                          </motion.p>
+                        ) : (
+                          dayAppointments.map((apt, index) => {
+                            const config = typeConfig[apt.type];
+                            const Icon = config.icon;
 
-                          return (
-                            <motion.div
-                              key={apt.id}
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.9 }}
-                              transition={{ delay: index * 0.05 }}
-                              whileHover={{ scale: 1.02, y: -2 }}
-                              className={cn(
-                                'p-3 rounded-lg backdrop-blur-sm transition-all border',
-                                config.bg,
-                                config.border,
-                                'hover:shadow-md',
-                                isTrainer && 'cursor-pointer'
-                              )}
-                              onClick={isTrainer ? () => handleEdit(apt) : undefined}
-                              data-testid={`appointment-${apt.id}`}
-                            >
-                              <div className="flex items-center gap-2 mb-1">
-                                <Icon className={cn('h-3 w-3', config.text)} />
-                                <div className={cn('text-xs font-semibold', config.text)}>
-                                  {apt.startTime}
+                            return (
+                              <motion.div
+                                key={apt.id}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ delay: index * 0.05 }}
+                                whileHover={{ scale: 1.02, y: -2 }}
+                                className={cn(
+                                  'p-3 rounded-lg backdrop-blur-sm transition-all border',
+                                  config.bg,
+                                  config.border,
+                                  'hover:shadow-md',
+                                  isTrainer && 'cursor-pointer'
+                                )}
+                                onClick={isTrainer ? () => handleEdit(apt) : undefined}
+                                data-testid={`appointment-${apt.id}`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Icon className={cn('h-3 w-3', config.text)} />
+                                  <div className={cn('text-xs font-semibold', config.text)}>
+                                    {apt.startTime}
+                                  </div>
                                 </div>
-                              </div>
-                              <TruncatedText
-                                as="div"
-                                text={apt.client?.name || ''}
-                                className="text-xs font-medium"
-                              />
-                              <TruncatedText
-                                as="div"
-                                text={apt.title}
-                                className="text-xs text-muted-foreground"
-                              />
-                            </motion.div>
-                          );
-                        })
-                      )}
-                    </AnimatePresence>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+                                <TruncatedText
+                                  as="div"
+                                  text={apt.client?.name || ''}
+                                  className="text-xs font-medium"
+                                />
+                                <TruncatedText
+                                  as="div"
+                                  text={apt.title}
+                                  className="text-xs text-muted-foreground"
+                                />
+                              </motion.div>
+                            );
+                          })
+                        )}
+                      </AnimatePresence>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </div>
       ) : viewMode === 'list' ? (
         // List View — mobile-friendly chronological week
         <motion.div

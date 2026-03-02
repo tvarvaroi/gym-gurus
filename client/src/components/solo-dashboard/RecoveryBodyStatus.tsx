@@ -47,7 +47,7 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
       };
 
   return (
-    <motion.div {...animProps} className="bg-card rounded-2xl p-6 border border-border/20">
+    <motion.div {...animProps} className="bg-card rounded-2xl p-4 sm:p-6 border border-border/20">
       <div className="flex items-center justify-between mb-4">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
           Recovery Status
@@ -67,38 +67,46 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
       ) : (
         <div className="flex flex-col md:flex-row items-center gap-6">
           {/* Large Recovery Ring with gradient */}
-          <div className="flex-shrink-0">
-            <CircularProgressRing
-              value={overallRecovery}
-              size={180}
-              strokeWidth={10}
-              gradient
-              id="recovery"
-              animated={!prefersReducedMotion}
-            >
-              <div className="flex flex-col items-center">
-                <span className="text-[40px] font-bold tabular-nums leading-none">
-                  {overallRecovery}
-                </span>
-                <span className="text-base text-muted-foreground">%</span>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mt-1">
-                  recovered
-                </span>
-              </div>
-            </CircularProgressRing>
-          </div>
+          <Link href="/solo/recovery">
+            <a className="flex-shrink-0 cursor-pointer group block">
+              <CircularProgressRing
+                value={overallRecovery}
+                size={180}
+                strokeWidth={10}
+                gradient
+                id="recovery"
+                animated={!prefersReducedMotion}
+              >
+                <div className="flex flex-col items-center">
+                  <span className="text-[40px] font-bold tabular-nums leading-none group-hover:text-primary transition-colors">
+                    {overallRecovery}
+                  </span>
+                  <span className="text-base text-muted-foreground">%</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mt-1">
+                    recovered
+                  </span>
+                </div>
+              </CircularProgressRing>
+            </a>
+          </Link>
 
           {/* Compact inline muscle tags + recommendation */}
           <div className="flex-1">
             <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1.5 text-xs">
               {muscleStatus.map((muscle) => (
-                <span key={muscle.name} className="flex items-center gap-1">
-                  <span
-                    className={`inline-block w-1.5 h-1.5 rounded-full ${muscle.dotColor.replace('text-', 'bg-')}`}
-                  />
-                  <span className="text-muted-foreground">{muscle.name}</span>
-                  <span className="tabular-nums font-medium">{muscle.recovery}%</span>
-                </span>
+                <Link key={muscle.name} href="/solo/recovery">
+                  <a className="flex items-center gap-1 cursor-pointer group hover:bg-white/[0.04] rounded px-1 -mx-1 py-0.5 transition-colors">
+                    <span
+                      className={`inline-block w-1.5 h-1.5 rounded-full ${muscle.dotColor.replace('text-', 'bg-')}`}
+                    />
+                    <span className="text-muted-foreground group-hover:text-foreground transition-colors">
+                      {muscle.name}
+                    </span>
+                    <span className="tabular-nums font-medium group-hover:text-primary transition-colors">
+                      {muscle.recovery}%
+                    </span>
+                  </a>
+                </Link>
               ))}
             </div>
 

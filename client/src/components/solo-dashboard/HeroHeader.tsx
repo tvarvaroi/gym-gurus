@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Camera } from 'lucide-react';
+import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { getXpToNextLevel } from '@/lib/constants/xpRewards';
 import { formatNum } from '@/lib/format';
@@ -78,14 +79,30 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
       };
 
   // Build stats array — only include metrics that exist
-  const stats: { label: string; value: string; unit?: string; xpBar?: boolean }[] = [];
+  const stats: { label: string; value: string; unit?: string; xpBar?: boolean; href: string }[] =
+    [];
   if (fitnessProfile?.weightKg)
-    stats.push({ label: 'Weight', value: formatNum(fitnessProfile.weightKg), unit: 'kg' });
+    stats.push({
+      label: 'Weight',
+      value: formatNum(fitnessProfile.weightKg),
+      unit: 'kg',
+      href: '/settings',
+    });
   if (fitnessProfile?.heightCm)
-    stats.push({ label: 'Height', value: formatNum(fitnessProfile.heightCm), unit: 'cm' });
+    stats.push({
+      label: 'Height',
+      value: formatNum(fitnessProfile.heightCm),
+      unit: 'cm',
+      href: '/settings',
+    });
   const kcalValue = fitnessProfile?.dailyCalorieTarget || computedTdee;
-  if (kcalValue) stats.push({ label: 'kcal/day', value: formatNum(kcalValue) });
-  stats.push({ label: 'Level', value: `${currentLevel}`, xpBar: true });
+  if (kcalValue)
+    stats.push({
+      label: 'kcal/day',
+      value: formatNum(kcalValue),
+      href: '/dashboard/calculators/tdee',
+    });
+  stats.push({ label: 'Level', value: `${currentLevel}`, xpBar: true, href: '/solo/achievements' });
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -143,27 +160,29 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
             {stats.map((stat, index) => (
               <div key={stat.label} className="flex items-center gap-6 md:gap-8">
                 {index > 0 && <div className="h-8 w-px bg-border/30 -ml-6 md:-ml-8" />}
-                <div className="flex flex-col items-center md:items-start">
-                  <span className="text-2xl font-bold tabular-nums leading-none">
-                    {stat.value}
-                    {stat.unit && (
-                      <span className="text-sm font-normal text-muted-foreground ml-0.5">
-                        {stat.unit}
-                      </span>
+                <Link href={stat.href}>
+                  <a className="flex flex-col items-center md:items-start cursor-pointer group hover:bg-white/[0.03] rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors">
+                    <span className="text-2xl font-bold tabular-nums leading-none group-hover:text-primary transition-colors">
+                      {stat.value}
+                      {stat.unit && (
+                        <span className="text-sm font-normal text-muted-foreground ml-0.5">
+                          {stat.unit}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground/60 mt-1">
+                      {stat.label}
+                    </span>
+                    {stat.xpBar && (
+                      <div className="w-16 h-[2px] bg-muted rounded-full mt-1.5 overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, xpProgress.progress)}%` }}
+                        />
+                      </div>
                     )}
-                  </span>
-                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground/60 mt-1">
-                    {stat.label}
-                  </span>
-                  {stat.xpBar && (
-                    <div className="w-16 h-[2px] bg-muted rounded-full mt-1.5 overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, xpProgress.progress)}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
+                  </a>
+                </Link>
               </div>
             ))}
           </div>

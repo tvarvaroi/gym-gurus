@@ -419,7 +419,7 @@ export default function AppHeader() {
             <SidebarTrigger
               data-testid="button-sidebar-toggle"
               aria-label="Toggle sidebar navigation"
-              className="hover-elevate transition-all duration-300 rounded-xl border h-8 w-8 md:h-10 md:w-10"
+              className="hover-elevate transition-all duration-300 rounded-xl border h-10 w-10"
               style={{
                 background: `linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--accent) / 0.12))`,
                 borderColor: `hsl(var(--primary) / 0.25)`,

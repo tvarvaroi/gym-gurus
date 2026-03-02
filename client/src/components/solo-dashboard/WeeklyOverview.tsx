@@ -40,11 +40,13 @@ function ConsolidatedStats({
       value: workoutsThisWeek,
       label: 'Workouts',
       sub: 'this week',
+      href: '/progress',
     },
     {
       value: formatVolume(weeklyVolume),
       label: 'Volume',
       sub: 'kg lifted',
+      href: '/progress',
     },
     {
       value: streak,
@@ -57,27 +59,31 @@ function ConsolidatedStats({
           {streak === 0 && <span>days</span>}
         </span>
       ),
+      href: '/solo/achievements',
     },
     {
       value: totalPRs,
       label: 'PRs',
       sub: 'all time',
+      href: '/progress',
     },
   ];
 
   return (
-    <motion.div {...animProps} className="bg-card rounded-2xl border border-border/20 p-6">
+    <motion.div {...animProps} className="bg-card rounded-2xl border border-border/20 p-4 sm:p-6">
       <div className="grid grid-cols-2 md:flex md:items-center md:justify-between gap-6 md:gap-0">
         {stats.map((stat, index) => (
           <div key={stat.label} className="flex items-center gap-0 md:gap-8">
             {index > 0 && <div className="hidden md:block h-14 w-px bg-border/30" />}
-            <div className="flex flex-col items-center md:items-start md:pl-8 first:md:pl-0">
-              <span className="text-3xl md:text-4xl font-bold tabular-nums leading-none">
-                {stat.value}
-              </span>
-              <span className="text-xs text-muted-foreground/60 mt-1">{stat.label}</span>
-              <span className="text-[11px] text-muted-foreground/40 mt-0.5">{stat.sub}</span>
-            </div>
+            <Link href={stat.href}>
+              <a className="flex flex-col items-center md:items-start md:pl-8 first:md:pl-0 cursor-pointer group hover:bg-white/[0.03] rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors">
+                <span className="text-3xl md:text-4xl font-bold tabular-nums leading-none group-hover:text-primary transition-colors">
+                  {stat.value}
+                </span>
+                <span className="text-xs text-muted-foreground/60 mt-1">{stat.label}</span>
+                <span className="text-[11px] text-muted-foreground/40 mt-0.5">{stat.sub}</span>
+              </a>
+            </Link>
           </div>
         ))}
       </div>
@@ -107,64 +113,67 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
       };
 
   return (
-    <motion.div {...animProps} className="bg-card rounded-2xl p-4 border border-border/20">
-      <div className="flex items-center justify-between mb-1">
-        <div>
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
-            Weekly Volume
-          </p>
-          <p className="text-3xl font-bold tabular-nums leading-tight">
-            {formatVolume(totalVolume)}
-            <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>
-          </p>
-        </div>
-        <Link href="/progress">
-          <a className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
+    <Link href="/progress">
+      <motion.a
+        {...animProps}
+        className="block bg-card rounded-2xl p-4 border border-border/20 cursor-pointer group hover:border-primary/30 transition-colors"
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+              Weekly Volume
+            </p>
+            <p className="text-3xl font-bold tabular-nums leading-tight group-hover:text-primary transition-colors">
+              {formatVolume(totalVolume)}
+              <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>
+            </p>
+          </div>
+          <span className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
             View All <ChevronRight className="w-3 h-3" />
-          </a>
-        </Link>
-      </div>
-      <div className="h-[220px] md:h-[280px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
-            <defs>
-              <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="week"
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                background: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                fontSize: '12px',
-              }}
-              formatter={(value: number) => [`${value.toLocaleString()} kg`, 'Volume']}
-            />
-            <ReferenceLine
-              y={avg}
-              strokeDasharray="4 4"
-              stroke="hsl(var(--muted-foreground))"
-              strokeOpacity={0.3}
-            />
-            <Area
-              type="monotone"
-              dataKey="volume"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              fill="url(#volumeGradient)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </motion.div>
+          </span>
+        </div>
+        <div className="h-[220px] md:h-[280px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+              <defs>
+                <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="week"
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                }}
+                formatter={(value: number) => [`${value.toLocaleString()} kg`, 'Volume']}
+              />
+              <ReferenceLine
+                y={avg}
+                strokeDasharray="4 4"
+                stroke="hsl(var(--muted-foreground))"
+                strokeOpacity={0.3}
+              />
+              <Area
+                type="monotone"
+                dataKey="volume"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                fill="url(#volumeGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.a>
+    </Link>
   );
 }
 
@@ -241,7 +250,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
   return (
     <motion.div
       {...animProps}
-      className="bg-card rounded-2xl p-5 md:p-6 border border-border/20 h-full flex flex-col"
+      className="bg-card rounded-2xl p-4 md:p-6 border border-border/20 h-full flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -266,134 +275,151 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
             const primarySession = sessions[0];
 
             return (
-              <div
-                key={i}
-                className={`rounded-xl p-2 min-w-[64px] flex-shrink-0 md:min-w-0 md:flex-shrink flex flex-col items-center ${
-                  isToday
-                    ? 'bg-primary/10 ring-1 ring-primary/30'
-                    : hasWorkout
-                      ? 'bg-white/[0.03] border border-white/[0.06]'
-                      : ''
-                }`}
-              >
-                {/* Day name */}
-                <span
-                  className={`text-[11px] uppercase tracking-wider ${
-                    isToday ? 'text-primary font-bold' : 'text-muted-foreground/40'
-                  }`}
-                >
-                  {dayName}
-                </span>
-
-                {/* Date — large */}
-                <span
-                  className={`text-lg font-bold mt-1 tabular-nums ${
+              <Link key={i} href="/schedule">
+                <a
+                  className={`rounded-xl p-2 min-w-[64px] flex-shrink-0 md:min-w-0 md:flex-shrink flex flex-col items-center cursor-pointer hover:bg-white/[0.04] transition-colors ${
                     isToday
-                      ? 'text-primary'
+                      ? 'bg-primary/10 ring-1 ring-primary/30'
                       : hasWorkout
-                        ? 'text-foreground'
-                        : 'text-muted-foreground/20'
+                        ? 'bg-white/[0.03] border border-white/[0.06]'
+                        : ''
                   }`}
                 >
-                  {weekDates[i]}
-                </span>
+                  {/* Day name */}
+                  <span
+                    className={`text-[11px] uppercase tracking-wider ${
+                      isToday ? 'text-primary font-bold' : 'text-muted-foreground/40'
+                    }`}
+                  >
+                    {dayName}
+                  </span>
 
-                {/* Spacer + content fills remaining vertical space */}
-                <div className="flex-1 flex flex-col justify-center w-full mt-2">
-                  {hasWorkout && primarySession ? (
-                    <>
-                      {/* Color bar for workout type */}
-                      <div
-                        className={`h-1.5 rounded-full w-full mb-2 ${getTypeBgColor(primarySession.workoutType)}`}
-                      />
+                  {/* Date — large */}
+                  <span
+                    className={`text-lg font-bold mt-1 tabular-nums ${
+                      isToday
+                        ? 'text-primary'
+                        : hasWorkout
+                          ? 'text-foreground'
+                          : 'text-muted-foreground/20'
+                    }`}
+                  >
+                    {weekDates[i]}
+                  </span>
 
-                      {/* Workout name */}
-                      <span className="text-xs font-medium text-foreground/80 text-center leading-tight">
-                        {abbreviateWorkoutName(primarySession.workoutName)}
-                      </span>
+                  {/* Spacer + content fills remaining vertical space */}
+                  <div className="flex-1 flex flex-col justify-center w-full mt-2">
+                    {hasWorkout && primarySession ? (
+                      <>
+                        {/* Color bar for workout type */}
+                        <div
+                          className={`h-1.5 rounded-full w-full mb-2 ${getTypeBgColor(primarySession.workoutType)}`}
+                        />
 
-                      {/* Volume — hero number */}
-                      {primarySession.volume > 0 && (
-                        <>
-                          <span className="text-sm font-bold text-foreground text-center mt-1 tabular-nums">
-                            {formatVolume(primarySession.volume)}
+                        {/* Workout name */}
+                        <span className="text-xs font-medium text-foreground/80 text-center leading-tight">
+                          {abbreviateWorkoutName(primarySession.workoutName)}
+                        </span>
+
+                        {/* Volume — hero number */}
+                        {primarySession.volume > 0 && (
+                          <>
+                            <span className="text-sm font-bold text-foreground text-center mt-1 tabular-nums">
+                              {formatVolume(primarySession.volume)}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground/30 text-center">
+                              kg
+                            </span>
+                          </>
+                        )}
+
+                        {/* Duration */}
+                        {primarySession.duration != null && primarySession.duration > 0 && (
+                          <span className="text-xs text-muted-foreground/50 text-center mt-1">
+                            {primarySession.duration} min
                           </span>
-                          <span className="text-[10px] text-muted-foreground/30 text-center">
-                            kg
+                        )}
+
+                        {/* Sets x Reps */}
+                        {(primarySession.sets || primarySession.reps) && (
+                          <span className="text-[11px] text-muted-foreground/35 text-center mt-0.5 tabular-nums">
+                            {primarySession.sets || 0} sets &middot; {primarySession.reps || 0} reps
                           </span>
-                        </>
-                      )}
+                        )}
 
-                      {/* Duration */}
-                      {primarySession.duration != null && primarySession.duration > 0 && (
-                        <span className="text-xs text-muted-foreground/50 text-center mt-1">
-                          {primarySession.duration} min
-                        </span>
-                      )}
-
-                      {/* Sets x Reps */}
-                      {(primarySession.sets || primarySession.reps) && (
-                        <span className="text-[11px] text-muted-foreground/35 text-center mt-0.5 tabular-nums">
-                          {primarySession.sets || 0} sets &middot; {primarySession.reps || 0} reps
-                        </span>
-                      )}
-
-                      {/* Multiple sessions indicator */}
-                      {sessions.length > 1 && (
-                        <span className="text-[11px] text-primary/50 text-center mt-1 font-medium">
-                          +{sessions.length - 1} more
-                        </span>
-                      )}
-                    </>
-                  ) : isToday && status === 'today_pending' ? (
-                    <div className="flex flex-col items-center">
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse mb-1" />
-                      <span className="text-xs text-primary/40">Planned</span>
-                    </div>
-                  ) : status === 'planned' ? (
-                    <span className="text-xs text-muted-foreground/25 text-center">Planned</span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground/15 text-center">Rest</span>
-                  )}
-                </div>
-              </div>
+                        {/* Multiple sessions indicator */}
+                        {sessions.length > 1 && (
+                          <span className="text-[11px] text-primary/50 text-center mt-1 font-medium">
+                            +{sessions.length - 1} more
+                          </span>
+                        )}
+                      </>
+                    ) : isToday && status === 'today_pending' ? (
+                      <div className="flex flex-col items-center">
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse mb-1" />
+                        <span className="text-xs text-primary/40">Planned</span>
+                      </div>
+                    ) : status === 'planned' ? (
+                      <span className="text-xs text-muted-foreground/25 text-center">Planned</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/15 text-center">Rest</span>
+                    )}
+                  </div>
+                </a>
+              </Link>
             );
           })}
         </div>
       </div>
 
+      {/* Scroll hint dots — mobile only */}
+      <div className="flex justify-center gap-1 mt-2 md:hidden">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div
+            key={i}
+            className={`w-1 h-1 rounded-full ${i === todayIndex ? 'bg-primary' : 'bg-muted-foreground/20'}`}
+          />
+        ))}
+      </div>
+
       {/* Week summary — bottom bar */}
       {weekSummary && weekSummary.totalVolume > 0 ? (
-        <div className="mt-4 pt-3 border-t border-border/10">
-          <div className="grid grid-cols-5 gap-1">
-            <div className="text-center">
-              <span className="text-base font-bold tabular-nums">{totalWorkouts}</span>
-              <span className="text-[10px] text-muted-foreground/30 block">sessions</span>
+        <Link href="/progress">
+          <a className="block mt-4 pt-3 border-t border-border/10 cursor-pointer group hover:bg-white/[0.02] rounded-lg transition-colors">
+            <div className="grid grid-cols-5 gap-1">
+              <div className="text-center">
+                <span className="text-base font-bold tabular-nums group-hover:text-primary transition-colors">
+                  {totalWorkouts}
+                </span>
+                <span className="text-[11px] text-muted-foreground/30 block">sessions</span>
+              </div>
+              <div className="text-center">
+                <span className="text-base font-bold tabular-nums group-hover:text-primary transition-colors">
+                  {weekSummary.totalSets || 0}
+                </span>
+                <span className="text-[11px] text-muted-foreground/30 block">sets</span>
+              </div>
+              <div className="text-center">
+                <span className="text-base font-bold tabular-nums group-hover:text-primary transition-colors">
+                  {formatVolume(weekSummary.totalVolume)}
+                </span>
+                <span className="text-[11px] text-muted-foreground/30 block">kg vol</span>
+              </div>
+              <div className="text-center">
+                <span className="text-base font-bold tabular-nums group-hover:text-primary transition-colors">
+                  {weekSummary.totalDuration || 0}
+                </span>
+                <span className="text-[11px] text-muted-foreground/30 block">min</span>
+              </div>
+              <div className="text-center">
+                <span className="text-base font-bold tabular-nums group-hover:text-primary transition-colors">
+                  {weekSummary.avgRPE || '\u2014'}
+                </span>
+                <span className="text-[11px] text-muted-foreground/30 block">RPE</span>
+              </div>
             </div>
-            <div className="text-center">
-              <span className="text-base font-bold tabular-nums">{weekSummary.totalSets || 0}</span>
-              <span className="text-[10px] text-muted-foreground/30 block">sets</span>
-            </div>
-            <div className="text-center">
-              <span className="text-base font-bold tabular-nums">
-                {formatVolume(weekSummary.totalVolume)}
-              </span>
-              <span className="text-[10px] text-muted-foreground/30 block">kg vol</span>
-            </div>
-            <div className="text-center">
-              <span className="text-base font-bold tabular-nums">
-                {weekSummary.totalDuration || 0}
-              </span>
-              <span className="text-[10px] text-muted-foreground/30 block">min</span>
-            </div>
-            <div className="text-center">
-              <span className="text-base font-bold tabular-nums">
-                {weekSummary.avgRPE || '\u2014'}
-              </span>
-              <span className="text-[10px] text-muted-foreground/30 block">RPE</span>
-            </div>
-          </div>
-        </div>
+          </a>
+        </Link>
       ) : (
         !hasAnyWorkouts && (
           <div className="mt-4 pt-3 border-t border-border/10 text-center">

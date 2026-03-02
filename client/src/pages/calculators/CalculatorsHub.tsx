@@ -162,7 +162,7 @@ export function CalculatorsHub() {
       </div>
 
       {/* Calculator Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {CALCULATORS.map((calc, index) => (
           <motion.div
             key={calc.path}
@@ -222,7 +222,7 @@ export function CalculatorsHub() {
       </motion.div>
 
       {/* Info Cards */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
           <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-2">
             Pro Tip: 1RM Testing

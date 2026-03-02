@@ -136,7 +136,7 @@ const TrainerWorkoutCard = memo(
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 hover:bg-primary/10"
+                      className="h-10 w-10 p-0 hover:bg-primary/10"
                       data-testid={`button-menu-workout-${index}`}
                     >
                       <MoreVertical className="h-4 w-4" />

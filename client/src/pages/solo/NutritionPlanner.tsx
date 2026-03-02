@@ -367,7 +367,7 @@ export default function NutritionPlanner() {
                     <Button
                       key={opt.value}
                       variant={nutritionGoal === opt.value ? 'default' : 'outline'}
-                      size="sm"
+                      size="default"
                       onClick={() => setNutritionGoal(opt.value)}
                       className={
                         nutritionGoal === opt.value
@@ -417,7 +417,7 @@ export default function NutritionPlanner() {
                     <Button
                       key={n}
                       variant={mealsPerDay === n ? 'default' : 'outline'}
-                      size="sm"
+                      size="default"
                       onClick={() => setMealsPerDay(n)}
                       className={`flex-1 ${
                         mealsPerDay === n
@@ -442,7 +442,7 @@ export default function NutritionPlanner() {
                         key={opt}
                         type="button"
                         onClick={() => toggleDietary(opt)}
-                        className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                        className={`px-3 py-2 min-h-[36px] inline-flex items-center text-xs rounded-full border transition-colors ${
                           active
                             ? 'bg-green-500/20 border-green-500/50 text-green-400'
                             : 'bg-transparent border-border/50 text-muted-foreground hover:border-green-500/30'
@@ -467,7 +467,7 @@ export default function NutritionPlanner() {
                     <Button
                       key={opt.value}
                       variant={budget === opt.value ? 'default' : 'outline'}
-                      size="sm"
+                      size="default"
                       onClick={() => setBudget(opt.value)}
                       className={`flex-1 text-xs ${
                         budget === opt.value
@@ -840,7 +840,7 @@ export default function NutritionPlanner() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1 text-xs h-7 border-green-500/20 text-green-400 hover:bg-green-500/10"
+                        className="flex-1 text-xs h-9 border-green-500/20 text-green-400 hover:bg-green-500/10"
                         onClick={() => handleLoadPlan(plan.id)}
                       >
                         <Download className="h-3 w-3 mr-1" />
@@ -851,7 +851,7 @@ export default function NutritionPlanner() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
+                            className="h-9 w-9 p-0 text-muted-foreground hover:text-red-400"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>

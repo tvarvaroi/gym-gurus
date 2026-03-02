@@ -446,8 +446,8 @@ export default function AICoach() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between"
       >
-        <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
+        <div className="min-w-0 flex-1 space-y-1">
+          <h1 className="text-2xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3 flex-wrap">
             <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
               <Sparkles className="h-8 w-8 text-purple-400" />
             </div>
@@ -460,7 +460,7 @@ export default function AICoach() {
             Your personal fitness assistant, available 24/7
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {remaining !== null && limit !== null && limit > 0 && (
             <Badge
               variant="outline"
@@ -530,7 +530,7 @@ export default function AICoach() {
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
           <CardContent className="p-0">
             {/* Messages Area */}
-            <div className="h-[500px] overflow-y-auto p-4 space-y-4">
+            <div className="h-[min(500px,55vh)] overflow-y-auto p-4 space-y-4">
               <AnimatePresence initial={false}>
                 {messages.map((message, index) => (
                   <motion.div
@@ -607,7 +607,7 @@ export default function AICoach() {
                               type="button"
                               onClick={() => saveWorkoutFromChat(message, workoutNameInput)}
                               disabled={savingMessageId === message.id}
-                              className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
+                              className="flex items-center gap-1 px-3 py-2 min-h-[36px] text-xs rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
                             >
                               {savingMessageId === message.id ? (
                                 <RefreshCw className="h-3 w-3 animate-spin" />
@@ -619,7 +619,7 @@ export default function AICoach() {
                             <button
                               type="button"
                               onClick={() => setNamingMessageId(null)}
-                              className="px-2 py-1 text-xs rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                              className="px-3 py-2 min-h-[36px] text-xs rounded-lg text-muted-foreground hover:text-foreground transition-colors"
                             >
                               Cancel
                             </button>
@@ -690,7 +690,7 @@ export default function AICoach() {
                                 <a
                                   key={action.href}
                                   href={action.href}
-                                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full border border-border/50 text-muted-foreground hover:text-purple-400 hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
+                                  className="flex items-center gap-1 px-3 py-1.5 min-h-[32px] text-[11px] rounded-full border border-border/50 text-muted-foreground hover:text-purple-400 hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
                                 >
                                   <action.icon className="h-3 w-3" />
                                   {action.label}

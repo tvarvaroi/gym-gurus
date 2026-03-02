@@ -367,7 +367,7 @@ export default function ProgressPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4"
           >
             <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
               <CardContent className="p-4">
@@ -611,23 +611,23 @@ export default function ProgressPage() {
                     Complete workouts to set your first PR!
                   </p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                  <div className="overflow-x-auto -mx-6 px-6">
+                    <table className="w-full text-sm min-w-[480px]">
                       <thead>
                         <tr className="border-b border-border/30">
-                          <th className="text-left py-2 text-muted-foreground font-medium">
+                          <th className="text-left py-2 text-muted-foreground font-medium min-w-[140px] pr-4">
                             Exercise
                           </th>
-                          <th className="text-right py-2 text-muted-foreground font-medium">
+                          <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
                             Weight
                           </th>
-                          <th className="text-right py-2 text-muted-foreground font-medium">
+                          <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
                             Reps
                           </th>
-                          <th className="text-right py-2 text-muted-foreground font-medium">
+                          <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
                             Est. 1RM
                           </th>
-                          <th className="text-right py-2 text-muted-foreground font-medium">
+                          <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
                             Date
                           </th>
                         </tr>
@@ -635,7 +635,9 @@ export default function ProgressPage() {
                       <tbody>
                         {personalRecords.slice(0, 10).map((record, i) => (
                           <tr key={i} className="border-b border-border/10">
-                            <td className="py-2 font-medium">{record.exercise.name}</td>
+                            <td className="py-2 font-medium max-w-[200px] truncate">
+                              {record.exercise.name}
+                            </td>
                             <td className="py-2 text-right">
                               {parseFloat(record.pr.weightKg).toFixed(1)} kg
                             </td>
@@ -677,8 +679,8 @@ export default function ProgressPage() {
                   >
                     <div className="flex items-center gap-3">
                       <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">{workout.name}</p>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-sm font-medium truncate">{workout.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(workout.date).toLocaleDateString('en-US', {
                             weekday: 'short',
@@ -688,9 +690,13 @@ export default function ProgressPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0 ml-2">
                       <span>{workout.duration}min</span>
-                      {workout.volume > 0 && <span>{workout.volume.toLocaleString()}kg</span>}
+                      {workout.volume > 0 && (
+                        <span className="hidden sm:inline">
+                          {workout.volume.toLocaleString()}kg
+                        </span>
+                      )}
                       <span>{workout.sets} sets</span>
                     </div>
                   </div>

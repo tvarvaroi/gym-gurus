@@ -14,6 +14,7 @@ interface MetricItem {
   label: string;
   value: string;
   sub: string;
+  href: string;
   missing?: boolean;
   missingHref?: string;
   missingLabel?: string;
@@ -26,7 +27,7 @@ function BodyIntelligenceSkeleton() {
         <div className="h-3 w-28 bg-muted rounded" />
         <div className="h-3 w-32 bg-muted rounded" />
       </div>
-      <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-6">
         {[...Array(8)].map((_, i) => (
           <div key={i} className="space-y-2">
             <div className="h-2.5 w-10 bg-muted rounded" />
@@ -59,6 +60,7 @@ export function BodyIntelligencePanel({
       label: 'BMI',
       value: formatNum(computed.bmi.value),
       sub: computed.bmi.category,
+      href: '/dashboard/calculators/bmi',
     });
   }
 
@@ -68,6 +70,7 @@ export function BodyIntelligencePanel({
       label: 'Body Fat',
       value: `${formatNum(fitnessProfile.bodyFatPercentage)}%`,
       sub: 'measured',
+      href: '/dashboard/calculators/body-fat',
     });
   }
 
@@ -76,6 +79,7 @@ export function BodyIntelligencePanel({
       label: 'BMR',
       value: formatNum(computed.bmr.value),
       sub: 'kcal/day',
+      href: '/dashboard/calculators/tdee',
     });
   }
 
@@ -84,6 +88,7 @@ export function BodyIntelligencePanel({
       label: 'TDEE',
       value: formatNum(computed.tdee.value),
       sub: 'kcal/day',
+      href: '/dashboard/calculators/tdee',
     });
   }
 
@@ -92,27 +97,32 @@ export function BodyIntelligencePanel({
       label: 'Protein',
       value: `${formatNum(computed.macros.protein.grams)}g`,
       sub: '/day',
+      href: '/dashboard/calculators/macros',
     });
     metrics.push({
       label: 'Water',
       value: computed.waterIntake ? `${formatNum(computed.waterIntake.value)}L` : '\u2014',
       sub: '/day',
+      href: '/dashboard/calculators/water-intake',
     });
     metrics.push({
       label: 'Fat',
       value: `${formatNum(computed.macros.fat.grams)}g`,
       sub: '/day',
+      href: '/dashboard/calculators/macros',
     });
     metrics.push({
       label: 'Carbs',
       value: `${formatNum(computed.macros.carbs.grams)}g`,
       sub: '/day',
+      href: '/dashboard/calculators/macros',
     });
   } else if (computed.waterIntake) {
     metrics.push({
       label: 'Water',
       value: `${formatNum(computed.waterIntake.value)}L`,
       sub: '/day',
+      href: '/dashboard/calculators/water-intake',
     });
   }
 
@@ -121,6 +131,7 @@ export function BodyIntelligencePanel({
       label: 'Ideal Weight',
       value: `${formatNum(computed.idealWeight.value)} kg`,
       sub: 'Devine formula',
+      href: '/dashboard/calculators/ideal-weight',
     });
   }
 
@@ -129,6 +140,7 @@ export function BodyIntelligencePanel({
       label: 'FFMI',
       value: formatNum(computed.ffmi.value),
       sub: computed.ffmi.category,
+      href: '/dashboard/calculators/body-fat',
     });
   } else if (computed.macros) {
     // Only show missing FFMI if user has other data
@@ -136,6 +148,7 @@ export function BodyIntelligencePanel({
       label: 'FFMI',
       value: '\u2014',
       sub: '',
+      href: '/dashboard/calculators/body-fat',
       missing: true,
       missingHref: '/settings',
       missingLabel: 'Set body fat',
@@ -154,7 +167,10 @@ export function BodyIntelligencePanel({
       };
 
   return (
-    <motion.div {...animProps} className="bg-card rounded-2xl border border-border/20 p-6 md:p-8">
+    <motion.div
+      {...animProps}
+      className="bg-card rounded-2xl border border-border/20 p-4 sm:p-6 md:p-8"
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground/50 font-medium">
@@ -168,7 +184,7 @@ export function BodyIntelligencePanel({
       </div>
 
       {/* Metrics grid */}
-      <div className="grid grid-cols-3 md:grid-cols-5 gap-y-6">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-y-6">
         {metrics.map((metric, index) => (
           <div key={metric.label} className="flex items-start">
             {/* Vertical divider on desktop (not for first item or first in row) */}
@@ -179,68 +195,70 @@ export function BodyIntelligencePanel({
             {index % 3 !== 0 && (
               <div className="md:hidden h-12 w-px bg-border/15 mr-4 mt-1 flex-shrink-0" />
             )}
-            <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground/50 mb-1">
-                {metric.label}
-              </span>
-              {metric.missing ? (
-                <>
-                  <span className="text-2xl font-bold tabular-nums leading-none text-muted-foreground/30">
-                    {metric.value}
-                  </span>
-                  <Link href={metric.missingHref || '/settings'}>
-                    <a className="text-[11px] text-primary hover:text-primary/80 mt-1 transition-colors">
+            <Link href={metric.href}>
+              <a className="flex flex-col cursor-pointer group hover:bg-white/[0.03] rounded-lg px-1.5 py-1 -mx-1.5 -my-1 transition-colors">
+                <span className="text-[11px] uppercase tracking-wider text-muted-foreground/50 mb-1">
+                  {metric.label}
+                </span>
+                {metric.missing ? (
+                  <>
+                    <span className="text-2xl font-bold tabular-nums leading-none text-muted-foreground/30">
+                      {metric.value}
+                    </span>
+                    <span className="text-[11px] text-primary hover:text-primary/80 mt-1 transition-colors">
                       {metric.missingLabel}
-                    </a>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <span className="text-2xl font-bold tabular-nums leading-none">
-                    {metric.value}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground/40 mt-1">{metric.sub}</span>
-                </>
-              )}
-            </div>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-2xl font-bold tabular-nums leading-none group-hover:text-primary transition-colors">
+                      {metric.value}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground/40 mt-1">{metric.sub}</span>
+                  </>
+                )}
+              </a>
+            </Link>
           </div>
         ))}
       </div>
 
       {/* Macro bar visualization */}
       {computed.macros && (
-        <div className="mt-6">
-          <div className="h-2 w-full rounded-full overflow-hidden flex">
-            <div
-              className="h-full bg-primary"
-              style={{ width: `${computed.macros.protein.percent}%` }}
-            />
-            <div
-              className="h-full bg-amber-500/60"
-              style={{ width: `${computed.macros.fat.percent}%` }}
-            />
-            <div
-              className="h-full bg-blue-500/60"
-              style={{ width: `${computed.macros.carbs.percent}%` }}
-            />
-          </div>
-          <div className="relative h-5 mt-1.5">
-            <span className="absolute left-0 text-[10px] text-primary/70">
-              Protein {computed.macros.protein.percent}%
-            </span>
-            <span
-              className="absolute text-[10px] text-amber-500/70 -translate-x-1/2"
-              style={{
-                left: `${computed.macros.protein.percent + computed.macros.fat.percent / 2}%`,
-              }}
-            >
-              Fat {computed.macros.fat.percent}%
-            </span>
-            <span className="absolute right-0 text-[10px] text-blue-500/70">
-              Carbs {computed.macros.carbs.percent}%
-            </span>
-          </div>
-        </div>
+        <Link href="/dashboard/calculators/macros">
+          <a className="block mt-6 cursor-pointer group hover:bg-white/[0.02] rounded-lg p-1 -mx-1 transition-colors">
+            <div className="h-2 w-full rounded-full overflow-hidden flex">
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${computed.macros.protein.percent}%` }}
+              />
+              <div
+                className="h-full bg-amber-500/60"
+                style={{ width: `${computed.macros.fat.percent}%` }}
+              />
+              <div
+                className="h-full bg-blue-500/60"
+                style={{ width: `${computed.macros.carbs.percent}%` }}
+              />
+            </div>
+            <div className="relative h-5 mt-1.5">
+              <span className="absolute left-0 text-[11px] text-primary/70">
+                Protein {computed.macros.protein.percent}%
+              </span>
+              <span
+                className="absolute text-[11px] text-amber-500/70 -translate-x-1/2"
+                style={{
+                  left: `${computed.macros.protein.percent + computed.macros.fat.percent / 2}%`,
+                }}
+              >
+                Fat {computed.macros.fat.percent}%
+              </span>
+              <span className="absolute right-0 text-[11px] text-blue-500/70">
+                Carbs {computed.macros.carbs.percent}%
+              </span>
+            </div>
+          </a>
+        </Link>
       )}
     </motion.div>
   );

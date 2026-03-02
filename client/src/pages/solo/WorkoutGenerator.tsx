@@ -613,7 +613,7 @@ export default function WorkoutGenerator() {
                     <Button
                       key={option.value}
                       variant={goal === option.value ? 'default' : 'outline'}
-                      size="sm"
+                      size="default"
                       onClick={() => setGoal(option.value)}
                       className={
                         goal === option.value
@@ -695,7 +695,7 @@ export default function WorkoutGenerator() {
                     <Button
                       key={level}
                       variant={difficulty === level ? 'default' : 'outline'}
-                      size="sm"
+                      size="default"
                       onClick={() => setDifficulty(level)}
                       className={`flex-1 capitalize ${
                         difficulty === level

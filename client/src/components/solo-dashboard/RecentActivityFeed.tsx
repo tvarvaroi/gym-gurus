@@ -156,24 +156,28 @@ export function RecentActivityFeed({
               </p>
               <div className="space-y-0">
                 {group.items.map((activity, index) => (
-                  <div
-                    key={`${activity.type}-${index}`}
-                    className={`flex items-center justify-between py-2.5 ${
-                      index < group.items.length - 1 ? 'border-b border-border/10' : ''
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{activity.title}</p>
-                      <p className="text-xs text-muted-foreground/60 truncate">
-                        {activity.subtitle}
-                      </p>
-                    </div>
-                    {activity.xpEarned && activity.xpEarned > 0 && (
-                      <span className="text-xs text-muted-foreground tabular-nums flex-shrink-0 ml-3">
-                        +{activity.xpEarned} XP
-                      </span>
-                    )}
-                  </div>
+                  <Link key={`${activity.type}-${index}`} href="/progress">
+                    <a
+                      className={`flex items-center justify-between py-2.5 cursor-pointer group hover:bg-white/[0.03] rounded-lg px-2 -mx-2 transition-colors ${
+                        index < group.items.length - 1 ? 'border-b border-border/10' : ''
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                          {activity.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground/60 truncate">
+                          {activity.subtitle}
+                        </p>
+                      </div>
+                      {activity.xpEarned && activity.xpEarned > 0 && (
+                        <span className="text-xs text-muted-foreground tabular-nums flex-shrink-0 ml-3">
+                          +{activity.xpEarned} XP
+                        </span>
+                      )}
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 flex-shrink-0 ml-2 group-hover:text-primary/60 transition-colors" />
+                    </a>
+                  </Link>
                 ))}
               </div>
             </div>

@@ -59,7 +59,7 @@ export function SoloDashboard() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 md:px-10 space-y-10 pb-20">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 space-y-6 md:space-y-10 pb-20">
       {user && !user.onboardingCompleted && <OnboardingPrompt />}
 
       <HeroHeader

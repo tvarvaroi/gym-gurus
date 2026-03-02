@@ -454,7 +454,7 @@ function ProfileTab() {
               />
             </label>
             <div>
-              <p className="font-medium">
+              <p className="font-medium truncate">
                 {user?.firstName
                   ? `${user.firstName} ${user.lastName ?? ''}`.trim()
                   : (user?.email ?? '')}
