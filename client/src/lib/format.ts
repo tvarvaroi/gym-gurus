@@ -24,3 +24,11 @@ export function formatVolume(kg: number): string {
   if (kg >= 1000) return kg.toLocaleString();
   return kg.toString();
 }
+
+/**
+ * Returns true when formatVolume(kg) already encodes a unit abbreviation ("k"),
+ * meaning the caller should NOT append the "kg" label.
+ */
+export function volumeHasAbbreviation(kg: number): boolean {
+  return kg >= 10000;
+}

@@ -60,6 +60,7 @@ import {
   CheckCircle2,
   List,
   Moon,
+  Grid3X3,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
@@ -119,10 +120,88 @@ interface Appointment {
   };
 }
 
+// ─── Solo Agenda View (list view for mobile) ────────────────────────────────
+
+function SoloAgendaView({ events }: { events: any[] }) {
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  return (
+    <div className="space-y-2">
+      {weekDays.map((day) => {
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const dayEvents = events.filter((e: any) => e.date === dateStr);
+        const isToday = isSameDay(day, today);
+
+        return (
+          <Card
+            key={dateStr}
+            className={`border-border/50 ${isToday ? 'border-primary/40 bg-primary/5' : ''}`}
+          >
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span
+                    className={`text-xs font-semibold uppercase tracking-wider ${isToday ? 'text-primary' : 'text-muted-foreground/60'}`}
+                  >
+                    {format(day, 'EEE')}
+                  </span>
+                  <span className="text-xs text-muted-foreground/40 ml-1.5">
+                    {format(day, 'MMM d')}
+                  </span>
+                </div>
+                {isToday && (
+                  <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">
+                    Today
+                  </Badge>
+                )}
+              </div>
+
+              {dayEvents.length === 0 ? (
+                <p className="text-xs text-muted-foreground/30 mt-1.5 flex items-center gap-1">
+                  <Moon className="w-3 h-3" />
+                  Rest day
+                </p>
+              ) : (
+                dayEvents.map((e: any) => (
+                  <div key={e.id} className="mt-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className={`w-2 h-2 rounded-full shrink-0 ${
+                          e.type === 'completed' ? 'bg-green-500' : 'bg-primary/50'
+                        }`}
+                      />
+                      <span className="text-sm font-medium truncate">{e.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {e.type === 'completed' && e.duration && (
+                        <span className="text-xs text-muted-foreground">{e.duration}min</span>
+                      )}
+                      {e.type === 'planned' && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Planned
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Solo Schedule View (F1) ──────────────────────────────────────────────────
 
 function SoloScheduleView() {
   const [currentDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>(
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'calendar'
+  );
   const prefersReducedMotion = useReducedMotion();
 
   const year = currentDate.getFullYear();
@@ -221,7 +300,29 @@ function SoloScheduleView() {
         </Card>
       </motion.div>
 
-      {/* Calendar */}
+      {/* View toggle */}
+      <div className="flex justify-end gap-1">
+        <Button
+          variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('calendar')}
+          className="h-8 w-8 p-0"
+          aria-label="Calendar view"
+        >
+          <Grid3X3 className="w-4 h-4" />
+        </Button>
+        <Button
+          variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setViewMode('list')}
+          className="h-8 w-8 p-0"
+          aria-label="List view"
+        >
+          <List className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Calendar or List view */}
       {isLoading ? (
         <Card className="h-96 flex items-center justify-center border-border/50">
           <motion.div
@@ -231,8 +332,10 @@ function SoloScheduleView() {
             <CalendarIcon className="w-12 h-12 text-muted-foreground/40" />
           </motion.div>
         </Card>
-      ) : (
+      ) : viewMode === 'calendar' ? (
         <CalendarView events={calendarEvents} />
+      ) : (
+        <SoloAgendaView events={events} />
       )}
     </div>
   );

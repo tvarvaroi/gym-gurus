@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { formatVolume } from '@/lib/format';
+import { formatVolume, volumeHasAbbreviation } from '@/lib/format';
 import { useUser } from '@/contexts/UserContext';
 import {
   X,
@@ -1231,7 +1231,8 @@ export default function WorkoutExecution() {
         <div className="flex items-center justify-between mt-2 text-[11px] text-neutral-500">
           <span className="flex items-center gap-1">
             <Dumbbell className="w-3 h-3" />
-            {formatVolume(Math.round(totalVolume))} {weightUnit}
+            {formatVolume(Math.round(totalVolume))}
+            {!volumeHasAbbreviation(Math.round(totalVolume)) ? ` ${weightUnit}` : ''}
           </span>
           <span className="flex items-center gap-1">
             <Check className="w-3 h-3" />

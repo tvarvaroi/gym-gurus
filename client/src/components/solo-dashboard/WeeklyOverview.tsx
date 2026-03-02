@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ChevronRight } from 'lucide-react';
-import { formatVolume } from '@/lib/format';
+import { formatVolume, volumeHasAbbreviation } from '@/lib/format';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface WeeklyOverviewProps {
@@ -125,7 +125,9 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
             </p>
             <p className="text-3xl font-bold tabular-nums leading-tight group-hover:text-primary transition-colors">
               {formatVolume(totalVolume)}
-              <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>
+              {!volumeHasAbbreviation(totalVolume) && (
+                <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>
+              )}
             </p>
           </div>
           <span className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
@@ -327,9 +329,11 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
                             <span className="text-sm font-bold text-foreground text-center mt-1 tabular-nums">
                               {formatVolume(primarySession.volume)}
                             </span>
-                            <span className="text-[11px] text-muted-foreground/30 text-center">
-                              kg
-                            </span>
+                            {!volumeHasAbbreviation(primarySession.volume) && (
+                              <span className="text-[11px] text-muted-foreground/30 text-center">
+                                kg
+                              </span>
+                            )}
                           </>
                         )}
 
@@ -403,7 +407,9 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
                 <span className="text-base font-bold tabular-nums group-hover:text-primary transition-colors">
                   {formatVolume(weekSummary.totalVolume)}
                 </span>
-                <span className="text-[11px] text-muted-foreground/30 block">kg vol</span>
+                <span className="text-[11px] text-muted-foreground/30 block">
+                  {volumeHasAbbreviation(weekSummary.totalVolume) ? 'vol' : 'kg vol'}
+                </span>
               </div>
               <div className="text-center">
                 <span className="text-base font-bold tabular-nums group-hover:text-primary transition-colors">

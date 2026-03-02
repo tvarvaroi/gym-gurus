@@ -24,6 +24,40 @@ export type CalculatorType =
   | 'ideal_weight'
   | 'water_intake';
 
+const RESULT_LABEL_MAP: Record<string, string> = {
+  bmi: 'BMI',
+  bmr: 'BMR',
+  tdee: 'TDEE',
+  ffmi: 'FFMI',
+  vo2max: 'VO2 Max',
+  bodyFat: 'Body Fat',
+  leanMass: 'Lean Mass',
+  fatMass: 'Fat Mass',
+  healthRisk: 'Health Risk',
+  idealWeight: 'Ideal Weight',
+  heartRate: 'Heart Rate',
+  caloriesBurned: 'Calories',
+  category: 'Category',
+  protein: 'Protein',
+  carbs: 'Carbs',
+  fat: 'Fat',
+  calories: 'Calories',
+  waterIntake: 'Water',
+};
+
+function formatResultKey(key: string): string {
+  return (
+    RESULT_LABEL_MAP[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())
+  );
+}
+
+function formatResultValue(value: unknown): string {
+  if (typeof value === 'number') {
+    return value % 1 === 0 ? String(value) : value.toFixed(1);
+  }
+  return String(value);
+}
+
 interface PremiumCalculatorWrapperProps {
   calculatorType: CalculatorType;
   title: string;
@@ -237,8 +271,8 @@ export function PremiumCalculatorWrapper({
                           .slice(0, 3)
                           .map(([key, value]) => (
                             <span key={key}>
-                              <span className="font-medium">{key}:</span>{' '}
-                              <span className="text-primary">{String(value)}</span>
+                              <span className="font-medium">{formatResultKey(key)}:</span>{' '}
+                              <span className="text-primary">{formatResultValue(value)}</span>
                             </span>
                           ))}
                       </div>

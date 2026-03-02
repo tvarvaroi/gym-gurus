@@ -146,7 +146,7 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
     <motion.div {...animProps} className="relative pt-4" style={{ overflow: 'visible' }}>
       <div className="relative">
         {/* Left column — determines section height */}
-        <div className={`text-center md:text-left ${hasPhoto ? 'pr-0 md:pr-[140px]' : ''}`}>
+        <div className={`text-center lg:text-left ${hasPhoto ? 'pr-0 lg:pr-[140px]' : ''}`}>
           <p className="text-sm uppercase tracking-widest text-muted-foreground font-medium mb-2">
             {greeting}
           </p>
@@ -156,12 +156,12 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
           <p className="text-sm text-muted-foreground mb-6">{subtitle}</p>
 
           {/* Stats row */}
-          <div className="flex items-center justify-center md:justify-start gap-6 md:gap-8">
+          <div className="flex items-center justify-center lg:justify-start gap-6 lg:gap-8">
             {stats.map((stat, index) => (
-              <div key={stat.label} className="flex items-center gap-6 md:gap-8">
-                {index > 0 && <div className="h-8 w-px bg-border/30 -ml-6 md:-ml-8" />}
+              <div key={stat.label} className="flex items-center gap-6 lg:gap-8">
+                {index > 0 && <div className="h-8 w-px bg-border/30 -ml-6 lg:-ml-8" />}
                 <Link href={stat.href}>
-                  <a className="flex flex-col items-center md:items-start cursor-pointer group hover:bg-white/[0.03] rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors">
+                  <a className="flex flex-col items-center lg:items-start cursor-pointer group hover:bg-white/[0.03] rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors">
                     <span className="text-2xl font-bold tabular-nums leading-none group-hover:text-primary transition-colors">
                       {stat.value}
                       {stat.unit && (
@@ -190,7 +190,7 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
 
         {/* Photo — absolutely positioned, overflows downward */}
         {hasPhoto ? (
-          <div className="absolute right-0 bottom-0 translate-y-[15%] z-0 hidden md:block">
+          <div className="absolute right-0 bottom-0 translate-y-[15%] z-0 hidden lg:block">
             <label className="relative cursor-pointer group block">
               {/* Ambient glow */}
               <div
@@ -203,7 +203,7 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative h-[180px] md:h-[260px] w-auto object-contain"
+                className="relative h-[180px] lg:h-[260px] w-auto object-contain"
                 style={{
                   filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
                 }}
@@ -238,7 +238,7 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
             </label>
           </div>
         ) : (
-          <div className="absolute right-0 top-0 hidden md:block">
+          <div className="absolute right-0 top-0 hidden lg:block">
             <label className="relative cursor-pointer group block">
               <div className="w-44 h-44 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-colors">
                 <Camera className="w-7 h-7 text-muted-foreground/40" />
@@ -269,7 +269,7 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
 
       {/* Mobile photo — normal flow, centered above text */}
       {hasPhoto && (
-        <div className="flex justify-center mb-4 md:hidden">
+        <div className="flex justify-center mb-4 lg:hidden">
           <label className="relative cursor-pointer group block">
             <img
               src={user.profileImageUrl}
@@ -296,7 +296,7 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
         </div>
       )}
       {!hasPhoto && (
-        <div className="flex justify-center mb-4 md:hidden">
+        <div className="flex justify-center mb-4 lg:hidden">
           <label className="relative cursor-pointer group block">
             <div className="w-28 h-28 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-colors">
               <Camera className="w-7 h-7 text-muted-foreground/40" />

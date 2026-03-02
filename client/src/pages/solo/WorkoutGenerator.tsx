@@ -690,14 +690,14 @@ export default function WorkoutGenerator() {
               {/* Difficulty */}
               <div className="space-y-2">
                 <Label>Difficulty Level</Label>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {['beginner', 'intermediate', 'advanced'].map((level) => (
                     <Button
                       key={level}
                       variant={difficulty === level ? 'default' : 'outline'}
-                      size="default"
+                      size="sm"
                       onClick={() => setDifficulty(level)}
-                      className={`flex-1 capitalize ${
+                      className={`capitalize text-xs sm:text-sm ${
                         difficulty === level
                           ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
                           : 'border-border/50'

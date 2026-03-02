@@ -114,7 +114,7 @@ export function BMICalculator() {
 
   useEffect(() => {
     if (!profile.isLoaded) return;
-    if (profile.weightKg) setWeight(Math.round(profile.weightKg));
+    if (profile.weightKg) setWeight(parseFloat(Number(profile.weightKg).toFixed(1)));
     if (profile.heightCm) setHeight(Math.round(profile.heightCm));
   }, [profile.isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -178,6 +178,7 @@ export function BMICalculator() {
               type="range"
               min={unit === 'metric' ? 30 : 66}
               max={unit === 'metric' ? 200 : 440}
+              step={unit === 'metric' ? 0.1 : 0.5}
               value={weight}
               onChange={(e) => setWeight(Number(e.target.value))}
               className="flex-1"
@@ -188,6 +189,7 @@ export function BMICalculator() {
               onChange={(e) => setWeight(Number(e.target.value))}
               className="w-20 p-2 text-center border rounded-lg bg-background font-bold"
               min={unit === 'metric' ? 30 : 66}
+              step={unit === 'metric' ? 0.1 : 0.5}
             />
           </div>
         </div>

@@ -69,7 +69,7 @@ export function SoloDashboard() {
         computedTdee={data.bodyIntelligence?.computed?.tdee?.value}
       />
 
-      <div className="mt-16 md:mt-20 relative z-10">
+      <div className="mt-16 lg:mt-20 relative z-10">
         <TodaysActionZone />
       </div>
 
