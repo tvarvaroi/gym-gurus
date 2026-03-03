@@ -820,7 +820,7 @@ export default function WorkoutExecution() {
 
   if (workoutError) {
     return createPortal(
-      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0a0a0f] p-4">
+      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0A0A0A] p-4">
         <div className="text-center space-y-4 max-w-sm">
           <div className="w-14 h-14 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
             <X className="h-7 w-7 text-red-500" />
@@ -838,7 +838,7 @@ export default function WorkoutExecution() {
 
   if (isLoading || !session) {
     return createPortal(
-      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0A0A0A]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-[#c9a855]/30 border-t-[#c9a855] rounded-full mx-auto mb-4 animate-spin" />
           <p className="text-neutral-500 text-sm">Loading workout...</p>
@@ -857,7 +857,7 @@ export default function WorkoutExecution() {
     const cals = estimateCalories(durationMin, allCompletedSets);
 
     return createPortal(
-      <div className="fixed inset-0 z-[200] bg-[#0a0a0f] text-white overflow-y-auto">
+      <div className="fixed inset-0 z-[200] bg-[#0A0A0A] text-white overflow-y-auto">
         {/* CSS animations */}
         <style>{`
           @keyframes confetti-fall {
@@ -946,10 +946,10 @@ export default function WorkoutExecution() {
             className="grid grid-cols-2 gap-3"
           >
             <div
-              className="rounded-xl p-4 text-center border border-white/[0.06]"
+              className="rounded-2xl p-5 text-center border border-white/[0.06]"
               style={{
                 background:
-                  'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+                  'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
               }}
             >
               <Timer className="w-5 h-5 text-blue-400 mx-auto mb-2" />
@@ -957,10 +957,10 @@ export default function WorkoutExecution() {
               <p className="text-xs text-neutral-500">Duration</p>
             </div>
             <div
-              className="rounded-xl p-4 text-center border border-white/[0.06]"
+              className="rounded-2xl p-5 text-center border border-white/[0.06]"
               style={{
                 background:
-                  'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+                  'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
               }}
             >
               <Dumbbell className="w-5 h-5 text-cyan-400 mx-auto mb-2" />
@@ -974,10 +974,10 @@ export default function WorkoutExecution() {
               <p className="text-xs text-neutral-500">Volume</p>
             </div>
             <div
-              className="rounded-xl p-4 text-center border border-white/[0.06]"
+              className="rounded-2xl p-5 text-center border border-white/[0.06]"
               style={{
                 background:
-                  'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+                  'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
               }}
             >
               <Check className="w-5 h-5 text-green-400 mx-auto mb-2" />
@@ -987,10 +987,10 @@ export default function WorkoutExecution() {
               <p className="text-xs text-neutral-500">Sets</p>
             </div>
             <div
-              className="rounded-xl p-4 text-center border border-white/[0.06]"
+              className="rounded-2xl p-5 text-center border border-white/[0.06]"
               style={{
                 background:
-                  'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+                  'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
               }}
             >
               <Flame className="w-5 h-5 text-orange-400 mx-auto mb-2" />
@@ -1163,12 +1163,12 @@ export default function WorkoutExecution() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex flex-col bg-[#0a0a0f] text-white select-none overflow-hidden"
+      className="fixed inset-0 z-[200] flex flex-col bg-[#0A0A0A] text-white select-none overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* ── Sticky Top Bar ── */}
-      <div className="flex-none py-3 px-4 bg-gradient-to-b from-[#0a0a0f] via-[#0a0a0f] to-transparent z-30">
+      <div className="flex-none py-3 px-4 bg-gradient-to-b from-[#0A0A0A] via-[#0A0A0A] to-transparent z-30">
         {/* Title row */}
         <div className="flex items-center justify-between mb-2">
           <button
@@ -1181,13 +1181,7 @@ export default function WorkoutExecution() {
           <div className="flex-1 min-w-0 mx-3 text-center">
             <h1 className="text-base font-bold truncate">{session.workoutTitle}</h1>
             <p className="text-[11px] text-neutral-500">
-              Exercise {currentExerciseIndex + 1}/{totalExercises}
-              {currentExercise && currentSetIndex >= 0 && (
-                <>
-                  {' '}
-                  &middot; Set {currentSetIndex + 1}/{currentExercise.sets.length}
-                </>
-              )}
+              Exercise {currentExerciseIndex + 1} of {totalExercises}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-none">
@@ -1316,18 +1310,15 @@ export default function WorkoutExecution() {
 
               {/* Previous performance block */}
               {previousPerformance?.exercises?.[currentExercise.exerciseName] && (
-                <div className="mb-4 rounded-xl bg-white/[0.03] border border-white/[0.06] px-4 py-3">
-                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-1.5">
-                    Previous Performance
-                  </p>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1">
-                    {previousPerformance.exercises[currentExercise.exerciseName].map((prev, pi) => (
-                      <span key={pi} className="text-xs text-neutral-400 tabular-nums">
-                        {prev.weight}
-                        {previousPerformance.unit} &times; {prev.reps}
-                      </span>
-                    ))}
-                  </div>
+                <div className="mb-4 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.04]">
+                  <span className="text-[10px] uppercase tracking-wider text-neutral-500 block mb-1">
+                    Previous
+                  </span>
+                  <span className="text-xs text-neutral-300 tabular-nums">
+                    {previousPerformance.exercises[currentExercise.exerciseName]
+                      .map((prev) => `${prev.weight}${previousPerformance.unit}×${prev.reps}`)
+                      .join('  ·  ')}
+                  </span>
                 </div>
               )}
 
@@ -1368,8 +1359,8 @@ export default function WorkoutExecution() {
                       }}
                       className={`rounded-2xl p-4 transition-colors ${
                         set.completed
-                          ? 'bg-green-500/5 border border-green-500/20 border-l-4 border-l-green-500'
-                          : 'bg-white/[0.03] border border-[#c9a855]/30'
+                          ? 'bg-green-500/[0.06] border border-green-500/15 border-l-4 border-l-green-500'
+                          : 'bg-[#c9a855]/[0.06] border border-[#c9a855]/20'
                       }`}
                     >
                       {/* Top row: Set label + check */}
@@ -1417,13 +1408,13 @@ export default function WorkoutExecution() {
                       </div>
 
                       {/* Weight + Reps side by side */}
-                      <div className="flex items-start gap-2 sm:gap-3">
+                      <div className="flex items-center justify-around mt-1">
                         {/* Weight */}
-                        <div className="flex-1">
-                          <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-1.5">
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-2">
                             Weight ({weightUnit})
-                          </p>
-                          <div className="flex items-center gap-1">
+                          </span>
+                          <div className="flex items-center gap-1.5">
                             <button
                               onClick={() =>
                                 updateSet(currentExerciseIndex, sIdx, 'weight', set.weight - step)
@@ -1447,7 +1438,7 @@ export default function WorkoutExecution() {
                                 )
                               }
                               disabled={set.completed}
-                              className="w-14 h-11 sm:w-20 sm:h-12 text-center text-lg sm:text-xl font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-14 h-11 sm:w-20 sm:h-12 text-center text-lg sm:text-xl font-bold bg-transparent border-b-2 border-white/[0.06] focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               placeholder="0"
                               aria-label={`Weight for set ${set.setNumber}`}
                             />
@@ -1465,14 +1456,14 @@ export default function WorkoutExecution() {
                         </div>
 
                         {/* Divider */}
-                        <div className="w-px h-12 sm:h-16 bg-white/10 self-center mt-5" />
+                        <div className="h-14 w-px bg-white/[0.06]" />
 
                         {/* Reps */}
-                        <div className="flex-1">
-                          <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-1.5">
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-2">
                             Reps
-                          </p>
-                          <div className="flex items-center gap-1">
+                          </span>
+                          <div className="flex items-center gap-1.5">
                             <button
                               onClick={() =>
                                 updateSet(currentExerciseIndex, sIdx, 'reps', set.reps - 1)
@@ -1496,7 +1487,7 @@ export default function WorkoutExecution() {
                                 )
                               }
                               disabled={set.completed}
-                              className="w-12 h-11 sm:w-16 sm:h-12 text-center text-lg sm:text-xl font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-12 h-11 sm:w-16 sm:h-12 text-center text-lg sm:text-xl font-bold bg-transparent border-b-2 border-white/[0.06] focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               placeholder="0"
                               aria-label={`Reps for set ${set.setNumber}`}
                             />
@@ -1601,7 +1592,7 @@ export default function WorkoutExecution() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="absolute inset-0 z-30 bg-[#0a0a0f]/95 backdrop-blur-md flex flex-col items-center justify-center"
+            className="absolute inset-0 z-30 bg-[#0A0A0A]/95 backdrop-blur-md flex flex-col items-center justify-center"
           >
             {/* REST label */}
             <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500 mb-6">
@@ -1700,7 +1691,7 @@ export default function WorkoutExecution() {
       </AnimatePresence>
 
       {/* ── Sticky Bottom Bar ── */}
-      <div className="flex-none h-16 flex items-center justify-between px-4 border-t border-white/5 bg-[#0a0a0f]/95 backdrop-blur-md z-30 gap-2">
+      <div className="flex-none h-16 flex items-center justify-between px-4 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-md z-30 gap-2">
         {/* Exercise list */}
         <button
           onClick={() => setShowExerciseList(true)}
