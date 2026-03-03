@@ -444,10 +444,10 @@ export default function AICoach() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
       >
-        <div className="min-w-0 flex-1 space-y-1">
-          <h1 className="text-2xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3 flex-wrap">
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3 flex-wrap">
             <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
               <Sparkles className="h-8 w-8 text-purple-400" />
             </div>
@@ -460,7 +460,7 @@ export default function AICoach() {
             Your personal fitness assistant, available 24/7
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           {remaining !== null && limit !== null && limit > 0 && (
             <Badge
               variant="outline"

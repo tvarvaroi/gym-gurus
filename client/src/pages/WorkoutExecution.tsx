@@ -1417,7 +1417,7 @@ export default function WorkoutExecution() {
                       </div>
 
                       {/* Weight + Reps side by side */}
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2 sm:gap-3">
                         {/* Weight */}
                         <div className="flex-1">
                           <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-1.5">
@@ -1428,7 +1428,7 @@ export default function WorkoutExecution() {
                               onClick={() =>
                                 updateSet(currentExerciseIndex, sIdx, 'weight', set.weight - step)
                               }
-                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                              className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
                               aria-label={`Decrease weight by ${step} ${weightUnit}`}
                               disabled={set.completed}
                             >
@@ -1447,7 +1447,7 @@ export default function WorkoutExecution() {
                                 )
                               }
                               disabled={set.completed}
-                              className="w-20 h-12 text-center text-xl font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-14 h-11 sm:w-20 sm:h-12 text-center text-lg sm:text-xl font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               placeholder="0"
                               aria-label={`Weight for set ${set.setNumber}`}
                             />
@@ -1455,7 +1455,7 @@ export default function WorkoutExecution() {
                               onClick={() =>
                                 updateSet(currentExerciseIndex, sIdx, 'weight', set.weight + step)
                               }
-                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                              className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
                               aria-label={`Increase weight by ${step} ${weightUnit}`}
                               disabled={set.completed}
                             >
@@ -1465,7 +1465,7 @@ export default function WorkoutExecution() {
                         </div>
 
                         {/* Divider */}
-                        <div className="w-px h-16 bg-white/10 self-center mt-5" />
+                        <div className="w-px h-12 sm:h-16 bg-white/10 self-center mt-5" />
 
                         {/* Reps */}
                         <div className="flex-1">
@@ -1477,7 +1477,7 @@ export default function WorkoutExecution() {
                               onClick={() =>
                                 updateSet(currentExerciseIndex, sIdx, 'reps', set.reps - 1)
                               }
-                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                              className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
                               aria-label="Decrease reps by 1"
                               disabled={set.completed}
                             >
@@ -1496,7 +1496,7 @@ export default function WorkoutExecution() {
                                 )
                               }
                               disabled={set.completed}
-                              className="w-16 h-12 text-center text-xl font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-12 h-11 sm:w-16 sm:h-12 text-center text-lg sm:text-xl font-bold bg-transparent border-b-2 border-white/10 focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               placeholder="0"
                               aria-label={`Reps for set ${set.setNumber}`}
                             />
@@ -1504,7 +1504,7 @@ export default function WorkoutExecution() {
                               onClick={() =>
                                 updateSet(currentExerciseIndex, sIdx, 'reps', set.reps + 1)
                               }
-                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
+                              className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
                               aria-label="Increase reps by 1"
                               disabled={set.completed}
                             >
@@ -1544,6 +1544,46 @@ export default function WorkoutExecution() {
                   >
                     Next Exercise <ChevronRight className="w-4 h-4" />
                   </motion.button>
+                )}
+
+              {/* Up Next preview — fills dead space */}
+              {currentExerciseIndex < totalExercises - 1 && (
+                <div className="mt-6 mx-1 px-4 py-5 border-t border-white/[0.04]">
+                  <span className="text-[10px] uppercase tracking-widest text-neutral-600">
+                    Up Next
+                  </span>
+                  <p className="text-sm font-medium text-neutral-400 mt-1.5">
+                    {session.exercises[currentExerciseIndex + 1]?.exerciseName}
+                  </p>
+                  <p className="text-xs text-neutral-600 mt-0.5">
+                    {session.exercises[currentExerciseIndex + 1]?.sets?.length} sets
+                    {session.exercises[currentExerciseIndex + 1]?.restSeconds
+                      ? ` · ${session.exercises[currentExerciseIndex + 1]?.restSeconds}s rest`
+                      : ''}
+                  </p>
+                </div>
+              )}
+
+              {/* Session progress — last exercise completed */}
+              {currentExerciseIndex === totalExercises - 1 &&
+                currentExercise.status === 'completed' && (
+                  <div className="mt-6 mx-1 px-4 py-5 border-t border-white/[0.04] text-center">
+                    <span className="text-[10px] uppercase tracking-widest text-neutral-600">
+                      Session Progress
+                    </span>
+                    <div className="flex justify-center gap-6 mt-3">
+                      <div className="text-center">
+                        <span className="text-lg font-bold tabular-nums">{allCompletedSets}</span>
+                        <span className="text-[10px] text-neutral-600 block">sets done</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="text-lg font-bold tabular-nums">
+                          {Math.round(totalVolume).toLocaleString()}
+                        </span>
+                        <span className="text-[10px] text-neutral-600 block">kg lifted</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
               {/* spacer for bottom bar */}

@@ -274,7 +274,7 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
             <img
               src={user.profileImageUrl}
               alt={user.firstName || 'Profile'}
-              className="h-[160px] w-auto object-contain"
+              className="h-[160px] sm:h-[200px] w-auto object-contain"
               style={{
                 filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
               }}

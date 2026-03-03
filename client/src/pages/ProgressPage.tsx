@@ -198,11 +198,12 @@ export default function ProgressPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
         >
-          <h1 className="text-4xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
+          <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <TrendingUp className="h-7 w-7 text-primary" />
+            </div>
             {isClient || isSolo ? 'My ' : 'Progress '}
-            <span
-              className={`font-light bg-gradient-to-r ${isClient || isSolo ? 'from-cyan-500 via-teal-500 to-cyan-400' : 'from-primary via-primary/80 to-primary/60'} bg-clip-text text-transparent`}
-            >
+            <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               {isClient || isSolo ? 'Progress' : 'Tracking'}
             </span>
           </h1>

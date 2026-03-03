@@ -145,21 +145,26 @@ export function CalculatorsHub() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
-      <div className="text-center mb-8">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-3 mb-4"
-        >
-          <div className="p-4 bg-primary/10 rounded-2xl">
-            <Calculator className="w-10 h-10 text-primary" />
-          </div>
-        </motion.div>
-        <h1 className="text-3xl font-bold mb-2">Fitness Calculators</h1>
-        <p className="text-muted-foreground text-lg">
-          Tools to help you train smarter and track your progress
-        </p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 mb-8"
+      >
+        <div className="p-2 rounded-xl bg-primary/10">
+          <Calculator className="h-7 w-7 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display']">
+            Fitness{' '}
+            <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Calculators
+            </span>
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Tools to help you train smarter and track your progress
+          </p>
+        </div>
+      </motion.div>
 
       {/* Calculator Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -172,7 +177,7 @@ export function CalculatorsHub() {
           >
             <Link href={calc.path}>
               <a className="block">
-                <div className="bg-card rounded-xl p-6 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer border border-transparent hover:border-primary/20">
+                <div className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer border border-transparent hover:border-primary/20">
                   <div className="flex items-start gap-4">
                     <div className={`p-3 rounded-xl ${calc.bgColor}`}>
                       <div className={calc.color}>{calc.icon}</div>

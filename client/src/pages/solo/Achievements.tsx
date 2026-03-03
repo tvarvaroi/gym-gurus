@@ -301,7 +301,7 @@ export default function Achievements() {
                 transition={{ delay: index * 0.05 }}
               >
                 <Card
-                  className={`relative overflow-hidden cursor-pointer transition-all duration-300 ${
+                  className={`relative overflow-hidden cursor-pointer transition-all duration-300 min-h-[140px] ${
                     achievement.earned
                       ? `${rarity.bg} ${rarity.border} hover:shadow-lg ${rarity.glow}`
                       : 'bg-card/30 border-border/30 opacity-60 hover:opacity-80'

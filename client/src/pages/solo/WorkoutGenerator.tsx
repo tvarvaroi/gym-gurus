@@ -495,10 +495,10 @@ export default function WorkoutGenerator() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
       >
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
             <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
               <Brain className="h-8 w-8 text-purple-400" />
             </div>
@@ -511,7 +511,7 @@ export default function WorkoutGenerator() {
             Create personalized workouts powered by AI
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {clientId && clientData?.name && (
             <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400">
               For {clientData.name}

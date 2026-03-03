@@ -306,7 +306,7 @@ export default function Recovery() {
                           selectedMuscle === muscle.muscleGroup ? null : muscle.muscleGroup
                         )
                       }
-                      className={`p-4 rounded-xl transition-all duration-300 text-left ${
+                      className={`p-4 rounded-2xl transition-all duration-300 text-left min-h-[110px] ${
                         neverTrained
                           ? 'border border-dashed border-border/30 opacity-60'
                           : selectedMuscle === muscle.muscleGroup

@@ -17,6 +17,7 @@ import {
   Play,
   CheckCircle,
   Wand2,
+  Dumbbell,
 } from 'lucide-react';
 import WorkoutFormModal from '../components/WorkoutFormModal';
 import SearchInput from '@/components/SearchInput';
@@ -111,7 +112,7 @@ const TrainerWorkoutCard = memo(
           <CardHeader className="relative space-y-4 pb-4">
             <div className="flex items-start justify-between">
               <div className="space-y-2 flex-1">
-                <CardTitle className="text-xl font-extralight tracking-tight leading-snug bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text group-hover:from-primary group-hover:to-primary/70 transition-all duration-300">
+                <CardTitle className="text-xl font-extralight tracking-tight leading-snug line-clamp-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text group-hover:from-primary group-hover:to-primary/70 transition-all duration-300">
                   {workout.title}
                 </CardTitle>
                 <CardDescription className="text-sm font-light leading-relaxed">
@@ -258,7 +259,7 @@ const ClientWorkoutCard = memo(
               <div className="flex items-start justify-between">
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-xl font-extralight tracking-tight leading-snug bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text group-hover:from-cyan-500 group-hover:to-cyan-400 transition-all duration-300">
+                    <CardTitle className="text-xl font-extralight tracking-tight leading-snug line-clamp-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text group-hover:from-cyan-500 group-hover:to-cyan-400 transition-all duration-300">
                       {workout.title}
                     </CardTitle>
                     {isCompleted && (
@@ -607,17 +608,12 @@ const WorkoutPlans = memo(() => {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
             <div className="space-y-2 sm:space-y-3">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extralight tracking-tight font-['Playfair_Display']">
-                <span className="text-foreground">My </span>
-                <span
-                  className={
-                    isSolo
-                      ? 'text-purple-400'
-                      : isClient
-                        ? 'text-cyan-500'
-                        : 'text-[hsl(var(--color-guru))]'
-                  }
-                >
+              <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-primary/10">
+                  <Dumbbell className="h-7 w-7 text-primary" />
+                </div>
+                My{' '}
+                <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   Workouts
                 </span>
               </h1>

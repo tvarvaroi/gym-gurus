@@ -8,6 +8,20 @@ import { cn } from '@/lib/utils';
 import { TruncatedText } from './TruncatedText';
 import { useUser } from '@/contexts/UserContext';
 
+function getWorkoutLabel(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes('push')) return 'Push';
+  if (lower.includes('pull')) return 'Pull';
+  if (lower.includes('leg') || lower.includes('lower')) return 'Legs';
+  if (lower.includes('upper')) return 'Upper';
+  if (lower.includes('chest')) return 'Chest';
+  if (lower.includes('back')) return 'Back';
+  if (lower.includes('full')) return 'Full';
+  if (lower.includes('cardio') || lower.includes('hiit')) return 'Cardio';
+  if (lower.includes('arm')) return 'Arms';
+  return name.split(/[\s\u2014-]/)[0].slice(0, 5);
+}
+
 interface CalendarEvent {
   id: string;
   title: string;
@@ -310,33 +324,23 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
                                   config.border,
                                   config.glow
                                 )}
+                                title={event.title}
                               >
-                                <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
                                   {/* Status dot */}
-                                  <div className="relative flex-shrink-0">
-                                    <div className={cn('w-1.5 h-1.5 rounded-full', config.dot)} />
-                                  </div>
-
-                                  {/* Time - 24-hour format displayed directly */}
                                   <div
                                     className={cn(
-                                      'text-[11px] font-medium flex-shrink-0 tracking-wide',
-                                      config.text
-                                    )}
-                                  >
-                                    {event.time}
-                                  </div>
-
-                                  {/* Event title with ellipsis */}
-                                  <TruncatedText
-                                    as="div"
-                                    text={event.title}
-                                    className={cn(
-                                      'text-[11px] font-normal flex-1 min-w-0 tracking-wide',
-                                      config.text,
-                                      'opacity-90'
+                                      'w-1.5 h-1.5 rounded-full flex-shrink-0',
+                                      config.dot
                                     )}
                                   />
+
+                                  {/* Category label — concise enough for small cells */}
+                                  <span
+                                    className={cn('text-[10px] font-medium truncate', config.text)}
+                                  >
+                                    {getWorkoutLabel(event.title)}
+                                  </span>
                                 </div>
                               </motion.div>
                             );

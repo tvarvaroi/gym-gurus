@@ -250,13 +250,16 @@ function SoloScheduleView() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="text-4xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
+        <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10">
+            <CalendarIcon className="h-7 w-7 text-primary" />
+          </div>
           My{' '}
           <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
             Schedule
           </span>
         </h1>
-        <p className="text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
+        <p className="text-sm font-light text-muted-foreground/80 leading-relaxed">
           Track your completed workouts and planned training days
         </p>
       </motion.div>

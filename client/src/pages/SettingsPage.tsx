@@ -33,6 +33,7 @@ import {
   Loader2,
   Camera,
   Scale,
+  Settings,
 } from 'lucide-react';
 import { useRef } from 'react';
 // Inline subscription helpers (mirrors server/services/subscription.ts logic)
@@ -1024,7 +1025,10 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto py-2">
       <div className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display']">
+        <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10">
+            <Settings className="h-7 w-7 text-primary" />
+          </div>
           Account{' '}
           <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Settings
