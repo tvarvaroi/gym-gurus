@@ -1071,7 +1071,7 @@ function AppLayout() {
                 <TrialBanner />
                 <main
                   id="main-content"
-                  className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0"
+                  className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0 flex flex-col"
                   role="main"
                 >
                   <div className="p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20 min-h-full">

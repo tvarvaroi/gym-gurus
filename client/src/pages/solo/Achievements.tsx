@@ -49,7 +49,6 @@ const categories = [
   { id: 'workout', label: 'Workouts', icon: Dumbbell },
   { id: 'strength', label: 'Strength', icon: TrendingUp },
   { id: 'consistency', label: 'Consistency', icon: Flame },
-  { id: 'social', label: 'Social', icon: Users },
 ];
 
 function getCategoryFromType(type: string | null): string {
@@ -156,10 +155,12 @@ export default function Achievements() {
     category: a.category || getCategoryFromType(a.requirementType),
   }));
 
+  const soloAchievements = mappedAchievements.filter((a) => a.category !== 'social');
+
   const filteredAchievements =
     selectedCategory === 'all'
-      ? mappedAchievements
-      : mappedAchievements.filter((a) => a.category === selectedCategory);
+      ? soloAchievements
+      : soloAchievements.filter((a) => a.category === selectedCategory);
 
   const earnedCount = mappedAchievements.filter((a) => a.earned).length;
   const totalXP = mappedAchievements

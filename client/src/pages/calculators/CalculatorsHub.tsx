@@ -150,7 +150,7 @@ export function CalculatorsHub() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center gap-3 mb-8"
       >
-        <div className="p-2 rounded-xl bg-primary/10">
+        <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
           <Calculator className="h-7 w-7 text-primary" />
         </div>
         <div>

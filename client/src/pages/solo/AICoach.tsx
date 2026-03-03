@@ -448,7 +448,7 @@ export default function AICoach() {
       >
         <div className="space-y-1">
           <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3 flex-wrap">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex-shrink-0">
               <Sparkles className="h-8 w-8 text-purple-400" />
             </div>
             AI{' '}
@@ -509,7 +509,7 @@ export default function AICoach() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 + index * 0.05 }}
             onClick={() => handleSend(prompt.prompt)}
-            className="group p-3 rounded-xl border border-border/50 bg-card/50 hover:bg-purple-500/10 hover:border-purple-500/30 transition-all duration-300 text-left"
+            className="group p-3 rounded-xl border border-border/50 bg-card/50 hover:bg-purple-500/10 hover:border-purple-500/30 transition-all duration-300 text-left min-h-[48px] flex items-center"
           >
             <div className="flex items-center gap-2">
               <prompt.icon className="h-4 w-4 text-muted-foreground group-hover:text-purple-400 transition-colors" />
@@ -720,7 +720,7 @@ export default function AICoach() {
                       <button
                         key={prompt}
                         onClick={() => handleSend(prompt)}
-                        className="text-left px-3 py-2.5 rounded-lg border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-all"
+                        className="text-left px-3 py-2.5 rounded-lg border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-all min-h-[56px] flex items-start"
                       >
                         {prompt}
                       </button>

@@ -251,7 +251,7 @@ function SoloScheduleView() {
         transition={{ duration: 0.6 }}
       >
         <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary/10">
+          <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
             <CalendarIcon className="h-7 w-7 text-primary" />
           </div>
           My{' '}
@@ -263,6 +263,33 @@ function SoloScheduleView() {
           Track your completed workouts and planned training days
         </p>
       </motion.div>
+
+      {/* Section header with view toggle */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground/50 font-medium">
+          This Month
+        </span>
+        <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-0.5">
+          <Button
+            variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('calendar')}
+            className="h-8 w-8 p-0"
+            aria-label="Calendar view"
+          >
+            <Grid3X3 className="w-4 h-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className="h-8 w-8 p-0"
+            aria-label="List view"
+          >
+            <List className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
 
       {/* Stats Summary */}
       <motion.div
@@ -280,7 +307,7 @@ function SoloScheduleView() {
               <p className="text-2xl font-bold tabular-nums">{completedCount}</p>
               <p className="text-xs text-muted-foreground">
                 {completedCount === 0
-                  ? 'None yet this month'
+                  ? 'Completed this month'
                   : `of ${completedCount + plannedCount} planned`}
               </p>
             </div>
@@ -296,34 +323,12 @@ function SoloScheduleView() {
               <p className="text-xs text-muted-foreground">
                 {plannedCount === 0 && completedCount === 0
                   ? 'Set workout frequency in settings'
-                  : `session${plannedCount !== 1 ? 's' : ''} left`}
+                  : `remaining this month`}
               </p>
             </div>
           </CardContent>
         </Card>
       </motion.div>
-
-      {/* View toggle */}
-      <div className="flex justify-end gap-1">
-        <Button
-          variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setViewMode('calendar')}
-          className="h-8 w-8 p-0"
-          aria-label="Calendar view"
-        >
-          <Grid3X3 className="w-4 h-4" />
-        </Button>
-        <Button
-          variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setViewMode('list')}
-          className="h-8 w-8 p-0"
-          aria-label="List view"
-        >
-          <List className="w-4 h-4" />
-        </Button>
-      </div>
 
       {/* Calendar or List view */}
       {isLoading ? (

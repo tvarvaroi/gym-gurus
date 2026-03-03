@@ -199,7 +199,7 @@ export default function ProgressPage() {
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
         >
           <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10">
+            <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
               <TrendingUp className="h-7 w-7 text-primary" />
             </div>
             {isClient || isSolo ? 'My ' : 'Progress '}

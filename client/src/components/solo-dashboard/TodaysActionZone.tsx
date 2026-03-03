@@ -163,9 +163,8 @@ function TodaysWorkoutCard() {
     );
   }
 
-  const exerciseCount = Array.isArray(workout.exercises)
-    ? workout.exercises.length
-    : workout.exercises || 0;
+  const exerciseCount =
+    workout.exerciseCount || (Array.isArray(workout.exercises) ? workout.exercises.length : 0);
   const muscleText =
     workout.muscleGroups && workout.muscleGroups.length > 0
       ? workout.muscleGroups
@@ -188,8 +187,10 @@ function TodaysWorkoutCard() {
         </p>
         {!isCompleted && (
           <span className="text-xs text-muted-foreground">
-            {exerciseCount} exercises{' '}
-            {workout.estimatedTime ? `\u00B7 ~${workout.estimatedTime} min` : ''}
+            {exerciseCount > 0 && `${exerciseCount} exercises `}
+            {workout.estimatedTime
+              ? `${exerciseCount > 0 ? '\u00B7 ' : ''}~${workout.estimatedTime} min`
+              : ''}
           </span>
         )}
       </div>

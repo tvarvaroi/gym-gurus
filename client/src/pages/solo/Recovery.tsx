@@ -227,8 +227,8 @@ export default function Recovery() {
                   />
                   <defs>
                     <linearGradient id="recoveryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#f43f5e" />
-                      <stop offset="100%" stopColor="#ec4899" />
+                      <stop offset="0%" stopColor="hsl(var(--primary))" />
+                      <stop offset="100%" stopColor="hsl(var(--primary) / 0.7)" />
                     </linearGradient>
                   </defs>
                 </svg>

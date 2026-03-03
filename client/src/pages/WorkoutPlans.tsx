@@ -609,7 +609,7 @@ const WorkoutPlans = memo(() => {
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
             <div className="space-y-2 sm:space-y-3">
               <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-primary/10">
+                <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
                   <Dumbbell className="h-7 w-7 text-primary" />
                 </div>
                 My{' '}

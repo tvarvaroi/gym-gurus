@@ -820,7 +820,7 @@ export default function WorkoutExecution() {
 
   if (workoutError) {
     return createPortal(
-      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0A0A0A] p-4">
+      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0a0a0f] p-4">
         <div className="text-center space-y-4 max-w-sm">
           <div className="w-14 h-14 mx-auto rounded-full bg-red-500/10 flex items-center justify-center">
             <X className="h-7 w-7 text-red-500" />
@@ -838,7 +838,7 @@ export default function WorkoutExecution() {
 
   if (isLoading || !session) {
     return createPortal(
-      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0A0A0A]">
+      <div className="fixed inset-0 z-[200] min-h-screen flex items-center justify-center bg-[#0a0a0f]">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-[#c9a855]/30 border-t-[#c9a855] rounded-full mx-auto mb-4 animate-spin" />
           <p className="text-neutral-500 text-sm">Loading workout...</p>
@@ -857,7 +857,7 @@ export default function WorkoutExecution() {
     const cals = estimateCalories(durationMin, allCompletedSets);
 
     return createPortal(
-      <div className="fixed inset-0 z-[200] bg-[#0A0A0A] text-white overflow-y-auto">
+      <div className="fixed inset-0 z-[200] bg-[#0a0a0f] text-white overflow-y-auto">
         {/* CSS animations */}
         <style>{`
           @keyframes confetti-fall {
@@ -1163,12 +1163,12 @@ export default function WorkoutExecution() {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex flex-col bg-[#0A0A0A] text-white select-none overflow-hidden"
+      className="fixed inset-0 z-[200] flex flex-col bg-[#0a0a0f] text-white select-none overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* ── Sticky Top Bar ── */}
-      <div className="flex-none py-3 px-4 bg-gradient-to-b from-[#0A0A0A] via-[#0A0A0A] to-transparent z-30">
+      <div className="flex-none py-3 px-4 bg-gradient-to-b from-[#0a0a0f] via-[#0a0a0f] to-transparent z-30">
         {/* Title row */}
         <div className="flex items-center justify-between mb-2">
           <button
@@ -1601,7 +1601,7 @@ export default function WorkoutExecution() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="absolute inset-0 z-30 bg-[#0A0A0A]/95 backdrop-blur-md flex flex-col items-center justify-center"
+            className="absolute inset-0 z-30 bg-[#0a0a0f]/95 backdrop-blur-md flex flex-col items-center justify-center"
           >
             {/* REST label */}
             <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500 mb-6">
@@ -1700,7 +1700,7 @@ export default function WorkoutExecution() {
       </AnimatePresence>
 
       {/* ── Sticky Bottom Bar ── */}
-      <div className="flex-none h-16 flex items-center justify-between px-4 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-md z-30 gap-2">
+      <div className="flex-none h-16 flex items-center justify-between px-4 border-t border-white/5 bg-[#0a0a0f]/95 backdrop-blur-md z-30 gap-2">
         {/* Exercise list */}
         <button
           onClick={() => setShowExerciseList(true)}

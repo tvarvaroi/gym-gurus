@@ -170,7 +170,7 @@ export function RecentActivityFeed({
                           {activity.subtitle}
                         </p>
                       </div>
-                      {activity.xpEarned && activity.xpEarned > 0 && (
+                      {activity.xpEarned && activity.xpEarned > 0 && activity.type !== 'xp' && (
                         <span className="text-xs text-muted-foreground tabular-nums flex-shrink-0 ml-3">
                           +{activity.xpEarned} XP
                         </span>
