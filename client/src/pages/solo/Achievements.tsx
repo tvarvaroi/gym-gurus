@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -16,7 +16,6 @@ import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 import { useToast } from '@/hooks/use-toast';
 import {
   Trophy,
-  Star,
   Flame,
   Zap,
   Dumbbell,
@@ -26,7 +25,6 @@ import {
   Sparkles,
   CheckCircle2,
   Users,
-  Loader2,
 } from 'lucide-react';
 
 interface Achievement {
@@ -302,7 +300,7 @@ export default function Achievements() {
                 transition={{ delay: index * 0.05 }}
               >
                 <Card
-                  className={`relative overflow-hidden cursor-pointer transition-all duration-300 min-h-[140px] ${
+                  className={`relative overflow-hidden cursor-pointer transition-all duration-300 min-h-[160px] ${
                     achievement.earned
                       ? `${rarity.bg} ${rarity.border} hover:shadow-lg ${rarity.glow}`
                       : 'bg-card/30 border-border/30 opacity-60 hover:opacity-80'
@@ -537,31 +535,16 @@ export default function Achievements() {
         </DialogContent>
       </Dialog>
 
-      {/* Rarity Legend */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-light flex items-center gap-2">
-              <Star className="h-5 w-5 text-amber-400" />
-              Rarity Guide
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-4">
-              {Object.entries(rarityColors).map(([rarity, colors]) => (
-                <div key={rarity} className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${colors.bg} border ${colors.border}`} />
-                  <span className={`text-sm capitalize ${colors.text}`}>{rarity}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+      {/* Rarity Legend — inline */}
+      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <span className="text-muted-foreground/50">Rarity:</span>
+        {Object.entries(rarityColors).map(([rarity, colors]) => (
+          <div key={rarity} className="flex items-center gap-1.5">
+            <div className={`w-2.5 h-2.5 rounded-full ${colors.bg} border ${colors.border}`} />
+            <span className={`capitalize ${colors.text}`}>{rarity}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

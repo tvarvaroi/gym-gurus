@@ -314,7 +314,11 @@ function BodyStatsCard() {
           </div>
         </div>
 
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+        <Button
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+          className="w-full sm:w-auto"
+        >
           {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Body Stats
         </Button>
@@ -1042,26 +1046,26 @@ export default function SettingsPage() {
       <Tabs defaultValue="profile">
         <TabsList className="mb-6 grid w-full grid-cols-5">
           <TabsTrigger value="profile" className="gap-1.5">
-            <User className="h-4 w-4 hidden sm:block" />
+            <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
             Profile
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-1.5">
-            <Shield className="h-4 w-4 hidden sm:block" />
+            <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
             Security
           </TabsTrigger>
           <TabsTrigger value="subscription" className="gap-1.5">
-            <CreditCard className="h-4 w-4 hidden sm:block" />
+            <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
             Plan
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-1.5">
-            <Bell className="h-4 w-4 hidden sm:block" />
+            <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
             Alerts
           </TabsTrigger>
           <TabsTrigger
             value="danger"
             className="gap-1.5 text-destructive data-[state=active]:text-destructive"
           >
-            <AlertTriangle className="h-4 w-4 hidden sm:block" />
+            <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
             Danger
           </TabsTrigger>
         </TabsList>

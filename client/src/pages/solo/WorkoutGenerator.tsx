@@ -527,7 +527,7 @@ export default function WorkoutGenerator() {
         </div>
       </motion.div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-[3fr_2fr] gap-6">
         {/* Configuration Panel */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -608,7 +608,7 @@ export default function WorkoutGenerator() {
               {/* Goal Selection */}
               <div className="space-y-2">
                 <Label>Primary Goal</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   {goalOptions.map((option) => (
                     <Button
                       key={option.value}
@@ -651,7 +651,7 @@ export default function WorkoutGenerator() {
               </div>
 
               {/* Duration */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex justify-between">
                   <Label>Duration</Label>
                   <span className="text-sm text-muted-foreground">{duration[0]} minutes</span>

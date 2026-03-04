@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,6 @@ import {
   Target,
   Zap,
   RefreshCw,
-  ChevronRight,
   MessageSquare,
   AlertCircle,
   Crown,
@@ -232,7 +231,7 @@ export default function AICoach() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: user } = useQuery({
+  const { data: _user } = useQuery({
     queryKey: ['/api/auth/user'],
     retry: false,
     staleTime: 5 * 60 * 1000,
@@ -530,7 +529,7 @@ export default function AICoach() {
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
           <CardContent className="p-0">
             {/* Messages Area */}
-            <div className="h-[min(500px,55vh)] overflow-y-auto p-4 space-y-4">
+            <div className="h-[min(600px,65vh)] md:h-[min(500px,55vh)] overflow-y-auto p-4 space-y-4">
               <AnimatePresence initial={false}>
                 {messages.map((message, index) => (
                   <motion.div
@@ -706,25 +705,27 @@ export default function AICoach() {
 
               {/* Suggested prompts shown when only the welcome message exists */}
               {messages.length <= 1 && !isTyping && (
-                <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                  <p className="text-xs text-muted-foreground/60 uppercase tracking-wider">
-                    Try asking
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg w-full">
-                    {[
-                      'Create a push workout for intermediate lifters',
-                      'What should I eat on rest days?',
-                      'How often should I train each muscle group?',
-                      'Help me break through a bench press plateau',
-                    ].map((prompt) => (
-                      <button
-                        key={prompt}
-                        onClick={() => handleSend(prompt)}
-                        className="text-left px-3 py-2.5 rounded-lg border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-all min-h-[56px] flex items-start"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
+                <div className="flex flex-col items-center justify-center py-6 space-y-3">
+                  <div className="rounded-xl border border-border/30 bg-muted/20 p-4 max-w-lg w-full space-y-3">
+                    <p className="text-xs text-muted-foreground/60 uppercase tracking-wider text-center">
+                      Try asking
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        'Create a push workout for intermediate lifters',
+                        'What should I eat on rest days?',
+                        'How often should I train each muscle group?',
+                        'Help me break through a bench press plateau',
+                      ].map((prompt) => (
+                        <button
+                          key={prompt}
+                          onClick={() => handleSend(prompt)}
+                          className="text-left px-3 py-2.5 rounded-lg border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-all min-h-[48px] flex items-start"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -800,19 +801,19 @@ export default function AICoach() {
                 </div>
               ) : (
                 <>
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 items-center rounded-xl border border-border/30 bg-background/50 p-1.5 pl-3">
                     <Input
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask me anything about fitness..."
-                      className="flex-1 bg-background/50 border-border/50 focus:border-purple-500/50"
+                      className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
                       disabled={isTyping}
                     />
                     <Button
                       onClick={() => handleSend()}
                       disabled={!input.trim() || isTyping}
-                      className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
+                      className="w-10 h-10 p-0 flex-shrink-0 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-lg"
                     >
                       <Send className="h-4 w-4" />
                     </Button>

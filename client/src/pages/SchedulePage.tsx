@@ -167,11 +167,11 @@ function SoloAgendaView({ events }: { events: any[] }) {
                 dayEvents.map((e: any) => (
                   <div key={e.id} className="mt-2 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div
-                        className={`w-2 h-2 rounded-full shrink-0 ${
-                          e.type === 'completed' ? 'bg-green-500' : 'bg-primary/50'
-                        }`}
-                      />
+                      {e.type === 'completed' ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                      ) : (
+                        <ClipboardCheck className="w-3.5 h-3.5 text-primary/50 shrink-0" />
+                      )}
                       <span className="text-sm font-medium truncate">{e.title}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">

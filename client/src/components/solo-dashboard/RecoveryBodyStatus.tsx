@@ -22,8 +22,7 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
         return {
           name: m.muscleGroup.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
           recovery,
-          dotColor:
-            recovery >= 80 ? 'text-green-500' : recovery >= 50 ? 'text-amber-500' : 'text-red-500',
+          dotBg: recovery >= 80 ? 'bg-green-500' : recovery >= 50 ? 'bg-amber-500' : 'bg-red-500',
         };
       }) || [];
 
@@ -71,7 +70,7 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
             <a className="flex-shrink-0 cursor-pointer group block">
               <CircularProgressRing
                 value={overallRecovery}
-                size={180}
+                size={150}
                 strokeWidth={10}
                 gradient
                 id="recovery"
@@ -96,9 +95,7 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
               {muscleStatus.map((muscle) => (
                 <Link key={muscle.name} href="/solo/recovery">
                   <a className="flex items-center gap-1 cursor-pointer group hover:bg-white/[0.04] rounded px-1 -mx-1 py-0.5 transition-colors">
-                    <span
-                      className={`inline-block w-1.5 h-1.5 rounded-full ${muscle.dotColor.replace('text-', 'bg-')}`}
-                    />
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${muscle.dotBg}`} />
                     <span className="text-muted-foreground group-hover:text-foreground transition-colors">
                       {muscle.name}
                     </span>

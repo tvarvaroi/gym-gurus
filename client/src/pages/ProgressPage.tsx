@@ -553,39 +553,68 @@ export default function ProgressPage() {
                     const dayLabels = ['Sun', '', 'Tue', '', 'Thu', '', 'Sat'];
 
                     return (
-                      <div className="flex gap-1">
-                        <div className="flex flex-col gap-1 mr-1 text-[10px] text-muted-foreground">
-                          {dayLabels.map((label, i) => (
-                            <div key={i} className="h-3 flex items-center">
-                              {label}
-                            </div>
-                          ))}
+                      <>
+                        <div className="flex gap-1">
+                          <div className="flex flex-col gap-1 mr-1 text-[10px] text-muted-foreground">
+                            {dayLabels.map((label, i) => (
+                              <div key={i} className="h-3 flex items-center">
+                                {label}
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex gap-1 overflow-x-auto">
+                            {Array.from({ length: grid[0]?.length || 0 }, (_, weekIdx) => (
+                              <div key={weekIdx} className="flex flex-col gap-1">
+                                {grid.map((row, dayIdx) => {
+                                  const cell = row[weekIdx];
+                                  if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
+                                  const intensity = cell.count / maxCount;
+                                  return (
+                                    <div
+                                      key={dayIdx}
+                                      className="w-3 h-3 rounded-sm"
+                                      style={{
+                                        backgroundColor:
+                                          cell.count === 0
+                                            ? 'hsl(var(--muted) / 0.3)'
+                                            : `hsl(var(--primary) / ${0.3 + intensity * 0.7})`,
+                                      }}
+                                      title={`${cell.date}: ${cell.count} workout${cell.count !== 1 ? 's' : ''}`}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex gap-1 overflow-x-auto">
-                          {Array.from({ length: grid[0]?.length || 0 }, (_, weekIdx) => (
-                            <div key={weekIdx} className="flex flex-col gap-1">
-                              {grid.map((row, dayIdx) => {
-                                const cell = row[weekIdx];
-                                if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
-                                const intensity = cell.count / maxCount;
-                                return (
-                                  <div
-                                    key={dayIdx}
-                                    className="w-3 h-3 rounded-sm"
-                                    style={{
-                                      backgroundColor:
-                                        cell.count === 0
-                                          ? 'hsl(var(--muted) / 0.3)'
-                                          : `hsl(var(--primary) / ${0.3 + intensity * 0.7})`,
-                                    }}
-                                    title={`${cell.date}: ${cell.count} workout${cell.count !== 1 ? 's' : ''}`}
-                                  />
-                                );
-                              })}
-                            </div>
-                          ))}
+                        {/* Color legend */}
+                        <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
+                          <span>Less</span>
+                          <div className="flex gap-0.5">
+                            <div
+                              className="w-3 h-3 rounded-sm"
+                              style={{ backgroundColor: 'hsl(var(--muted) / 0.3)' }}
+                            />
+                            <div
+                              className="w-3 h-3 rounded-sm"
+                              style={{ backgroundColor: 'hsl(var(--primary) / 0.3)' }}
+                            />
+                            <div
+                              className="w-3 h-3 rounded-sm"
+                              style={{ backgroundColor: 'hsl(var(--primary) / 0.55)' }}
+                            />
+                            <div
+                              className="w-3 h-3 rounded-sm"
+                              style={{ backgroundColor: 'hsl(var(--primary) / 0.8)' }}
+                            />
+                            <div
+                              className="w-3 h-3 rounded-sm"
+                              style={{ backgroundColor: 'hsl(var(--primary) / 1)' }}
+                            />
+                          </div>
+                          <span>More</span>
                         </div>
-                      </div>
+                      </>
                     );
                   })()}
                 </CardContent>

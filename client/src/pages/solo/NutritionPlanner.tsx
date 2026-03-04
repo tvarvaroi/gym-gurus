@@ -343,7 +343,7 @@ export default function NutritionPlanner() {
         </Badge>
       </motion.div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-[3fr_2fr] gap-6">
         {/* Configuration Panel */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -434,7 +434,7 @@ export default function NutritionPlanner() {
               {/* Dietary Restrictions */}
               <div className="space-y-2">
                 <Label>Dietary Restrictions</Label>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {dietaryOptions.map((opt) => {
                     const active = dietaryRestrictions.includes(opt);
                     return (
@@ -442,7 +442,7 @@ export default function NutritionPlanner() {
                         key={opt}
                         type="button"
                         onClick={() => toggleDietary(opt)}
-                        className={`px-3 py-2 min-h-[36px] inline-flex items-center text-xs rounded-full border transition-colors ${
+                        className={`px-2 py-2 min-h-[36px] inline-flex items-center justify-center text-xs rounded-full border transition-colors ${
                           active
                             ? 'bg-green-500/20 border-green-500/50 text-green-400'
                             : 'bg-transparent border-border/50 text-muted-foreground hover:border-green-500/30'
@@ -815,7 +815,7 @@ export default function NutritionPlanner() {
                     key={plan.id}
                     className="p-3 rounded-xl border border-border/40 bg-card/30 hover:border-green-500/30 transition-colors group"
                   >
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2 gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate">{plan.name}</p>
                         <p className="text-xs text-muted-foreground">

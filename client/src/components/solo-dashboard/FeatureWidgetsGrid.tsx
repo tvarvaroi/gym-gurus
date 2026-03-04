@@ -35,7 +35,7 @@ export function FeatureWidgetsGrid() {
             <Link key={feature.title} href={feature.href}>
               <motion.a
                 {...motionProps}
-                className="flex items-center justify-between bg-card rounded-2xl px-4 py-5 border border-primary/20 hover:border-primary/40 transition-colors cursor-pointer group"
+                className="flex items-center justify-between bg-card rounded-2xl px-4 py-4 border border-primary/20 hover:border-primary/40 transition-colors cursor-pointer group"
               >
                 <div>
                   <p className="font-bold text-base">{feature.title}</p>
@@ -63,11 +63,13 @@ export function FeatureWidgetsGrid() {
             <Link key={feature.title} href={feature.href}>
               <motion.a
                 {...motionProps}
-                className="flex items-center justify-between bg-card rounded-2xl px-4 py-3.5 border border-border/20 hover:border-primary/30 transition-colors cursor-pointer group"
+                className="flex items-center justify-between bg-card rounded-2xl px-4 py-4 min-h-[72px] border border-border/20 hover:border-primary/30 transition-colors cursor-pointer group"
               >
                 <div>
                   <p className="font-semibold text-sm">{feature.title}</p>
-                  <p className="text-xs text-muted-foreground/60">{feature.description}</p>
+                  <p className="text-xs text-muted-foreground/60 line-clamp-1">
+                    {feature.description}
+                  </p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
               </motion.a>

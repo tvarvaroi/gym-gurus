@@ -71,7 +71,7 @@ function ConsolidatedStats({
 
   return (
     <motion.div {...animProps} className="bg-card rounded-2xl border border-border/20 p-4 sm:p-6">
-      <div className="grid grid-cols-2 md:flex md:items-center md:justify-between gap-6 md:gap-0">
+      <div className="grid grid-cols-2 md:flex md:items-center md:justify-between gap-4 md:gap-0">
         {stats.map((stat, index) => (
           <div key={stat.label} className="flex items-center gap-0 md:gap-8">
             {index > 0 && <div className="hidden md:block h-14 w-px bg-border/30" />}
@@ -81,7 +81,7 @@ function ConsolidatedStats({
                   {stat.value}
                 </span>
                 <span className="text-xs text-muted-foreground/60 mt-1">{stat.label}</span>
-                <span className="text-[11px] text-muted-foreground/40 mt-0.5">{stat.sub}</span>
+                <span className="text-[11px] text-muted-foreground/40 mt-1">{stat.sub}</span>
               </a>
             </Link>
           </div>
@@ -252,7 +252,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
   return (
     <motion.div
       {...animProps}
-      className="bg-card rounded-2xl p-4 md:p-6 border border-border/20 h-full flex flex-col"
+      className="bg-card rounded-2xl p-4 md:p-6 border border-border/20 min-h-[320px] md:min-h-0 h-full flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -265,7 +265,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
       </div>
 
       {/* Day columns — takes ALL remaining space */}
-      <div className="flex-1 overflow-x-auto -mx-5 px-5 md:-mx-6 md:px-6">
+      <div className="flex-1 overflow-x-auto snap-x snap-mandatory md:snap-none -mx-5 px-5 md:-mx-6 md:px-6 scrollbar-hide">
         <div className="flex md:grid md:grid-cols-7 gap-1 h-full min-w-max md:min-w-0">
           {Array.from({ length: 7 }).map((_, i) => {
             const richDay = richDays[i];
@@ -279,7 +279,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
             return (
               <Link key={i} href="/schedule">
                 <a
-                  className={`rounded-xl p-2 min-w-[64px] flex-shrink-0 md:min-w-0 md:flex-shrink flex flex-col items-center cursor-pointer hover:bg-white/[0.04] transition-colors ${
+                  className={`rounded-xl p-2 min-w-[64px] flex-shrink-0 snap-start md:min-w-0 md:flex-shrink flex flex-col items-center cursor-pointer hover:bg-white/[0.04] transition-colors ${
                     isToday
                       ? 'bg-primary/10 ring-1 ring-primary/30'
                       : hasWorkout
@@ -364,9 +364,9 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
                         <span className="text-xs text-primary/40">Planned</span>
                       </div>
                     ) : status === 'planned' ? (
-                      <span className="text-xs text-muted-foreground/25 text-center">Planned</span>
+                      <span className="text-xs text-muted-foreground/30 text-center">Planned</span>
                     ) : (
-                      <span className="text-xs text-muted-foreground/15 text-center">Rest</span>
+                      <span className="text-xs text-muted-foreground/25 text-center">Rest</span>
                     )}
                   </div>
                 </a>
@@ -381,7 +381,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
         {Array.from({ length: 7 }).map((_, i) => (
           <div
             key={i}
-            className={`w-1 h-1 rounded-full ${i === todayIndex ? 'bg-primary' : 'bg-muted-foreground/20'}`}
+            className={`w-1.5 h-1.5 rounded-full ${i === todayIndex ? 'bg-primary' : 'bg-muted-foreground/20'}`}
           />
         ))}
       </div>
@@ -429,7 +429,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
       ) : (
         !hasAnyWorkouts && (
           <div className="mt-4 pt-3 border-t border-border/10 text-center">
-            <p className="text-xs text-muted-foreground/50">
+            <p className="text-xs text-muted-foreground/60">
               No workouts this week yet — start one to fill this board!
             </p>
           </div>

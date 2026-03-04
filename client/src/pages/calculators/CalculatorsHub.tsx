@@ -177,8 +177,9 @@ export function CalculatorsHub() {
           >
             <Link href={calc.path}>
               <a className="block">
-                <div className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer border border-transparent hover:border-primary/20">
-                  <div className="flex items-start gap-4">
+                <div className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer border border-transparent hover:border-primary/20 relative overflow-hidden">
+                  <div className={`absolute inset-0 opacity-[0.04] ${calc.bgColor}`} />
+                  <div className="relative flex items-start gap-4">
                     <div className={`p-3 rounded-xl ${calc.bgColor}`}>
                       <div className={calc.color}>{calc.icon}</div>
                     </div>

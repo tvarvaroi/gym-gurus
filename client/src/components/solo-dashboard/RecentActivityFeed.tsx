@@ -162,6 +162,15 @@ export function RecentActivityFeed({
                         index < group.items.length - 1 ? 'border-b border-border/10' : ''
                       }`}
                     >
+                      <div
+                        className={`w-0.5 h-8 rounded-full mr-3 flex-shrink-0 ${
+                          activity.type === 'workout'
+                            ? 'bg-primary/60'
+                            : activity.type === 'xp'
+                              ? 'bg-amber-500/60'
+                              : 'bg-green-500/60'
+                        }`}
+                      />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
                           {activity.title}

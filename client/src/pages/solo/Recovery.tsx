@@ -9,14 +9,11 @@ import {
   Droplets,
   Activity,
   Zap,
-  Clock,
   ThermometerSun,
   Flame,
   AlertTriangle,
   CheckCircle2,
   Info,
-  Calendar,
-  Dumbbell,
   Loader2,
 } from 'lucide-react';
 
@@ -323,7 +320,7 @@ export default function Recovery() {
                             variant="outline"
                             className="text-xs text-muted-foreground/50 border-border/30"
                           >
-                            Not yet trained
+                            Not trained
                           </Badge>
                         ) : (
                           <Badge
@@ -335,9 +332,7 @@ export default function Recovery() {
                         )}
                       </div>
                       {neverTrained ? (
-                        <p className="text-xs text-muted-foreground/50">
-                          Train this muscle to start tracking
-                        </p>
+                        <p className="text-xs text-muted-foreground/50">Not trained yet</p>
                       ) : (
                         <div className="space-y-2">
                           <div className="flex justify-between text-xs text-muted-foreground">
@@ -428,7 +423,9 @@ export default function Recovery() {
                     </div>
                     <div>
                       <h4 className="font-medium text-sm">{tip.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1">{tip.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {tip.description}
+                      </p>
                     </div>
                   </div>
                 </motion.div>

@@ -156,13 +156,13 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
           <p className="text-sm text-muted-foreground mb-6">{subtitle}</p>
 
           {/* Stats row */}
-          <div className="flex items-center justify-center lg:justify-start gap-6 lg:gap-8">
+          <div className="flex items-center justify-center lg:justify-start">
             {stats.map((stat, index) => (
-              <div key={stat.label} className="flex items-center gap-6 lg:gap-8">
-                {index > 0 && <div className="h-8 w-px bg-border/30 -ml-6 lg:-ml-8" />}
+              <div key={stat.label} className="flex items-center">
+                {index > 0 && <div className="h-8 w-px bg-border/30 mx-2.5 sm:mx-4 lg:mx-5" />}
                 <Link href={stat.href}>
                   <a className="flex flex-col items-center lg:items-start cursor-pointer group hover:bg-white/[0.03] rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors">
-                    <span className="text-2xl font-bold tabular-nums leading-none group-hover:text-primary transition-colors">
+                    <span className="text-xl sm:text-2xl font-bold tabular-nums leading-none group-hover:text-primary transition-colors">
                       {stat.value}
                       {stat.unit && (
                         <span className="text-sm font-normal text-muted-foreground ml-0.5">
@@ -170,11 +170,11 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
                         </span>
                       )}
                     </span>
-                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground/60 mt-1">
+                    <span className="text-xs sm:text-[11px] uppercase tracking-wider text-muted-foreground/60 mt-1">
                       {stat.label}
                     </span>
                     {stat.xpBar && (
-                      <div className="w-16 h-[2px] bg-muted rounded-full mt-1.5 overflow-hidden">
+                      <div className="w-20 h-1 bg-muted rounded-full mt-1.5 overflow-hidden">
                         <div
                           className="h-full bg-primary rounded-full transition-all duration-500"
                           style={{ width: `${Math.min(100, xpProgress.progress)}%` }}
@@ -269,12 +269,12 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
 
       {/* Mobile photo — normal flow, centered above text */}
       {hasPhoto && (
-        <div className="flex justify-center mb-4 lg:hidden">
+        <div className="flex justify-center mb-2 lg:hidden">
           <label className="relative cursor-pointer group block">
             <img
               src={user.profileImageUrl}
               alt={user.firstName || 'Profile'}
-              className="h-[160px] sm:h-[200px] w-auto object-contain"
+              className="h-[120px] sm:h-[180px] w-auto object-contain"
               style={{
                 filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
               }}

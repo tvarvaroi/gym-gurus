@@ -184,16 +184,19 @@ export function BodyIntelligencePanel({
       </div>
 
       {/* Metrics grid */}
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-6">
         {metrics.map((metric, index) => (
           <div key={metric.label} className="flex items-start">
             {/* Vertical divider on desktop (not for first item or first in row) */}
             {index > 0 && (
               <div className="hidden md:block h-12 w-px bg-border/15 mr-6 mt-1 flex-shrink-0" />
             )}
-            {/* Mobile dividers for items after first in each row */}
+            {/* Mobile dividers: odd items in 2-col grid, non-first-in-row for sm 3-col */}
+            {index % 2 !== 0 && (
+              <div className="sm:hidden h-12 w-px bg-border/15 mr-4 mt-1 flex-shrink-0" />
+            )}
             {index % 3 !== 0 && (
-              <div className="md:hidden h-12 w-px bg-border/15 mr-4 mt-1 flex-shrink-0" />
+              <div className="hidden sm:block md:hidden h-12 w-px bg-border/15 mr-4 mt-1 flex-shrink-0" />
             )}
             <Link href={metric.href}>
               <a className="flex flex-col cursor-pointer group hover:bg-white/[0.03] rounded-lg px-1.5 py-1 -mx-1.5 -my-1 transition-colors">
@@ -241,19 +244,14 @@ export function BodyIntelligencePanel({
                 style={{ width: `${computed.macros.carbs.percent}%` }}
               />
             </div>
-            <div className="relative h-5 mt-1.5">
-              <span className="absolute left-0 text-[11px] text-primary/70">
+            <div className="flex items-center justify-between mt-1.5">
+              <span className="text-[11px] text-primary/70">
                 Protein {computed.macros.protein.percent}%
               </span>
-              <span
-                className="absolute text-[11px] text-amber-500/70 -translate-x-1/2"
-                style={{
-                  left: `${computed.macros.protein.percent + computed.macros.fat.percent / 2}%`,
-                }}
-              >
+              <span className="text-[11px] text-amber-500/70">
                 Fat {computed.macros.fat.percent}%
               </span>
-              <span className="absolute right-0 text-[11px] text-blue-500/70">
+              <span className="text-[11px] text-blue-500/70">
                 Carbs {computed.macros.carbs.percent}%
               </span>
             </div>

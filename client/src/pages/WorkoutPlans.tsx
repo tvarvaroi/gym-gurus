@@ -104,7 +104,7 @@ const TrainerWorkoutCard = memo(
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       >
         <Card
-          className={`group relative overflow-hidden border border-border/30 border-l-4 ${categoryBorder[workout.category] || 'border-l-primary'} bg-background/40 backdrop-blur-xl transition-all duration-500 hover:border-primary/40 hover:shadow-premium-lg hover:shadow-primary/10`}
+          className={`group relative overflow-hidden border border-border/30 border-l-4 min-h-[200px] ${categoryBorder[workout.category] || 'border-l-primary'} bg-background/40 backdrop-blur-xl transition-all duration-500 hover:border-primary/40 hover:shadow-premium-lg hover:shadow-primary/10`}
         >
           {/* Premium gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -251,7 +251,7 @@ const ClientWorkoutCard = memo(
           whileHover={{ y: -4, scale: 1.01 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         >
-          <Card className="group relative overflow-hidden border border-border/30 bg-background/40 backdrop-blur-xl transition-all duration-500 hover:border-cyan-500/40 hover:shadow-premium-lg hover:shadow-cyan-500/10">
+          <Card className="group relative overflow-hidden border border-border/30 min-h-[200px] bg-background/40 backdrop-blur-xl transition-all duration-500 hover:border-cyan-500/40 hover:shadow-premium-lg hover:shadow-cyan-500/10">
             {/* Premium gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -322,7 +322,7 @@ const ClientWorkoutCard = memo(
 ClientWorkoutCard.displayName = 'ClientWorkoutCard';
 
 const WorkoutPlans = memo(() => {
-  const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
+  const [_selectedWorkout, _setSelectedWorkout] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [showTemplates, setShowTemplates] = useState(false);
@@ -497,7 +497,7 @@ const WorkoutPlans = memo(() => {
     [createFromTemplateMutation]
   );
 
-  const handleStartWorkout = useCallback((workoutId: string) => {
+  const _handleStartWorkout = useCallback((workoutId: string) => {
     window.location.href = `/workout-execution/${workoutId}`;
   }, []);
 
@@ -704,7 +704,7 @@ const WorkoutPlans = memo(() => {
               <button
                 key={cat}
                 onClick={() => setActiveFilter(cat)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
                   activeFilter === cat
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
