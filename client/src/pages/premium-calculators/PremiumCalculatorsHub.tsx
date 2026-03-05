@@ -164,34 +164,47 @@ export default function PremiumCalculatorsHub() {
       animate="animate"
     >
       {/* Hero Section */}
-      <motion.div variants={fadeInUp} className="text-center space-y-4">
-        <h1
-          className="text-5xl md:text-6xl font-light gradient-text"
-          style={{ fontFamily: "'Playfair Display', serif" }}
-        >
-          Premium Calculators
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Track your progress with saved results and personalized insights
-        </p>
+      <motion.div variants={fadeInUp} className="flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
+          <Calculator className="h-7 w-7 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-['Playfair_Display'] font-extralight tracking-tight">
+            Premium{' '}
+            <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Calculators
+            </span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track your progress with saved results and personalized insights
+          </p>
+        </div>
       </motion.div>
 
       {/* Stats Overview */}
-      <motion.div variants={fadeInUp} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <LuxuryCard
-          icon={<Calculator className="w-5 h-5" />}
-          title="Total Calculations"
-          hover={false}
-        >
-          <p className="text-4xl font-light gradient-text mt-2">{allResults.length}</p>
-        </LuxuryCard>
+      <motion.div variants={fadeInUp} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-card rounded-2xl border border-border/20 p-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground/60 font-medium">Total Calculations</p>
+            <Calculator className="w-4 h-4 text-primary/40" />
+          </div>
+          <p className="text-3xl font-bold tabular-nums">{allResults.length}</p>
+        </div>
 
-        <LuxuryCard icon={<Star className="w-5 h-5" />} title="Favorites" hover={false}>
-          <p className="text-4xl font-light gradient-text mt-2">{favoriteResults.length}</p>
-        </LuxuryCard>
+        <div className="bg-card rounded-2xl border border-border/20 p-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground/60 font-medium">Favorites</p>
+            <Star className="w-4 h-4 text-primary/40" />
+          </div>
+          <p className="text-3xl font-bold tabular-nums">{favoriteResults.length}</p>
+        </div>
 
-        <LuxuryCard icon={<TrendingUp className="w-5 h-5" />} title="This Week" hover={false}>
-          <p className="text-4xl font-light gradient-text mt-2">
+        <div className="bg-card rounded-2xl border border-border/20 p-5">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground/60 font-medium">This Week</p>
+            <TrendingUp className="w-4 h-4 text-primary/40" />
+          </div>
+          <p className="text-3xl font-bold tabular-nums">
             {
               allResults.filter((r: any) => {
                 const weekAgo = new Date();
@@ -200,7 +213,7 @@ export default function PremiumCalculatorsHub() {
               }).length
             }
           </p>
-        </LuxuryCard>
+        </div>
       </motion.div>
 
       {/* Recent Results & Favorites */}
@@ -270,7 +283,7 @@ export default function PremiumCalculatorsHub() {
       {/* Calculator Grid */}
       <div>
         <h2 className="text-2xl font-semibold mb-6">All Calculators</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {calculators.map((calc, index) => (
             <Link key={calc.id} href={`/dashboard/calculators/${calc.id}`}>
               <motion.div
