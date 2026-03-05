@@ -35,7 +35,7 @@ export function FeatureWidgetsGrid() {
             <Link key={feature.title} href={feature.href}>
               <motion.a
                 {...motionProps}
-                className="flex items-center justify-between bg-card rounded-2xl px-4 py-4 border border-primary/20 hover:border-primary/40 transition-colors cursor-pointer group"
+                className="flex items-center justify-between bg-card rounded-2xl px-4 py-4 min-h-[64px] border border-primary/20 hover:border-primary/40 transition-colors cursor-pointer group"
               >
                 <div>
                   <p className="font-bold text-base">{feature.title}</p>

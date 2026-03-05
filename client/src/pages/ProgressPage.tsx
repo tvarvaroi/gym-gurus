@@ -389,9 +389,13 @@ export default function ProgressPage() {
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground font-light">Avg Duration</p>
                 <p className="text-2xl font-bold mt-1">
-                  {soloProgress.totalWorkouts > 1
-                    ? Math.round(soloProgress.totalDurationMinutes / soloProgress.totalWorkouts)
-                    : soloProgress.totalDurationMinutes}
+                  {(() => {
+                    const avg =
+                      soloProgress.totalWorkouts > 1
+                        ? Math.round(soloProgress.totalDurationMinutes / soloProgress.totalWorkouts)
+                        : soloProgress.totalDurationMinutes;
+                    return avg < 5 ? '\u2014' : avg;
+                  })()}
                   <span className="text-sm font-light text-muted-foreground ml-1">min</span>
                 </p>
               </CardContent>

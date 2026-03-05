@@ -177,7 +177,7 @@ export function CalculatorsHub() {
           >
             <Link href={calc.path}>
               <a className="block">
-                <div className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer border border-transparent hover:border-primary/20 relative overflow-hidden">
+                <div className="bg-card rounded-2xl p-6 transition-all hover:scale-[1.02] cursor-pointer border border-border/20 hover:border-primary/20 relative overflow-hidden">
                   <div className={`absolute inset-0 opacity-[0.04] ${calc.bgColor}`} />
                   <div className="relative flex items-start gap-4">
                     <div className={`p-3 rounded-xl ${calc.bgColor}`}>
@@ -229,20 +229,16 @@ export function CalculatorsHub() {
 
       {/* Info Cards */}
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-          <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-2">
-            Pro Tip: 1RM Testing
-          </h3>
-          <p className="text-sm text-blue-600 dark:text-blue-400">
+        <div className="p-4 bg-card rounded-2xl border border-border/20">
+          <h3 className="font-medium text-blue-400 mb-2">Pro Tip: 1RM Testing</h3>
+          <p className="text-sm text-muted-foreground">
             Use the 1RM calculator to estimate your max without the injury risk of actually lifting
             it. Most accurate with 3-5 rep sets.
           </p>
         </div>
-        <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
-          <h3 className="font-medium text-green-700 dark:text-green-300 mb-2">
-            Pro Tip: Loading the Bar
-          </h3>
-          <p className="text-sm text-green-600 dark:text-green-400">
+        <div className="p-4 bg-card rounded-2xl border border-border/20">
+          <h3 className="font-medium text-green-400 mb-2">Pro Tip: Loading the Bar</h3>
+          <p className="text-sm text-muted-foreground">
             Use the plates calculator to avoid doing math in the gym. It shows you exactly which
             plates to load on each side.
           </p>

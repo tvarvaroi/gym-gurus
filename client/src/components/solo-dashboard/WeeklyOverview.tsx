@@ -239,6 +239,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
   });
 
   const hasAnyWorkouts = totalWorkouts > 0;
+  const plannedCount = richDays.filter((d) => d?.status === 'planned').length;
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const animProps = prefersReducedMotion
@@ -252,7 +253,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
   return (
     <motion.div
       {...animProps}
-      className="bg-card rounded-2xl p-4 md:p-6 border border-border/20 min-h-[320px] md:min-h-0 h-full flex flex-col"
+      className="bg-card rounded-2xl p-3 md:p-5 border border-border/20 h-full flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -260,12 +261,16 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
           This Week
         </span>
         <span className="text-xs text-muted-foreground/40 tabular-nums">
-          {totalWorkouts} workout{totalWorkouts === 1 ? '' : 's'}
+          {totalWorkouts > 0
+            ? `${totalWorkouts} workout${totalWorkouts === 1 ? '' : 's'}`
+            : plannedCount > 0
+              ? `${plannedCount} planned`
+              : '0 workouts'}
         </span>
       </div>
 
       {/* Day columns — takes ALL remaining space */}
-      <div className="flex-1 overflow-x-auto snap-x snap-mandatory md:snap-none -mx-5 px-5 md:-mx-6 md:px-6 scrollbar-hide">
+      <div className="flex-1 overflow-x-auto snap-x snap-mandatory md:snap-none -mx-3 px-3 md:-mx-5 md:px-5 scrollbar-hide">
         <div className="flex md:grid md:grid-cols-7 gap-1 h-full min-w-max md:min-w-0">
           {Array.from({ length: 7 }).map((_, i) => {
             const richDay = richDays[i];

@@ -1180,7 +1180,7 @@ export default function WorkoutExecution() {
           </button>
           <div className="flex-1 min-w-0 mx-3 text-center">
             <h1 className="text-base font-bold truncate">{session.workoutTitle}</h1>
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-[11px] text-muted-foreground">
               Exercise {currentExerciseIndex + 1} of {totalExercises}
             </p>
           </div>

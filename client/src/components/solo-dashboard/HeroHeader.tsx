@@ -269,7 +269,7 @@ export function HeroHeader({ user, gamification, fitnessProfile, computedTdee }:
 
       {/* Mobile photo — normal flow, centered above text */}
       {hasPhoto && (
-        <div className="flex justify-center mb-2 lg:hidden">
+        <div className="flex justify-center mb-0 lg:hidden">
           <label className="relative cursor-pointer group block">
             <img
               src={user.profileImageUrl}

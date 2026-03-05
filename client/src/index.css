@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Scrollbar hide utility — used on horizontal scroll strips */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 @keyframes skeleton-shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }

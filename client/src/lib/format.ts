@@ -28,7 +28,8 @@ export function formatVolume(kg: number): string {
 /**
  * Returns true when formatVolume(kg) already encodes a unit abbreviation ("k"),
  * meaning the caller should NOT append the "kg" label.
+ * Always returns false — "kg" should always be shown for clarity (e.g. "45.1k kg").
  */
-export function volumeHasAbbreviation(kg: number): boolean {
-  return kg >= 10000;
+export function volumeHasAbbreviation(_kg: number): boolean {
+  return false;
 }
