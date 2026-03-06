@@ -321,6 +321,103 @@ const ClientWorkoutCard = memo(
 );
 ClientWorkoutCard.displayName = 'ClientWorkoutCard';
 
+// Compact mobile row for solo/trainer workouts (72px)
+const CompactWorkoutRow = memo(
+  ({
+    workout,
+    index,
+    onDuplicate,
+    onDelete,
+    onEdit,
+    isPendingDuplicate,
+    isPendingDelete,
+  }: {
+    workout: any;
+    index: number;
+    onDuplicate: (id: string) => void;
+    onDelete: (id: string) => void;
+    onEdit: (workout: any) => void;
+    isPendingDuplicate: boolean;
+    isPendingDelete: boolean;
+  }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03 }}
+      className={`flex items-center gap-3 px-3 py-3 rounded-xl border border-border/20 border-l-4 ${categoryBorder[workout.category] || 'border-l-primary'} bg-card/50 active:bg-card/80 transition-colors min-h-[72px]`}
+    >
+      {/* Left: info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{workout.title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {workout.duration}m
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {formatCategory(workout.category)}
+          </span>
+          <Badge
+            variant={
+              workout.difficulty === 'beginner'
+                ? 'secondary'
+                : workout.difficulty === 'intermediate'
+                  ? 'default'
+                  : 'destructive'
+            }
+            className="capitalize text-[10px] px-1.5 py-0 h-4"
+          >
+            {workout.difficulty}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Right: actions */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <Button
+          size="sm"
+          className="h-10 px-3 bg-primary text-primary-foreground text-xs"
+          onClick={() => (window.location.href = `/workout-execution/${workout.id}`)}
+        >
+          <Play className="h-3.5 w-3.5 mr-1" />
+          Start
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-10 w-10 p-0">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="backdrop-blur-xl bg-background/95 border-border/50">
+            <DropdownMenuItem onClick={() => onEdit(workout)} className="cursor-pointer">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onDuplicate(workout.id)}
+              disabled={isPendingDuplicate}
+              className="cursor-pointer"
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Duplicate
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive cursor-pointer"
+              onClick={() => onDelete(workout.id)}
+              disabled={isPendingDelete}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </motion.div>
+  )
+);
+CompactWorkoutRow.displayName = 'CompactWorkoutRow';
+
 const WorkoutPlans = memo(() => {
   const [_selectedWorkout, _setSelectedWorkout] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -548,7 +645,14 @@ const WorkoutPlans = memo(() => {
             </div>
           </div>
           <Skeleton className="h-10 w-full lg:w-96 bg-muted/30" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Mobile skeleton: compact rows */}
+          <div className="flex flex-col gap-2 md:hidden">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-[72px] w-full rounded-xl bg-muted/30" />
+            ))}
+          </div>
+          {/* Desktop skeleton: grid cards */}
+          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <motion.div
                 key={i}
@@ -603,21 +707,21 @@ const WorkoutPlans = memo(() => {
 
   return (
     <PageTransition>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
-            <div className="space-y-2 sm:space-y-3">
-              <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
-                  <Dumbbell className="h-7 w-7 text-primary" />
+        <div className="flex flex-col gap-3 md:gap-6">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 md:gap-6">
+            <div className="space-y-1 md:space-y-3">
+              <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+                <div className="p-1.5 md:p-2 rounded-xl bg-primary/10 flex-shrink-0">
+                  <Dumbbell className="h-5 w-5 md:h-7 md:w-7 text-primary" />
                 </div>
                 My{' '}
                 <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   Workouts
                 </span>
               </h1>
-              <p className="text-sm sm:text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
+              <p className="hidden md:block text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
                 {isSolo
                   ? 'Your saved workouts — generate new ones with AI or build from scratch'
                   : isClient
@@ -682,7 +786,7 @@ const WorkoutPlans = memo(() => {
               </div>
             )}
           </div>
-          <div className="w-full lg:w-96">
+          <div className="w-full md:w-96">
             <SearchInput
               placeholder={
                 isClient
@@ -697,14 +801,14 @@ const WorkoutPlans = memo(() => {
           </div>
         </div>
 
-        {/* Category Filter Pills */}
+        {/* Category Filter Chips — horizontal scroll on mobile */}
         {!isClient && availableCategories.length > 1 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-3 px-3 py-1 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
             {availableCategories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveFilter(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
+                className={`snap-start flex-shrink-0 px-4 py-2 min-h-[36px] rounded-full text-xs font-medium transition-all duration-200 ${
                   activeFilter === cat
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -833,20 +937,38 @@ const WorkoutPlans = memo(() => {
               ))}
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredWorkouts.map((workout: any, index: number) => (
-              <TrainerWorkoutCard
-                key={workout.id}
-                workout={workout}
-                index={index}
-                onDuplicate={handleDuplicate}
-                onDelete={handleDelete}
-                onEdit={handleEdit}
-                isPendingDuplicate={duplicateWorkoutMutation.isPending}
-                isPendingDelete={deleteWorkoutMutation.isPending}
-              />
-            ))}
-          </div>
+          <>
+            {/* Mobile: compact list rows */}
+            <div className="flex flex-col gap-2 md:hidden">
+              {filteredWorkouts.map((workout: any, index: number) => (
+                <CompactWorkoutRow
+                  key={workout.id}
+                  workout={workout}
+                  index={index}
+                  onDuplicate={handleDuplicate}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  isPendingDuplicate={duplicateWorkoutMutation.isPending}
+                  isPendingDelete={deleteWorkoutMutation.isPending}
+                />
+              ))}
+            </div>
+            {/* Desktop: grid cards */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredWorkouts.map((workout: any, index: number) => (
+                <TrainerWorkoutCard
+                  key={workout.id}
+                  workout={workout}
+                  index={index}
+                  onDuplicate={handleDuplicate}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  isPendingDuplicate={duplicateWorkoutMutation.isPending}
+                  isPendingDelete={deleteWorkoutMutation.isPending}
+                />
+              ))}
+            </div>
+          </>
         )}
 
         {/* Edit Modal */}
