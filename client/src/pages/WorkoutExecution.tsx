@@ -31,6 +31,9 @@ import {
   Share2,
 } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { SetRow } from '@/components/redesign/execution/SetRow';
+import { RestTimerOverlay } from '@/components/redesign/execution/RestTimerOverlay';
+import { CompletionSheet } from '@/components/redesign/execution/CompletionSheet';
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -853,304 +856,23 @@ export default function WorkoutExecution() {
   // ═══════════════════════════════════════════════════════════
 
   if (showCompletion) {
-    const durationMin = Math.round(elapsedSeconds / 60) || 1;
-    const cals = estimateCalories(durationMin, allCompletedSets);
-
     return createPortal(
-      <div className="fixed inset-0 z-[200] bg-[#0A0A0A] text-white overflow-y-auto">
-        {/* CSS animations */}
-        <style>{`
-          @keyframes confetti-fall {
-            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-          }
-          .confetti-piece {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            top: -10px;
-            animation: confetti-fall linear forwards;
-          }
-          @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-          }
-          @keyframes pulse-primary {
-            0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.3); }
-            50% { box-shadow: 0 0 40px hsl(var(--primary) / 0.6); }
-          }
-        `}</style>
-
-        {/* Confetti pieces — respect reduced motion, auto-stop after 3s */}
-        {showConfetti &&
-          !prefersReducedMotion &&
-          Array.from({ length: 40 }).map((_, i) => (
-            <div
-              key={i}
-              className="confetti-piece rounded-sm"
-              style={{
-                left: `${Math.random() * 100}%`,
-                backgroundColor: [
-                  'hsl(var(--primary))',
-                  '#22c55e',
-                  '#3b82f6',
-                  '#ef4444',
-                  '#a855f7',
-                ][i % 5],
-                animationDuration: `${2 + Math.random() * 3}s`,
-                animationDelay: `${Math.random() * 2}s`,
-                width: `${6 + Math.random() * 6}px`,
-                height: `${6 + Math.random() * 6}px`,
-              }}
-            />
-          ))}
-
-        <div className="relative z-10 max-w-lg mx-auto px-4 py-8 space-y-8">
-          {/* Header */}
-          <motion.div
-            initial={prefersReducedMotion ? undefined : { scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', damping: 15 }}
-            className="text-center pt-8"
-          >
-            <motion.div
-              initial={prefersReducedMotion ? undefined : { scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.2, type: 'spring', damping: 12 }}
-              className="mb-6 inline-block"
-            >
-              <div
-                className="w-24 h-24 rounded-full flex items-center justify-center"
-                style={{
-                  background:
-                    'radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)',
-                  animation: prefersReducedMotion
-                    ? 'none'
-                    : 'pulse-primary 2s ease-in-out infinite',
-                }}
-              >
-                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Trophy className="w-10 h-10 text-primary" />
-                </div>
-              </div>
-            </motion.div>
-            <h1 className="text-3xl font-bold font-['Playfair_Display'] mb-1">Workout Complete</h1>
-            <p className="text-neutral-400">{session.workoutTitle}</p>
-          </motion.div>
-
-          {/* Stats grid */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="grid grid-cols-2 gap-3"
-          >
-            <div
-              className="rounded-2xl p-5 text-center border border-white/[0.06]"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-              }}
-            >
-              <Timer className="w-5 h-5 text-blue-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold tabular-nums">{formatTime(elapsedSeconds)}</p>
-              <p className="text-xs text-neutral-500">Duration</p>
-            </div>
-            <div
-              className="rounded-2xl p-5 text-center border border-white/[0.06]"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-              }}
-            >
-              <Dumbbell className="w-5 h-5 text-cyan-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold">
-                {prefersReducedMotion ? (
-                  <>{Math.round(totalVolume)} kg</>
-                ) : (
-                  <AnimatedNumber value={Math.round(totalVolume)} suffix=" kg" />
-                )}
-              </p>
-              <p className="text-xs text-neutral-500">Volume</p>
-            </div>
-            <div
-              className="rounded-2xl p-5 text-center border border-white/[0.06]"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-              }}
-            >
-              <Check className="w-5 h-5 text-green-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold">
-                {allCompletedSets}/{allTotalSets}
-              </p>
-              <p className="text-xs text-neutral-500">Sets</p>
-            </div>
-            <div
-              className="rounded-2xl p-5 text-center border border-white/[0.06]"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-              }}
-            >
-              <Flame className="w-5 h-5 text-orange-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold">
-                {prefersReducedMotion ? <>{cals}</> : <AnimatedNumber value={cals} />}
-              </p>
-              <p className="text-xs text-neutral-500">Est. kcal</p>
-            </div>
-          </motion.div>
-
-          {/* Personal Records */}
-          {personalRecords.length > 0 && (
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="rounded-xl border border-primary/30 bg-primary/5 p-4"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <Trophy className="w-5 h-5 text-primary" />
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
-                  New PR{personalRecords.length > 1 ? 's' : ''}!
-                </h3>
-              </div>
-              <div className="space-y-2">
-                {personalRecords.map((pr) => (
-                  <div key={pr.exerciseName} className="flex items-center justify-between text-sm">
-                    <span className="text-white/80">{pr.exerciseName}</span>
-                    <span className="text-primary font-semibold">
-                      {pr.previousWeight} → {pr.newWeight} {weightUnit}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Exercise breakdown */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="space-y-2"
-          >
-            <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">
-              Exercise Breakdown
-            </h3>
-            {session.exercises.map((ex, i) => {
-              const completedSets = ex.sets.filter((s) => s.completed);
-              if (completedSets.length === 0) return null;
-              const reps = completedSets.map((s) => s.reps);
-              const mainWeight = completedSets[0]?.weight || 0;
-              return (
-                <div
-                  key={i}
-                  className={`rounded-lg px-4 py-3 border border-white/[0.06] border-l-4 ${getMuscleAccent(ex.muscleGroup)}`}
-                  style={{
-                    background:
-                      'linear-gradient(to bottom right, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{ex.exerciseName}</span>
-                    <span className="text-xs text-neutral-500">
-                      {completedSets.length}/{ex.sets.length} sets
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-400 mt-1">
-                    {mainWeight}
-                    {weightUnit} x {reps.join(', ')}
-                  </p>
-                </div>
-              );
-            })}
-          </motion.div>
-
-          {/* Muscles worked */}
-          {musclesWorked.length > 0 && (
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-2">
-                Muscles Worked
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {musclesWorked.map((m) => (
-                  <span
-                    key={m}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${getMuscleStyle(m)}`}
-                  >
-                    {m}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* XP earned */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.7, type: 'spring' }}
-            className="text-center py-4"
-          >
-            <div
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-primary/30"
-              style={{
-                background:
-                  'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)',
-                backgroundSize: '200% 100%',
-                animation: prefersReducedMotion ? 'none' : 'shimmer 3s linear infinite',
-              }}
-            >
-              <Star className="w-5 h-5 text-primary" />
-              <span className="text-primary font-bold">
-                {xpAwarded > 0 ? (
-                  <>+{prefersReducedMotion ? xpAwarded : <AnimatedNumber value={xpAwarded} />} XP</>
-                ) : (
-                  <>~{allCompletedSets * 5} XP</>
-                )}
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Action buttons */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="space-y-3 pb-8"
-          >
-            <button
-              onClick={() => saveWorkoutMutation.mutate()}
-              disabled={saveWorkoutMutation.isPending || saveWorkoutMutation.isSuccess}
-              className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base transition-colors disabled:opacity-50"
-              aria-label="Save workout and exit"
-            >
-              {saveWorkoutMutation.isPending
-                ? 'Saving...'
-                : saveWorkoutMutation.isSuccess
-                  ? 'Saved! Redirecting...'
-                  : 'Save & Exit'}
-            </button>
-            <button
-              onClick={() =>
-                toast({ title: 'Coming soon!', description: 'Share your results with friends.' })
-              }
-              className="w-full h-12 rounded-xl border border-white/10 hover:bg-white/5 text-white/70 font-medium text-sm transition-colors flex items-center justify-center gap-2"
-            >
-              <Share2 className="w-4 h-4" />
-              Share Results
-            </button>
-            {saveWorkoutMutation.isSuccess && (
-              <p className="text-center text-sm text-neutral-500">Redirecting...</p>
-            )}
-          </motion.div>
-        </div>
-      </div>,
+      <CompletionSheet
+        workoutTitle={session.workoutTitle}
+        elapsedSeconds={elapsedSeconds}
+        totalVolume={totalVolume}
+        completedSets={allCompletedSets}
+        totalSets={allTotalSets}
+        weightUnit={weightUnit}
+        exercises={session.exercises}
+        personalRecords={personalRecords}
+        musclesWorked={musclesWorked}
+        xpAwarded={xpAwarded}
+        isSaving={saveWorkoutMutation.isPending}
+        isSaved={saveWorkoutMutation.isSuccess}
+        onSave={() => saveWorkoutMutation.mutate()}
+        onShare={() => toast({ title: 'Coming soon!', description: 'Share your results with friends.' })}
+      />,
       document.body
     );
   }
@@ -1173,7 +895,7 @@ export default function WorkoutExecution() {
         <div className="flex items-center justify-between mb-2">
           <button
             onClick={() => setShowExitDialog(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors flex-none"
+            className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors flex-none active:scale-95"
             aria-label="Exit workout"
           >
             <X className="w-5 h-5 text-neutral-400" />
@@ -1329,196 +1051,18 @@ export default function WorkoutExecution() {
                   const isUpcoming = !set.completed && !isActive;
                   const step = getWeightStep(currentExercise.exerciseName, weightUnit);
 
-                  // Collapsed upcoming sets
-                  if (isUpcoming) {
-                    return (
-                      <motion.div
-                        key={sIdx}
-                        initial={false}
-                        animate={{ opacity: 0.5 }}
-                        className="rounded-2xl bg-white/[0.02] border border-white/5 px-4 py-3 flex items-center justify-between"
-                      >
-                        <span className="text-sm font-bold text-neutral-600">
-                          SET {set.setNumber}
-                        </span>
-                        <span className="text-xs text-neutral-600 tabular-nums">
-                          {set.weight > 0 ? `${set.weight} ${weightUnit}` : '—'} &times;{' '}
-                          {set.reps > 0 ? set.reps : '—'}
-                        </span>
-                      </motion.div>
-                    );
-                  }
-
                   return (
-                    <motion.div
+                    <SetRow
                       key={sIdx}
-                      initial={false}
-                      animate={{
-                        opacity: set.completed ? 0.7 : 1,
-                        scale: isActive ? 1 : 0.98,
-                      }}
-                      className={`rounded-2xl p-4 transition-colors ${
-                        set.completed
-                          ? 'bg-green-500/[0.06] border border-green-500/15 border-l-4 border-l-green-500'
-                          : 'bg-[#c9a855]/[0.06] border border-[#c9a855]/20'
-                      }`}
-                    >
-                      {/* Top row: Set label + check */}
-                      <div className="flex items-center justify-between mb-3">
-                        <span
-                          className={`text-xs font-bold uppercase tracking-wider ${
-                            set.completed ? 'text-green-500' : 'text-[#c9a855]'
-                          }`}
-                        >
-                          SET {set.setNumber}
-                        </span>
-                        <motion.button
-                          onClick={() => toggleSetComplete(currentExerciseIndex, sIdx)}
-                          animate={
-                            prefersReducedMotion
-                              ? undefined
-                              : set.completed
-                                ? { scale: [1, 1.3, 1] }
-                                : { scale: 1 }
-                          }
-                          transition={{ duration: 0.3, ease: 'easeOut' }}
-                          className={`w-11 h-11 flex items-center justify-center rounded-xl transition-colors ${
-                            set.completed
-                              ? 'bg-green-500 text-white'
-                              : 'border-2 border-white/20 hover:border-[#c9a855]/50 text-transparent hover:text-[#c9a855]/50'
-                          }`}
-                          aria-label={
-                            set.completed
-                              ? `Undo set ${set.setNumber}`
-                              : `Complete set ${set.setNumber}`
-                          }
-                        >
-                          {set.completed ? (
-                            <motion.div
-                              initial={prefersReducedMotion ? undefined : { scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
-                            >
-                              <Check className="w-5 h-5 text-white" strokeWidth={3} />
-                            </motion.div>
-                          ) : (
-                            <Check className="w-5 h-5" strokeWidth={3} />
-                          )}
-                        </motion.button>
-                      </div>
-
-                      {/* Weight + Reps side by side */}
-                      <div className="flex items-center justify-around mt-1">
-                        {/* Weight */}
-                        <div className="flex flex-col items-center">
-                          <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-2">
-                            Weight ({weightUnit})
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() =>
-                                updateSet(currentExerciseIndex, sIdx, 'weight', set.weight - step)
-                              }
-                              className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                              aria-label={`Decrease weight by ${step} ${weightUnit}`}
-                              disabled={set.completed}
-                            >
-                              <span className="text-lg font-light">−</span>
-                            </button>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              value={set.weight || ''}
-                              onChange={(e) =>
-                                updateSet(
-                                  currentExerciseIndex,
-                                  sIdx,
-                                  'weight',
-                                  Number(e.target.value) || 0
-                                )
-                              }
-                              disabled={set.completed}
-                              className="w-14 h-11 sm:w-20 sm:h-12 text-center text-lg sm:text-xl font-bold bg-transparent border-b-2 border-white/[0.06] focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              placeholder="0"
-                              aria-label={`Weight for set ${set.setNumber}`}
-                            />
-                            <button
-                              onClick={() =>
-                                updateSet(currentExerciseIndex, sIdx, 'weight', set.weight + step)
-                              }
-                              className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                              aria-label={`Increase weight by ${step} ${weightUnit}`}
-                              disabled={set.completed}
-                            >
-                              <span className="text-lg font-light">+</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Divider */}
-                        <div className="h-14 w-px bg-white/[0.06]" />
-
-                        {/* Reps */}
-                        <div className="flex flex-col items-center">
-                          <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-2">
-                            Reps
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() =>
-                                updateSet(currentExerciseIndex, sIdx, 'reps', set.reps - 1)
-                              }
-                              className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                              aria-label="Decrease reps by 1"
-                              disabled={set.completed}
-                            >
-                              <span className="text-lg font-light">−</span>
-                            </button>
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              value={set.reps || ''}
-                              onChange={(e) =>
-                                updateSet(
-                                  currentExerciseIndex,
-                                  sIdx,
-                                  'reps',
-                                  Number(e.target.value) || 0
-                                )
-                              }
-                              disabled={set.completed}
-                              className="w-12 h-11 sm:w-16 sm:h-12 text-center text-lg sm:text-xl font-bold bg-transparent border-b-2 border-white/[0.06] focus:border-[#c9a855] outline-none tabular-nums text-white transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              placeholder="0"
-                              aria-label={`Reps for set ${set.setNumber}`}
-                            />
-                            <button
-                              onClick={() =>
-                                updateSet(currentExerciseIndex, sIdx, 'reps', set.reps + 1)
-                              }
-                              className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 active:scale-95 transition-all flex-none"
-                              aria-label="Increase reps by 1"
-                              disabled={set.completed}
-                            >
-                              <span className="text-lg font-light">+</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Complete Set CTA — active set only */}
-                      {isActive && !set.completed && (
-                        <motion.button
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          onClick={() => toggleSetComplete(currentExerciseIndex, sIdx)}
-                          className="mt-4 w-full h-12 rounded-xl bg-[#c9a855] text-black font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-                          aria-label={`Complete set ${set.setNumber}`}
-                        >
-                          <Check className="w-4 h-4" strokeWidth={3} />
-                          Complete Set
-                        </motion.button>
-                      )}
-                    </motion.div>
+                      set={set}
+                      isActive={isActive}
+                      isUpcoming={isUpcoming}
+                      weightUnit={weightUnit}
+                      weightStep={step}
+                      onUpdateWeight={(value) => updateSet(currentExerciseIndex, sIdx, 'weight', value)}
+                      onUpdateReps={(value) => updateSet(currentExerciseIndex, sIdx, 'reps', value)}
+                      onToggleComplete={() => toggleSetComplete(currentExerciseIndex, sIdx)}
+                    />
                   );
                 })}
               </div>
@@ -1586,116 +1130,37 @@ export default function WorkoutExecution() {
 
       {/* ── Rest Timer Overlay ── */}
       <AnimatePresence>
-        {isRestVisible && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0 z-30 bg-[#0A0A0A]/95 backdrop-blur-md flex flex-col items-center justify-center"
-          >
-            {/* REST label */}
-            <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500 mb-6">
-              {restTimeLeft === 0 ? 'ready' : 'rest'}
-            </p>
-
-            {/* 160px ring */}
-            <div className="relative w-40 h-40 mb-6">
-              <svg className="w-40 h-40 -rotate-90" viewBox="0 0 160 160">
-                <circle
-                  cx="80"
-                  cy="80"
-                  r="74"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.06)"
-                  strokeWidth={6}
-                />
-                <circle
-                  cx="80"
-                  cy="80"
-                  r="74"
-                  fill="none"
-                  stroke={restTimeLeft === 0 ? '#22c55e' : '#c9a855'}
-                  strokeWidth={6}
-                  strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 74}
-                  strokeDashoffset={
-                    2 * Math.PI * 74 * (1 - (restDuration > 0 ? restTimeLeft / restDuration : 0))
-                  }
-                  style={{ transition: 'stroke-dashoffset 1s linear' }}
-                />
-              </svg>
-              <span
-                className={`absolute inset-0 flex items-center justify-center font-mono text-4xl font-bold tabular-nums ${
-                  restTimeLeft === 0 ? 'text-green-400' : 'text-white'
-                }`}
-                style={
-                  restTimeLeft === 0 && !prefersReducedMotion
-                    ? { animation: 'pulse-primary 1.5s ease-in-out infinite' }
-                    : undefined
+        <RestTimerOverlay
+          restTimeLeft={restTimeLeft}
+          restDuration={restDuration}
+          restJustFinished={restJustFinished}
+          nextSetInfo={
+            currentExercise && currentSetIndex >= 0 && currentSetIndex < currentExercise.sets.length - 1
+              ? { setNumber: currentSetIndex + 2, totalSets: currentExercise.sets.length }
+              : null
+          }
+          nextExerciseInfo={
+            currentExercise &&
+            (currentSetIndex < 0 || currentSetIndex >= currentExercise.sets.length - 1) &&
+            currentExerciseIndex < totalExercises - 1
+              ? {
+                  name: session.exercises[currentExerciseIndex + 1]?.exerciseName,
+                  sets: session.exercises[currentExerciseIndex + 1]?.sets.length,
+                  reps: session.exercises[currentExerciseIndex + 1]?.targetReps,
                 }
-              >
-                {restTimeLeft === 0 ? 'GO!' : formatTime(restTimeLeft)}
-              </span>
-            </div>
-
-            {/* Up Next info */}
-            {currentExercise &&
-              currentSetIndex >= 0 &&
-              currentSetIndex < currentExercise.sets.length - 1 && (
-                <div className="text-center mb-8">
-                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">
-                    Next Up
-                  </p>
-                  <p className="text-sm text-neutral-300">
-                    Set {currentSetIndex + 2} of {currentExercise.sets.length}
-                  </p>
-                </div>
-              )}
-            {currentExercise &&
-              (currentSetIndex < 0 || currentSetIndex >= currentExercise.sets.length - 1) &&
-              currentExerciseIndex < totalExercises - 1 && (
-                <div className="text-center mb-8">
-                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">
-                    Up Next
-                  </p>
-                  <p className="text-sm text-neutral-300">
-                    {session.exercises[currentExerciseIndex + 1]?.exerciseName}
-                  </p>
-                  <p className="text-xs text-neutral-500 mt-0.5">
-                    {session.exercises[currentExerciseIndex + 1]?.sets.length} sets &times;{' '}
-                    {session.exercises[currentExerciseIndex + 1]?.targetReps} reps
-                  </p>
-                </div>
-              )}
-
-            {/* Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={addRestTime}
-                className="h-12 px-6 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-neutral-300 font-medium transition-colors"
-                aria-label="Add 30 seconds to rest timer"
-              >
-                +30s
-              </button>
-              <button
-                onClick={skipRest}
-                className="h-12 px-8 rounded-xl bg-[#c9a855] text-black text-sm font-bold hover:bg-[#b89745] transition-colors flex items-center gap-2"
-                aria-label="Skip rest period"
-              >
-                Skip <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
+              : null
+          }
+          onAddTime={addRestTime}
+          onSkip={skipRest}
+        />
       </AnimatePresence>
 
       {/* ── Sticky Bottom Bar ── */}
-      <div className="flex-none h-16 flex items-center justify-between px-4 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-md z-30 gap-2">
+      <div className="flex-none h-[72px] flex items-center justify-between px-4 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-md z-30 gap-2">
         {/* Exercise list */}
         <button
           onClick={() => setShowExerciseList(true)}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 transition-colors flex-none"
+          className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 transition-colors flex-none active:scale-95"
           aria-label="View exercise list"
         >
           <ListChecks className="w-5 h-5" />
@@ -1705,7 +1170,7 @@ export default function WorkoutExecution() {
         <button
           onClick={() => currentExerciseIndex > 0 && goToExercise(currentExerciseIndex - 1)}
           disabled={currentExerciseIndex === 0}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 transition-colors flex-none disabled:opacity-30"
+          className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 transition-colors flex-none disabled:opacity-30 active:scale-95"
           aria-label="Previous exercise"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -1717,7 +1182,7 @@ export default function WorkoutExecution() {
             currentExerciseIndex < totalExercises - 1 && goToExercise(currentExerciseIndex + 1)
           }
           disabled={currentExerciseIndex >= totalExercises - 1}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 transition-colors flex-none disabled:opacity-30"
+          className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 transition-colors flex-none disabled:opacity-30 active:scale-95"
           aria-label="Next exercise"
         >
           <ChevronRight className="w-5 h-5" />
@@ -1728,7 +1193,7 @@ export default function WorkoutExecution() {
         {/* Finish */}
         <button
           onClick={handleFinishClick}
-          className={`h-11 px-6 rounded-xl font-bold text-sm transition-all flex-none ${
+          className={`h-12 px-6 rounded-xl font-bold text-sm transition-all flex-none active:scale-95 ${
             overallProgress >= 100
               ? 'bg-[#c9a855] text-black'
               : overallProgress >= 50
