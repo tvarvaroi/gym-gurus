@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,8 +11,6 @@ import {
   User,
   Dumbbell,
   Apple,
-  Moon,
-  Target,
   Zap,
   RefreshCw,
   MessageSquare,
@@ -29,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { QuickActions } from '@/components/redesign/coach';
 
 interface Message {
   id: string;
@@ -37,21 +35,6 @@ interface Message {
   timestamp: Date;
 }
 
-// Quick suggestion prompts
-const quickPrompts = [
-  {
-    icon: Dumbbell,
-    label: 'Workout Tips',
-    prompt: 'Give me tips to improve my workout performance',
-  },
-  { icon: Apple, label: 'Nutrition', prompt: 'What should I eat before and after my workout?' },
-  { icon: Moon, label: 'Recovery', prompt: 'How can I optimize my recovery between workouts?' },
-  {
-    icon: Target,
-    label: 'Goals',
-    prompt: 'Help me set realistic fitness goals for the next month',
-  },
-];
 
 // ─── Markdown preprocessing ──────────────────────────────────────────────────
 
@@ -438,98 +421,94 @@ export default function AICoach() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pt-4">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-      >
-        <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3 flex-wrap">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex-shrink-0">
-              <Sparkles className="h-8 w-8 text-purple-400" />
+    <div className="flex flex-col h-[calc(100vh-8rem)] md:h-auto md:max-h-none max-w-4xl mx-auto md:pt-4 md:space-y-4">
+      {/* Header — compact on mobile, full on desktop */}
+      <div className="flex-none">
+        {/* Mobile: minimal header */}
+        <div className="flex items-center justify-between px-1 py-2 md:hidden">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
+              <Sparkles className="h-5 w-5 text-purple-400" />
             </div>
-            AI{' '}
-            <span className="font-light bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-              Coach
-            </span>
-          </h1>
-          <p className="text-muted-foreground font-light">
-            Your personal fitness assistant, available 24/7
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {remaining !== null && limit !== null && limit > 0 && (
-            <Badge
-              variant="outline"
-              className={
+            <h1 className="text-lg font-bold font-['Playfair_Display']">
+              AI <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Coach</span>
+            </h1>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {remaining !== null && limit !== null && limit > 0 && (
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
                 remaining === 0
                   ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                  : remaining <= 2
-                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                    : 'bg-muted/50 border-border/50 text-muted-foreground'
-              }
-            >
-              {remaining === 0 ? (
-                <>
-                  <Lock className="h-3 w-3 mr-1" />
-                  Limit reached
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  {remaining}/{limit} today
-                </>
-              )}
-            </Badge>
-          )}
-          <Badge
-            variant="outline"
-            className="bg-purple-500/10 border-purple-500/30 text-purple-400"
-          >
-            <Zap className="h-3 w-3 mr-1" />
-            AI Powered
-          </Badge>
-        </div>
-      </motion.div>
-
-      {/* Quick Prompts */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-3"
-      >
-        {quickPrompts.map((prompt, index) => (
-          <motion.button
-            key={prompt.label}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 + index * 0.05 }}
-            onClick={() => handleSend(prompt.prompt)}
-            className="group p-3 rounded-xl border border-border/50 bg-card/50 hover:bg-purple-500/10 hover:border-purple-500/30 transition-all duration-300 text-left min-h-[48px] flex items-center"
-          >
-            <div className="flex items-center gap-2">
-              <prompt.icon className="h-4 w-4 text-muted-foreground group-hover:text-purple-400 transition-colors" />
-              <span className="text-sm font-light group-hover:text-purple-400 transition-colors">
-                {prompt.label}
+                  : 'bg-muted/50 border-border/50 text-muted-foreground'
+              }`}>
+                {remaining === 0 ? 'Limit' : `${remaining}/${limit}`}
               </span>
-            </div>
-          </motion.button>
-        ))}
-      </motion.div>
+            )}
+          </div>
+        </div>
 
-      {/* Chat Container */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
-          <CardContent className="p-0">
-            {/* Messages Area */}
-            <div className="h-[min(600px,65vh)] md:h-[min(500px,55vh)] overflow-y-auto p-4 space-y-4">
+        {/* Desktop: full header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="hidden md:flex md:items-center md:justify-between gap-3"
+        >
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3 flex-wrap">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex-shrink-0">
+                <Sparkles className="h-8 w-8 text-purple-400" />
+              </div>
+              AI{' '}
+              <span className="font-light bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+                Coach
+              </span>
+            </h1>
+            <p className="text-muted-foreground font-light">
+              Your personal fitness assistant, available 24/7
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {remaining !== null && limit !== null && limit > 0 && (
+              <Badge
+                variant="outline"
+                className={
+                  remaining === 0
+                    ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                    : remaining <= 2
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                      : 'bg-muted/50 border-border/50 text-muted-foreground'
+                }
+              >
+                {remaining === 0 ? (
+                  <>
+                    <Lock className="h-3 w-3 mr-1" />
+                    Limit reached
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-3 w-3 mr-1" />
+                    {remaining}/{limit} today
+                  </>
+                )}
+              </Badge>
+            )}
+            <Badge
+              variant="outline"
+              className="bg-purple-500/10 border-purple-500/30 text-purple-400"
+            >
+              <Zap className="h-3 w-3 mr-1" />
+              AI Powered
+            </Badge>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Chat Container — fills remaining height on mobile */}
+      <div className="flex-1 flex flex-col min-h-0 md:rounded-2xl md:border md:border-border/50 md:bg-card/50 md:backdrop-blur-sm overflow-hidden">
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
+          {/* Quick action chips — inside chat, above messages */}
+          <QuickActions onSelect={handleSend} visible={messages.length <= 1 && !isTyping} />
               <AnimatePresence initial={false}>
                 {messages.map((message, index) => (
                   <motion.div
@@ -556,7 +535,7 @@ export default function AICoach() {
                     </div>
 
                     {/* Message Bubble */}
-                    <div className="max-w-[80%] flex flex-col gap-1">
+                    <div className="max-w-[85%] md:max-w-[80%] flex flex-col gap-1">
                       <div
                         className={`rounded-2xl px-4 py-3 ${
                           message.role === 'assistant'
@@ -779,55 +758,49 @@ export default function AICoach() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <div className="border-t border-border/50 p-4 bg-muted/20">
-              {limitReached ? (
-                <div className="flex flex-col items-center gap-3 py-2">
-                  <div className="flex items-center gap-2 text-amber-400">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm font-medium">Daily AI limit reached</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    You've used all your AI requests for today. Upgrade for more daily requests, or
-                    your limit resets at midnight UTC.
-                  </p>
-                  <a
-                    href="/pricing"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm font-medium hover:from-purple-600 hover:to-indigo-600 transition-all"
-                  >
-                    <Crown className="h-4 w-4" />
-                    Upgrade Plan
-                  </a>
-                </div>
-              ) : (
-                <>
-                  <div className="flex gap-3 items-center rounded-xl border border-border/30 bg-background/50 p-1.5 pl-3">
-                    <Input
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Ask me anything about fitness..."
-                      className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
-                      disabled={isTyping}
-                    />
-                    <Button
-                      onClick={() => handleSend()}
-                      disabled={!input.trim() || isTyping}
-                      className="w-10 h-10 p-0 flex-shrink-0 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-lg"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    AI Coach provides general fitness guidance. For medical advice, consult a
-                    professional.
-                  </p>
-                </>
-              )}
+        {/* Input Area — fixed at bottom on mobile */}
+        <div className="flex-none border-t border-border/50 p-3 md:p-4 bg-background/80 backdrop-blur-md">
+          {limitReached ? (
+            <div className="flex flex-col items-center gap-3 py-2">
+              <div className="flex items-center gap-2 text-amber-400">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">Daily AI limit reached</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                You've used all your AI requests for today. Upgrade for more daily requests, or
+                your limit resets at midnight UTC.
+              </p>
+              <a
+                href="/pricing"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm font-medium hover:from-purple-600 hover:to-indigo-600 transition-all"
+              >
+                <Crown className="h-4 w-4" />
+                Upgrade Plan
+              </a>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+          ) : (
+            <div className="flex gap-2 items-center">
+              <div className="flex-1 flex items-center rounded-full border border-border/30 bg-background/50 pl-4 pr-1.5 py-1">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask anything about fitness..."
+                  className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 h-10"
+                  disabled={isTyping}
+                />
+                <Button
+                  onClick={() => handleSend()}
+                  disabled={!input.trim() || isTyping}
+                  className="w-11 h-11 p-0 flex-shrink-0 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
