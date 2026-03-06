@@ -78,15 +78,19 @@ export function SoloDashboard() {
       {/* Phase 2: Full-width workout CTA — above fold */}
       <ActionZone />
 
-      {/* Phase 2: Horizontal scroll stat strip */}
-      <QuickStats
-        stats={data.soloStats}
-        strengthSummary={data.strengthSummary}
-        gamification={data.gamification}
-      />
+      {/* Phase 2: Horizontal scroll stat strip (mobile only — desktop uses WeeklyOverview) */}
+      <div className="md:hidden">
+        <QuickStats
+          stats={data.soloStats}
+          strengthSummary={data.strengthSummary}
+          gamification={data.gamification}
+        />
+      </div>
 
-      {/* Phase 2: Compact 7-day week strip */}
-      <WeekStrip weeklyActivity={data.weeklyActivity} />
+      {/* Phase 2: Compact 7-day week strip (mobile only — desktop uses WeeklyOverview) */}
+      <div className="md:hidden">
+        <WeekStrip weeklyActivity={data.weeklyActivity} />
+      </div>
 
       {/* Existing: Volume chart + detailed weekly log (desktop) */}
       <WeeklyOverview
