@@ -5,14 +5,20 @@ import { useUser } from '@/contexts/UserContext';
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 import { useSoloDashboardData } from '@/hooks/useSoloDashboardData';
 import { DashboardSkeleton } from '@/components/solo-dashboard/DashboardSkeleton';
-import { HeroHeader } from '@/components/solo-dashboard/HeroHeader';
-import { TodaysActionZone } from '@/components/solo-dashboard/TodaysActionZone';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+
+// Phase 2 redesign components
+import { MobileHero } from '@/components/redesign/dashboard/MobileHero';
+import { ActionZone } from '@/components/redesign/dashboard/ActionZone';
+import { QuickStats } from '@/components/redesign/dashboard/QuickStats';
+import { WeekStrip } from '@/components/redesign/dashboard/WeekStrip';
+import { WidgetScroller } from '@/components/redesign/dashboard/WidgetScroller';
+
+// Existing components kept for sections not yet redesigned
 import { WeeklyOverview } from '@/components/solo-dashboard/WeeklyOverview';
 import { RecoveryBodyStatus } from '@/components/solo-dashboard/RecoveryBodyStatus';
 import { BodyIntelligencePanel } from '@/components/solo-dashboard/BodyIntelligencePanel';
-import { FeatureWidgetsGrid } from '@/components/solo-dashboard/FeatureWidgetsGrid';
 import { RecentActivityFeed } from '@/components/solo-dashboard/RecentActivityFeed';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 function OnboardingPrompt() {
   const prefersReducedMotion = useReducedMotion();
@@ -59,20 +65,30 @@ export function SoloDashboard() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 space-y-6 md:space-y-10 pb-20">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 space-y-5 md:space-y-8 pb-20">
       {user && !user.onboardingCompleted && <OnboardingPrompt />}
 
-      <HeroHeader
+      {/* Phase 2: Mobile-first hero */}
+      <MobileHero
         user={user}
         gamification={data.gamification}
         fitnessProfile={data.fitnessProfile}
-        computedTdee={data.bodyIntelligence?.computed?.tdee?.value}
       />
 
-      <div className="mt-4 lg:mt-10 relative z-10">
-        <TodaysActionZone />
-      </div>
+      {/* Phase 2: Full-width workout CTA — above fold */}
+      <ActionZone />
 
+      {/* Phase 2: Horizontal scroll stat strip */}
+      <QuickStats
+        stats={data.soloStats}
+        strengthSummary={data.strengthSummary}
+        gamification={data.gamification}
+      />
+
+      {/* Phase 2: Compact 7-day week strip */}
+      <WeekStrip weeklyActivity={data.weeklyActivity} />
+
+      {/* Existing: Volume chart + detailed weekly log (desktop) */}
       <WeeklyOverview
         stats={data.soloStats}
         strengthSummary={data.strengthSummary}
@@ -90,7 +106,8 @@ export function SoloDashboard() {
         loading={data.bodyIntelLoading}
       />
 
-      <FeatureWidgetsGrid />
+      {/* Phase 2: Compact quick-access nav */}
+      <WidgetScroller />
 
       <RecentActivityFeed
         progress={data.progress}
