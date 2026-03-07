@@ -100,7 +100,7 @@ const TrainerWorkoutCard = memo(
   }) => (
     <StaggerItem index={index}>
       <motion.div
-        whileHover={{ y: -4, scale: 1.01 }}
+        whileHover={{ y: -4 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       >
         <Card
@@ -248,7 +248,7 @@ const ClientWorkoutCard = memo(
     return (
       <StaggerItem index={index}>
         <motion.div
-          whileHover={{ y: -4, scale: 1.01 }}
+          whileHover={{ y: -4 }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         >
           <Card className="group relative overflow-hidden border border-border/30 min-h-[200px] bg-background/40 backdrop-blur-xl transition-all duration-500 hover:border-cyan-500/40 hover:shadow-premium-lg hover:shadow-cyan-500/10">
@@ -731,7 +731,7 @@ const WorkoutPlans = memo(() => {
             </div>
             {/* Role-specific actions */}
             {isSolo && (
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
                 <Button
                   className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-light w-full sm:w-auto transition-all duration-300"
                   onClick={() => (window.location.href = '/solo/generate')}
@@ -743,7 +743,7 @@ const WorkoutPlans = memo(() => {
             )}
             {isTrainer && (
               <div className="flex flex-col sm:flex-row gap-3">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     variant="outline"
                     onClick={() => setShowTemplates(!showTemplates)}
@@ -756,7 +756,7 @@ const WorkoutPlans = memo(() => {
                     </span>
                   </Button>
                 </motion.div>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     variant="outline"
                     onClick={handleExport}
@@ -772,7 +772,7 @@ const WorkoutPlans = memo(() => {
                   mode="create"
                   trainerId={user?.id || currentUser?.id}
                   trigger={
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
                       <Button
                         className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/20 font-light w-full sm:w-auto transition-all duration-300"
                         data-testid="button-create-workout"
@@ -838,7 +838,7 @@ const WorkoutPlans = memo(() => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -4, scale: 1.02 }}
+                  whileHover={{ y: -4 }}
                 >
                   <Card className="cursor-pointer overflow-hidden border border-border/30 bg-background/40 backdrop-blur-xl hover:border-primary/40 hover:shadow-premium transition-all duration-500 group">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -886,7 +886,7 @@ const WorkoutPlans = memo(() => {
           >
             <motion.div
               className="relative"
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ opacity: 0.8 }}
               transition={{ type: 'spring', stiffness: 400, damping: 15 }}
             >
               <div
@@ -912,7 +912,7 @@ const WorkoutPlans = memo(() => {
             </div>
             {!searchQuery &&
               (isSolo ? (
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.95 }}>
                   <Button
                     className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-light transition-all duration-300"
                     onClick={() => (window.location.href = '/solo/generate')}
@@ -926,7 +926,7 @@ const WorkoutPlans = memo(() => {
                   mode="create"
                   trainerId={user?.id}
                   trigger={
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.95 }}>
                       <Button className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/20 font-light transition-all duration-300">
                         <Plus className="mr-2 h-4 w-4" />
                         Create Workout Plan

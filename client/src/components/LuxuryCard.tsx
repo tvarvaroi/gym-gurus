@@ -42,7 +42,7 @@ export function LuxuryCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={hover ? { y: -4, scale: 1.01 } : undefined}
+      whileHover={hover ? { y: -4 } : undefined}
       className={`relative ${hover ? 'hover-lift-luxury' : ''} ${className}`}
     >
       <Card
@@ -94,7 +94,7 @@ export function LuxuryCard({
                     background: roleColors.gradient,
                     boxShadow: `0 8px 20px hsl(var(--primary) / 0.30)`,
                   }}
-                  whileHover={{ rotate: 360, scale: 1.1 }}
+                  whileHover={{ rotate: 360 }}
                   transition={{ duration: 0.6 }}
                 >
                   {icon}
@@ -187,7 +187,7 @@ export function LuxuryStatCard({
             border: `1px solid hsl(var(--primary) / 0.30)`,
             boxShadow: `0 8px 20px hsl(var(--primary) / 0.20)`,
           }}
-          whileHover={{ scale: 1.05, rotate: 5 }}
+          whileHover={{ rotate: 5 }}
           transition={{ duration: 0.3 }}
         >
           <div

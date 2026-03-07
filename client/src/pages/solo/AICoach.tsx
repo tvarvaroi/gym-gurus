@@ -430,7 +430,7 @@ export default function AICoach() {
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
               <Sparkles className="h-5 w-5 text-purple-400" />
             </div>
-            <h1 className="text-lg font-bold font-['Playfair_Display']">
+            <h1 className="text-xl font-bold font-['Playfair_Display']">
               AI <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Coach</span>
             </h1>
           </div>
@@ -456,7 +456,7 @@ export default function AICoach() {
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3 flex-wrap">
               <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex-shrink-0">
-                <Sparkles className="h-8 w-8 text-purple-400" />
+                <Sparkles className="h-7 w-7 text-purple-400" />
               </div>
               AI{' '}
               <span className="font-light bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">

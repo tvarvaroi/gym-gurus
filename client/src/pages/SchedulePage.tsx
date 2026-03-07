@@ -789,7 +789,7 @@ function TrainerClientSchedule() {
           <h2 className="text-2xl font-light">Unable to load schedule</h2>
           <p className="text-base font-light text-muted-foreground/80">Please try again later</p>
         </div>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+        <motion.div whileTap={{ scale: 0.95 }}>
           <Button
             onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/appointments'] })}
             className="shadow-premium hover:shadow-premium-lg transition-all duration-300"
@@ -889,7 +889,7 @@ function TrainerClientSchedule() {
                 }}
               >
                 <DialogTrigger asChild>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <motion.div whileTap={{ scale: 0.95 }}>
                     <Button
                       className="relative bg-gradient-to-r from-primary to-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 w-full sm:w-auto overflow-hidden group border-0"
                       data-testid="button-add-appointment"
@@ -1331,7 +1331,7 @@ function TrainerClientSchedule() {
           <Card className="glass-strong border-border/50 shadow-premium">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <motion.div whileTap={{ scale: 0.9 }}>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1351,7 +1351,7 @@ function TrainerClientSchedule() {
                     ? `${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
                     : format(selectedDate, 'EEEE, MMMM d, yyyy')}
                 </h2>
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <motion.div whileTap={{ scale: 0.9 }}>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1453,7 +1453,7 @@ function TrainerClientSchedule() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ delay: index * 0.05 }}
-                                whileHover={{ scale: 1.02, y: -2 }}
+                                whileHover={{ y: -2 }}
                                 className={cn(
                                   'p-3 rounded-lg backdrop-blur-sm transition-all border',
                                   config.bg,
@@ -1747,7 +1747,7 @@ function TrainerClientSchedule() {
                                 {isTrainer && (
                                   <div className="flex gap-2">
                                     <motion.div
-                                      whileHover={{ scale: 1.1 }}
+                                      whileHover={{ opacity: 0.8 }}
                                       whileTap={{ scale: 0.9 }}
                                     >
                                       <Button
@@ -1763,7 +1763,7 @@ function TrainerClientSchedule() {
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <motion.div
-                                          whileHover={{ scale: 1.1 }}
+                                          whileHover={{ opacity: 0.8 }}
                                           whileTap={{ scale: 0.9 }}
                                         >
                                           <Button

@@ -282,7 +282,7 @@ export default function PremiumCalculatorsHub() {
 
       {/* Calculator Grid */}
       <div>
-        <h2 className="text-2xl font-semibold mb-6">All Calculators</h2>
+        <h2 className="text-2xl font-['Playfair_Display'] font-light mb-6">All Calculators</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {calculators.map((calc, index) => (
             <Link key={calc.id} href={`/dashboard/calculators/${calc.id}`}>
@@ -290,7 +290,6 @@ export default function PremiumCalculatorsHub() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                whileHover={{ y: -8, scale: 1.03 }}
                 className={`p-6 rounded-xl cursor-pointer premium-card relative overflow-hidden group`}
               >
                 {/* Background gradient */}

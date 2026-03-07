@@ -221,7 +221,6 @@ export default function ProgressPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1], delay: 0.1 }}
-            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
             <Button
@@ -284,7 +283,7 @@ export default function ProgressPage() {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.05, duration: 0.3 }}
-                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileHover={{ y: -2 }}
                       whileTap={{ scale: 0.95 }}
                     >
                       <Button
@@ -829,7 +828,7 @@ export default function ProgressPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
-                  whileHover={{ y: -6, scale: 1.02 }}
+                  whileHover={{ y: -4 }}
                 >
                   <Card
                     className={`group relative overflow-hidden border ${isClient ? 'border-cyan-500/20 hover:border-cyan-500/40' : 'border-border/30 hover:border-primary/40'} bg-background/40 backdrop-blur-xl hover:shadow-premium-lg transition-all duration-500 h-full`}
@@ -1218,7 +1217,7 @@ export default function ProgressPage() {
                             {/* Timeline dot */}
                             <motion.div
                               className={`absolute left-4 top-6 w-5 h-5 rounded-full border-2 ${isClient ? 'border-cyan-500 bg-cyan-500/20' : 'border-primary bg-primary/20'} flex items-center justify-center`}
-                              whileHover={{ scale: 1.3 }}
+                              whileHover={{ opacity: 0.8 }}
                               transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                             >
                               <div
@@ -1241,7 +1240,7 @@ export default function ProgressPage() {
                                   {/* Icon */}
                                   <motion.div
                                     className={`p-3 rounded-lg ${isClient ? 'bg-gradient-to-br from-cyan-500/20 to-teal-500/10 border border-cyan-500/20' : 'bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20'}`}
-                                    whileHover={{ rotate: 5, scale: 1.1 }}
+                                    whileHover={{ rotate: 5 }}
                                     transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                                   >
                                     <Icon

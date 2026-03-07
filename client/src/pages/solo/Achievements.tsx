@@ -211,9 +211,9 @@ export default function Achievements() {
         className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4"
       >
         <div className="space-y-1">
-          <h1 className="text-xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
             <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20">
-              <Trophy className="h-5 w-5 md:h-8 md:w-8 text-amber-400" />
+              <Trophy className="h-5 w-5 md:h-7 md:w-7 text-amber-400" />
             </div>
             <span className="font-light bg-gradient-to-r from-amber-400 to-yellow-400 bg-clip-text text-transparent">
               Achievements

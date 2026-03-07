@@ -174,9 +174,9 @@ export default function Recovery() {
         className="flex items-center justify-between"
       >
         <div className="space-y-1">
-          <h1 className="text-xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
             <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20">
-              <Heart className="h-5 w-5 md:h-8 md:w-8 text-rose-400" />
+              <Heart className="h-5 w-5 md:h-7 md:w-7 text-rose-400" />
             </div>
             Recovery{' '}
             <span className="font-light bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">
@@ -200,7 +200,7 @@ export default function Recovery() {
             <div className="flex flex-row items-center gap-4 md:gap-6">
               {/* Score Circle */}
               <div className="relative w-28 h-28 md:w-40 md:h-40 flex-shrink-0">
-                <svg className="w-full h-full transform -rotate-90">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
                   <circle
                     cx="80"
                     cy="80"

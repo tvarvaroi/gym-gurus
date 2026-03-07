@@ -324,9 +324,9 @@ export default function NutritionPlanner() {
         className="flex items-center justify-between"
       >
         <div className="space-y-1">
-          <h1 className="text-xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
             <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20">
-              <Apple className="h-5 w-5 md:h-8 md:w-8 text-green-400" />
+              <Apple className="h-5 w-5 md:h-7 md:w-7 text-green-400" />
             </div>
             Nutrition{' '}
             <span className="font-light bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">

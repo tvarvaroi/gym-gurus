@@ -500,7 +500,7 @@ export default function WorkoutGenerator() {
         <div className="space-y-1">
           <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
             <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex-shrink-0">
-              <Brain className="h-5 w-5 md:h-8 md:w-8 text-purple-400" />
+              <Brain className="h-5 w-5 md:h-7 md:w-7 text-purple-400" />
             </div>
             AI Workout{' '}
             <span className="font-light bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
