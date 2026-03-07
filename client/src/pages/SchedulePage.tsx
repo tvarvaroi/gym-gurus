@@ -242,24 +242,24 @@ function SoloScheduleView() {
   const plannedCount = events.filter((e: any) => e.type === 'planned').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <motion.div
-        className="space-y-3"
+        className="space-y-1 md:space-y-3"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
-            <CalendarIcon className="h-7 w-7 text-primary" />
+        <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+          <div className="p-1.5 md:p-2 rounded-xl bg-primary/10 flex-shrink-0">
+            <CalendarIcon className="h-5 w-5 md:h-7 md:w-7 text-primary" />
           </div>
           My{' '}
           <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
             Schedule
           </span>
         </h1>
-        <p className="text-sm font-light text-muted-foreground/80 leading-relaxed">
+        <p className="hidden md:block text-sm font-light text-muted-foreground/80 leading-relaxed">
           Track your completed workouts and planned training days
         </p>
       </motion.div>
@@ -802,16 +802,16 @@ function TrainerClientSchedule() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Enhanced Header */}
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 md:gap-6">
         <motion.div
-          className="space-y-3"
+          className="space-y-1 md:space-y-3"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
         >
-          <h1 className="text-4xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
+          <h1 className="text-xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
             {isClient ? 'My ' : 'Your '}
             <span
               className={`font-light bg-gradient-to-r ${isClient ? 'from-cyan-500 via-teal-500 to-cyan-400' : 'from-primary via-primary/80 to-primary/60'} bg-clip-text text-transparent`}
@@ -819,7 +819,7 @@ function TrainerClientSchedule() {
               Schedule
             </span>
           </h1>
-          <p className="text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
+          <p className="hidden md:block text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
             {isClient
               ? 'View your upcoming training sessions and appointments'
               : 'Manage appointments and training sessions with precision'}
