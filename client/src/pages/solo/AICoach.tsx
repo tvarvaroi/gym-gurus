@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -427,11 +428,11 @@ export default function AICoach() {
         {/* Mobile: minimal header */}
         <div className="flex items-center justify-between px-1 py-2 md:hidden">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-indigo-500/20">
-              <Sparkles className="h-5 w-5 text-purple-400" />
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <h1 className="text-xl font-bold font-['Playfair_Display']">
-              AI <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Coach</span>
+              AI <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Coach</span>
             </h1>
           </div>
           <div className="flex items-center gap-1.5">
@@ -448,59 +449,49 @@ export default function AICoach() {
         </div>
 
         {/* Desktop: full header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="hidden md:flex md:items-center md:justify-between gap-3"
-        >
-          <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3 flex-wrap">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex-shrink-0">
-                <Sparkles className="h-7 w-7 text-purple-400" />
-              </div>
-              AI{' '}
-              <span className="font-light bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-                Coach
-              </span>
-            </h1>
-            <p className="text-muted-foreground font-light">
-              Your personal fitness assistant, available 24/7
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {remaining !== null && limit !== null && limit > 0 && (
-              <Badge
-                variant="outline"
-                className={
-                  remaining === 0
-                    ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                    : remaining <= 2
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                      : 'bg-muted/50 border-border/50 text-muted-foreground'
-                }
-              >
-                {remaining === 0 ? (
-                  <>
-                    <Lock className="h-3 w-3 mr-1" />
-                    Limit reached
-                  </>
-                ) : (
-                  <>
-                    <MessageSquare className="h-3 w-3 mr-1" />
-                    {remaining}/{limit} today
-                  </>
+        <div className="hidden md:block">
+          <PageHeader
+            icon={<Sparkles className="h-full w-full" />}
+            title="AI"
+            titleAccent="Coach"
+            subtitle="Your personal fitness assistant, available 24/7"
+            actions={
+              <div className="flex items-center gap-2 flex-wrap">
+                {remaining !== null && limit !== null && limit > 0 && (
+                  <Badge
+                    variant="outline"
+                    className={
+                      remaining === 0
+                        ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                        : remaining <= 2
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                          : 'bg-muted/50 border-border/50 text-muted-foreground'
+                    }
+                  >
+                    {remaining === 0 ? (
+                      <>
+                        <Lock className="h-3 w-3 mr-1" />
+                        Limit reached
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        {remaining}/{limit} today
+                      </>
+                    )}
+                  </Badge>
                 )}
-              </Badge>
-            )}
-            <Badge
-              variant="outline"
-              className="bg-purple-500/10 border-purple-500/30 text-purple-400"
-            >
-              <Zap className="h-3 w-3 mr-1" />
-              AI Powered
-            </Badge>
-          </div>
-        </motion.div>
+                <Badge
+                  variant="outline"
+                  className="bg-primary/10 border-primary/30 text-primary"
+                >
+                  <Zap className="h-3 w-3 mr-1" />
+                  AI Powered
+                </Badge>
+              </div>
+            }
+          />
+        </div>
       </div>
 
       {/* Chat Container — fills remaining height on mobile */}

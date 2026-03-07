@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, memo } from 'react';
+import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -711,24 +712,16 @@ const WorkoutPlans = memo(() => {
         {/* Header */}
         <div className="flex flex-col gap-3 md:gap-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 md:gap-6">
-            <div className="space-y-1 md:space-y-3">
-              <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
-                <div className="p-1.5 md:p-2 rounded-xl bg-primary/10 flex-shrink-0">
-                  <Dumbbell className="h-5 w-5 md:h-7 md:w-7 text-primary" />
-                </div>
-                My{' '}
-                <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Workouts
-                </span>
-              </h1>
-              <p className="hidden md:block text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
-                {isSolo
-                  ? 'Your saved workouts — generate new ones with AI or build from scratch'
-                  : isClient
-                    ? 'Your personalized workout plans from your trainer'
-                    : 'Create and manage personalized workout routines'}
-              </p>
-            </div>
+            <PageHeader
+              icon={<Dumbbell className="h-full w-full" />}
+              title="My"
+              titleAccent="Workouts"
+              subtitle={isSolo
+                ? 'Your saved workouts — generate new ones with AI or build from scratch'
+                : isClient
+                  ? 'Your personalized workout plans from your trainer'
+                  : 'Create and manage personalized workout routines'}
+            />
             {/* Role-specific actions */}
             {isSolo && (
               <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>

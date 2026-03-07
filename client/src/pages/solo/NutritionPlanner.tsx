@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -318,30 +319,18 @@ export default function NutritionPlanner() {
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div className="space-y-1">
-          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20">
-              <Apple className="h-5 w-5 md:h-7 md:w-7 text-green-400" />
-            </div>
-            Nutrition{' '}
-            <span className="font-light bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-              Planner
-            </span>
-          </h1>
-          <p className="hidden md:block text-muted-foreground font-light">
-            AI-generated meal plans tailored to your goals
-          </p>
-        </div>
-        <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400">
-          <Sparkles className="h-3 w-3 mr-1" />
-          AI Powered
-        </Badge>
-      </motion.div>
+      <PageHeader
+        icon={<Apple className="h-full w-full" />}
+        title="Nutrition"
+        titleAccent="Planner"
+        subtitle="AI-generated meal plans tailored to your goals"
+        actions={
+          <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary">
+            <Sparkles className="h-3 w-3 mr-1" />
+            AI Powered
+          </Badge>
+        }
+      />
 
       <div className="grid lg:grid-cols-[3fr_2fr] gap-6">
         {/* Configuration Panel */}

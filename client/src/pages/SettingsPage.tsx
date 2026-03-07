@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
@@ -1029,18 +1030,12 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto py-2">
       <div className="mb-4 md:mb-6">
-        <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
-          <div className="p-1.5 md:p-2 rounded-xl bg-primary/10 flex-shrink-0">
-            <Settings className="h-5 w-5 md:h-7 md:w-7 text-primary" />
-          </div>
-          Account{' '}
-          <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Settings
-          </span>
-        </h1>
-        <p className="hidden md:block text-sm text-muted-foreground mt-1">
-          Manage your account, security, and preferences.
-        </p>
+        <PageHeader
+          icon={<Settings className="h-full w-full" />}
+          title="Account"
+          titleAccent="Settings"
+          subtitle="Manage your account, security, and preferences."
+        />
       </div>
 
       <Tabs defaultValue="profile">

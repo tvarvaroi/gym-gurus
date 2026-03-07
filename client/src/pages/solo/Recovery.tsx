@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -168,26 +169,12 @@ export default function Recovery() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div className="space-y-1">
-          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20">
-              <Heart className="h-5 w-5 md:h-7 md:w-7 text-rose-400" />
-            </div>
-            Recovery{' '}
-            <span className="font-light bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">
-              Status
-            </span>
-          </h1>
-          <p className="hidden md:block text-muted-foreground font-light">
-            Track your muscle recovery and optimize rest days
-          </p>
-        </div>
-      </motion.div>
+      <PageHeader
+        icon={<Heart className="h-full w-full" />}
+        title="Recovery"
+        titleAccent="Status"
+        subtitle="Track your muscle recovery and optimize rest days"
+      />
 
       {/* Overall Recovery Score */}
       <motion.div

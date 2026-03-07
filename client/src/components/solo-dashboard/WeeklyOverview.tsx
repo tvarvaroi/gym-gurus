@@ -253,7 +253,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
   return (
     <motion.div
       {...animProps}
-      className="bg-card rounded-2xl pt-5 px-4 pb-3 md:pt-6 md:px-5 md:pb-4 border border-border/20 flex flex-col"
+      className="bg-card rounded-2xl pt-5 px-4 pb-3 md:pt-6 md:px-5 md:pb-4 border border-border/20"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -269,9 +269,9 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
         </span>
       </div>
 
-      {/* Day columns — takes ALL remaining space */}
-      <div className="flex-1 overflow-x-auto snap-x snap-mandatory md:snap-none -mx-4 px-4 md:-mx-5 md:px-5 scrollbar-hide">
-        <div className="flex md:grid md:grid-cols-7 gap-1 h-full min-w-max md:min-w-0">
+      {/* Day columns */}
+      <div className="overflow-x-auto snap-x snap-mandatory md:snap-none -mx-4 px-4 md:-mx-5 md:px-5 scrollbar-hide">
+        <div className="flex md:grid md:grid-cols-7 gap-1 min-w-max md:min-w-0">
           {Array.from({ length: 7 }).map((_, i) => {
             const richDay = richDays[i];
             const dayName = richDay?.day || dayNames[i];

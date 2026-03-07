@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -192,29 +193,16 @@ export default function ProgressPage() {
     >
       {/* Enhanced Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-6">
-        <motion.div
-          className="space-y-1 md:space-y-3"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-        >
-          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-xl bg-primary/10 flex-shrink-0">
-              <TrendingUp className="h-5 w-5 md:h-7 md:w-7 text-primary" />
-            </div>
-            {isClient || isSolo ? 'My ' : 'Progress '}
-            <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              {isClient || isSolo ? 'Progress' : 'Tracking'}
-            </span>
-          </h1>
-          <p className="hidden md:block text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
-            {isSolo
-              ? 'Track your fitness progress and goals'
-              : isClient
-                ? 'View your fitness journey tracked by your trainer'
-                : 'Monitor client progress and track fitness goals with precision'}
-          </p>
-        </motion.div>
+        <PageHeader
+          icon={<TrendingUp className="h-full w-full" />}
+          title={isClient || isSolo ? 'My' : 'Progress'}
+          titleAccent={isClient || isSolo ? 'Progress' : 'Tracking'}
+          subtitle={isSolo
+            ? 'Track your fitness progress and goals'
+            : isClient
+              ? 'View your fitness journey tracked by your trainer'
+              : 'Monitor client progress and track fitness goals with precision'}
+        />
         {/* Only trainers can add progress entries */}
         {isTrainer && (
           <motion.div
@@ -387,16 +375,19 @@ export default function ProgressPage() {
             <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground font-light">Avg Duration</p>
-                <p className="text-2xl font-bold mt-1">
-                  {(() => {
-                    const avg =
-                      soloProgress.totalWorkouts > 1
-                        ? Math.round(soloProgress.totalDurationMinutes / soloProgress.totalWorkouts)
-                        : soloProgress.totalDurationMinutes;
-                    return avg < 5 ? '\u2014' : avg;
-                  })()}
-                  <span className="text-sm font-light text-muted-foreground ml-1">min</span>
-                </p>
+                {(() => {
+                  const avg =
+                    soloProgress.totalWorkouts > 1
+                      ? Math.round(soloProgress.totalDurationMinutes / soloProgress.totalWorkouts)
+                      : soloProgress.totalDurationMinutes;
+                  const isValid = avg >= 5;
+                  return (
+                    <p className="text-2xl font-bold mt-1">
+                      {isValid ? avg : '\u2014'}
+                      {isValid && <span className="text-sm font-light text-muted-foreground ml-1">min</span>}
+                    </p>
+                  );
+                })()}
               </CardContent>
             </Card>
             <Card className="border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
@@ -708,7 +699,7 @@ export default function ProgressPage() {
                 {soloProgress.history.map((workout) => (
                   <div
                     key={workout.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border-l-4 border-primary border border-border/20"
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border-l-4 border-primary border border-border/20 overflow-hidden"
                   >
                     <div className="flex items-center gap-3">
                       <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />

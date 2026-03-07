@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { useLocation, useSearch } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
@@ -492,40 +493,28 @@ export default function WorkoutGenerator() {
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-      >
-        <div className="space-y-1">
-          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex-shrink-0">
-              <Brain className="h-5 w-5 md:h-7 md:w-7 text-purple-400" />
-            </div>
-            AI Workout{' '}
-            <span className="font-light bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-              Generator
-            </span>
-          </h1>
-          <p className="hidden md:block text-muted-foreground font-light">
-            Create personalized workouts powered by AI
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {clientId && clientData?.name && (
-            <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400">
-              For {clientData.name}
+      <PageHeader
+        icon={<Brain className="h-full w-full" />}
+        title="AI Workout"
+        titleAccent="Generator"
+        subtitle="Create personalized workouts powered by AI"
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            {clientId && clientData?.name && (
+              <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400">
+                For {clientData.name}
+              </Badge>
+            )}
+            <Badge
+              variant="outline"
+              className="bg-primary/10 border-primary/30 text-primary"
+            >
+              <Sparkles className="h-3 w-3 mr-1" />
+              AI Powered
             </Badge>
-          )}
-          <Badge
-            variant="outline"
-            className="bg-purple-500/10 border-purple-500/30 text-purple-400"
-          >
-            <Sparkles className="h-3 w-3 mr-1" />
-            AI Powered
-          </Badge>
-        </div>
-      </motion.div>
+          </div>
+        }
+      />
 
       <div className="grid lg:grid-cols-[3fr_2fr] gap-6">
         {/* Configuration Panel */}

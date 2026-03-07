@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -210,19 +211,12 @@ export default function Achievements() {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4"
       >
-        <div className="space-y-1">
-          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20">
-              <Trophy className="h-5 w-5 md:h-7 md:w-7 text-amber-400" />
-            </div>
-            <span className="font-light bg-gradient-to-r from-amber-400 to-yellow-400 bg-clip-text text-transparent">
-              Achievements
-            </span>
-          </h1>
-          <p className="hidden md:block text-muted-foreground font-light">
-            Unlock achievements and earn XP rewards
-          </p>
-        </div>
+        <PageHeader
+          icon={<Trophy className="h-full w-full" />}
+          title=""
+          titleAccent="Achievements"
+          subtitle="Unlock achievements and earn XP rewards"
+        />
 
         {/* Stats — only show when achievements are defined */}
         {mappedAchievements.length > 0 && (
