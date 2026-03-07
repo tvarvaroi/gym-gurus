@@ -1064,22 +1064,20 @@ function AppLayout() {
             >
               Skip to main content
             </a>
-            <div className="flex h-screen w-full overflow-hidden">
+            <div className="flex h-screen w-full">
               <AppSidebar />
-              <div className="flex flex-col flex-1 min-w-0 overflow-hidden transition-all duration-200 ease-linear">
+              <div className="flex flex-col flex-1 min-w-0">
                 <AppHeaderComponent />
                 <TrialBanner />
                 <main
                   id="main-content"
-                  className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0 flex flex-col"
+                  className="flex-1 overflow-y-auto pb-16 md:pb-0 flex flex-col"
                   role="main"
                 >
-                  <div className="p-3 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-background via-background to-muted/20 min-h-full">
-                    <div className="mx-auto">
-                      <ErrorBoundary>
-                        <Router />
-                      </ErrorBoundary>
-                    </div>
+                  <div className="p-3 sm:p-4 md:p-6 lg:p-8 min-h-full">
+                    <ErrorBoundary>
+                      <Router />
+                    </ErrorBoundary>
                   </div>
                   <Footer />
                 </main>
