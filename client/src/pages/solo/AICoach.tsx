@@ -539,8 +539,8 @@ export default function AICoach() {
                       <div
                         className={`rounded-2xl px-4 py-3 ${
                           message.role === 'assistant'
-                            ? 'bg-muted/50 rounded-tl-none'
-                            : 'bg-purple-500/20 rounded-tr-none'
+                            ? 'bg-muted/80 rounded-tl-none'
+                            : 'bg-purple-500/30 rounded-tr-none'
                         }`}
                       >
                         {message.role === 'assistant' ? (
@@ -668,7 +668,7 @@ export default function AICoach() {
                                 <a
                                   key={action.href}
                                   href={action.href}
-                                  className="flex items-center gap-1 px-3 py-1.5 min-h-[32px] text-[11px] rounded-full border border-border/50 text-muted-foreground hover:text-purple-400 hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
+                                  className="flex items-center gap-1 px-3 py-1.5 min-h-[32px] text-xs rounded-full border border-border/50 text-muted-foreground hover:text-purple-400 hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
                                 >
                                   <action.icon className="h-3 w-3" />
                                   {action.label}
@@ -721,7 +721,7 @@ export default function AICoach() {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
                       <Bot className="h-4 w-4 text-white" />
                     </div>
-                    <div className="bg-muted/50 rounded-2xl rounded-tl-none px-4 py-3">
+                    <div className="bg-muted/80 rounded-2xl rounded-tl-none px-4 py-3">
                       <div className="flex gap-1">
                         <motion.div
                           className="w-2 h-2 rounded-full bg-purple-400"
@@ -759,7 +759,7 @@ export default function AICoach() {
             </div>
 
         {/* Input Area — fixed at bottom on mobile */}
-        <div className="flex-none border-t border-border/50 p-3 md:p-4 bg-background/80 backdrop-blur-md">
+        <div className="flex-none border-t border-border/50 p-3 pb-16 md:p-4 md:pb-4 bg-background/80 backdrop-blur-md">
           {limitReached ? (
             <div className="flex flex-col items-center gap-3 py-2">
               <div className="flex items-center gap-2 text-amber-400">

@@ -763,7 +763,7 @@ function SubscriptionTab() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
               <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-2xl font-semibold">{stats?.daysSinceJoining ?? '—'}</p>
@@ -773,7 +773,7 @@ function SubscriptionTab() {
             {user?.role !== 'client' && (
               <>
                 {user?.role === 'trainer' && (
-                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
                     <Users className="h-5 w-5 text-muted-foreground shrink-0" />
                     <div>
                       <p className="text-2xl font-semibold">{stats?.clientCount ?? '—'}</p>
@@ -781,7 +781,7 @@ function SubscriptionTab() {
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
                   <Dumbbell className="h-5 w-5 text-muted-foreground shrink-0" />
                   <div>
                     <p className="text-2xl font-semibold">{stats?.workoutCount ?? '—'}</p>

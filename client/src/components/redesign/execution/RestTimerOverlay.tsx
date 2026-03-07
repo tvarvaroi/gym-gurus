@@ -42,7 +42,7 @@ export function RestTimerOverlay({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="absolute inset-0 z-30 bg-[#0A0A0A]/95 backdrop-blur-md flex flex-col items-center justify-center"
+      className="absolute inset-0 z-[60] bg-[#0A0A0A]/95 backdrop-blur-md flex flex-col items-center justify-center"
     >
       {/* REST label */}
       <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500 mb-6">
