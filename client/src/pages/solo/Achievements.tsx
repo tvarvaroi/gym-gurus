@@ -203,23 +203,23 @@ export default function Achievements() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+        className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4"
       >
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20">
-              <Trophy className="h-8 w-8 text-amber-400" />
+          <h1 className="text-xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20">
+              <Trophy className="h-5 w-5 md:h-8 md:w-8 text-amber-400" />
             </div>
             <span className="font-light bg-gradient-to-r from-amber-400 to-yellow-400 bg-clip-text text-transparent">
               Achievements
             </span>
           </h1>
-          <p className="text-muted-foreground font-light">
+          <p className="hidden md:block text-muted-foreground font-light">
             Unlock achievements and earn XP rewards
           </p>
         </div>
@@ -247,18 +247,18 @@ export default function Achievements() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-3 px-3 py-1 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
           {categories.map((category) => (
             <Button
               key={category.id}
               variant={selectedCategory === category.id ? 'default' : 'outline'}
               size="default"
               onClick={() => setSelectedCategory(category.id)}
-              className={
+              className={`snap-start flex-shrink-0 ${
                 selectedCategory === category.id
                   ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:from-amber-600 hover:to-yellow-600'
                   : 'border-border/50 hover:border-amber-500/30 hover:bg-amber-500/10'
-              }
+              }`}
             >
               <category.icon className="h-4 w-4 mr-2" />
               {category.label}
@@ -300,7 +300,7 @@ export default function Achievements() {
                 transition={{ delay: index * 0.05 }}
               >
                 <Card
-                  className={`relative overflow-hidden cursor-pointer transition-all duration-300 min-h-[160px] ${
+                  className={`relative overflow-hidden cursor-pointer transition-all duration-300 md:min-h-[160px] ${
                     achievement.earned
                       ? `${rarity.bg} ${rarity.border} hover:shadow-lg ${rarity.glow}`
                       : 'bg-card/30 border-border/30 opacity-60 hover:opacity-80'
