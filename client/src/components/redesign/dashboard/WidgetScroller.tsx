@@ -34,15 +34,15 @@ export function WidgetScroller() {
         </span>
       </div>
 
-      {/* Mobile: horizontal scroll */}
-      <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:hidden">
+      {/* Mobile: 6-column grid that fits viewport */}
+      <div className="grid grid-cols-6 gap-1.5 md:hidden">
         {WIDGETS.map((widget) => {
           const Icon = widget.icon;
           return (
             <Link key={widget.label} href={widget.href}>
-              <a className="snap-start flex-shrink-0 w-[80px] h-[88px] bg-card rounded-2xl border border-border/20 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary/30 transition-colors">
+              <a className="h-[80px] bg-card rounded-2xl border border-border/20 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-primary/30 transition-colors">
                 <Icon className={`w-5 h-5 ${widget.color}`} />
-                <span className="text-[11px] text-muted-foreground/60 font-medium">{widget.label}</span>
+                <span className="text-[10px] text-muted-foreground/60 font-medium truncate w-full text-center px-0.5">{widget.label}</span>
               </a>
             </Link>
           );

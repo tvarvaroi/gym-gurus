@@ -1074,7 +1074,7 @@ function AppLayout() {
                   className="flex-1 overflow-y-auto pb-16 md:pb-0 flex flex-col"
                   role="main"
                 >
-                  <div className="p-3 sm:p-4 md:p-6 lg:p-8 min-h-full">
+                  <div className="p-3 sm:p-4 md:p-6 lg:p-8 flex-1">
                     <ErrorBoundary>
                       <Router />
                     </ErrorBoundary>

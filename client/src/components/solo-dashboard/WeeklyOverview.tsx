@@ -70,8 +70,8 @@ function ConsolidatedStats({
   ];
 
   return (
-    <motion.div {...animProps} className="bg-card rounded-2xl border border-border/20 p-4 sm:p-6">
-      <div className="grid grid-cols-2 md:flex md:items-center md:justify-between gap-4 md:gap-0">
+    <motion.div {...animProps} className="hidden md:block bg-card rounded-2xl border border-border/20 p-4 sm:p-6">
+      <div className="md:flex md:items-center md:justify-between md:gap-0">
         {stats.map((stat, index) => (
           <div key={stat.label} className="flex items-center gap-0 md:gap-8">
             {index > 0 && <div className="hidden md:block h-14 w-px bg-border/30" />}

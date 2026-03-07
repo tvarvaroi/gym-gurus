@@ -241,7 +241,7 @@ export default function Achievements() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-3 px-3 py-1 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
+        <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-3 pl-3 pr-6 py-1 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
           {categories.map((category) => (
             <Button
               key={category.id}
