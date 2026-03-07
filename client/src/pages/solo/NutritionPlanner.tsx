@@ -316,7 +316,7 @@ export default function NutritionPlanner() {
     : null;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -324,16 +324,16 @@ export default function NutritionPlanner() {
         className="flex items-center justify-between"
       >
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20">
-              <Apple className="h-8 w-8 text-green-400" />
+          <h1 className="text-xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20">
+              <Apple className="h-5 w-5 md:h-8 md:w-8 text-green-400" />
             </div>
             Nutrition{' '}
             <span className="font-light bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
               Planner
             </span>
           </h1>
-          <p className="text-muted-foreground font-light">
+          <p className="hidden md:block text-muted-foreground font-light">
             AI-generated meal plans tailored to your goals
           </p>
         </div>

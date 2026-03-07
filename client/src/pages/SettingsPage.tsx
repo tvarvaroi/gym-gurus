@@ -1028,17 +1028,17 @@ function DangerZoneTab() {
 export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto py-2">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
-            <Settings className="h-7 w-7 text-primary" />
+      <div className="mb-4 md:mb-6">
+        <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+          <div className="p-1.5 md:p-2 rounded-xl bg-primary/10 flex-shrink-0">
+            <Settings className="h-5 w-5 md:h-7 md:w-7 text-primary" />
           </div>
           Account{' '}
           <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Settings
           </span>
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="hidden md:block text-sm text-muted-foreground mt-1">
           Manage your account, security, and preferences.
         </p>
       </div>

@@ -490,7 +490,7 @@ export default function WorkoutGenerator() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -498,16 +498,16 @@ export default function WorkoutGenerator() {
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
       >
         <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex-shrink-0">
-              <Brain className="h-8 w-8 text-purple-400" />
+          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex-shrink-0">
+              <Brain className="h-5 w-5 md:h-8 md:w-8 text-purple-400" />
             </div>
             AI Workout{' '}
             <span className="font-light bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
               Generator
             </span>
           </h1>
-          <p className="text-muted-foreground font-light">
+          <p className="hidden md:block text-muted-foreground font-light">
             Create personalized workouts powered by AI
           </p>
         </div>
