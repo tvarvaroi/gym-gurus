@@ -183,7 +183,7 @@ export default function PremiumCalculatorsHub() {
 
       {/* Stats Overview */}
       <motion.div variants={fadeInUp} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card rounded-2xl border border-border/20 p-5">
+        <div className="bg-background/50 rounded-2xl border border-border/20 p-5">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground/60 font-medium">Total Calculations</p>
             <Calculator className="w-4 h-4 text-primary/40" />
@@ -191,7 +191,7 @@ export default function PremiumCalculatorsHub() {
           <p className="text-3xl font-bold tabular-nums">{allResults.length}</p>
         </div>
 
-        <div className="bg-card rounded-2xl border border-border/20 p-5">
+        <div className="bg-background/50 rounded-2xl border border-border/20 p-5">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground/60 font-medium">Favorites</p>
             <Star className="w-4 h-4 text-primary/40" />
@@ -199,7 +199,7 @@ export default function PremiumCalculatorsHub() {
           <p className="text-3xl font-bold tabular-nums">{favoriteResults.length}</p>
         </div>
 
-        <div className="bg-card rounded-2xl border border-border/20 p-5">
+        <div className="bg-background/50 rounded-2xl border border-border/20 p-5">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground/60 font-medium">This Week</p>
             <TrendingUp className="w-4 h-4 text-primary/40" />

@@ -243,25 +243,25 @@ export default function Recovery() {
               </div>
 
               {/* Recovery Stats */}
-              <div className="flex-1 grid grid-cols-3 gap-4">
+              <div className="flex-1 grid grid-cols-3 gap-2 md:gap-4">
                 <div className="text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                    <span className="text-sm text-muted-foreground">Recovered</span>
+                  <div className="flex items-center justify-center md:justify-start gap-1 md:gap-2 mb-1">
+                    <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 text-emerald-400 shrink-0" />
+                    <span className="text-xs md:text-sm text-muted-foreground">Recovered</span>
                   </div>
                   <p className="text-2xl font-light text-emerald-400">{recoveredCount}</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                    <Activity className="h-4 w-4 text-amber-400" />
-                    <span className="text-sm text-muted-foreground">Recovering</span>
+                  <div className="flex items-center justify-center md:justify-start gap-1 md:gap-2 mb-1">
+                    <Activity className="h-3 w-3 md:h-4 md:w-4 text-amber-400 shrink-0" />
+                    <span className="text-xs md:text-sm text-muted-foreground">Recovering</span>
                   </div>
                   <p className="text-2xl font-light text-amber-400">{recoveringCount}</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                    <AlertTriangle className="h-4 w-4 text-red-400" />
-                    <span className="text-sm text-muted-foreground">Fatigued</span>
+                  <div className="flex items-center justify-center md:justify-start gap-1 md:gap-2 mb-1">
+                    <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-red-400 shrink-0" />
+                    <span className="text-xs md:text-sm text-muted-foreground">Fatigued</span>
                   </div>
                   <p className="text-2xl font-light text-red-400">{fatiguedCount}</p>
                 </div>
