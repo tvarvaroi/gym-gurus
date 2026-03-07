@@ -166,7 +166,7 @@ export default function Recovery() {
   const fatiguedCount = fatigueData.filter((m) => m.recoveryStatus === 'fatigued').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -174,16 +174,16 @@ export default function Recovery() {
         className="flex items-center justify-between"
       >
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20">
-              <Heart className="h-8 w-8 text-rose-400" />
+          <h1 className="text-xl md:text-4xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20">
+              <Heart className="h-5 w-5 md:h-8 md:w-8 text-rose-400" />
             </div>
             Recovery{' '}
             <span className="font-light bg-gradient-to-r from-rose-400 to-pink-400 bg-clip-text text-transparent">
               Status
             </span>
           </h1>
-          <p className="text-muted-foreground font-light">
+          <p className="hidden md:block text-muted-foreground font-light">
             Track your muscle recovery and optimize rest days
           </p>
         </div>
@@ -196,10 +196,10 @@ export default function Recovery() {
         transition={{ delay: 0.1 }}
       >
         <Card className="border-border/50 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row items-center gap-6">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-row items-center gap-4 md:gap-6">
               {/* Score Circle */}
-              <div className="relative w-40 h-40">
+              <div className="relative w-28 h-28 md:w-40 md:h-40 flex-shrink-0">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle
                     cx="80"
@@ -234,7 +234,7 @@ export default function Recovery() {
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.5 }}
-                    className="text-4xl font-light"
+                    className="text-2xl md:text-4xl font-light"
                   >
                     {overallRecovery}%
                   </motion.span>
@@ -303,7 +303,7 @@ export default function Recovery() {
                           selectedMuscle === muscle.muscleGroup ? null : muscle.muscleGroup
                         )
                       }
-                      className={`p-4 rounded-2xl transition-all duration-300 text-left min-h-[110px] ${
+                      className={`p-3 md:p-4 rounded-2xl transition-all duration-300 text-left min-h-[90px] md:min-h-[110px] ${
                         neverTrained
                           ? 'border border-dashed border-border/30 opacity-60'
                           : selectedMuscle === muscle.muscleGroup
@@ -442,10 +442,10 @@ export default function Recovery() {
         transition={{ delay: 0.4 }}
       >
         <Card className="border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-pink-500/5 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-rose-500/20">
-                <Info className="h-6 w-6 text-rose-400" />
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-start gap-3 md:gap-4">
+              <div className="p-2 md:p-3 rounded-xl bg-rose-500/20 flex-shrink-0">
+                <Info className="h-5 w-5 md:h-6 md:w-6 text-rose-400" />
               </div>
               <div className="flex-1">
                 <h3 className="font-medium mb-2">Today's Recommendation</h3>
