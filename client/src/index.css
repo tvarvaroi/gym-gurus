@@ -236,7 +236,7 @@
 
   --sidebar-border: 0 0% 12%;
 
-  --sidebar-primary: 43 54% 55%;
+  --sidebar-primary: 271 81% 60%;
 
   --sidebar-primary-foreground: 0 0% 98%;
 
@@ -244,7 +244,7 @@
 
   --sidebar-accent-foreground: 0 0% 95%;
 
-  --sidebar-ring: 43 54% 55%;
+  --sidebar-ring: 271 81% 60%;
 
   --popover: 0 0% 11%;
 
@@ -252,7 +252,7 @@
 
   --popover-border: 0 0% 18%;
 
-  --primary: 43 54% 55%;
+  --primary: 271 81% 60%;
 
   --primary-foreground: 0 0% 98%;
 
@@ -264,7 +264,7 @@
 
   --muted-foreground: 0 0% 70%;
 
-  --accent: 43 40% 20%;
+  --accent: 271 50% 22%;
 
   --accent-foreground: 0 0% 95%;
 
@@ -273,8 +273,8 @@
   --destructive-foreground: 0 0% 95%;
 
   --input: 15 8% 35%;
-  --ring: 43 54% 55%;
-  --chart-1: 43 54% 55%;
+  --ring: 271 81% 60%;
+  --chart-1: 271 81% 60%;
   --chart-2: 160 84% 45%;
   --chart-3: 250 80% 65%;
   --chart-4: 190 90% 55%;
@@ -291,49 +291,6 @@
   --shadow-lg: 0px 2px 0px 0px hsl(0 0% 0% / 0.20), 0px 4px 6px -1px hsl(0 0% 0% / 0.30);
   --shadow-xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.20), 0px 8px 10px -1px hsl(0 0% 0% / 0.30);
   --shadow-2xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.20);
-}
-
-@layer base {
-  /* Consistent Container Widths */
-  .container-readable {
-    max-width: 65ch;
-  }
-  
-  .container-content {
-    max-width: 1280px;
-  }
-  
-  /* Prevent header overlap with sticky positioning */
-  .sticky-header {
-    position: sticky;
-    top: 0;
-    z-index: var(--z-sticky);
-  }
-  
-  /* Ensure proper scrollable areas */
-  .scrollable-area {
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Fix modal backdrop issues */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: var(--z-overlay);
-  }
-  
-  /* Consistent card spacing */
-  .card-spacing {
-    padding: 1.5rem;
-  }
-  
-  @media (max-width: 640px) {
-    .card-spacing {
-      padding: 1rem;
-    }
-  }
 }
 
 @layer base {
@@ -852,16 +809,6 @@
     hsl(0 0% 100% / 0.15) 0%,
     transparent 60%
   );
-}
-
-/* ================================================
-   HERO PHOTO CUTOUT
-   Soft radial mask + role glow for dashboard hero
-   ================================================ */
-.hero-photo-cutout {
-  mask-image: radial-gradient(circle, black 60%, transparent 100%);
-  -webkit-mask-image: radial-gradient(circle, black 60%, transparent 100%);
-  filter: drop-shadow(0 0 30px hsl(var(--primary) / 0.5));
 }
 
 /* ================================================
