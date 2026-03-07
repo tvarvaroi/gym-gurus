@@ -91,18 +91,18 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   }
 
   return (
-    <motion.div {...animProps} className="pt-2">
+    <motion.div {...animProps} className="pt-3">
       {/* Mobile: compact inline avatar + greeting */}
-      <div className="flex items-center gap-3 md:hidden">
+      <div className="flex items-center gap-4 md:hidden">
         <label className="relative cursor-pointer group flex-shrink-0">
           {hasPhoto ? (
             <img
               src={user.profileImageUrl}
               alt={user.firstName || 'Profile'}
-              className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20"
+              className="w-14 h-14 rounded-full object-cover ring-2 ring-primary/20"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">
               <Camera className="w-5 h-5 text-primary/40" />
             </div>
           )}
