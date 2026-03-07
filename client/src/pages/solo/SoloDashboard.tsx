@@ -65,7 +65,7 @@ export function SoloDashboard() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 space-y-5 md:space-y-8 pb-20">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 space-y-3 md:space-y-6 pb-6">
       {user && !user.onboardingCompleted && <OnboardingPrompt />}
 
       {/* Phase 2: Mobile-first hero */}
