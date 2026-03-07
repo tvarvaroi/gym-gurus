@@ -253,7 +253,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
   return (
     <motion.div
       {...animProps}
-      className="bg-card rounded-2xl pt-5 px-4 pb-3 md:pt-6 md:px-5 md:pb-4 border border-border/20 h-full flex flex-col"
+      className="bg-card rounded-2xl pt-5 px-4 pb-3 md:pt-6 md:px-5 md:pb-4 border border-border/20 flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -448,9 +448,9 @@ function WeeklyOverviewSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
       <div className="bg-card rounded-2xl p-6 border border-border/20 h-28" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
         <div className="bg-card rounded-2xl p-4 border border-border/20 h-[320px]" />
-        <div className="bg-card rounded-2xl p-5 md:p-6 border border-border/20 h-full flex flex-col">
+        <div className="bg-card rounded-2xl p-5 md:p-6 border border-border/20 flex flex-col">
           <div className="h-3 w-20 bg-muted rounded mb-4" />
           <div className="flex-1 grid grid-cols-7 gap-1">
             {[...Array(7)].map((_, i) => (
@@ -507,7 +507,7 @@ export function WeeklyOverview({
         totalPRs={totalPRs}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
         {weeklyData && weeklyData.length > 0 ? (
           <VolumeChart weeklyData={weeklyData} />
         ) : (
