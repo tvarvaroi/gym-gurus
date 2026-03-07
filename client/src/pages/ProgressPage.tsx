@@ -188,26 +188,26 @@ export default function ProgressPage() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="container mx-auto space-y-6"
+      className="container mx-auto space-y-4 md:space-y-6"
     >
       {/* Enhanced Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-6">
         <motion.div
-          className="space-y-3"
+          className="space-y-1 md:space-y-3"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
         >
-          <h1 className="text-2xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
-              <TrendingUp className="h-7 w-7 text-primary" />
+          <h1 className="text-xl md:text-3xl font-extralight tracking-tight font-['Playfair_Display'] flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 rounded-xl bg-primary/10 flex-shrink-0">
+              <TrendingUp className="h-5 w-5 md:h-7 md:w-7 text-primary" />
             </div>
             {isClient || isSolo ? 'My ' : 'Progress '}
             <span className="font-light bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               {isClient || isSolo ? 'Progress' : 'Tracking'}
             </span>
           </h1>
-          <p className="text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
+          <p className="hidden md:block text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
             {isSolo
               ? 'Track your fitness progress and goals'
               : isClient
@@ -350,7 +350,7 @@ export default function ProgressPage() {
 
       {/* Solo users — show progress data or empty state */}
       {isSolo && loadingSoloProgress && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i} className="bg-card/50 backdrop-blur-sm border-border/50">
               <CardContent className="p-6 space-y-4">
@@ -368,7 +368,7 @@ export default function ProgressPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
           >
             <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
               <CardContent className="p-4">
@@ -420,8 +420,8 @@ export default function ProgressPage() {
                   <CardTitle className="text-lg font-light">Weekly Volume</CardTitle>
                   <CardDescription>Total volume lifted per week (kg)</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
+                <CardContent className="-mx-2 md:mx-0">
+                  <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={soloProgress.weeklyData}>
                       <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
                       <XAxis
@@ -459,8 +459,8 @@ export default function ProgressPage() {
                   </CardTitle>
                   <CardDescription>Per-session volume over time (kg)</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
+                <CardContent className="-mx-2 md:mx-0">
+                  <ResponsiveContainer width="100%" height={200}>
                     <AreaChart
                       data={[...soloProgress.history]
                         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -969,8 +969,8 @@ export default function ProgressPage() {
                         )}
                       </div>
                     </CardHeader>
-                    <CardContent className="relative">
-                      <div className="h-[400px] w-full">
+                    <CardContent className="relative -mx-2 md:mx-0">
+                      <div className="h-[250px] md:h-[400px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           {type === 'workout_completion' ? (
                             <BarChart
