@@ -198,7 +198,7 @@ export default function NotificationCenter() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-80 sm:w-96 max-h-[70vh] overflow-hidden rounded-xl border shadow-2xl z-50"
+            className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-[384px] max-h-[70vh] overflow-hidden rounded-xl border shadow-2xl z-50"
             style={{
               background: 'linear-gradient(135deg, rgba(20, 20, 30, 0.98), rgba(15, 15, 25, 0.98))',
               borderColor: 'rgba(255, 255, 255, 0.1)',

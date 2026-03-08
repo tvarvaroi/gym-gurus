@@ -151,13 +151,13 @@ function TodaysWorkoutCard() {
           Based on your recovery, generate a smart workout.
         </p>
         <Link href="/solo/generate">
-          <motion.a
+          <motion.div
             whileHover={prefersReducedMotion ? undefined : { scale: 1.01 }}
             whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
             className="flex items-center justify-center gap-2 w-full py-3.5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
           >
             Generate Workout
-          </motion.a>
+          </motion.div>
         </Link>
       </motion.div>
     );
@@ -232,14 +232,14 @@ function TodaysWorkoutCard() {
               : '/workouts'
           }
         >
-          <motion.a
+          <motion.div
             whileHover={prefersReducedMotion ? undefined : { scale: 1.01 }}
             whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
             className="flex items-center justify-center gap-2 w-full py-3.5 bg-primary text-primary-foreground rounded-xl text-lg font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
           >
             <Play className="w-5 h-5" />
             {isInProgress ? 'Continue Workout' : 'Start Workout'}
-          </motion.a>
+          </motion.div>
         </Link>
       )}
     </motion.div>
@@ -324,10 +324,10 @@ function AICoachSuggestion() {
     <motion.p {...animProps} className="text-sm text-muted-foreground">
       {suggestion.message}{' '}
       <Link href={suggestion.actionHref}>
-        <a className="inline-flex items-center gap-0.5 text-primary font-medium hover:text-primary/80 transition-colors">
+        <div className="inline-flex items-center gap-0.5 text-primary font-medium hover:text-primary/80 transition-colors cursor-pointer">
           {suggestion.action}
           <ChevronRight className="w-3.5 h-3.5" />
-        </a>
+        </div>
       </Link>
     </motion.p>
   );

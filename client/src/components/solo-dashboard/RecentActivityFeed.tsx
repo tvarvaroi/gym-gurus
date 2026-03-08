@@ -139,9 +139,9 @@ export function RecentActivityFeed({
           Recent Activity
         </p>
         <Link href="/progress">
-          <a className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
+          <div className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors cursor-pointer">
             View all <ChevronRight className="w-3 h-3" />
-          </a>
+          </div>
         </Link>
       </div>
 
@@ -157,7 +157,7 @@ export function RecentActivityFeed({
               <div className="space-y-0">
                 {group.items.map((activity, index) => (
                   <Link key={`${activity.type}-${index}`} href="/progress">
-                    <a
+                    <div
                       className={`flex items-center justify-between py-2.5 cursor-pointer group hover:bg-white/[0.03] rounded-lg px-2 -mx-2 transition-colors ${
                         index < group.items.length - 1 ? 'border-b border-border/10' : ''
                       }`}
@@ -185,7 +185,7 @@ export function RecentActivityFeed({
                         </span>
                       )}
                       <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 flex-shrink-0 ml-2 group-hover:text-primary/60 transition-colors" />
-                    </a>
+                    </div>
                   </Link>
                 ))}
               </div>

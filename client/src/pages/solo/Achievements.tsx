@@ -113,6 +113,7 @@ const rarityColors: Record<string, { bg: string; border: string; text: string; g
 export default function Achievements() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(12);
   const prefersReducedMotion = useReducedMotion();
   const { toast } = useToast();
   const toastsShownRef = useRef(false);
@@ -280,7 +281,7 @@ export default function Achievements() {
           </div>
         )}
         <AnimatePresence mode="popLayout">
-          {filteredAchievements.map((achievement, index) => {
+          {filteredAchievements.slice(0, visibleCount).map((achievement, index) => {
             const rarityKey = achievement.rarity || 'common';
             const rarity = rarityColors[rarityKey] || rarityColors.common;
             const AchIcon = getAchievementIcon(achievement.category, achievement.rarity);
@@ -417,6 +418,17 @@ export default function Achievements() {
             );
           })}
         </AnimatePresence>
+        {filteredAchievements.length > visibleCount && (
+          <div className="col-span-full flex justify-center pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setVisibleCount((prev) => prev + 12)}
+              className="min-h-[44px]"
+            >
+              Show more ({filteredAchievements.length - visibleCount} remaining)
+            </Button>
+          </div>
+        )}
       </motion.div>
 
       {/* Achievement Detail Dialog */}

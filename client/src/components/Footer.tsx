@@ -6,7 +6,7 @@ export function Footer() {
 
   return (
     <footer
-      className={`mt-auto border-t bg-background py-6 ${hideOnMobile ? 'hidden md:block' : ''}`}
+      className={`mt-auto border-t bg-background py-6 hidden md:block`}
     >
       <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
         <p>&copy; {new Date().getFullYear()} GymGurus. All rights reserved.</p>

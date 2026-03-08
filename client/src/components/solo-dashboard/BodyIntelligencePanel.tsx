@@ -177,9 +177,9 @@ export function BodyIntelligencePanel({
           Body Intelligence
         </p>
         <Link href="/dashboard/calculators">
-          <a className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
+          <div className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors cursor-pointer">
             View all calculators <ChevronRight className="w-3 h-3" />
-          </a>
+          </div>
         </Link>
       </div>
 
@@ -199,7 +199,7 @@ export function BodyIntelligencePanel({
               <div className="hidden sm:block md:hidden h-12 w-px bg-border/15 mr-4 mt-1 flex-shrink-0" />
             )}
             <Link href={metric.href}>
-              <a className="flex flex-col cursor-pointer group hover:bg-white/[0.03] rounded-lg px-1.5 py-1 -mx-1.5 -my-1 transition-colors">
+              <div className="flex flex-col cursor-pointer group hover:bg-white/[0.03] rounded-lg px-1.5 py-1 -mx-1.5 -my-1 transition-colors">
                 <span className="text-[11px] uppercase tracking-wider text-muted-foreground/50 mb-1">
                   {metric.label}
                 </span>
@@ -220,7 +220,7 @@ export function BodyIntelligencePanel({
                     <span className="text-[11px] text-muted-foreground/40 mt-1">{metric.sub}</span>
                   </>
                 )}
-              </a>
+              </div>
             </Link>
           </div>
         ))}
@@ -229,7 +229,7 @@ export function BodyIntelligencePanel({
       {/* Macro bar visualization */}
       {computed.macros && (
         <Link href="/dashboard/calculators/macros">
-          <a className="block mt-6 cursor-pointer group hover:bg-white/[0.02] rounded-lg p-1 -mx-1 transition-colors">
+          <div className="block mt-6 cursor-pointer group hover:bg-white/[0.02] rounded-lg p-1 -mx-1 transition-colors">
             <div className="h-2 w-full rounded-full overflow-hidden flex">
               <div
                 className="h-full bg-primary"
@@ -244,18 +244,18 @@ export function BodyIntelligencePanel({
                 style={{ width: `${computed.macros.carbs.percent}%` }}
               />
             </div>
-            <div className="flex items-center justify-between mt-1.5">
+            <div className="flex items-center justify-between mt-1.5 flex-wrap gap-1">
               <span className="text-[11px] text-primary/70">
-                Protein {computed.macros.protein.percent}%
+                P {computed.macros.protein.percent}%
               </span>
               <span className="text-[11px] text-amber-400">
-                Fat {computed.macros.fat.percent}%
+                F {computed.macros.fat.percent}%
               </span>
               <span className="text-[11px] text-blue-500/70">
-                Carbs {computed.macros.carbs.percent}%
+                C {computed.macros.carbs.percent}%
               </span>
             </div>
-          </a>
+          </div>
         </Link>
       )}
     </motion.div>

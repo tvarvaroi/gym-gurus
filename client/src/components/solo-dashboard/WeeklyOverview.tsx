@@ -71,13 +71,13 @@ function ConsolidatedStats({
           <div key={stat.label} className="flex items-center gap-0 md:gap-8">
             {index > 0 && <div className="hidden md:block h-14 w-px bg-border/30" />}
             <Link href={stat.href}>
-              <a className="flex flex-col items-center md:items-start md:pl-8 first:md:pl-0 cursor-pointer group hover:bg-white/[0.03] rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors">
+              <div className="flex flex-col items-center md:items-start md:pl-8 first:md:pl-0 cursor-pointer group hover:bg-white/[0.03] rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors">
                 <span className="text-3xl md:text-4xl font-bold tabular-nums leading-none group-hover:text-primary transition-colors">
                   {stat.value}
                 </span>
                 <span className="text-xs text-muted-foreground/60 mt-1">{stat.label}</span>
                 <span className="text-[11px] text-muted-foreground/40 mt-1">{stat.sub}</span>
-              </a>
+              </div>
             </Link>
           </div>
         ))}
@@ -109,7 +109,7 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
 
   return (
     <Link href="/progress">
-      <motion.a
+      <motion.div
         {...animProps}
         className="block bg-card rounded-2xl p-4 border border-border/20 cursor-pointer group hover:border-primary/30 transition-colors"
       >
@@ -169,7 +169,7 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </motion.a>
+      </motion.div>
     </Link>
   );
 }
@@ -278,7 +278,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
 
             return (
               <Link key={i} href="/schedule">
-                <a
+                <div
                   className={`rounded-xl p-2 min-w-[64px] flex-shrink-0 snap-start md:min-w-0 md:flex-shrink flex flex-col items-center cursor-pointer hover:bg-white/[0.04] transition-colors ${
                     isToday
                       ? 'bg-primary/10 ring-1 ring-primary/30'
@@ -369,7 +369,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
                       <span className="text-xs text-muted-foreground/25 text-center">Rest</span>
                     )}
                   </div>
-                </a>
+                </div>
               </Link>
             );
           })}
@@ -377,11 +377,11 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
       </div>
 
       {/* Scroll hint dots — mobile only */}
-      <div className="flex justify-center gap-1 mt-2 md:hidden">
+      <div className="flex justify-center gap-1.5 mt-2 md:hidden">
         {Array.from({ length: 7 }).map((_, i) => (
           <div
             key={i}
-            className={`w-1.5 h-1.5 rounded-full ${i === todayIndex ? 'bg-primary' : 'bg-muted-foreground/20'}`}
+            className={`w-2 h-2 rounded-full ${i === todayIndex ? 'bg-primary' : 'bg-muted-foreground/30'}`}
           />
         ))}
       </div>
@@ -389,7 +389,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
       {/* Week summary — bottom bar */}
       {weekSummary && weekSummary.totalVolume > 0 ? (
         <Link href="/progress">
-          <a className="block mt-4 pt-3 border-t border-border/10 cursor-pointer group hover:bg-white/[0.02] rounded-lg transition-colors">
+          <div className="block mt-4 pt-3 border-t border-border/10 cursor-pointer group hover:bg-white/[0.02] rounded-lg transition-colors">
             <div className="grid grid-cols-5 gap-1">
               <div className="text-center">
                 <span className="text-base font-bold tabular-nums group-hover:text-primary transition-colors">
@@ -424,7 +424,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
                 <span className="text-[11px] text-muted-foreground/30 block">RPE</span>
               </div>
             </div>
-          </a>
+          </div>
         </Link>
       ) : (
         !hasAnyWorkouts && (

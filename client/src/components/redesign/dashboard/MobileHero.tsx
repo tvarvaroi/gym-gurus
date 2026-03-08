@@ -114,7 +114,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
           <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
         </label>
         <div className="flex-1 min-w-0">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground/50 font-medium">{greeting}</p>
+          <p className="text-xs tracking-widest text-muted-foreground/50 font-medium">{greeting}</p>
           <h1 className="text-xl font-bold font-['Playfair_Display'] leading-tight truncate">
             {user?.firstName || 'Warrior'}
           </h1>

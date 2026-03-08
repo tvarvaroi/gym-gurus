@@ -42,10 +42,10 @@ function OnboardingPrompt() {
           </p>
         </div>
         <Link href="/solo/onboarding">
-          <a className="inline-flex items-center gap-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+          <div className="inline-flex items-center gap-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer">
             Get Started
             <ChevronRight className="w-4 h-4" />
-          </a>
+          </div>
         </Link>
       </div>
     </motion.div>

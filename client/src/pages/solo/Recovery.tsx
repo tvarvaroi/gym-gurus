@@ -292,7 +292,7 @@ export default function Recovery() {
                       }
                       className={`p-3 md:p-4 rounded-2xl transition-all duration-300 text-left min-h-[90px] md:min-h-[110px] ${
                         neverTrained
-                          ? 'border border-dashed border-border/30 opacity-60'
+                          ? 'border border-dashed border-border/30 bg-card/30 opacity-60'
                           : selectedMuscle === muscle.muscleGroup
                             ? 'border border-rose-500/50 bg-rose-500/10'
                             : `border ${getStatusBg(muscle.recoveryStatus)}`

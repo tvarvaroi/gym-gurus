@@ -6,6 +6,15 @@
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Mobile touch targets: ensure inputs/buttons meet 44px minimum */
+@media (max-width: 640px) {
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"],
+  input[type="tel"], input[type="url"], select, textarea {
+    min-height: 44px;
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+}
+
 @keyframes skeleton-shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }

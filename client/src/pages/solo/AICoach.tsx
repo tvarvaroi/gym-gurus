@@ -680,17 +680,17 @@ export default function AICoach() {
                     <p className="text-xs text-muted-foreground/60 uppercase tracking-wider text-center">
                       Try asking
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {[
-                        'Create a push workout for intermediate lifters',
-                        'What should I eat on rest days?',
-                        'How often should I train each muscle group?',
-                        'Help me break through a bench press plateau',
+                        'Create a push workout',
+                        'Rest day nutrition tips',
+                        'Training frequency guide',
+                        'Break a bench plateau',
                       ].map((prompt) => (
                         <button
                           key={prompt}
                           onClick={() => handleSend(prompt)}
-                          className="text-left px-3 py-2.5 rounded-lg border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-all min-h-[48px] flex items-start"
+                          className="text-left px-3 py-2 rounded-lg border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-all min-h-[44px] flex items-center"
                         >
                           {prompt}
                         </button>

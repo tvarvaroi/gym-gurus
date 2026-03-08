@@ -1039,29 +1039,29 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="profile">
-        <TabsList className="mb-6 grid w-full grid-cols-5">
-          <TabsTrigger value="profile" className="gap-1.5">
+        <TabsList className="mb-6 grid w-full grid-cols-5 h-11">
+          <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm min-h-[44px]">
             <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            Profile
+            <span className="hidden sm:inline">Profile</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-1.5">
+          <TabsTrigger value="security" className="gap-1 text-xs sm:text-sm min-h-[44px]">
             <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            Security
+            <span className="hidden sm:inline">Security</span>
           </TabsTrigger>
-          <TabsTrigger value="subscription" className="gap-1.5">
+          <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm min-h-[44px]">
             <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            Plan
+            <span className="hidden sm:inline">Plan</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-1.5">
+          <TabsTrigger value="notifications" className="gap-1 text-xs sm:text-sm min-h-[44px]">
             <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            Alerts
+            <span className="hidden sm:inline">Alerts</span>
           </TabsTrigger>
           <TabsTrigger
             value="danger"
-            className="gap-1.5 text-destructive data-[state=active]:text-destructive"
+            className="gap-1 text-xs sm:text-sm min-h-[44px] text-destructive data-[state=active]:text-destructive"
           >
             <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            Danger
+            <span className="hidden sm:inline">Danger</span>
           </TabsTrigger>
         </TabsList>
 

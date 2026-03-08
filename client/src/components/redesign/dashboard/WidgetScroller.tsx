@@ -34,16 +34,16 @@ export function WidgetScroller() {
         </span>
       </div>
 
-      {/* Mobile: 6-column grid that fits viewport */}
-      <div className="grid grid-cols-6 gap-1.5 md:hidden">
+      {/* Mobile: 3-column grid for readability */}
+      <div className="grid grid-cols-3 gap-2 md:hidden">
         {WIDGETS.map((widget) => {
           const Icon = widget.icon;
           return (
             <Link key={widget.label} href={widget.href}>
-              <a className="h-[80px] bg-card rounded-2xl border border-border/20 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-primary/30 transition-colors">
+              <div className="h-[72px] bg-card rounded-2xl border border-border/20 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-primary/30 transition-colors">
                 <Icon className={`w-5 h-5 ${widget.color}`} />
-                <span className="text-[10px] text-muted-foreground/60 font-medium truncate w-full text-center px-0.5">{widget.label}</span>
-              </a>
+                <span className="text-xs text-muted-foreground/60 font-medium">{widget.label}</span>
+              </div>
             </Link>
           );
         })}
@@ -55,12 +55,12 @@ export function WidgetScroller() {
           const Icon = widget.icon;
           return (
             <Link key={widget.label} href={widget.href}>
-              <a className="bg-card rounded-2xl border border-border/20 p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/30 group transition-colors">
+              <div className="bg-card rounded-2xl border border-border/20 p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/30 group transition-colors">
                 <Icon className={`w-6 h-6 ${widget.color} group-hover:scale-110 transition-transform`} />
                 <span className="text-xs text-muted-foreground/60 group-hover:text-foreground transition-colors font-medium">
                   {widget.label}
                 </span>
-              </a>
+              </div>
             </Link>
           );
         })}
