@@ -55,7 +55,7 @@ function getCategoryFromType(type: string | null): string {
   if (type.includes('streak')) return 'consistency';
   if (type.includes('strength') || type.includes('1rm') || type.includes('pr')) return 'strength';
   if (type.includes('social') || type.includes('share') || type.includes('leaderboard'))
-    return 'social';
+    return 'workout';
   return 'workout';
 }
 

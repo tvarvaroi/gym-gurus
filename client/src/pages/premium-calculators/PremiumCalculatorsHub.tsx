@@ -140,7 +140,7 @@ export default function PremiumCalculatorsHub() {
   const { user } = useUser();
 
   useSEO({
-    title: 'Premium Calculators | GymGurus',
+    title: 'Fitness Calculators | GymGurus',
     description: 'Access premium fitness calculators with saved results and progress tracking',
     robots: 'noindex, nofollow', // Authenticated page - don't index
   });
@@ -168,7 +168,7 @@ export default function PremiumCalculatorsHub() {
       <motion.div variants={fadeInUp}>
         <PageHeader
           icon={<Calculator className="h-full w-full" />}
-          title="Premium"
+          title="Fitness"
           titleAccent="Calculators"
           subtitle="Track your progress with saved results and personalized insights"
         />

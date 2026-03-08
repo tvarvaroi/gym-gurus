@@ -51,14 +51,9 @@ function ConsolidatedStats({
     {
       value: streak,
       label: 'Streak',
-      sub: (
-        <span className="flex items-center gap-0.5 justify-center md:justify-start">
-          {Array.from({ length: Math.min(streak, 7) }).map((_, i) => (
-            <span key={i} className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
-          ))}
-          {streak === 0 && <span>days</span>}
-        </span>
-      ),
+      sub: streak > 0
+        ? `${streak} day${streak !== 1 ? 's' : ''}`
+        : 'days',
       href: '/solo/achievements',
     },
     {
@@ -121,7 +116,7 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
         <div className="flex items-center justify-between mb-1">
           <div>
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
-              Weekly Volume
+              Volume Trend
             </p>
             <p className="text-3xl font-bold tabular-nums leading-tight group-hover:text-primary transition-colors">
               {formatVolume(totalVolume)}

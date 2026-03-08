@@ -299,7 +299,7 @@ const AppSidebar = memo(() => {
                     height: '82px',
                     padding: '3px',
                     background:
-                      'linear-gradient(135deg, rgba(201, 168, 85, 0.12), rgba(13, 148, 136, 0.12))',
+                      'linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.08))',
                     backdropFilter: 'blur(24px)',
                     boxShadow:
                       '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
@@ -321,7 +321,7 @@ const AppSidebar = memo(() => {
                       transition={{ duration: 0.3 }}
                       style={{
                         background:
-                          'linear-gradient(135deg, rgba(201, 168, 85, 0.3), rgba(13, 148, 136, 0.3))',
+                          'linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--primary) / 0.2))',
                         filter: 'blur(2px)',
                       }}
                     />
@@ -362,7 +362,7 @@ const AppSidebar = memo(() => {
                   className="relative w-12 h-12 md:w-16 md:h-16 rounded-xl p-1 shrink-0"
                   style={{
                     background:
-                      'linear-gradient(135deg, rgba(201, 168, 85, 0.12), rgba(13, 148, 136, 0.12))',
+                      'linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.08))',
                     backdropFilter: 'blur(24px)',
                     boxShadow:
                       '0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
@@ -393,7 +393,7 @@ const AppSidebar = memo(() => {
                     style={{
                       fontFamily: "'Playfair Display', serif",
                       background:
-                        'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
+                        'linear-gradient(90deg, hsl(var(--primary)) 0%, #e5e4e2 50%, hsl(var(--primary) / 0.6) 100%)',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       letterSpacing: '0.2em',
@@ -405,7 +405,7 @@ const AppSidebar = memo(() => {
                     className="w-full h-px my-1 md:my-1.5"
                     style={{
                       background:
-                        'linear-gradient(90deg, rgba(201, 168, 85, 0.6), rgba(13, 148, 136, 0.6))',
+                        'linear-gradient(90deg, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.3))',
                     }}
                   />
                   <span

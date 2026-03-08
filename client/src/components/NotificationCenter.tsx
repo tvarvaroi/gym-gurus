@@ -188,9 +188,11 @@ export default function NotificationCenter() {
         )}
       </button>
 
-      {/* Dropdown panel */}
+      {/* Backdrop + Dropdown panel */}
       <AnimatePresence>
         {isOpen && (
+          <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -290,6 +292,7 @@ export default function NotificationCenter() {
               )}
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

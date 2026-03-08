@@ -40,13 +40,22 @@ export async function createNotification(
 export async function getUserNotifications(userId: string, limit: number = 30, offset: number = 0) {
   const database = await db;
 
-  return database
+  const results = await database
     .select()
     .from(notifications)
     .where(eq(notifications.userId, userId))
     .orderBy(desc(notifications.createdAt))
     .limit(limit)
     .offset(offset);
+
+  // Auto-expire time-sensitive notifications older than 24 hours
+  return results.filter(n => {
+    if (n.type === 'streak_danger') {
+      const ageHours = (Date.now() - new Date(n.createdAt).getTime()) / (1000 * 60 * 60);
+      return ageHours < 24;
+    }
+    return true;
+  });
 }
 
 // Get unread notification count

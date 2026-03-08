@@ -308,7 +308,7 @@ export async function updateAchievementProgress(
   }
 }
 
-// Get all achievements with user's progress
+// Get all achievements with user's progress (including computed partial progress)
 export async function getUserAchievementsWithProgress(userId: string) {
   const database = await db;
 
@@ -320,13 +320,49 @@ export async function getUserAchievementsWithProgress(userId: string) {
 
   const progressMap = new Map(userProgress.map((up) => [up.achievementId, up]));
 
+  // Fetch live stats for computing partial progress on unearned achievements
+  const stats = await getRetroactiveWorkoutStats(userId);
+
   return allAchievements.map((achievement) => {
-    const progress = progressMap.get(achievement.id);
+    const stored = progressMap.get(achievement.id);
+    if (stored) {
+      return {
+        ...achievement,
+        earned: Number(stored.progress) >= 100,
+        earnedAt: stored.earnedAt,
+        progress: Number(stored.progress),
+      };
+    }
+
+    // Compute partial progress from live stats
+    let computedProgress = 0;
+    const target = Number(achievement.requirementValue) || 1;
+    switch (achievement.requirementType) {
+      case 'total_workouts':
+        computedProgress = Math.min(99, Math.round((stats.totalWorkouts / target) * 100));
+        break;
+      case 'streak_days':
+        computedProgress = Math.min(99, Math.round((stats.streakDays / target) * 100));
+        break;
+      case 'total_volume':
+        computedProgress = Math.min(99, Math.round((stats.totalVolume / target) * 100));
+        break;
+      case 'total_reps':
+        computedProgress = Math.min(99, Math.round((stats.totalReps / target) * 100));
+        break;
+      case 'total_sets':
+        computedProgress = Math.min(99, Math.round((stats.totalSets / target) * 100));
+        break;
+      case 'total_prs':
+        computedProgress = Math.min(99, Math.round((stats.prCount / target) * 100));
+        break;
+    }
+
     return {
       ...achievement,
-      earned: progress ? Number(progress.progress) >= 100 : false,
-      earnedAt: progress?.earnedAt,
-      progress: progress ? Number(progress.progress) : 0,
+      earned: false,
+      earnedAt: null,
+      progress: computedProgress,
     };
   });
 }

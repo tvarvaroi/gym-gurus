@@ -99,7 +99,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
             <img
               src={user.profileImageUrl}
               alt={user.firstName || 'Profile'}
-              className="w-14 h-14 rounded-full object-cover ring-2 ring-primary/20"
+              className="w-14 h-14 rounded-full object-cover object-top ring-2 ring-primary/20"
             />
           ) : (
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20">

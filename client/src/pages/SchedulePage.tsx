@@ -286,10 +286,10 @@ function SoloScheduleView() {
         transition={{ delay: 0.1 }}
         className="grid grid-cols-2 gap-4"
       >
-        <Card className="border-green-500/20 bg-gradient-to-br from-green-500/5 to-green-500/0">
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/0">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-primary" />
             </div>
             <div>
               <p className="text-2xl font-bold tabular-nums">{completedCount}</p>
@@ -482,8 +482,6 @@ function TrainerClientSchedule() {
   // Create appointment mutation
   const createAppointmentMutation = useMutation({
     mutationFn: async (data: AppointmentFormData) => {
-      console.log('🔍 [SchedulePage] Creating appointment with data:', data);
-      console.log('🔍 [SchedulePage] workoutId:', data.workoutId, 'typeof:', typeof data.workoutId);
 
       // Create appointment (backend will automatically create workout assignment if workoutId is provided)
       const appointmentData = {
@@ -509,12 +507,7 @@ function TrainerClientSchedule() {
           ? format(data.recurrenceEndDate, 'yyyy-MM-dd')
           : undefined,
       };
-      console.log('📤 [SchedulePage] Sending appointment (with workout fields):', appointmentData);
       const appointment = await apiRequest('POST', '/api/appointments', appointmentData);
-      console.log(
-        '✅ [SchedulePage] Appointment created (backend handled workout assignment):',
-        appointment
-      );
 
       return appointment;
     },

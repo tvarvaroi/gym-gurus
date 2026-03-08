@@ -23,7 +23,7 @@ function getContextualSuggestion(ctx: {
   if (ctx.lastWorkoutDate) {
     const daysSinceLast = Math.floor((Date.now() - new Date(ctx.lastWorkoutDate).getTime()) / (1000 * 60 * 60 * 24));
     if (daysSinceLast >= 3) {
-      return { message: `It's been ${daysSinceLast} days since your last workout. A quick session can help maintain momentum!`, action: 'Start Workout', actionHref: '/solo/generate' };
+      return { message: `It's been ${daysSinceLast} days since your last workout. A quick session can help maintain momentum!`, action: 'Generate Workout', actionHref: '/solo/generate' };
     }
   }
   const fatigueData = ctx.fatigueData;
@@ -38,7 +38,7 @@ function getContextualSuggestion(ctx: {
       return { message: `Your ${ready} are recovered and ready to train.`, action: 'View Recovery', actionHref: '/solo/recovery' };
     }
     if (fatigued.length === 0 && recovered.length > 0) {
-      return { message: 'All muscle groups are fully recovered. Great time for your next workout!', action: 'Start Workout', actionHref: '/solo/generate' };
+      return { message: 'All muscle groups are fully recovered. Great time for your next workout!', action: 'Generate Workout', actionHref: '/solo/generate' };
     }
   }
   if (ctx.streak && ctx.streak >= 3) {

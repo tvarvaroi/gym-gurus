@@ -130,7 +130,7 @@ export function BodyIntelligencePanel({
     metrics.push({
       label: 'Ideal Weight',
       value: `${formatNum(computed.idealWeight.value)} kg`,
-      sub: 'Devine formula',
+      sub: 'Devine Formula',
       href: '/dashboard/calculators/ideal-weight',
     });
   }
@@ -236,7 +236,7 @@ export function BodyIntelligencePanel({
                 style={{ width: `${computed.macros.protein.percent}%` }}
               />
               <div
-                className="h-full bg-amber-500/60"
+                className="h-full bg-amber-400"
                 style={{ width: `${computed.macros.fat.percent}%` }}
               />
               <div
@@ -248,7 +248,7 @@ export function BodyIntelligencePanel({
               <span className="text-[11px] text-primary/70">
                 Protein {computed.macros.protein.percent}%
               </span>
-              <span className="text-[11px] text-amber-500/70">
+              <span className="text-[11px] text-amber-400">
                 Fat {computed.macros.fat.percent}%
               </span>
               <span className="text-[11px] text-blue-500/70">

@@ -104,7 +104,8 @@ export default function PremiumBMICalc() {
             >
               {results.bmi.toFixed(1)}
             </p>
-            <p className="text-xl font-medium mt-4">{results.category}</p>
+            <p className="text-xs text-muted-foreground mt-1">kg/m²</p>
+            <p className="text-xl font-medium mt-3">{results.category}</p>
             <p className="text-sm text-muted-foreground mt-2">{results.healthRisk}</p>
           </motion.div>
         </div>
