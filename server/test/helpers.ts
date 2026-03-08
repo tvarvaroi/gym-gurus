@@ -66,8 +66,8 @@ export interface TestClientOptions {
   status?: string;
   age?: number | null;
   gender?: string | null;
-  height?: string | null;
-  weight?: string | null;
+  height?: number | null;
+  weight?: number | null;
 }
 
 /** Options accepted by createTestWorkout. */

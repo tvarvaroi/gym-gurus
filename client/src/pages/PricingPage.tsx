@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { getPlanDisplayName } from '@/lib/roles';
 
 interface SubscriptionStatus {
   status: string | null;
@@ -230,7 +231,7 @@ export default function PricingPage() {
           {isActive && (
             <p className="text-green-400 text-lg">
               You&apos;re subscribed to the{' '}
-              <span className="font-semibold capitalize">{currentTier}</span> plan.
+              <span className="font-semibold">{getPlanDisplayName(currentTier)}</span> plan.
             </p>
           )}
         </div>

@@ -26,6 +26,8 @@ full-app-browser-test.cjs
 # Claude Code
 .claude/settings.local.json
 .claude/agent-memory-local/
+.claude/skills/nano-banana.md
+.claude/skills/ui-ux-pro-max/
 CLAUDE.local.md
 
 # Sensitive files

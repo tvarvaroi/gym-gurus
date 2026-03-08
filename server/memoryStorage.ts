@@ -10,10 +10,6 @@ import {
   type Appointment, type InsertAppointment
 } from "@shared/schema";
 import type { IStorage } from "./storage";
-import {
-  getMockClients,
-  getMockProgress
-} from "./mockData";
 
 // Helper to generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -105,15 +101,6 @@ export class MemoryStorage implements IStorage {
       this.exercises.set(exercise.id, exercise);
     });
 
-    // Initialize with mock clients for demo-trainer-123
-    const mockClients = getMockClients("demo-trainer-123");
-    mockClients.forEach(client => {
-      this.clients.set(client.id, client);
-
-      // Add mock progress entries for each client
-      const progress = getMockProgress(client.id);
-      this.progressEntries.set(client.id, progress);
-    });
   }
 
   // Users - Replit Auth operations
@@ -186,7 +173,8 @@ export class MemoryStorage implements IStorage {
       hipCircumference: insertClient.hipCircumference || null,
       createdAt: new Date(),
       lastSession: insertClient.lastSession || null,
-      nextSession: insertClient.nextSession || null
+      nextSession: insertClient.nextSession || null,
+      deletedAt: null,
     };
     this.clients.set(client.id, client);
     return client;

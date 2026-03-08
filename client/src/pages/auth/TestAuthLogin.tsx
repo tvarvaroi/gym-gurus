@@ -1,7 +1,5 @@
 // Minimal non-lazy test component
 export default function TestAuthLogin() {
-  console.log('[TestAuthLogin] Rendering!');
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="max-w-md w-full bg-card border border-border rounded-2xl p-8">

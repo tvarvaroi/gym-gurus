@@ -14,7 +14,7 @@ import {
   users,
   userMuscleFatigue,
 } from '../../shared/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, isNull } from 'drizzle-orm';
 
 // ---------- Provider Setup ----------
 
@@ -158,7 +158,7 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
       const [user] = await db
         .select({ firstName: users.firstName, lastName: users.lastName })
         .from(users)
-        .where(eq(users.id, userId))
+        .where(and(eq(users.id, userId), isNull(users.deletedAt)))
         .limit(1);
       if (user?.firstName)
         parts.push(`Name: ${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`);
@@ -1055,7 +1055,7 @@ async function generateFallbackChatResponse(userMessage: string, userId?: string
       const [user] = await db
         .select({ firstName: users.firstName })
         .from(users)
-        .where(eq(users.id, userId))
+        .where(and(eq(users.id, userId), isNull(users.deletedAt)))
         .limit(1);
 
       if (profile) {

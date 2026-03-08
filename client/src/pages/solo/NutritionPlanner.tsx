@@ -342,7 +342,7 @@ export default function NutritionPlanner() {
           <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-lg font-light flex items-center gap-2">
-                <Settings2 className="h-5 w-5 text-green-400" />
+                <Settings2 className="h-5 w-5 text-primary" />
                 Nutrition Preferences
               </CardTitle>
               <CardDescription>Tell us about your dietary goals and needs</CardDescription>
@@ -360,7 +360,7 @@ export default function NutritionPlanner() {
                       onClick={() => setNutritionGoal(opt.value)}
                       className={
                         nutritionGoal === opt.value
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : 'border-border/50'
                       }
                     >
@@ -410,7 +410,7 @@ export default function NutritionPlanner() {
                       onClick={() => setMealsPerDay(n)}
                       className={`flex-1 ${
                         mealsPerDay === n
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : 'border-border/50'
                       }`}
                     >
@@ -433,8 +433,8 @@ export default function NutritionPlanner() {
                         onClick={() => toggleDietary(opt)}
                         className={`px-2 py-2 min-h-[36px] inline-flex items-center justify-center text-xs rounded-full border transition-colors ${
                           active
-                            ? 'bg-green-500/20 border-green-500/50 text-green-400'
-                            : 'bg-transparent border-border/50 text-muted-foreground hover:border-green-500/30'
+                            ? 'bg-primary/20 border-primary/50 text-primary'
+                            : 'bg-transparent border-border/50 text-muted-foreground hover:border-primary/30'
                         }`}
                       >
                         {opt}
@@ -460,7 +460,7 @@ export default function NutritionPlanner() {
                       onClick={() => setBudget(opt.value)}
                       className={`flex-1 text-xs ${
                         budget === opt.value
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : 'border-border/50'
                       }`}
                     >
@@ -489,7 +489,7 @@ export default function NutritionPlanner() {
               <Button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {isGenerating ? (
                   <>
@@ -512,7 +512,7 @@ export default function NutritionPlanner() {
                   </div>
                   <a
                     href="/pricing"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-medium"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium"
                   >
                     <Crown className="h-3 w-3" />
                     Upgrade Plan
@@ -568,17 +568,17 @@ export default function NutritionPlanner() {
                 className="space-y-4"
               >
                 {/* Daily Totals */}
-                <Card className="border-green-500/30 bg-gradient-to-br from-green-500/5 to-emerald-500/5">
+                <Card className="border-primary/30 bg-primary/5">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base font-light flex items-center gap-2">
-                      <Flame className="h-4 w-4 text-green-400" />
+                      <Flame className="h-4 w-4 text-primary" />
                       Daily Totals
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-4 gap-3 text-center">
                       <div>
-                        <p className="text-2xl font-light text-green-400">
+                        <p className="text-2xl font-light text-primary">
                           {mealPlan.totalCalories}
                         </p>
                         <p className="text-xs text-muted-foreground">kcal</p>
@@ -626,7 +626,7 @@ export default function NutritionPlanner() {
                         <CardHeader className="pb-2 pt-4">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-sm font-medium flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-xs text-green-400 font-semibold">
+                              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs text-primary font-semibold">
                                 {i + 1}
                               </div>
                               {meal.name}
@@ -686,7 +686,7 @@ export default function NutritionPlanner() {
                     <Card className="border-border/40 bg-muted/20">
                       <CardHeader className="pb-2 pt-4">
                         <CardTitle className="text-sm font-medium flex items-center gap-2">
-                          <ShoppingCart className="h-4 w-4 text-green-400" />
+                          <ShoppingCart className="h-4 w-4 text-primary" />
                           Grocery List
                         </CardTitle>
                       </CardHeader>
@@ -719,8 +719,8 @@ export default function NutritionPlanner() {
                     disabled={isSaving || isSaved}
                     className={`flex-1 ${
                       isSaved
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                        ? 'bg-primary/20 text-primary border border-primary/30'
+                        : 'bg-primary text-primary-foreground'
                     }`}
                     variant={isSaved ? 'outline' : 'default'}
                   >
@@ -790,7 +790,7 @@ export default function NutritionPlanner() {
           <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-lg font-light flex items-center gap-2">
-                <History className="h-5 w-5 text-green-400" />
+                <History className="h-5 w-5 text-primary" />
                 My Saved Plans
               </CardTitle>
               <CardDescription>
@@ -802,7 +802,7 @@ export default function NutritionPlanner() {
                 {savedPlans.map((plan: any) => (
                   <div
                     key={plan.id}
-                    className="p-3 rounded-xl border border-border/40 bg-card/30 hover:border-green-500/30 transition-colors group"
+                    className="p-3 rounded-xl border border-border/40 bg-card/30 hover:border-primary/30 transition-colors group"
                   >
                     <div className="flex items-center justify-between mb-2 gap-3">
                       <div className="min-w-0 flex-1">
@@ -816,7 +816,7 @@ export default function NutritionPlanner() {
                         className={`text-[10px] shrink-0 ml-2 ${
                           plan.source === 'ai_chat'
                             ? 'border-purple-500/30 text-purple-400'
-                            : 'border-green-500/30 text-green-400'
+                            : 'border-primary/30 text-primary'
                         }`}
                       >
                         {plan.source === 'ai_chat' ? 'AI Chat' : 'Generated'}
@@ -829,7 +829,7 @@ export default function NutritionPlanner() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1 text-xs h-9 border-green-500/20 text-green-400 hover:bg-green-500/10"
+                        className="flex-1 text-xs h-9 border-primary/20 text-primary hover:bg-primary/10"
                         onClick={() => handleLoadPlan(plan.id)}
                       >
                         <Download className="h-3 w-3 mr-1" />

@@ -86,12 +86,13 @@ interface ClientAPI {
   // Biometric data
   age: number | null;
   gender: 'male' | 'female' | null;
-  height: string | null;
-  weight: string | null;
+  height: number | null;
+  weight: number | null;
   activityLevel: string | null;
   neckCircumference: string | null;
   waistCircumference: string | null;
   hipCircumference: string | null;
+  deletedAt: string | null;
 }
 
 // Helper to convert API response to Client schema type
@@ -101,6 +102,7 @@ function apiToClient(apiClient: ClientAPI): ClientSchema {
     createdAt: new Date(apiClient.createdAt),
     lastSession: apiClient.lastSession ? new Date(apiClient.lastSession) : null,
     nextSession: apiClient.nextSession ? new Date(apiClient.nextSession) : null,
+    deletedAt: apiClient.deletedAt ? new Date(apiClient.deletedAt) : null,
   };
 }
 
@@ -742,8 +744,8 @@ export default function ClientDetailsPage() {
         const biometrics: ClientBiometrics = {
           age: client.age ?? undefined,
           gender: (client.gender as 'male' | 'female') ?? undefined,
-          height: client.height ? parseFloat(client.height as string) : undefined,
-          weight: client.weight ? parseFloat(client.weight as string) : undefined,
+          height: client.height ?? undefined,
+          weight: client.weight ?? undefined,
           activityLevel:
             (client.activityLevel as
               | 'active'
@@ -1194,7 +1196,6 @@ export default function ClientDetailsPage() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Add Progress clicked');
                 setShowProgressModal(true);
               }}
             >
@@ -1208,7 +1209,6 @@ export default function ClientDetailsPage() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('View Progress clicked');
                 setShowProgressOverview(true);
               }}
             >

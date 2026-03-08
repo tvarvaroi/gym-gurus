@@ -155,10 +155,10 @@ export function ActionZone() {
       <p className="text-sm text-muted-foreground px-1">
         {suggestion.message}{' '}
         <Link href={suggestion.actionHref}>
-          <a className="inline-flex items-center gap-0.5 text-primary font-medium hover:text-primary/80 transition-colors">
+          <div className="inline-flex items-center gap-0.5 text-primary font-medium hover:text-primary/80 transition-colors cursor-pointer">
             {suggestion.action}
             <ChevronRight className="w-3.5 h-3.5" />
-          </a>
+          </div>
         </Link>
       </p>
     </motion.div>

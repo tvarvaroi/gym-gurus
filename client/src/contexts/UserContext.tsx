@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
+import { isPublicRoute } from '@/lib/routeConfig';
 
 // User type with role
 export interface User {
@@ -20,6 +21,7 @@ export interface User {
   subscriptionTier?: 'solo' | 'trainer' | 'pro' | null;
   subscriptionCurrentPeriodEnd?: string | null;
   trialEndsAt?: string | null;
+  notificationPreferences?: Record<string, boolean>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -155,18 +157,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const currentPath = location || window.location.pathname;
 
   // Check if current page is public (no auth needed) - updates reactively with location changes
-  const isPublicPage =
-    currentPath === '/' ||
-    currentPath === '/terms' ||
-    currentPath === '/privacy' ||
-    currentPath.startsWith('/calculators') ||
-    currentPath.startsWith('/auth/') ||
-    currentPath === '/preview-login' ||
-    currentPath === '/test-login' ||
-    currentPath === '/test-auth-login';
-
-  // DEBUG: Log to verify public page detection
-  console.log('[UserContext] currentPath:', currentPath, 'isPublicPage:', isPublicPage);
+  const isPublicPage = isPublicRoute(currentPath);
 
   // Fetch current user (disabled on public pages to prevent unnecessary requests)
   const {

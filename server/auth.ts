@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { db } from './db';
 import { users, passwordResetTokens, type User } from '../shared/schema';
 
@@ -381,7 +381,7 @@ export async function getUserById(userId: string): Promise<User | null> {
 export async function getUserByEmail(email: string): Promise<User | null> {
   try {
     const user = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
+      where: and(eq(users.email, email.toLowerCase()), isNull(users.deletedAt)),
     });
 
     return user || null;

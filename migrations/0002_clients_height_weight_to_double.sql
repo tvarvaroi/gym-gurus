@@ -1,0 +1,2 @@
+ALTER TABLE "clients" ALTER COLUMN "height" SET DATA TYPE double precision USING height::double precision;--> statement-breakpoint
+ALTER TABLE "clients" ALTER COLUMN "weight" SET DATA TYPE double precision USING weight::double precision;

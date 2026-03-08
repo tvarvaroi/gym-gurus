@@ -158,8 +158,8 @@ async function updateClients() {
         const genericData = {
           age: 30 + Math.floor(Math.random() * 20),
           gender: Math.random() > 0.5 ? 'male' : 'female',
-          height: (160 + Math.floor(Math.random() * 25)).toString(),
-          weight: (60 + Math.floor(Math.random() * 30)).toString(),
+          height: 160 + Math.floor(Math.random() * 25),
+          weight: 60 + Math.floor(Math.random() * 30),
           activityLevel: ['sedentary', 'lightly_active', 'moderately_active', 'active', 'very_active'][Math.floor(Math.random() * 5)],
           neckCircumference: (30 + Math.floor(Math.random() * 12)).toString(),
           waistCircumference: (70 + Math.floor(Math.random() * 25)).toString(),

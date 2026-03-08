@@ -805,7 +805,7 @@ function NotificationsTab() {
   const { user, refetchUser } = useUser();
   const { toast } = useToast();
 
-  const saved = (user as any)?.notificationPreferences ?? DEFAULT_PREFS;
+  const saved = user?.notificationPreferences ?? DEFAULT_PREFS;
   const [prefs, setPrefs] = useState({ ...DEFAULT_PREFS, ...saved });
 
   const updateNotifications = useMutation({

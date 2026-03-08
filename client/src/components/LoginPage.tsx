@@ -150,16 +150,10 @@ export function LoginPage() {
           preload="auto"
           onLoadedData={() => {
             setVideoLoaded(true);
-            console.log('✅ Local video loaded and ready to play');
           }}
-          onLoadStart={() => console.log('📥 Local video loading started...')}
-          onCanPlay={() => console.log('✅ Local video can start playing')}
-          onPlay={() => console.log('▶️ Local video is now playing')}
           onError={(e) => {
-            console.error('❌ Local video failed to load');
             const videoEl = e.currentTarget as HTMLVideoElement;
-            console.error('Video error code:', videoEl.error?.code);
-            console.error('Video error message:', videoEl.error?.message);
+            console.error('Video failed to load — code:', videoEl.error?.code, videoEl.error?.message);
           }}
           className="absolute inset-0 w-full h-full object-cover"
           style={{

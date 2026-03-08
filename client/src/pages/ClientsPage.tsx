@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@/contexts/UserContext";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/AnimationComponents";
 import { QueryErrorState } from "@/components/query-states/QueryErrorState";
 import { exportClientsToCSV } from "@/lib/exportUtils";
@@ -15,18 +16,10 @@ const ClientsPageContent = memo(() => {
   const prefersReducedMotion = useReducedMotion();
   const queryClient = useQueryClient();
 
-  // Get the authenticated user's ID from the auth system
-  const { data: user } = useQuery({
-    queryKey: ['/api/auth/user'],
-    retry: false,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-  });
+  const { user } = useUser();
 
   // Use authenticated user's ID or fallback to demo ID
-  const trainerId = (user as any)?.id || "demo-trainer-123";
+  const trainerId = user?.id || "demo-trainer-123";
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: clients, isLoading, error } = useQuery({

@@ -52,9 +52,9 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
           Recovery Status
         </p>
         <Link href="/solo/recovery">
-          <a className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors">
+          <div className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5 transition-colors cursor-pointer">
             Full View <ChevronRight className="w-3 h-3" />
-          </a>
+          </div>
         </Link>
       </div>
 
@@ -67,7 +67,7 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
         <div className="flex flex-col md:flex-row items-center gap-6">
           {/* Large Recovery Ring with gradient */}
           <Link href="/solo/recovery">
-            <a className="flex-shrink-0 cursor-pointer group block">
+            <div className="flex-shrink-0 cursor-pointer group block">
               <CircularProgressRing
                 value={overallRecovery}
                 size={150}
@@ -86,7 +86,7 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
                   </span>
                 </div>
               </CircularProgressRing>
-            </a>
+            </div>
           </Link>
 
           {/* Compact inline muscle tags + recommendation */}
@@ -94,7 +94,7 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
             <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1.5 text-xs">
               {muscleStatus.map((muscle) => (
                 <Link key={muscle.name} href="/solo/recovery">
-                  <a className="flex items-center gap-1 cursor-pointer group hover:bg-white/[0.04] rounded px-1 -mx-1 py-0.5 transition-colors">
+                  <div className="flex items-center gap-1 cursor-pointer group hover:bg-white/[0.04] rounded px-1 -mx-1 py-0.5 transition-colors">
                     <span className={`inline-block w-1.5 h-1.5 rounded-full ${muscle.dotBg}`} />
                     <span className="text-muted-foreground group-hover:text-foreground transition-colors">
                       {muscle.name}
@@ -102,7 +102,7 @@ function RecoveryWidget({ fatigueData }: { fatigueData: any[] | undefined }) {
                     <span className="tabular-nums font-medium group-hover:text-primary transition-colors">
                       {muscle.recovery}%
                     </span>
-                  </a>
+                  </div>
                 </Link>
               ))}
             </div>

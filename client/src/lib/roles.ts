@@ -54,3 +54,25 @@ export function getRoleThemeKey(role: InternalRole): RoleThemeKey {
 
 /** All CSS classes used for role theming */
 export const ALL_ROLE_CSS_CLASSES = ['role-guru', 'role-disciple', 'role-ronin'] as const;
+
+// ---------------------------------------------------------------------------
+// Plan display names — maps DB/Stripe tier IDs to human-readable labels.
+// Never show raw tier IDs to users; always use getPlanDisplayName().
+// ---------------------------------------------------------------------------
+export const PLAN_DISPLAY_NAMES: Record<string, string> = {
+  free: 'Free Trial',
+  FreeTrial: 'Free Trial',
+  solo: 'Ronin',
+  Solo: 'Ronin',
+  solo_ai: 'Ronin AI',
+  Solo_ai: 'Ronin AI',
+  trainer: 'Guru',
+  Guru: 'Guru',
+  pro: 'Pro Guru',
+  ProGuru: 'Pro Guru',
+};
+
+export function getPlanDisplayName(tier: string | null | undefined): string {
+  if (!tier) return '';
+  return PLAN_DISPLAY_NAMES[tier] ?? tier;
+}

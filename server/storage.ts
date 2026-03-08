@@ -33,7 +33,7 @@ import {
   type InsertAppointment,
 } from '@shared/schema';
 import { getDb } from './db';
-import { eq, desc, and, gte, lte, sql, isNotNull } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, sql, isNotNull, isNull } from 'drizzle-orm';
 import { MemoryStorage } from './memoryStorage';
 
 /**
@@ -212,7 +212,7 @@ export class DatabaseStorage implements IStorage {
   // Users - Replit Auth operations (IMPORTANT: mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
     const db = await getDb();
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt)));
     return user;
   }
 
@@ -235,13 +235,13 @@ export class DatabaseStorage implements IStorage {
   // Clients
   async getClient(id: string): Promise<Client | undefined> {
     const db = await getDb();
-    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    const [client] = await db.select().from(clients).where(and(eq(clients.id, id), isNull(clients.deletedAt)));
     return client || undefined;
   }
 
   async getClientsByTrainer(trainerId: string): Promise<Client[]> {
     const db = await getDb();
-    return await db.select().from(clients).where(eq(clients.trainerId, trainerId));
+    return await db.select().from(clients).where(and(eq(clients.trainerId, trainerId), isNull(clients.deletedAt)));
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
@@ -1287,8 +1287,8 @@ export class DatabaseStorage implements IStorage {
     try {
       const db = await getDb();
 
-      // Get all clients for this trainer
-      const allClients = await db.select().from(clients).where(eq(clients.trainerId, trainerId));
+      // Get all clients for this trainer (excluding soft-deleted)
+      const allClients = await db.select().from(clients).where(and(eq(clients.trainerId, trainerId), isNull(clients.deletedAt)));
       const activeClients = allClients.filter((c) => c.status === 'active');
       const inactiveClients = allClients.filter((c) => c.status !== 'active');
 
@@ -1550,9 +1550,19 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Create singleton instances
+// Create database storage singleton
 const databaseStorage = new DatabaseStorage();
-const memoryStorage = new MemoryStorage();
+
+// MemoryStorage is only created in test environments — never in production.
+// In production a DB failure must surface as an error, not silently lose data.
+const memoryStorage: MemoryStorage | null =
+  process.env.NODE_ENV === 'test' ? new MemoryStorage() : null;
+
+if (process.env.NODE_ENV === 'test') {
+  console.warn(
+    '[storage] MemoryStorage active — NODE_ENV=test. Data is ephemeral and will not persist.'
+  );
+}
 
 // Track if database is available
 let isDatabaseAvailable = false;
@@ -1566,8 +1576,15 @@ export async function checkDatabaseAvailability(): Promise<boolean> {
     isDatabaseAvailable = true;
     return true;
   } catch (error) {
-    console.warn('Database is unavailable, using in-memory storage:', error);
     isDatabaseAvailable = false;
+    if (process.env.NODE_ENV === 'production') {
+      console.error(
+        '[storage] CRITICAL: Database unavailable in production. Memory fallback is disabled.',
+        error
+      );
+    } else {
+      console.warn('[storage] Database unavailable:', error);
+    }
     return false;
   }
 }
@@ -1577,8 +1594,25 @@ export function getStorage(): IStorage {
   if (isDatabaseAvailable) {
     return databaseStorage;
   }
-  console.info('Using in-memory storage (database unavailable)');
-  return memoryStorage;
+
+  // Production: never silently fall back — surface the failure so monitoring catches it.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Database unavailable — refusing memory storage fallback in production. ' +
+        'Check DATABASE_URL and database connectivity.'
+    );
+  }
+
+  // Test environment: use in-memory storage (safe — data loss is expected).
+  if (memoryStorage) {
+    return memoryStorage;
+  }
+
+  // Development without DB: throw so developers see the error rather than silently losing data.
+  throw new Error(
+    'Database unavailable and MemoryStorage is only enabled for NODE_ENV=test. ' +
+      'Start a local PostgreSQL instance or set DATABASE_URL.'
+  );
 }
 
 // Export storage that dynamically switches between database and memory

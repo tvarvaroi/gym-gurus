@@ -175,8 +175,7 @@ export function useGamification(userId: string | undefined) {
 
       // If leveled up, trigger a celebration
       if (data.leveledUp) {
-        // This could trigger a level up modal/animation
-        console.log(`Level up! New level: ${data.newLevel}`);
+        // TODO: trigger level-up modal/animation
       }
     },
   });

@@ -6,6 +6,7 @@ import {
   integer,
   timestamp,
   decimal,
+  doublePrecision,
   boolean,
   jsonb,
   index,
@@ -60,13 +61,15 @@ export const users = pgTable(
     trialEndsAt: timestamp('trial_ends_at'),
     notificationPreferences: jsonb('notification_preferences'),
     createdAt: timestamp('created_at').defaultNow(),
-    updatedAt: timestamp('updated_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
+    deletedAt: timestamp('deleted_at'),
   },
   (table) => [
     index('idx_users_role').on(table.role),
     index('idx_users_trainer_id').on(table.trainerId),
     index('idx_users_email').on(table.email),
     index('idx_users_auth_provider').on(table.authProvider, table.authProviderId),
+    index('idx_users_deleted_at').on(table.deletedAt),
   ]
 );
 
@@ -108,8 +111,8 @@ export const clients = pgTable(
     // Biometric data for calculations
     age: integer('age'),
     gender: text('gender'), // 'male' or 'female'
-    height: decimal('height'), // cm
-    weight: decimal('weight'), // kg
+    height: doublePrecision('height'), // cm
+    weight: doublePrecision('weight'), // kg
     activityLevel: text('activity_level'), // 'sedentary', 'lightly_active', 'moderately_active', 'active', 'very_active'
     // Body circumferences for US Navy body fat calculation
     neckCircumference: decimal('neck_circumference'), // cm
@@ -118,11 +121,13 @@ export const clients = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     lastSession: timestamp('last_session'),
     nextSession: timestamp('next_session'),
+    deletedAt: timestamp('deleted_at'),
   },
   (table) => [
     index('idx_clients_trainer_id').on(table.trainerId),
     index('idx_clients_status').on(table.status),
     index('idx_clients_email').on(table.email),
+    index('idx_clients_deleted_at').on(table.deletedAt),
   ]
 );
 
@@ -336,7 +341,7 @@ export const calculatorResults = pgTable(
     notes: text('notes'), // User notes about this calculation
     isFavorite: boolean('is_favorite').default(false).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   },
   (table) => [
     index('idx_calculator_results_user_id').on(table.userId),
@@ -398,7 +403,7 @@ export const appointments = pgTable(
     recurrenceEndDate: text('recurrence_end_date'), // YYYY-MM-DD, null = no end
     parentAppointmentId: varchar('parent_appointment_id'), // links recurring instances to series
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   },
   (table) => [
     index('idx_appointments_trainer_id').on(table.trainerId),
@@ -431,7 +436,7 @@ export const userOnboardingProgress = pgTable(
     dismissedFeaturePrompts: text('dismissed_feature_prompts').array().default([]),
     onboardingCompletedAt: timestamp('onboarding_completed_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   },
   (table) => [index('idx_user_onboarding_user_id').on(table.userId)]
 );
@@ -688,7 +693,7 @@ export const userFitnessProfile = pgTable(
     preferredStores: jsonb('preferred_stores').$type<string[]>(),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   },
   (table) => [index('idx_user_fitness_profile_user_id').on(table.userId)]
 );
@@ -733,7 +738,7 @@ export const userGamification = pgTable(
     totalPersonalRecords: integer('total_personal_records').default(0),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   },
   (table) => [
     index('idx_user_gamification_user_id').on(table.userId),
@@ -911,7 +916,7 @@ export const userMuscleFatigue = pgTable(
     volumeLastSession: decimal('volume_last_session', { precision: 10, scale: 2 }),
     setsLastSession: integer('sets_last_session'),
     avgRecoveryHours: decimal('avg_recovery_hours', { precision: 5, scale: 2 }).default('48'),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   },
   (table) => [
     index('idx_muscle_fatigue_user_id').on(table.userId),
@@ -990,7 +995,7 @@ export const aiChatConversations = pgTable(
     category: varchar('category', { length: 50 }), // workout, nutrition, form_check, motivation, general
     isActive: boolean('is_active').default(true),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   },
   (table) => [
     index('idx_ai_conversations_user_id').on(table.userId),
@@ -1174,7 +1179,7 @@ export const aiUsage = pgTable(
     date: varchar('date', { length: 10 }).notNull(), // YYYY-MM-DD
     requestCount: integer('request_count').notNull().default(0),
     tokenCount: integer('token_count').notNull().default(0),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   },
   (table) => [
     uniqueIndex('idx_ai_usage_user_date').on(table.userId, table.date),

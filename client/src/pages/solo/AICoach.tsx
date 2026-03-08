@@ -609,12 +609,12 @@ export default function AICoach() {
                       {/* Start Now button — shown after workout is saved */}
                       {message.role === 'assistant' && savedWorkoutIds.has(message.id) && (
                         <div className="self-start flex items-center gap-2">
-                          <span className="text-xs text-green-400 flex items-center gap-1">
+                          <span className="text-xs text-primary flex items-center gap-1">
                             <Save className="h-3 w-3" /> Saved!
                           </span>
                           <a
                             href={`/workout-execution/${savedWorkoutIds.get(message.id)}`}
-                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 transition-colors"
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-colors"
                           >
                             <Play className="h-3 w-3" />
                             Start Now
@@ -630,7 +630,7 @@ export default function AICoach() {
                             type="button"
                             onClick={() => saveMealPlanFromChat(message)}
                             disabled={savingMealPlanId === message.id}
-                            className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-green-500/30 text-green-400 hover:bg-green-500/10 transition-colors disabled:opacity-50"
+                            className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
                           >
                             {savingMealPlanId === message.id ? (
                               <RefreshCw className="h-3 w-3 animate-spin" />
@@ -641,7 +641,7 @@ export default function AICoach() {
                           </button>
                         )}
                       {message.role === 'assistant' && savedMealPlanIds.has(message.id) && (
-                        <span className="self-start text-xs text-green-400 flex items-center gap-1">
+                        <span className="self-start text-xs text-primary flex items-center gap-1">
                           <Apple className="h-3 w-3" /> Meal plan saved!
                         </span>
                       )}

@@ -1,54 +1,994 @@
-# GymGurus v2
+# CLAUDE.md — GymGurus Developer Reference
+> Last updated: 2026-03-08 | Built from full audit of all 67 available skills
 
-## Architecture
+---
 
-- **Stack:** TypeScript, Node.js, Express, React, Vite, TailwindCSS
-- **Database:** PostgreSQL with Drizzle ORM
-- **AI:** Anthropic Claude API for fitness coaching
-- **Deployment:** Railway (auto-deploy from main branch)
-- **Auth:** Passport.js with session-based auth
+## ⚡ CLAUDE CODE — MANDATORY PRE-TASK RITUAL
 
-## Project Structure
+**Before writing a single line of code, run this checklist every session, every task:**
 
-- `client/` - React frontend (Vite + TailwindCSS + shadcn/ui)
-- `server/` - Express backend (API routes, auth, AI service)
-- `shared/` - Shared types and Drizzle schema
-- `drizzle.config.ts` - Database migration config
+```
+1. /si:status              → check memory health and context from previous sessions
+2. Identify task type      → map it to the skill table below
+3. Read the skill(s)       → use Read tool on every relevant SKILL.md
+4. Check local .claude/    → read any scoped rules in .claude/rules/ that match your files
+5. Check global ~/.claude/ → read global CLAUDE.md for cross-project preferences
+6. Brainstorm first        → for ANY new feature/component, activate `brainstorming` skill BEFORE coding
+7. /si:review at end       → promote learnings before closing the session
+```
 
-## Key Files
+**This is non-negotiable. Every task. Every time. No exceptions.**
+Skills exist because trial-and-error produced them. Skipping them wastes that accumulated knowledge.
 
-- `shared/schema.ts` - Drizzle schema (all tables, relations)
-- `server/routes.ts` - All API endpoints
-- `server/services/aiService.ts` - Claude AI integration
-- `client/src/App.tsx` - React router and layout
+---
 
-## Role System
+## 🗺️ Complete Skill Map — All 67 Skills
 
-- **Ronin** - Solo user (tracks own workouts, measurements, AI chat)
-- **Sensei** - Trainer (manages clients, creates programs)
-- **Shihan** - Admin (full system access)
+### Engineering Skills (activate before ANY code task)
 
-## Database
+| Task | Skill | Key Command / Capability |
+|---|---|---|
+| **Any new feature** | `brainstorming` | HARD GATE — present design, get approval BEFORE implementing |
+| **Code review / PR** | `code-reviewer` + `pr-review-expert` | `python scripts/code_quality_checker.py ./server --language typescript` |
+| **Architecture analysis** | `senior-architect` | `python scripts/project_architect.py . --verbose` |
+| **Dependency audit** | `senior-architect` + `dependency-auditor` | `python scripts/dependency_analyzer.py . --verbose` + CVE + license scan |
+| **Tech debt** | `tech-debt-tracker` + `cto-advisor` | Debt scanner → WSJF prioritizer → dashboard |
+| **Backend / Express** | `senior-backend` | `python scripts/api_scaffolder.py` · security hardening workflow |
+| **Frontend / React** | `senior-frontend` + `frontend-design` | Bundle analysis · a11y · component scaffolding |
+| **Fullstack changes** | `senior-fullstack` | Code quality + security scoring across full stack |
+| **DB schema changes** | `database-designer` + `database-schema-designer` | Schema analyzer · Expand-Contract migrations · RLS · index optimizer |
+| **API design** | `api-design-reviewer` | REST conventions · breaking change detection · design scorecard |
+| **API tests** | `api-test-suite-builder` + `playwright-pro` | Route scanner → test scaffold · `/pw:generate` |
+| **Stripe / billing** | `stripe-integration-expert` | Subscription state machine · idempotent webhooks |
+| **CI/CD pipeline** | `ci-cd-pipeline-builder` | Stack detection → GitHub Actions / GitLab CI generation |
+| **Observability** | `observability-designer` | SLI/SLO design · golden signals · burn rate alerting |
+| **Performance** | `performance-profiler` | Flamegraphs · bundle analysis · EXPLAIN ANALYZE · k6 load tests |
+| **Security audit** | `skill-security-auditor` + `env-secrets-manager` | Secret leak scan · .env lifecycle · rotation workflow |
+| **Incident response** | `incident-commander` | `python scripts/incident_classifier.py` · PIR generation |
+| **Runbooks** | `runbook-generator` | Stack detection → deployment/incident/DB runbooks |
+| **Email templates** | `email-template-builder` | React Email templates · Resend/Postmark/SES integration |
+| **AI features (RAG)** | `rag-architect` | Chunking strategies · embedding benchmarks · retrieval eval |
+| **Multi-agent design** | `agent-designer` + `agent-workflow-designer` | Supervisor/swarm/pipeline/hierarchical patterns |
+| **3+ independent bugs** | `dispatching-parallel-agents` | `Task()` per independent domain — parallel execution |
+| **MCP integration** | `mcp-server-builder` | OpenAPI → MCP tool definitions · validation |
+| **Memory curation** | `self-improving-agent` | `/si:review` · `/si:promote` · `/si:extract` |
+| **Skill validation** | `skill-tester` + `skill-security-auditor` | Structure compliance · quality scoring · security gate |
+| **AWS migration** | `aws-solution-architect` | Lambda · API Gateway · ECS · CloudFormation IaC |
+| **Prompt improvement** | `prompt-engineer-toolkit` | A/B eval · versioned prompt templates · quality scoring |
+| **UI visual design** | `frontend-design` | Intentional aesthetic direction · production-grade UI |
+| **Design system** | `design-md` | `DESIGN.md` synthesis from existing screens |
+| **Web artifacts** | `web-artifacts-builder` | Multi-component React artifacts · shadcn/ui · bundle script |
 
-- Use Drizzle ORM for all queries, never raw SQL
-- Migrations via `npx drizzle-kit push`
-- Railway Postgres: public URL with ssl rejectUnauthorized false
+### Product & Project Management Skills
 
-## Conventions
+| Task | Skill | Key Capability |
+|---|---|---|
+| **Sprint planning** | `agile-product-owner` + `scrum-master` | INVEST stories · Given/When/Then · velocity forecasting |
+| **Feature prioritization** | `product-manager-toolkit` | RICE · customer interview synthesis · PRD templates |
+| **Project health** | `senior-pm` | WSJF · Monte Carlo simulation · EMV risk · portfolio health |
+| **UX research** | `ux-researcher-designer` | Persona generation · journey mapping · usability test plans |
+| **Documentation** | `doc-coauthoring` | 3-stage: context → refinement → reader testing |
+| **Customer metrics** | `customer-success-manager` | `python scripts/health_score_calculator.py` · churn risk |
+| **Revenue tracking** | `revenue-operations` | Pipeline coverage · MAPE forecast · GTM efficiency |
+| **Sales support** | `sales-engineer` | RFP analysis · competitive matrix · POC planning |
 
-- Zod validation on all API inputs
-- React Query for data fetching
-- shadcn/ui components with Tailwind styling
-- Fonts: Playfair Display (headings), Inter (body), Cormorant Garamond (accents)
+### Leadership & Strategy Skills
 
-## Known Issues
+| Task | Skill | Key Capability |
+|---|---|---|
+| **Tech strategy / debt** | `cto-advisor` | `python scripts/tech_debt_analyzer.py` · DORA metrics · team scaling |
+| **Business strategy** | `ceo-advisor` | `python scripts/strategy_analyzer.py` · financial scenario modeling |
+| **Hard decisions** | `executive-mentor` | Pre-mortem · adversarial stress-test · board prep |
+| **Founder growth** | `founder-coach` | Delegation frameworks · burnout · IC→CEO transition |
+| **Market expansion** | `intl-expansion` | Market scoring matrix · entry modes · localization |
 
-- CSP blocks Google Fonts (style-src needs fonts.googleapis.com)
-- /api/analytics/web-vitals returns 403
-- Deprecated apple-mobile-web-app-capable meta tag
+### Infrastructure & DevOps Skills
 
-## Deployment
+| Task | Skill | Key Capability |
+|---|---|---|
+| **Secrets / env** | `env-secrets-manager` | Git history secret scan · rotation playbook · Vault/SSM |
+| **M365 admin** | `ms365-tenant-manager` | PowerShell bulk ops · Conditional Access · Azure AD |
+| **CV / imaging** | `senior-computer-vision` | YOLO · Detectron2 · ONNX/TensorRT deployment |
 
-- Railway: https://gym-gurus-production.up.railway.app
-- Push to main = Railway auto-deploys
-- Env vars: DATABASE_URL, NODE_ENV, SESSION_SECRET, APP_URL, ANTHROPIC_API_KEY
+---
+
+## GymGurus — Skill Activation by File Area
+
+When Claude Code opens a file in this repo, activate these skills:
+
+| File / Area | Activate |
+|---|---|
+| `server/routes.ts` | `senior-backend` + `code-reviewer` + `api-design-reviewer` |
+| `server/routes/*.ts` (new route) | `brainstorming` → `api-test-suite-builder` → `senior-backend` |
+| `shared/schema.ts` | `database-designer` + `database-schema-designer` |
+| `server/migrations/` | `database-designer` (Expand-Contract pattern) |
+| `client/src/App.tsx` | `senior-frontend` + `code-reviewer` |
+| `client/src/components/` | `brainstorming` → `frontend-design` → `senior-frontend` |
+| `client/src/pages/` | `ux-researcher-designer` (journey map) + `senior-frontend` |
+| `server/routes/webhooks.ts` | `stripe-integration-expert` — DO NOT TOUCH middleware order |
+| `server/middleware/` | `skill-security-auditor` + `senior-backend` |
+| `server/services/aiService.ts` | `rag-architect` + `prompt-engineer-toolkit` |
+| `.env` / env vars | `env-secrets-manager` |
+| `package.json` | `dependency-auditor` (CVE + license scan before adding deps) |
+| `playwright.config.ts` / tests | `playwright-pro` (`/pw:generate`, `/pw:fix`, `/pw:coverage`) |
+| `.github/workflows/` | `ci-cd-pipeline-builder` |
+| Any PR | `pr-review-expert` + `code-reviewer` |
+| Any incident | `incident-commander` |
+| Any new AI feature | `rag-architect` + `agent-designer` + `prompt-engineer-toolkit` |
+
+---
+
+## Architecture Map
+
+```
+gym-gurus/
+├── client/src/
+│   ├── App.tsx                    ← 1,105-line God component  → § FE-1
+│   ├── components/
+│   │   ├── redesign/              ← mobile-first component set — production code, actively maintained
+│   │   ├── ui/                    ← shadcn/ui — do not edit
+│   │   └── ProgressChart*.tsx     ← deleted (all 3 were dead code) → § FE-4 ✅
+│   ├── contexts/UserContext.tsx   ← canonical auth state
+│   ├── hooks/                     ← useUser() is the correct hook
+│   └── pages/
+├── server/
+│   ├── routes.ts                  ← 2,252-line monolith       → § BE-3
+│   ├── mockData.ts                ← DELETE IMMEDIATELY        → § SEC-1
+│   ├── env.ts                     ← DUPLICATE — delete        → § BE-4
+│   ├── config/env.ts              ← canonical env (KEEP)
+│   ├── middleware/
+│   │   ├── auth.ts                ← DO NOT TOUCH
+│   │   └── csrf.ts                ← DO NOT TOUCH
+│   └── routes/
+│       └── webhooks.ts            ← DO NOT TOUCH
+├── shared/schema.ts               ← DO NOT TOUCH w/o migration
+├── scripts/                       ← debug scripts live here, NOT server/
+└── server/migrations/             ← numbering chaos → § DB-4
+```
+
+**Roles** — use consistently everywhere:
+
+| DB value | UI name | Login |
+|---|---|---|
+| `trainer` | Guru | `/auth/login` role: Guru |
+| `solo` | Ronin | `/auth/login` role: Ronin |
+| `client` | Disciple | `/disciple-login` — **currently broken** → § VA-1 |
+
+**Plan display names** — never show raw IDs:
+
+| DB/Stripe ID | Display |
+|---|---|
+| `FreeTrial` | Free Trial |
+| `Solo` | Ronin |
+| `Solo_ai` | Ronin AI |
+| `Guru` | Guru |
+| `ProGuru` | Pro Guru |
+
+---
+
+## Stack
+
+| Layer | Tech | Relevant Skill |
+|---|---|---|
+| Frontend | React 18, Vite, TypeScript, Tailwind, shadcn/ui, wouter, TanStack Query, framer-motion | `senior-frontend`, `frontend-design` |
+| Backend | Express.js, TypeScript, Drizzle ORM | `senior-backend`, `senior-architect` |
+| Database | PostgreSQL (Neon) | `database-designer`, `database-schema-designer` |
+| Payments | Stripe | `stripe-integration-expert` |
+| AI | Anthropic Claude API | `rag-architect`, `prompt-engineer-toolkit`, `agent-designer` |
+| Hosting | Railway | `runbook-generator`, `ci-cd-pipeline-builder` |
+| Testing | Playwright (scripts/visual-audit.ts) | `playwright-pro` |
+| Mobile | Capacitor (planned, config broken) | `senior-fullstack` |
+
+---
+
+## Environment Variables
+
+| Variable | Required | Skill to consult |
+|---|---|---|
+| `DATABASE_URL` | ✅ | `env-secrets-manager` |
+| `NODE_ENV` | ✅ | `env-secrets-manager` |
+| `SESSION_SECRET` | ✅ | `env-secrets-manager` — rotate if leaked |
+| `APP_URL` | ✅ | `env-secrets-manager` |
+| `ANTHROPIC_API_KEY` | ✅ | `env-secrets-manager` — server-side ONLY |
+| `STRIPE_SECRET_KEY` | ✅ | `stripe-integration-expert` + `env-secrets-manager` |
+| `STRIPE_WEBHOOK_SECRET` | ✅ | `stripe-integration-expert` — silently fails if unset |
+| `GOOGLE_CLIENT_ID/SECRET` | ⬜ | OAuth — `env-secrets-manager` |
+
+Run `env-secrets-manager` leak detection against git history before every release:
+```bash
+python scripts/secret_leak_detector.py . --scan-git-history
+```
+
+---
+
+## Code Patterns to Follow
+
+**Auth state** — `useUser()` from UserContext only:
+```ts
+const { user } = useUser();          // ✅
+const { data: user } = useQuery(…);  // ❌ isolated, creates race conditions
+```
+
+**Typed user** — AuthUser interface, never `as any`:
+```ts
+// Define in client/src/types/auth.ts
+export interface AuthUser {
+  id: number; email: string; firstName: string; lastName: string;
+  role: 'trainer' | 'solo' | 'client'; planId: string;
+}
+const user = useUser() as AuthUser;  // ✅
+const user = useUser() as any;       // ❌ — code-reviewer flags this
+```
+
+**Route wrapping** — lazyRoute factory, not copy-paste:
+```ts
+const lazyRoute = (C: React.LazyExoticComponent<any>) => () => (
+  <Suspense fallback={<PageLoader />}><PageTransition><C /></PageTransition></Suspense>
+);
+<Route path="/calculators/tdee" component={lazyRoute(TDEECalculator)} />
+```
+
+**New API routes** — always: Zod validation + ownership guard + test:
+```ts
+router.get('/clients/:id', requireTrainerOwnership, async (req, res) => {
+  const { id } = z.object({ id: z.coerce.number() }).parse(req.params);
+});
+```
+
+**DB queries** — Drizzle ORM always, never raw SQL:
+```ts
+db.select().from(users).where(eq(users.trainerId, id))  // ✅
+db.execute(sql`SELECT * FROM users WHERE …`)             // ❌
+```
+
+**Adding dependencies** — always audit first:
+```bash
+python scripts/dependency_auditor.py . --check cve,license
+# Only add after clean audit
+```
+
+**New feature workflow** — always brainstorm first:
+```
+1. Activate `brainstorming` skill
+2. Explore context → ask clarifying questions → propose 2-3 approaches
+3. Write design doc to docs/plans/YYYY-MM-DD-feature-design.md
+4. Get approval → then implement
+```
+
+---
+
+## DO NOT TOUCH — Security-Critical Files
+
+| File | Reason | Skill if changes needed |
+|---|---|---|
+| `shared/schema.ts` | Requires migration | `database-designer` |
+| `server/middleware/csrf.ts` | WebSocket skip intentional | `skill-security-auditor` review first |
+| `server/middleware/auth.ts` | Ownership guards | `skill-security-auditor` + `senior-backend` |
+| `server/routes/webhooks.ts` | Stripe raw body order | `stripe-integration-expert` |
+
+---
+
+## Issues — Priority Order
+
+### § SEC-1 — CRITICAL: Mock data in production
+**Skills:** `code-reviewer` (PR Analyzer detects "debug patterns") + `skill-security-auditor`
+
+`server/mockData.ts` → `getMockClients`, `getMockProgress`, `getMockAnalytics`, `getMockDashboardStats` used as live fallbacks in `routes.ts` lines 58–62, 420, 435, 1727, 1831.
+
+```bash
+rm server/mockData.ts
+# Replace all getMock* fallbacks → res.status(500).json({ error: 'Internal server error' })
+```
+
+---
+
+### § SEC-2 — CRITICAL: Silent MemoryStorage fallback
+**Skill:** `incident-commander` (this is an invisible data-loss incident waiting to happen)
+
+DB failure → silent in-memory fallback → no 503 → data lost on restart.
+
+```ts
+if (process.env.NODE_ENV === 'production') {
+  throw new Error('DB unavailable — refusing memory storage fallback');
+}
+```
+
+---
+
+### § SEC-3 — CRITICAL: CSP `unsafe-inline`
+**Skill:** `skill-security-auditor` + `env-secrets-manager`
+
+`server/index.ts` helmet config: `scriptSrc: ["'self'", "'unsafe-inline'"]` — XSS protection completely negated.
+
+```ts
+scriptSrc: ["'self'", `'nonce-${generateNonce()}'`],
+```
+
+---
+
+### § SEC-4 — HIGH: Debug routes in production
+**Skill:** `skill-security-auditor`
+
+`/test-login`, `/login2`, `/test-auth-login`, `/preview-login` accessible with no env guard. `TestLoginPage` bundled for ALL users (non-lazy import).
+
+```ts
+if (process.env.NODE_ENV !== 'production') { app.get('/test-login', …); }
+if (import.meta.env.DEV) { /* client-side debug routes */ }
+```
+
+---
+
+### § VA-1 — CRITICAL: `/disciple-login` broken
+**Skill:** `playwright-pro` (`/pw:generate` a test to catch this regression)
+
+Navigating to `/disciple-login` renders the landing carousel. **Client users cannot log in.**
+
+Check `App.tsx` — the `<Route path="/disciple-login">` component binding is missing or wrong.
+
+---
+
+### § VA-6 / VA-7 — HIGH: Personal data and QA artifacts in production
+**Skill:** `env-secrets-manager` (data hygiene) + `senior-pm` (launch blocker)
+
+Dashboard shows a personal birthday photo and "QA18 Set Count Test" workout. Purge before any public launch, investor demo, or press coverage.
+
+---
+
+### § FE-1 — HIGH: App.tsx is a 1,105-line God component
+**Skills:** `code-reviewer` (large file flag) + `senior-architect` (mixed concerns) + `brainstorming` (design the split first)
+
+```bash
+python scripts/project_architect.py ./client/src --check layers
+# Will flag: MIXED CONCERNS in App.tsx — routing + auth + video + CSS injection + layout
+```
+
+Extract to: `RouterConfig.tsx` · `AuthGuard.tsx` · `AppShell.tsx` · App.tsx → ~30 lines.
+
+---
+
+### § FE-2 — HIGH: 26 copy-pasted Suspense wrappers
+**Skill:** `code-reviewer` (duplicate code detector — >3 similar blocks = flag)
+
+```ts
+const lazyRoute = (C: React.LazyExoticComponent<any>) => () => (
+  <Suspense fallback={<PageLoader />}><PageTransition><C /></PageTransition></Suspense>
+);
+```
+
+---
+
+### § BE-3 — HIGH: `server/routes.ts` is 2,252 lines
+**Skills:** `senior-architect` + `tech-debt-tracker` (highest interest rate item) + `code-reviewer`
+
+Use **Strangler Fig** pattern (`tech-debt-tracker` refactoring strategies): extract one feature router per PR, never all at once.
+
+```
+server/routes/clients.ts    server/routes/workouts.ts
+server/routes/progress.ts   server/routes/dashboard.ts
+server/routes/assignments.ts server/routes/payments.ts
+server/routes/schedule.ts   server/routes/calculators.ts
+```
+
+---
+
+### § FE-3 — ✅ RESOLVED (2026-03-08): `redesign/` migration complete
+
+All 9 `redesign/` components are production code (coach/, dashboard/, execution/ subdirs). The 5 original dead-code files were deleted (1,428 lines removed):
+- `solo-dashboard/TodaysActionZone.tsx`
+- `solo-dashboard/HeroHeader.tsx`
+- `solo-dashboard/FeatureWidgetsGrid.tsx`
+- `workout/RestTimerDisplay.tsx`
+- `workout/SetCompletionSwipe.tsx`
+
+`redesign/WeekStrip` + `solo-dashboard/WeeklyOverview` are an intentional desktop/mobile pair — keep both.
+
+---
+
+### § FE-4 — ✅ RESOLVED (2026-03-08): Three ProgressChart versions deleted
+
+All three orphaned chart components deleted (325 lines total):
+- `ProgressChart.tsx` (144 ln) — recharts, generic props — dead, only referenced by LazyProgressChart
+- `ProgressChartTremor.tsx` (139 ln) — @tremor/react, never installed, not imported anywhere
+- `LazyProgressChart.tsx` (42 ln) — Suspense wrapper for the above — not imported anywhere
+
+`ProgressPage.tsx` renders all charts inline (~252 lines of custom recharts code with gradients, glow filters, per-role colors). `ClientDetailsPage.tsx` also has its own inline recharts. Neither ever used any of the three component files.
+
+`@tremor/react` was not in package.json (ProgressChartTremor.tsx imported it but the package was never installed — its deletion also removes a phantom broken import).
+
+---
+
+### § FE-5 — MEDIUM: 17 `as any` casts
+**Skill:** `code-reviewer` (auto-detects TypeScript `any`) + `senior-frontend`
+
+```bash
+python scripts/pr_analyzer.py . --json | grep '"any_types"'
+```
+
+Define `AuthUser` in `client/src/types/auth.ts`, replace all `as any`.
+
+---
+
+### § FE-6 — MEDIUM: Isolated auth `useQuery` in 3 places
+**Skill:** `senior-frontend` + `code-reviewer` (duplicate pattern detection)
+
+Delete all standalone `useQuery({ queryKey: ['/api/user'] })`. Use `useUser()` everywhere.
+
+---
+
+### § FE-7 — MEDIUM: framer-motion in 122 files (~90kb gzipped)
+**Skill:** `performance-profiler` (bundle analysis) + `senior-frontend`
+
+```bash
+# Bundle analysis
+npx webpack-bundle-analyzer dist/stats.json
+# or: npx vite-bundle-visualizer
+```
+
+Replace trivial fades with CSS. Keep framer-motion only for complex gesture/drag/spring work.
+
+---
+
+### § BE-4 — MEDIUM: Duplicate env validators
+**Skill:** `env-secrets-manager`
+
+Delete `server/env.ts`. Keep `server/config/env.ts`. Update all imports.
+
+---
+
+### § BE-5 — MEDIUM: Debug scripts in `server/`
+**Skill:** `runbook-generator` (move to scripts/ and generate proper runbooks for each)
+
+Move to `scripts/`: `checkAppointments.ts`, `checkAssignments.ts`, `checkClient.ts`, `checkLatestAppointment.ts`, `deleteDuplicate.ts`, `updateClientsBiometrics.ts`, `runMigration.ts`, `runMigrations.ts`, `fix-session-table.ts`
+
+```ts
+if (process.env.NODE_ENV === 'production') { process.exit(1); }
+```
+
+---
+
+### § BE-6 — MEDIUM: Dead shopping feature
+**Skill:** `agile-product-owner` (backlog decision — add to sprint or delete)
+
+`server/routes/shopping.ts` + commented import. Run `product-manager-toolkit` RICE scoring to decide priority.
+
+---
+
+### § DB-1 — ✅ RESOLVED: `updatedAt` not auto-updating
+Added `.$onUpdate(() => new Date())` to all `updatedAt` columns in `shared/schema.ts` (36 tables, replace_all). ORM-level only — no SQL migration generated.
+
+---
+
+### § DB-2 — ✅ RESOLVED: Height/weight as DECIMAL strings
+`clients.height` and `clients.weight` changed from `decimal()` → `doublePrecision()` in schema. Migration `migrations/0002_clients_height_weight_to_double.sql` applied with explicit `USING` cast. Removed `parseFloat(... as string)` from `ClientCard.tsx`, `ClientDetailsPage.tsx` (2 call sites). Form init in `ClientFormModal.tsx` updated to `String(client.height)`.
+
+---
+
+### § DB-3 — ✅ RESOLVED: No soft deletes
+Added `deletedAt: timestamp('deleted_at')` to `users` and `clients` tables. Migration `migrations/0001_add_soft_deletes_and_onupdate.sql` applied. `isNull(x.deletedAt)` filters added to 16 query sites across 8 files: `storage.ts` (4), `auth.ts` (1), `routes.ts` (3), `routes/settings.ts` (1), `routes/payments.ts` (1), `services/accessCode.ts` (5), `services/aiService.ts` (2), `services/aiUsage.ts` (1).
+
+---
+
+### § DB-4 — MEDIUM: Migration numbering chaos
+**Skill:** `database-designer`
+
+Rename `add_onboarding_table.ts` → `005_add_onboarding_table.ts`. Commit to `.ts` format. Never rename files already in `migrations/meta/_journal.json`. ✅ Done — already renamed to `server/migrations/005_add_onboarding_table.ts`.
+
+---
+
+### § DB-5 — HIGH: 20 DB tables have no Drizzle schema definition
+**Skill:** `database-designer` + `database-schema-designer`
+
+The database (via `migrations/0000_burly_yellow_claw.sql`) has 33+ tables. `shared/schema.ts` only defines 13 of them. The 20 unmanaged tables:
+
+`achievements`, `ai_chat_conversations`, `ai_chat_messages`, `ai_generated_workouts`, `ai_usage`, `client_access_codes`, `client_intake`, `notifications`, `payment_plans`, `payments`, `personal_record_history`, `personal_records`, `saved_meal_plans`, `user_achievements`, `user_fitness_profile`, `user_gamification`, `user_muscle_fatigue`, `user_muscle_volume`, `user_strength_standards`, `workout_recovery_log`, `workout_sessions`, `workout_set_logs`, `xp_transactions`
+
+Consequence: `$onUpdate`, soft deletes, and future schema changes cannot be applied to these tables via Drizzle. `drizzle-kit generate` will also produce incorrect diffs (tries to DROP tables it doesn't know about). Reverse-engineer all 20 into schema.ts and run `npx drizzle-kit generate` to re-sync.
+
+---
+
+### § UX-1 — HIGH: Scroll-snap carousel landing
+**Skill:** `ux-researcher-designer` (journey mapping confirms drop-off) + `product-manager-toolkit` (conversion impact)
+
+7 full-screen `scroll-snap` slides break browser nav, hide login until slide 6. Replace with standard scrollable layout.
+
+---
+
+### § UX-2 — HIGH: Login buried / Disciple login broken
+**Skill:** `ux-researcher-designer` + `playwright-pro` (`/pw:generate` login flow tests)
+
+Add Login button to `LandingHeader.tsx`. Fix `/disciple-login` route (§ VA-1).
+
+---
+
+### § UX-3 — MEDIUM: Role CSS flash
+**Skill:** `senior-frontend` + `performance-profiler` (CLS metric)
+
+```tsx
+<div data-role={user.role} className="app-shell">
+```
+```css
+[data-role="trainer"] { --accent: var(--gold); }
+[data-role="solo"]    { --accent: var(--purple); }
+```
+
+---
+
+### § UX-4 — MEDIUM: Double mobile navigation
+**Skill:** `ux-researcher-designer` (usability testing framework)
+
+**Screenshot confirmed:** sidebar column AND bottom nav both render on mobile.
+
+```tsx
+<AppSidebar className="hidden md:flex" />
+<MobileBottomNav className="flex md:hidden" />
+```
+
+---
+
+### § UX-5 — MEDIUM: No empty states
+**Skill:** `ux-researcher-designer` (empty state patterns) + `senior-frontend`
+
+Progress, Schedule, My Clients, Exercise Library — all show blank on first use.
+
+---
+
+## Visual Audit — Confirmed Issues (March 8 2026)
+> Solo/Ronin role only. Trainer/Client not captured — provide credentials to complete.
+
+| § | Severity | Finding | Screenshot |
+|---|---|---|---|
+| VA-1 | 🔴 CRITICAL | `/disciple-login` shows landing carousel — clients cannot log in | `13-disciple-login.png` |
+| VA-2 | 🟠 HIGH | 404 page is the landing carousel — no error shown | `02-404-page.png` |
+| VA-3 | 🟡 MEDIUM | Unauth redirect is silent — no toast | `03-unauth-dashboard-redirect.png` |
+| VA-4 | 🟠 HIGH | Raw plan ID `Solo_ai` shown in pricing UI | `14-pricing-top.png` |
+| VA-5 | 🟡 MEDIUM | AI Coach shows `999/999` test counter, no tooltip | `03-ai-coach-top.png` |
+| VA-6 | 🟠 HIGH | Personal birthday photo in production dashboard | `02-dashboard-top.png` |
+| VA-7 | 🟠 HIGH | "QA18 Set Count Test" workout in production | `02-dashboard-top.png` |
+| VA-8 | 🟡 MEDIUM | Mobile dashboard missing PRs stat (cut off) | `mobile/02-dashboard-top.png` |
+| VA-9 | 🟡 MEDIUM | Workout card titles truncate mid-word, cards indistinguishable | `06-workouts-top.png` |
+| VA-10 | 🟡 MEDIUM | Progress "Avg Duration" shows bare `—` with no unit/label | `07-progress-top.png` |
+| VA-11 | 🟡 MEDIUM | Calculator hub is two completely different designs (public vs app) | `20-calculators-hub-top.png` |
+| VA-12 | 🟡 MEDIUM | Collapsed sidebar icons have no tooltips | `16-sidebar-collapsed.png` |
+| VA-13 | 🟡 MEDIUM | Mobile landing "See How It Works" button cut off | `mobile/01-landing-hero.png` |
+| VA-14 | 🟡 MEDIUM | Login page: no default role selected, fields appear active | `10-auth-login-top.png` |
+| VA-15 | 🟢 LOW | Recovery "Not trained" cards give no onboarding prompt | `08-recovery-top.png` |
+
+---
+
+## Tech Debt — WSJF Priority Table
+**Skill:** `senior-pm` Monte Carlo + `tech-debt-tracker` WSJF = (Business Value + Time Criticality + Risk Reduction) / Effort
+
+| Issue | BV | TC | RR | Effort | WSJF | Sprint |
+|---|---|---|---|---|---|---|
+| § VA-1 disciple login broken | 10 | 10 | 8 | 1 | **28** | Now |
+| § VA-6/7 personal data in prod | 8 | 10 | 7 | 1 | **25** | Now |
+| § SEC-1 mock data in prod | 9 | 10 | 10 | 2 | **14.5** | Now |
+| § VA-4 raw plan ID in UI | 7 | 6 | 3 | 1 | **16** | Sprint 1 |
+| § VA-2 404 = landing page | 6 | 8 | 5 | 2 | **9.5** | Sprint 1 |
+| § SEC-3 CSP unsafe-inline | 5 | 7 | 10 | 2 | **11** | Sprint 1 |
+| § SEC-4 debug routes in prod | 6 | 8 | 8 | 2 | **11** | Sprint 1 |
+| § FE-1 App.tsx God component | 7 | 5 | 6 | 5 | **3.6** | Sprint 2 |
+| § BE-3 routes monolith | 6 | 4 | 5 | 10 | **1.5** | Quarter |
+| § UX-1 carousel landing | 8 | 5 | 3 | 8 | **2** | Quarter |
+
+**Recommended allocation** (`tech-debt-tracker`): 30% debt / 70% features this sprint.
+
+---
+
+## Observability Checklist
+**Skill:** `observability-designer`
+
+GymGurus currently has NO SLIs, SLOs, or alerting defined. Before next public launch:
+
+```
+SLIs to define:
+  - API error rate (target: <1% 5xx over 5min window)
+  - Auth latency p99 (target: <500ms)
+  - Stripe webhook processing (target: 100% idempotent delivery)
+  - AI Coach response time (target: <3s p95)
+
+Golden signals to instrument:
+  - Latency, Traffic, Errors, Saturation — on Express middleware
+  - DB connection pool utilisation
+  - Anthropic API quota consumption
+```
+
+---
+
+## CI/CD Checklist
+**Skill:** `ci-cd-pipeline-builder`
+
+No CI/CD pipeline exists beyond Railway auto-deploy from main. Generate with:
+```bash
+python scripts/pipeline_builder.py . --platform github-actions --stages lint,test,build,deploy
+```
+
+Minimum pipeline should include:
+- TypeScript compilation check
+- `code-reviewer` PR Analyzer (block `as any` additions, `console.log` in client)
+- `dependency-auditor` CVE scan
+- `playwright-pro` smoke tests
+- `env-secrets-manager` secret leak check
+
+---
+
+## Runbook: Deployment
+**Skill:** `runbook-generator`
+
+Generate full runbooks with:
+```bash
+python scripts/runbook_generator.py . --type deployment,incident,database
+```
+
+Current manual process:
+1. Push to `main` → Railway auto-deploys
+2. Monitor Railway logs for DB connection errors
+3. If deploy fails: Railway dashboard → Rollback to previous deploy
+4. Verify: `curl https://gym-gurus-production.up.railway.app/api/health`
+
+---
+
+## Quick Wins (< 1 hour, no architecture impact)
+**Skill:** `code-reviewer` PR Analyzer catches all of these automatically
+
+1. `rm server/mockData.ts` + replace fallbacks (§ SEC-1)
+2. Delete `console.log` from client/ — 16+ in App.tsx
+3. Fix `capacitor.config.ts server.url` — points to Railway settings page, not the app
+4. Delete Replit plugins: `@replit/vite-plugin-cartographer` + `@replit/vite-plugin-runtime-error-modal`
+5. Consolidate AI SDKs: `@ai-sdk/anthropic` + `ai` (Vercel) → pick one (`dependency-auditor`)
+6. Delete debug PNGs from git: `auth-login-final-check.png`, `test-auth-login-fix.png`, `clients_missing.png`
+7. Move 16+ planning `.md` files from root → `/docs` or delete
+8. Rename `add_onboarding_table.ts` → `005_add_onboarding_table.ts`
+9. Unskip `routes.test.ts.skip` → rename to `.ts` and add to CI (`playwright-pro` / `api-test-suite-builder`)
+10. Fix `Solo_ai` → "Ronin AI" in pricing display (§ VA-4)
+11. Add `noopener noreferrer` to all `target="_blank"` links
+12. Consolidate `SettingsPage.tsx` local `TIER_NAMES` map → shared `getPlanDisplayName()` from `client/src/lib/roles.ts`
+
+---
+
+## Open Questions
+
+- [ ] Is `/disciple-login` intentionally separate from main login? It's broken — fix before any client uses it (§ VA-1)
+- [ ] Is `redesign/` an active migration or abandoned? Document the decision as an ADR (`doc-coauthoring`)
+- [ ] `shopping.ts` — ship or delete? Run RICE scoring (`product-manager-toolkit`)
+- [ ] Is `STRIPE_WEBHOOK_SECRET` set in Railway? Check `env-secrets-manager`
+- [ ] Is Capacitor/mobile actively in development? If not, remove
+- [ ] Trainer and Client roles not visually audited — provide credentials to complete visual audit
+- [ ] No runbooks exist — generate with `runbook-generator` before next on-call rotation
+- [ ] No SLOs defined — design with `observability-designer` before launch
+
+---
+
+## Self-Improvement Protocol
+**Skill:** `self-improving-agent`
+
+Run at the end of every Claude Code session:
+```
+/si:review    → find patterns worth promoting
+/si:promote   → graduate proven learnings to CLAUDE.md or .claude/rules/
+/si:extract   → turn recurring GymGurus-specific solutions into reusable skills
+/si:remember  → explicitly save important new knowledge
+```
+
+Scoped rules to create in `.claude/rules/`:
+```yaml
+# .claude/rules/api-routes.md
+paths: ["server/routes/**/*.ts"]
+rules:
+  - Always include requireTrainerOwnership or requireClientOwnership
+  - Always validate inputs with Zod
+  - Never use raw SQL — Drizzle ORM only
+
+# .claude/rules/db-migrations.md  
+paths: ["server/migrations/**", "shared/schema.ts"]
+rules:
+  - Run npx drizzle-kit generate after every schema change
+  - Use Expand-Contract for any type changes (never direct ALTER)
+  - Number files sequentially: NNN_description.ts
+  - Never rename files already in drizzle/meta/_journal.json
+
+# .claude/rules/stripe.md
+paths: ["server/routes/webhooks.ts", "server/routes/payments.ts"]
+rules:
+  - All webhook handlers must be idempotent
+  - Never change middleware order in webhooks.ts
+  - Always verify Stripe signature before processing
+```
+
+
+---
+
+## § DESIGN — Frontend Design Audit
+> Applied via `frontend-design` skill. Every finding uses that skill's framework:
+> Purpose → Tone → Constraints → Differentiation → Typography → Color → Motion → Composition → Backgrounds
+
+---
+
+### Aesthetic Identity Assessment
+
+**Declared direction:** Dark luxury / premium fitness. Black + gold on the landing. Serif display type. Martial arts character illustrations. This is a strong, committed aesthetic direction — the skill demands intentionality, and the landing has it.
+
+**The problem:** The aesthetic direction fractures the moment a user logs in.
+
+| Surface | Accent | Background | Vibe |
+|---|---|---|---|
+| Landing page | Gold (`#C9A84C` range) | Near-black (`#0a0a0a`) | Luxury editorial |
+| App sidebar | Purple (`#7C3AED`) | Dark navy (`#1a1a2e`) | Generic SaaS dashboard |
+| Nutrition Planner | Bright green | Dark | Food app |
+| Achievements page | Yellow/gold tabs | Dark | Gaming/gamification |
+| Public calculators | Light grey | White | Completely different product |
+
+The `frontend-design` skill is explicit: *"Commit to a cohesive aesthetic. Dominant colors with sharp accents outperform timid, evenly-distributed palettes."* GymGurus has three competing palettes across one product. This isn't intentional contrast — it's accumulated design drift.
+
+**Root cause:** The CSS variable system exists (`--accent: var(--gold)` and `--accent: var(--purple)` per role) but it hasn't been applied consistently. The app interior looks like a different product was pasted inside the landing's shell.
+
+---
+
+### § DS-1 — CRITICAL: Three-way brand split (landing / app / calculators)
+
+**`frontend-design` verdict:** Fails the "cohesive aesthetic" requirement. The landing screams luxury; the app whispers generic SaaS dashboard.
+
+**Specific breakdowns:**
+
+1. **Gold → Purple switch on login.** The landing is built entirely around gold-on-black. The first thing a user sees after logging in is a purple sidebar. There is no transition, no deliberate contrast — it just changes. The luxury brand promise evaporates.
+
+2. **Nutrition Planner green.** Active states in the Nutrition Planner use a bright `#22c55e` green — completely unrelated to either the gold or the purple. This colour appears nowhere else in the product.
+
+3. **Public calculators: light mode only.** The calculators hub (`/calculators`) uses a white background with multicoloured icons. It looks like a feature clipped from a different product and embedded here. There is no dark overlay, no gold accent, no connection to the GymGurus brand.
+
+**Fix — define the design system properly:**
+
+```css
+/* In client/src/styles/tokens.css */
+:root {
+  /* Brand core — never changes */
+  --color-brand-gold: #C9A84C;
+  --color-brand-black: #0a0a0a;
+  --color-brand-dark: #1a1a1a;
+
+  /* Role accents — changes per role, same system */
+  --color-accent: var(--color-brand-gold);       /* default/landing */
+}
+
+[data-role="trainer"] { --color-accent: var(--color-brand-gold); }
+[data-role="solo"]    { --color-accent: #7C3AED; }   /* purple, but intentional */
+[data-role="client"]  { --color-accent: #0EA5E9; }   /* teal for disciple */
+
+/* All interactive elements use --color-accent */
+.btn-primary { background: var(--color-accent); }
+.nav-active   { color: var(--color-accent); border-color: var(--color-accent); }
+.chart-line   { stroke: var(--color-accent); }
+```
+
+The Nutrition Planner green must either become `var(--color-accent)` or be removed. It has no design justification.
+
+The public calculators must adopt the dark background + gold accent to match the landing. They are a marketing page — they must look like they belong to the same premium product.
+
+---
+
+### § DS-2 — HIGH: Typography is strong on landing, invisible in app
+
+**`frontend-design` verdict:** *"Choose fonts that are beautiful, unique, and interesting. Pair a distinctive display font with a refined body font."*
+
+**Landing:** Uses a large-weight serif (appears to be Cormorant Garamond or similar) for "Run Your Fitness Business Like a Pro". Looks intentional. The brand guide in `.claude/gymgurus-brand-guide.md` confirms: Playfair Display (headings), Cormorant Garamond (accents), Inter (body).
+
+**App interior:** The display serif disappears entirely. Page titles like "Achievements", "Nutrition Planner", "Dashboard" all render in a regular sans-serif weight with no visual hierarchy beyond size. The heading font that defines the brand identity is only used on one page out of the entire product.
+
+**Fix:** Apply Playfair Display (or Cormorant Garamond) to all primary page headings inside the app. The `h1` and page-level section titles should carry the brand. Body text and data labels stay in Inter. This is a CSS change, not a redesign:
+
+```css
+/* In global styles */
+h1, .page-title { font-family: 'Playfair Display', serif; }
+.section-label  { font-family: 'Cormorant Garamond', serif; letter-spacing: 0.12em; text-transform: uppercase; }
+```
+
+---
+
+### § DS-3 — HIGH: Pricing page — colour on non-active states is noise
+
+**`frontend-design` verdict:** Fails "intentionality". The pricing page assigns a different icon colour to every plan (star/grey, lightning/purple, crown/purple, people/gold, crown/gold) with no system behind the choices. The eye has nowhere to land. The "Most Popular" badge on Ronin AI is yellow — a fourth accent colour not used anywhere else.
+
+**Fix:** Reduce to two states: active/selected (gold, full opacity) and inactive (white, 40% opacity). The icon tints should follow `--color-accent`. The "Most Popular" badge should use `--color-accent`, not a hardcoded yellow.
+
+---
+
+### § DS-4 — MEDIUM: Motion is heavy but purposeful in the wrong places
+
+**`frontend-design` verdict:** *"Focus on high-impact moments: one well-orchestrated page load with staggered reveals creates more delight than scattered micro-interactions."*
+
+framer-motion is imported in 122 files. Most uses are `opacity: 0 → 1` fades. The pages that would benefit most from motion — the dashboard stats reveal, the achievement unlock, the workout completion — have the same generic fade as every other element.
+
+**Design recommendation before the `senior-frontend` refactor (§ FE-7):**
+
+| Moment | Motion Treatment |
+|---|---|
+| Dashboard stat counters on load | Count-up animation (number increments from 0 to value) |
+| Achievement unlocked | Scale + glow burst — this is a celebration moment |
+| Workout set completion | Progress bar fill with haptic-like bounce |
+| Sidebar collapse/expand | Width transition with icon cross-fade |
+| All other page transitions | CSS `animation: fadeIn 0.15s ease` — remove framer-motion |
+
+---
+
+### § DS-5 — MEDIUM: Spatial composition is uniform throughout — no breathing, no hierarchy
+
+**`frontend-design` verdict:** *"Unexpected layouts. Asymmetry. Overlap. Diagonal flow. Grid-breaking elements. Generous negative space OR controlled density."*
+
+Every page in the app uses the same layout: full-width container, padding 24px, stacked cards in a regular grid. There is no visual hierarchy between primary and secondary content areas. The dashboard, progress page, schedule page, and settings page are structurally identical at a layout level — only the card content changes.
+
+**High-priority layout fixes:**
+
+1. **Dashboard:** The "Today's Workout" card is the most important element on the page. It currently has the same visual weight as the stats row and the volume chart. It should be visually dominant — full bleed, large typography, the workout name in Playfair Display.
+
+2. **Achievements:** Unlocked achievements (only 2 cards) are the same size as locked ones. The unlocked cards should be larger, feature the icon prominently, and sit in a highlighted zone. Locked achievements should be visually recessed. The current treatment makes 2 successes look identical to 43 locked items.
+
+3. **AI Coach:** Large empty white space occupies the right half of the screen on initial load ("Start a conversation" state). This space is wasted. Fill it with suggested conversation starters as styled prompt cards, or surface recent topics as visual cards.
+
+---
+
+### § DS-6 — LOW: The role illustrations are a standout detail that should be amplified
+
+**`frontend-design` verdict:** *"What's the one thing someone will remember?"*
+
+The Guru (samurai), Ronin (wandering warrior), and Disciple (student) illustrations on the login page are the most distinctive and memorable visual element in the entire product. They are used once — on the login page — and never seen again.
+
+These illustrations should recur throughout the product:
+- Empty state for new Guru: "Welcome, Guru. Add your first client." — Guru illustration
+- Empty state for new Ronin: "Your journey begins here." — Ronin illustration
+- Achievement unlock animation could feature the relevant role illustration
+
+This is zero-effort brand reinforcement that turns a one-time login choice into an ongoing identity system.
+
+---
+
+## § UX — User Experience Research Audit
+> Applied via `ux-researcher-designer` skill.
+> Personas derived from the 3 roles. Journey maps for the critical onboarding flow.
+> Severity ratings: 4=Critical (prevents task), 3=Major (significant difficulty), 2=Minor (hesitation), 1=Cosmetic.
+
+---
+
+### Personas (derived from role structure + screenshot evidence)
+
+**Persona 1 — "The Guru" (Trainer)**
+- Archetype: `business_user`
+- Primary goal: Manage client roster, assign programs, track client progress, get paid
+- Context: Works from desktop, manages 5–20 clients, uses platform daily
+- Frustrations observed in screenshots: No data yet from trainer role audit (credentials not provided)
+- Design implications: Needs fast client switching, bulk workout assignment, payment overview at a glance
+
+**Persona 2 — "The Ronin" (Solo user, "Dacian" from screenshots)**
+- Archetype: `power_user` transitioning to `casual_user`
+- Primary goal: Generate and track workouts, use AI coach for guidance
+- Context: Uses desktop and mobile interchangeably, motivational — wants to see progress
+- Frustrations observed: AI coach 999/999 counter (confusing), workout cards truncating titles, streak showing 2 while workouts show 0 (confusing metric)
+- Quote signal from UI: "Ready to train?" — the product speaks to this persona's motivational mindset
+- Design implications: Streak and consistency data must be accurate and encouraging; the AI Coach limit must be clearly communicated before it blocks usage
+
+**Persona 3 — "The Disciple" (Client)**
+- Archetype: `casual_user`
+- Primary goal: View assigned workouts, log completion, message trainer
+- Context: Primarily mobile, lower tech proficiency
+- Critical issue: **Cannot log in at all** (§ VA-1). This persona has zero usable journey.
+
+---
+
+### Journey Map — Ronin First-Week Onboarding
+
+Applying the `ux-researcher-designer` 5-stage B2B SaaS journey to a fitness SaaS:
+
+**Stage: Awareness → Evaluation → Onboarding → Adoption → Advocacy**
+
+```
+STAGE 1: Awareness (Landing page)
+Actions:    Lands on homepage from search/social
+Touchpoints: Landing carousel, hero headline
+Emotions:   😐 Neutral → confused by locked scroll
+Pain Points: [PAIN] Cannot scroll freely. [PAIN] Login not visible on slide 1.
+             [PAIN] Slides 2–7 show identical content — broken carousel.
+Opportunity: Replace carousel with scrollable. Add Login to header nav.
+Score: Frequency(5) × Severity(4) × Solvability(4) = 80 — TOP PRIORITY
+
+STAGE 2: Evaluation (Calculators / Pricing)
+Actions:    Explores free calculators, checks pricing
+Touchpoints: /calculators (white light theme), /pricing
+Emotions:   😊 Engaged by calculators — content is good
+Pain Points: [PAIN] Calculators look like a different product (light theme).
+             [PAIN] Pricing shows "Solo_ai" instead of "Ronin AI".
+Opportunity: Dark-theme calculators. Fix plan display names.
+Score: Frequency(4) × Severity(2) × Solvability(5) = 40 — Medium
+
+STAGE 3: Onboarding (Registration → First login)
+Actions:    Registers, selects role, lands on dashboard
+Touchpoints: /register, /auth/login, /dashboard
+Emotions:   😊 Login page is well designed — role cards are distinctive
+Pain Points: [PAIN] No role pre-selected — user must click before fields activate.
+             [PAIN] Birthday photo visible immediately — looks broken.
+             [PAIN] "QA18 Set Count Test" as first workout — unprofessional.
+Opportunity: Pre-select Ronin role. Clean up test data. Proper onboarding empty states.
+Score: Frequency(5) × Severity(3) × Solvability(5) = 75 — HIGH PRIORITY
+
+STAGE 4: Adoption (Using core features)
+Actions:    Generates workout, logs sets, checks progress
+Touchpoints: Generate Workout, My Workouts, My Progress
+Emotions:   😊 Generate Workout UX is strong — smart suggestion banner is excellent
+Pain Points: [PAIN] Workout card titles truncated — can't tell workouts apart.
+             [PAIN] Progress "Avg Duration" shows bare dash.
+             [PAIN] AI Coach shows 999/999 — user thinks they've used all messages.
+             [PAIN] Streak shows 2 but workouts this week = 0 — metrics contradict.
+Opportunity: Fix truncation. Add tooltips. Clarify metrics. Fix AI counter display.
+Score: Frequency(4) × Severity(3) × Solvability(4) = 48 — Medium
+
+STAGE 5: Advocacy (Sharing, upgrading)
+Actions:    Considers upgrading, recommends to friends
+Touchpoints: Achievements, Pricing page
+Emotions:   😊 Achievement system is a strong engagement driver — good concept
+Pain Points: [PAIN] Two plans marked "Current plan" simultaneously (confusing).
+             [PAIN] Achievement dates show future dates (date handling bug).
+             [PAIN] 42/45 achievements locked — visible gap feels discouraging.
+Opportunity: Fix plan state. Fix date bug. Show "Most recent unlock" prominently.
+```
+
+---
+
+### Usability Issue Severity Ratings (UX Researcher Framework)
+
+| # | Issue | Severity | Frequency | Solvability | Priority Score |
+|---|---|---|---|---|---|
+| VA-1 | Disciple cannot log in at all | **4 — Critical** | 5 | 5 | **100** |
+| UX-1 | Carousel blocks free scroll + hides login | **4 — Critical** | 5 | 4 | **80** |
+| VA-7 | QA artifact "QA18" visible in production | **3 — Major** | 5 | 5 | **75** |
+| VA-6 | Personal birthday photo in production | **3 — Major** | 5 | 5 | **75** |
+| DS-1 | Brand split — gold landing / purple app | **3 — Major** | 5 | 3 | **45** |
+| VA-3 | Silent redirect — no toast or message | **2 — Minor** | 4 | 5 | **40** |
+| VA-4 | "Solo_ai" raw ID in pricing | **2 — Minor** | 4 | 5 | **40** |
+| DS-2 | Brand serif font disappears inside app | **2 — Minor** | 5 | 4 | **40** |
+| VA-9 | Workout card titles truncated | **2 — Minor** | 4 | 4 | **32** |
+| UX-4 | Double nav on mobile | **2 — Minor** | 4 | 4 | **32** |
+| VA-14 | Login: no default role selected | **2 — Minor** | 5 | 5 | **50** |
+| VA-8 | Mobile: PRs stat cut off | **2 — Minor** | 4 | 4 | **32** |
+| DS-3 | Pricing page colour noise | **1 — Cosmetic** | 4 | 5 | **20** |
+| VA-12 | Collapsed sidebar: no tooltips | **1 — Cosmetic** | 3 | 5 | **15** |
+| VA-15 | Recovery: no onboarding prompt | **1 — Cosmetic** | 3 | 3 | **9** |
+
+---
+
+### UX Recommendations for Claude Code
+
+When implementing any UI fix, activate `ux-researcher-designer` and follow this checklist before committing:
+
+```
+□ Does this change move a user closer to their persona goal?
+□ Have I checked the journey map stage this screen belongs to?
+□ Is the empty state defined for this component?
+□ Does error messaging tell the user what happened AND what to do next?
+□ Is the action hierarchy clear — one primary CTA, one secondary, nothing else competing?
+□ Have I checked on mobile viewport? (screenshot confirms issues at 390px width)
+□ Does this component work for all three personas (Guru, Ronin, Disciple)?
+```
+
+---
+
+### Usability Test Plan (run before any major UI release)
+
+Per `ux-researcher-designer` Workflow 3 — 5 participants, moderated remote, 45 min each:
+
+**Task 1 (Ronin):** "You've just signed up. Set up your first workout for today."
+- Success: User reaches active workout screen
+- Time target: < 3 minutes
+- Expected failure points: Login role selection, carousel navigation
+
+**Task 2 (Guru):** "A new client just joined. Set up their first workout plan."
+- Success: Client sees assigned plan in their Disciple dashboard
+- Time target: < 5 minutes
+- Note: Disciple login currently broken — this task will fail entirely (§ VA-1)
+
+**Task 3 (Ronin):** "Find out how much total volume you've lifted this month."
+- Success: User finds Progress page → Total Volume stat
+- Time target: < 90 seconds
+- Expected failure: Avg Duration shows `—` — users may assume app is broken
+
+**Task 4 (Any):** "You want to upgrade your plan. Find out what you're currently on and switch."
+- Success: User identifies current plan and reaches payment screen
+- Expected failure: Two cards show "Current plan" — users will be confused about which is active
+

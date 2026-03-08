@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction, MutationCache, QueryCache } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
+import { isPublicRoute } from '@/lib/routeConfig';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -67,19 +68,9 @@ let redirecting401 = false;
 function handle401Error(error: unknown) {
   if (error instanceof Error && error.message.startsWith('401:')) {
     const pathname = window.location.pathname;
-    // Don't redirect if already on a public page (landing, legal, calculators, login pages)
-    const isPublicPage =
-      pathname === '/' ||
-      pathname === '/terms' ||
-      pathname === '/privacy' ||
-      pathname.startsWith('/calculators') ||
-      pathname === '/preview-login' ||
-      pathname === '/test-login' ||
-      pathname === '/test-auth-login' ||
-      pathname.startsWith('/auth/');
 
     // Only redirect once and only if not on a public page
-    if (!redirecting401 && !isPublicPage) {
+    if (!redirecting401 && !isPublicRoute(pathname)) {
       redirecting401 = true;
       // Store the current URL so user can return after re-login
       sessionStorage.setItem('returnUrl', pathname + window.location.search);

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
 import { LogOut, Crown, Zap, CreditCard } from 'lucide-react';
@@ -18,6 +17,7 @@ import { useUser } from '@/contexts/UserContext';
 import NotificationCenter from '@/components/NotificationCenter';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getRoleThemeByRole } from '@/lib/theme';
+import { getPlanDisplayName } from '@/lib/roles';
 import type { InternalRole } from '@/lib/roles';
 
 // Get role-specific color config for header styling
@@ -51,43 +51,34 @@ function HeaderCenterText() {
 function UserMenu() {
   const prefersReducedMotion = useReducedMotion();
   const [, navigate] = useLocation();
-  const { data: user } = useQuery({
-    queryKey: ['/api/auth/user'],
-    retry: false,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-  });
+  const { user } = useUser();
 
   const colors = useRoleColors();
 
   if (!user) return null;
 
-  const userData = user as any;
   const initials =
-    `${userData.firstName?.[0] || ''}${userData.lastName?.[0] || ''}`.toUpperCase() || 'U';
+    `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U';
 
   // Subscription display helpers
   const isActive =
-    userData.subscriptionStatus === 'active' || userData.subscriptionStatus === 'trialing';
-  const trialEndsAt = userData.trialEndsAt ? new Date(userData.trialEndsAt) : null;
+    user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing';
+  const trialEndsAt = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
   const now = new Date();
   const isInTrial = trialEndsAt ? trialEndsAt > now && !isActive : false;
   const trialDaysRemaining = trialEndsAt
     ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
-  const isClient = userData.role === 'client';
+  const isClient = user.role === 'client';
+  const subscriptionTier = user.subscriptionTier;
 
   function SubscriptionBadge() {
     if (isClient) return null;
-    if (isActive && userData.subscriptionTier) {
-      const tierLabel =
-        userData.subscriptionTier.charAt(0).toUpperCase() + userData.subscriptionTier.slice(1);
+    if (isActive && subscriptionTier) {
       return (
         <Badge className="text-[10px] px-1.5 py-0 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
           <Crown className="w-2.5 h-2.5 mr-1" />
-          {tierLabel}
+          {getPlanDisplayName(subscriptionTier)}
         </Badge>
       );
     }
@@ -255,11 +246,11 @@ function UserMenu() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 }}
                     >
-                      {userData.firstName} {userData.lastName}
+                      {user.firstName} {user.lastName}
                     </motion.p>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {userData.firstName} {userData.lastName}
+                    {user.firstName} {user.lastName}
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
@@ -270,10 +261,10 @@ function UserMenu() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.15 }}
                     >
-                      {userData.email}
+                      {user.email}
                     </motion.p>
                   </TooltipTrigger>
-                  <TooltipContent>{userData.email}</TooltipContent>
+                  <TooltipContent>{user.email}</TooltipContent>
                 </Tooltip>
                 <motion.div
                   className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"
@@ -312,7 +303,7 @@ function UserMenu() {
                       </p>
                       <p className="text-xs text-muted-foreground font-light">
                         {isActive
-                          ? `${userData.subscriptionTier ? userData.subscriptionTier.charAt(0).toUpperCase() + userData.subscriptionTier.slice(1) : 'Active'} plan`
+                          ? `${getPlanDisplayName(user.subscriptionTier) || 'Active'} plan`
                           : isInTrial
                             ? `${trialDaysRemaining} days left in trial`
                             : 'Subscribe to continue'}

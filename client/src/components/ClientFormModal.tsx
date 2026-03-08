@@ -110,8 +110,8 @@ export function ClientFormModal({
       // Biometric data
       age: client?.age || undefined,
       gender: client?.gender || undefined,
-      height: client?.height || undefined,
-      weight: client?.weight || undefined,
+      height: client?.height != null ? String(client.height) : undefined,
+      weight: client?.weight != null ? String(client.weight) : undefined,
       activityLevel: client?.activityLevel || undefined,
       neckCircumference: client?.neckCircumference || undefined,
       waistCircumference: client?.waistCircumference || undefined,

@@ -52,8 +52,8 @@ const ClientCard = memo(function ClientCard({
   const biometrics: ClientBiometrics = {
     age: client.age ?? undefined,
     gender: (client.gender as 'male' | 'female' | undefined) ?? undefined,
-    height: client.height ? parseFloat(client.height as string) : undefined,
-    weight: client.weight ? parseFloat(client.weight as string) : undefined,
+    height: client.height ?? undefined,
+    weight: client.weight ?? undefined,
     activityLevel: (client.activityLevel as 'sedentary' | 'lightly_active' | 'moderately_active' | 'active' | 'very_active' | undefined) ?? undefined,
     neckCircumference: client.neckCircumference ? parseFloat(client.neckCircumference as string) : undefined,
     waistCircumference: client.waistCircumference ? parseFloat(client.waistCircumference as string) : undefined,

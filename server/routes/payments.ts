@@ -2,7 +2,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { paymentPlans, payments, clients, users } from '../../shared/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, isNull } from 'drizzle-orm';
 import {
   isInTrial,
   isTrialExpired,
@@ -222,7 +222,7 @@ router.post('/record', async (req: Request, res: Response) => {
     // Send notification to trainer
     try {
       const { notifyPaymentReceived } = await import('../services/notificationService');
-      const client = await database.select().from(clients).where(eq(clients.id, clientId)).limit(1);
+      const client = await database.select().from(clients).where(and(eq(clients.id, clientId), isNull(clients.deletedAt))).limit(1);
       if (client.length > 0) {
         const amountFormatted = `$${(amountInCents / 100).toFixed(2)}`;
         await notifyPaymentReceived(userId, client[0].name, amountFormatted, result[0].id);

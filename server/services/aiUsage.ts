@@ -6,7 +6,7 @@
  */
 import { getDb } from '../db';
 import { aiUsage, users } from '../../shared/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, isNull } from 'drizzle-orm';
 
 // ---------- Types ----------
 
@@ -75,7 +75,7 @@ export async function getDailyLimit(user: UserLike): Promise<number> {
           subscriptionTier: users.subscriptionTier,
         })
         .from(users)
-        .where(eq(users.id, user.trainerId));
+        .where(and(eq(users.id, user.trainerId), isNull(users.deletedAt)));
       if (
         trainer &&
         (trainer.subscriptionStatus === 'active' || trainer.subscriptionStatus === 'trialing') &&

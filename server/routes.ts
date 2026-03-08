@@ -54,12 +54,6 @@ import {
   writeRateLimit,
 } from './middleware/rateLimiter';
 import { getMessageDeliveryStatuses } from './middleware/deliveredTracking';
-import {
-  getMockClients,
-  getMockProgress,
-  getMockAnalytics,
-  getMockDashboardStats,
-} from './mockData';
 
 // New feature route imports
 import authRoutes from './routes/auth';
@@ -414,11 +408,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clients = await storage.getClientsByTrainer(trainerId);
       res.json(clients);
     } catch (error) {
-      // Return mock data when database is unavailable
-      console.warn('Database unavailable, returning mock clients:', error);
-      const trainerId = (req.user as any).id as string;
-      const mockClients = getMockClients(trainerId);
-      res.json(mockClients);
+      console.error('Error fetching clients:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 
@@ -429,11 +420,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await storage.getDashboardStats(trainerId);
       res.json(stats);
     } catch (error) {
-      // Return mock data when database is unavailable
-      console.warn('Database unavailable, returning mock dashboard stats:', error);
-      const trainerId = (req.user as any).id as string;
-      const mockStats = getMockDashboardStats(trainerId);
-      res.json(mockStats);
+      console.error('Error fetching dashboard stats:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 
@@ -479,7 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const allClients = await database
           .select()
           .from(clients)
-          .where(and(eq(clients.trainerId, trainerId), eq(clients.status, 'active')));
+          .where(and(eq(clients.trainerId, trainerId), eq(clients.status, 'active'), isNull(clients.deletedAt)));
 
         const alerts: Array<{
           clientId: string;
@@ -556,7 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Find client record by matching email using direct database query
       const db = await getDb();
-      const clientRecords = await db.select().from(clients).where(eq(clients.email, user.email));
+      const clientRecords = await db.select().from(clients).where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
 
       console.log(`🔍 Looking for client with email: ${user.email}`);
       console.log(`📋 Found ${clientRecords.length} client record(s)`);
@@ -1187,7 +1175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Find client record by matching email
       const db = await getDb();
-      const clientRecords = await db.select().from(clients).where(eq(clients.email, user.email));
+      const clientRecords = await db.select().from(clients).where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
 
       if (clientRecords.length === 0) {
         return res.status(404).json({ error: 'Client profile not found' });
@@ -1722,10 +1710,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const progress = await storage.getClientProgress(clientId, trainerId);
         res.json(progress);
       } catch (error) {
-        // Return mock data when database is unavailable
-        console.warn('Database unavailable, returning mock progress data:', error);
-        const mockProgress = getMockProgress(req.params.clientId);
-        res.json(mockProgress);
+        console.error('Error fetching progress data:', error);
+        res.status(500).json({ error: 'Internal server error' });
       }
     }
   );
@@ -1827,9 +1813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(analytics);
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      const trainerId = (req.user as any).id as string;
-      const analytics = getMockAnalytics(trainerId);
-      res.json(analytics);
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 

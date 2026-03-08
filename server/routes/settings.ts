@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { db } from '../db';
 import { users, clients, workouts } from '../../shared/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, isNull } from 'drizzle-orm';
 import { getUserById } from '../auth';
 import { uploadImage, isR2Configured } from '../services/fileUpload';
 
@@ -40,7 +40,7 @@ router.get('/stats', async (req: Request, res: Response) => {
       const [result] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(clients)
-        .where(eq(clients.trainerId, user.id));
+        .where(and(eq(clients.trainerId, user.id), isNull(clients.deletedAt)));
       clientCount = result?.count ?? 0;
     }
 

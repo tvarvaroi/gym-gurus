@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { getDb } from '../db';
 import { clientAccessCodes, clients, users } from '../../shared/schema';
 
@@ -88,7 +88,7 @@ export async function validateAccessCode(code: string): Promise<typeof users.$in
   const [client] = await db
     .select()
     .from(clients)
-    .where(eq(clients.id, accessCode.clientId))
+    .where(and(eq(clients.id, accessCode.clientId), isNull(clients.deletedAt)))
     .limit(1);
 
   if (!client) return null;
@@ -103,7 +103,7 @@ export async function validateAccessCode(code: string): Promise<typeof users.$in
   const [existingUser] = await db
     .select()
     .from(users)
-    .where(and(eq(users.email, client.email.toLowerCase()), eq(users.role, 'client')))
+    .where(and(eq(users.email, client.email.toLowerCase()), eq(users.role, 'client'), isNull(users.deletedAt)))
     .limit(1);
 
   if (existingUser) return existingUser;
@@ -144,7 +144,7 @@ export async function regenerateAccessCode(
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.trainerId, trainerId)))
+    .where(and(eq(clients.id, clientId), eq(clients.trainerId, trainerId), isNull(clients.deletedAt)))
     .limit(1);
 
   if (!client) return null;
@@ -162,7 +162,7 @@ export async function revokeAccessCode(clientId: string, trainerId: string): Pro
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.trainerId, trainerId)))
+    .where(and(eq(clients.id, clientId), eq(clients.trainerId, trainerId), isNull(clients.deletedAt)))
     .limit(1);
 
   if (!client) return false;
@@ -188,7 +188,7 @@ export async function getActiveAccessCode(
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.trainerId, trainerId)))
+    .where(and(eq(clients.id, clientId), eq(clients.trainerId, trainerId), isNull(clients.deletedAt)))
     .limit(1);
 
   if (!client) return null;

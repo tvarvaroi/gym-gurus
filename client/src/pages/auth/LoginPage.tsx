@@ -455,7 +455,7 @@ export default function LoginPage() {
             <button
               type="button"
               disabled={isLoading}
-              onClick={() => console.log('Google OAuth not yet implemented')}
+              onClick={() => {}}
               className="w-full h-11 flex items-center justify-center gap-3 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-white/8"
               style={{
                 background: 'rgba(255,255,255,0.04)',

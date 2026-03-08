@@ -721,7 +721,7 @@ export default function ProgressPage() {
                           {workout.volume.toLocaleString()}kg
                         </span>
                       )}
-                      <span>{workout.sets} sets</span>
+                      <span>{workout.sets} {workout.sets === 1 ? 'set' : 'sets'}</span>
                     </div>
                   </div>
                 ))}

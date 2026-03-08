@@ -4,14 +4,10 @@ import { onCLS, onFCP, onLCP, onTTFB, onINP, type Metric } from 'web-vitals';
  * Sends web vitals metrics to analytics endpoint
  * @param metric - Web Vitals metric object
  */
-function sendToAnalytics(metric: Metric) {
-  // Log to console in development only.
-  // Production reporting is disabled because navigator.sendBeacon() bypasses
-  // the global fetch CSRF interceptor, causing 403 errors on every page load.
+function sendToAnalytics(_metric: Metric) {
+  // Production reporting disabled: navigator.sendBeacon() bypasses the global
+  // fetch CSRF interceptor, causing 403 errors on every page load.
   // Re-enable once the analytics endpoint supports beacon requests properly.
-  if (import.meta.env.DEV) {
-    console.log(`[Web Vitals] ${metric.name}:`, metric.value, metric);
-  }
 }
 
 /**

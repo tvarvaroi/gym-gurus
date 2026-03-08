@@ -1,7 +1,5 @@
 // Minimal test login page to debug redirect issue
 export function TestMinimalLogin() {
-  console.log('[TestMinimalLogin] Component rendering!');
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="max-w-md w-full bg-card border border-border rounded-2xl p-8">
