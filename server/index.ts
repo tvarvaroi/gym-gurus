@@ -228,6 +228,19 @@ app.use((req, res, next) => {
     const { getPool } = await import('./db');
     const pool = await getPool();
     const migrations = [
+      // 0001: soft deletes
+      'ALTER TABLE "clients" ADD COLUMN IF NOT EXISTS "deleted_at" timestamp',
+      'ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deleted_at" timestamp',
+      'CREATE INDEX IF NOT EXISTS "idx_clients_deleted_at" ON "clients" USING btree ("deleted_at")',
+      'CREATE INDEX IF NOT EXISTS "idx_users_deleted_at" ON "users" USING btree ("deleted_at")',
+      // 0002: height/weight decimal → double precision (idempotent via DO block)
+      `DO $$ BEGIN
+        IF (SELECT data_type FROM information_schema.columns
+            WHERE table_name = 'clients' AND column_name = 'height') = 'numeric' THEN
+          ALTER TABLE "clients" ALTER COLUMN "height" SET DATA TYPE double precision USING height::double precision;
+          ALTER TABLE "clients" ALTER COLUMN "weight" SET DATA TYPE double precision USING weight::double precision;
+        END IF;
+      END $$`,
       'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS workout_name varchar',
       'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS workout_type varchar',
       'ALTER TABLE workout_sessions ADD COLUMN IF NOT EXISTS planned_duration_minutes integer',
