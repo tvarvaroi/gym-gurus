@@ -1,6 +1,6 @@
 # CLAUDE.md — GymGurus Developer Reference
 
-> Last updated: 2026-03-08 | Built from full audit of all 67 available skills
+> Last updated: 2026-03-09 | Full skills inventory enforced — check ALL local and global skills every task
 
 ---
 
@@ -8,18 +8,27 @@
 
 **Before writing a single line of code, run this checklist every session, every task:**
 
-```
-1. /si:status              → check memory health and context from previous sessions
-2. Identify task type      → map it to the skill table below
-3. Read the skill(s)       → use Read tool on every relevant SKILL.md
-4. Check local .claude/    → read any scoped rules in .claude/rules/ that match your files
-5. Check global ~/.claude/ → read global CLAUDE.md for cross-project preferences
-6. Brainstorm first        → for ANY new feature/component, activate `brainstorming` skill BEFORE coding
-7. /si:review at end       → promote learnings before closing the session
-```
+1. Read MEMORY.md — check memory for prior learnings from previous sessions
+2. FULL SKILLS INVENTORY — check ALL THREE locations:
+   LOCAL project skills: C:/Users/tvarv/.claude/skills/
+   GLOBAL Claude skills: ~/.claude/skills/ (or equivalent global install path)
+   AGENTS skills: C:/Users/tvarv/Desktop/GymGurus - Copy/.agents/skills/
+   Check every category in all three: engineering/, marketing/, product-team/, design/, business/, devops/
+   Full skills repo for reference: https://github.com/alirezarezvani/claude-skills
+   Do NOT rely on the table below as exhaustive — all three locations may have skills not listed here.
+3. MAP skills to the task — identify ALL relevant skills across ALL categories from ALL THREE locations.
+   A landing page task needs marketing + seo + cro + psychology skills, not just frontend.
+   A DB task may need observability + runbook skills too.
+   Report which skills you loaded from which location and what each contributes BEFORE acting.
+4. Read every SKILL.md — use Read tool on every matched skill before writing any code
+5. Check .claude/rules/ — read scoped rules matching your working files
+6. Brainstorm first — for ANY new feature/component, read brainstorming/SKILL.md BEFORE coding.
+   HARD GATE: no implementation until design is presented and approved.
+7. Update MEMORY.md at end — write new patterns, fixes, and learnings from this session
 
 **This is non-negotiable. Every task. Every time. No exceptions.**
-Skills exist because trial-and-error produced them. Skipping them wastes that accumulated knowledge.
+
+**The core principle:** You have skills across engineering, marketing, product, design, SEO, CRO, psychology, copywriting, and more — installed across three locations. The right skills for any task are rarely just the obvious ones. Always inventory all three locations first. Always report what you loaded. Never assume you already know which skills apply.
 
 ---
 
