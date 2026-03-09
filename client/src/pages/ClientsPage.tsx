@@ -28,8 +28,8 @@ const ClientsPageContent = memo(() => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['/api/clients', trainerId],
-    queryFn: () => fetch(`/api/clients/${trainerId}`).then((res) => res.json()),
+    queryKey: ['/api/clients'],
+    queryFn: () => fetch('/api/clients').then((res) => res.json()),
     enabled: !!trainerId,
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,

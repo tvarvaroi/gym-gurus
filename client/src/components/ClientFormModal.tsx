@@ -127,7 +127,7 @@ export function ClientFormModal({
         accessCode: string | null;
       }>,
     onSuccess: (data: { client: Client; accessCode: string | null }) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/clients', trainerId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       setDialogOpen(false);
       form.reset();
       if (data.accessCode) {
@@ -153,7 +153,7 @@ export function ClientFormModal({
     mutationFn: (data: Partial<InsertClient>) =>
       apiRequest('PUT', `/api/clients/${client?.id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/clients', trainerId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       setDialogOpen(false);
       toast({
         title: 'Success',
@@ -173,7 +173,7 @@ export function ClientFormModal({
   const deleteClientMutation = useMutation({
     mutationFn: () => apiRequest('DELETE', `/api/clients/${client?.id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/clients', trainerId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
       setDialogOpen(false); // Close the modal after successful deletion
       toast({
         title: 'Success',

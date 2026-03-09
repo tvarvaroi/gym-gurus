@@ -270,7 +270,7 @@ export default function Achievements() {
         transition={{ delay: 0.2 }}
         className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
       >
-        {filteredAchievements.length === 0 && (
+        {earnedCount === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

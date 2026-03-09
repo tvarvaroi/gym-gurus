@@ -13,7 +13,6 @@ import {
   Weight,
   Target,
   Users,
-  Dumbbell,
   Trophy,
   CheckCircle,
 } from 'lucide-react';
@@ -760,50 +759,6 @@ export default function ProgressPage() {
             </Card>
           </motion.div>
         </div>
-      )}
-
-      {isSolo && !loadingSoloProgress && (!soloProgress || soloProgress.totalWorkouts === 0) && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <Card className="relative overflow-hidden border border-border/30 bg-background/40 backdrop-blur-xl shadow-premium">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent" />
-            <CardContent className="relative py-16 text-center">
-              <div className="relative inline-block mb-6">
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{
-                    duration: 2,
-                    repeat: prefersReducedMotion ? 0 : Infinity,
-                    ease: 'easeInOut',
-                  }}
-                >
-                  <Dumbbell className="w-16 h-16 text-purple-500/60 mx-auto" />
-                </motion.div>
-              </div>
-              <div className="space-y-3 max-w-md mx-auto">
-                <h3 className="text-xl font-light">
-                  Complete your first workout to start tracking progress!
-                </h3>
-                <p className="text-base font-light text-muted-foreground/80 leading-relaxed">
-                  Your workout history, personal records, and body measurements will appear here as
-                  you train.
-                </p>
-                <div className="pt-4">
-                  <Button
-                    onClick={() => (window.location.href = '/solo/generate')}
-                    className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 border-0"
-                  >
-                    <Dumbbell className="w-4 h-4 mr-2" />
-                    Generate a Workout
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
       )}
 
       {selectedClientData && loadingProgress && (
