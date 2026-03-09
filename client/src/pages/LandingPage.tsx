@@ -58,37 +58,37 @@ const LandingPage = memo(() => {
 
       {/* Scrollable sections */}
       <div className="relative z-10">
-        <section id="hero">
+        <section id="hero" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
             <HeroPage />
           </Suspense>
         </section>
 
-        <section id="how-it-works">
+        <section id="how-it-works" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
             <HowItWorksPage />
           </Suspense>
         </section>
 
-        <section id="features">
+        <section id="features" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
             <FeaturesPage />
           </Suspense>
         </section>
 
-        <section id="about">
+        <section id="about" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
             <AboutPage />
           </Suspense>
         </section>
 
-        <section id="contact">
+        <section id="contact" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
             <ContactPage />
           </Suspense>
         </section>
 
-        <section id="pricing">
+        <section id="pricing" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
             <PricingPage />
           </Suspense>

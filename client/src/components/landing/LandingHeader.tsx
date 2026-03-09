@@ -107,7 +107,7 @@ const LandingHeader = memo(() => {
                 key={item.href}
                 href={item.href}
                 whileHover={{ y: -2 }}
-                className="text-base font-light transition-colors tracking-wider"
+                className="text-base font-light transition-colors tracking-wider cursor-pointer rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                 style={{
                   fontFamily: "'Playfair Display', serif",
                   color: 'rgba(255, 255, 255, 0.7)',
@@ -129,7 +129,7 @@ const LandingHeader = memo(() => {
             <motion.a
               href="/auth/login"
               whileHover={{ y: -2 }}
-              className="text-base font-light transition-colors tracking-wider px-4 py-1.5 rounded-lg"
+              className="text-base font-light transition-colors tracking-wider px-4 py-1.5 rounded-lg cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
               style={{
                 fontFamily: "'Playfair Display', serif",
                 color: 'hsl(var(--color-guru))',
@@ -200,7 +200,7 @@ const LandingHeader = memo(() => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-left py-3 px-4 rounded-xl transition-all"
+                    className="text-left py-3 px-4 rounded-xl transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                     style={{
                       fontFamily: "'Playfair Display', serif",
                       color: 'rgba(255, 255, 255, 0.7)',
@@ -218,7 +218,7 @@ const LandingHeader = memo(() => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: navItems.length * 0.1 }}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-left py-3 px-4 rounded-xl transition-all mt-2"
+                  className="text-left py-3 px-4 rounded-xl transition-all mt-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                   style={{
                     fontFamily: "'Playfair Display', serif",
                     color: 'hsl(var(--color-guru))',
