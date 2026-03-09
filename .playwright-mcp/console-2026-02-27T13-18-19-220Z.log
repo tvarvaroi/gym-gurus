@@ -1,0 +1,3 @@
+[   16109ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/solo/today-workout:0
+[   16138ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/solo/stats:0
+[   16154ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/solo/weekly-activity:0

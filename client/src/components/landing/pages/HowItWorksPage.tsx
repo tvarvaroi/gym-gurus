@@ -205,7 +205,10 @@ const HowItWorksPage = memo(() => {
                 {/* Connector arrow between cards (desktop only) */}
                 {index < steps.length - 1 && (
                   <div className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10">
-                    <ArrowRight className="w-5 h-5" style={{ color: 'hsl(var(--color-guru) / 0.3)' }} />
+                    <ArrowRight
+                      className="w-5 h-5"
+                      style={{ color: 'hsl(var(--color-guru) / 0.3)' }}
+                    />
                   </div>
                 )}
               </motion.div>
@@ -221,7 +224,9 @@ const HowItWorksPage = memo(() => {
           >
             <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.98 }}>
               <button
-                onClick={() => window.dispatchEvent(new CustomEvent('carousel:navigate', { detail: { page: 5 } }))}
+                onClick={() => {
+                  window.location.href = '/auth/login';
+                }}
                 className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all"
                 style={{
                   fontFamily: "'Playfair Display', serif",

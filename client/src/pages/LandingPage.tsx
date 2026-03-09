@@ -1,17 +1,14 @@
 import { memo, Suspense, lazy } from 'react';
-import PageCarousel from '@/components/landing/PageCarousel';
+import LandingHeader from '@/components/landing/LandingHeader';
 
-// Lazy load pages for better performance
+// Lazy load sections for better performance
 const HeroPage = lazy(() => import('@/components/landing/pages/HeroPage'));
 const HowItWorksPage = lazy(() => import('@/components/landing/pages/HowItWorksPage'));
 const FeaturesPage = lazy(() => import('@/components/landing/pages/FeaturesPage'));
 const AboutPage = lazy(() => import('@/components/landing/pages/AboutPage'));
-// ResourcesPage removed from carousel — content not yet available
 const ContactPage = lazy(() => import('@/components/landing/pages/ContactPage'));
-const LoginCarouselPage = lazy(() => import('@/components/landing/pages/LoginCarouselPage'));
 const PricingPage = lazy(() => import('@/components/landing/pages/PricingPage'));
 
-// Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen w-full flex items-center justify-center">
     <div className="text-center" role="status" aria-label="Loading page content">
@@ -22,34 +19,10 @@ const PageLoader = () => (
 );
 
 const LandingPage = memo(() => {
-  const pages = [
-    <Suspense key="hero" fallback={<PageLoader />}>
-      <HeroPage />
-    </Suspense>,
-    <Suspense key="how-it-works" fallback={<PageLoader />}>
-      <HowItWorksPage />
-    </Suspense>,
-    <Suspense key="features" fallback={<PageLoader />}>
-      <FeaturesPage />
-    </Suspense>,
-    <Suspense key="about" fallback={<PageLoader />}>
-      <AboutPage />
-    </Suspense>,
-    <Suspense key="contact" fallback={<PageLoader />}>
-      <ContactPage />
-    </Suspense>,
-    <Suspense key="login" fallback={<PageLoader />}>
-      <LoginCarouselPage />
-    </Suspense>,
-    <Suspense key="pricing" fallback={<PageLoader />}>
-      <PricingPage />
-    </Suspense>,
-  ];
-
   return (
-    <div className="relative w-full min-h-screen overflow-hidden bg-black">
-      {/* Premium gradient background */}
-      <div className="absolute inset-0 z-0">
+    <div className="relative w-full min-h-screen bg-black" style={{ scrollBehavior: 'smooth' }}>
+      {/* Premium gradient background — fixed so it covers all sections */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <div
           className="absolute inset-0"
           style={{
@@ -59,7 +32,7 @@ const LandingPage = memo(() => {
         />
         {/* Subtle gold accent glow */}
         <div
-          className="absolute w-[800px] h-[800px] rounded-full pointer-events-none"
+          className="absolute w-[800px] h-[800px] rounded-full"
           style={{
             background: 'radial-gradient(circle, rgba(201, 168, 85, 0.05) 0%, transparent 70%)',
             top: '-20%',
@@ -69,7 +42,7 @@ const LandingPage = memo(() => {
         />
         {/* Subtle teal accent glow */}
         <div
-          className="absolute w-[600px] h-[600px] rounded-full pointer-events-none"
+          className="absolute w-[600px] h-[600px] rounded-full"
           style={{
             background: 'radial-gradient(circle, rgba(13, 148, 136, 0.04) 0%, transparent 70%)',
             bottom: '-10%',
@@ -77,13 +50,49 @@ const LandingPage = memo(() => {
             filter: 'blur(100px)',
           }}
         />
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/20 z-10" />
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      {/* Page Carousel - positioned above background */}
-      <div className="relative z-20">
-        <PageCarousel pages={pages} />
+      {/* Fixed header — above all sections */}
+      <LandingHeader />
+
+      {/* Scrollable sections */}
+      <div className="relative z-10">
+        <section id="hero">
+          <Suspense fallback={<PageLoader />}>
+            <HeroPage />
+          </Suspense>
+        </section>
+
+        <section id="how-it-works">
+          <Suspense fallback={<PageLoader />}>
+            <HowItWorksPage />
+          </Suspense>
+        </section>
+
+        <section id="features">
+          <Suspense fallback={<PageLoader />}>
+            <FeaturesPage />
+          </Suspense>
+        </section>
+
+        <section id="about">
+          <Suspense fallback={<PageLoader />}>
+            <AboutPage />
+          </Suspense>
+        </section>
+
+        <section id="contact">
+          <Suspense fallback={<PageLoader />}>
+            <ContactPage />
+          </Suspense>
+        </section>
+
+        <section id="pricing">
+          <Suspense fallback={<PageLoader />}>
+            <PricingPage />
+          </Suspense>
+        </section>
       </div>
     </div>
   );

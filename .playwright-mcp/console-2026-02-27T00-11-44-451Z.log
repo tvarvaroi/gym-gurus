@@ -1,0 +1,2 @@
+[  106894ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://gym-gurus-production.up.railway.app/api/workouts:0
+[  203014ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/solo/meal-plans:0

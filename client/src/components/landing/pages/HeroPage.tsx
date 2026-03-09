@@ -23,7 +23,9 @@ const ShimmerParticle = ({
           ? 'linear-gradient(135deg, hsl(var(--color-guru)), #e5e4e2, hsl(var(--color-guru)))'
           : 'linear-gradient(135deg, hsl(var(--color-disciple)), #e5e4e2, hsl(var(--color-disciple)))',
       boxShadow:
-        variant === 'blue' ? '0 0 8px hsl(var(--color-guru) / 0.5)' : '0 0 8px hsl(var(--color-disciple) / 0.5)',
+        variant === 'blue'
+          ? '0 0 8px hsl(var(--color-guru) / 0.5)'
+          : '0 0 8px hsl(var(--color-disciple) / 0.5)',
     }}
     initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
     animate={{
@@ -68,7 +70,8 @@ const HeroPage = memo(() => {
       <motion.div
         className="absolute w-[600px] h-[600px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
+          background:
+            'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
           bottom: '10%',
           left: '10%',
           filter: 'blur(80px)',
@@ -155,7 +158,8 @@ const HeroPage = memo(() => {
                 className="text-5xl md:text-6xl lg:text-7xl font-light pb-4"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
+                  background:
+                    'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -184,8 +188,8 @@ const HeroPage = memo(() => {
                   paddingLeft: '2rem',
                 }}
               >
-                Manage clients, build workouts, track progress, and grow your revenue — all
-                from one platform built for personal trainers.
+                Manage clients, build workouts, track progress, and grow your revenue — all from one
+                platform built for personal trainers.
               </p>
             </div>
           </motion.div>
@@ -201,11 +205,14 @@ const HeroPage = memo(() => {
             <div className="flex flex-col sm:flex-row items-start gap-4">
               <motion.div whileHover={{ scale: 1.05, x: 5 }} whileTap={{ scale: 0.98 }}>
                 <button
-                  onClick={() => window.dispatchEvent(new CustomEvent('carousel:navigate', { detail: { page: 5 } }))}
+                  onClick={() => {
+                    window.location.href = '/auth/login';
+                  }}
                   className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all"
                   style={{
                     fontFamily: "'Playfair Display', serif",
-                    background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
+                    background:
+                      'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
                     boxShadow:
                       '0 20px 40px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                     color: '#ffffff',
@@ -291,7 +298,11 @@ const HeroPage = memo(() => {
                   <div className="relative space-y-2">
                     {/* Shimmer particle - optimized to 1 */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <ShimmerParticle delay={index * 0.5} variant={stat.variant} prefersReducedMotion={prefersReducedMotion} />
+                      <ShimmerParticle
+                        delay={index * 0.5}
+                        variant={stat.variant}
+                        prefersReducedMotion={prefersReducedMotion}
+                      />
                     </div>
 
                     <div
@@ -377,7 +388,14 @@ const HeroPage = memo(() => {
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
-              <div style={{ color: pill.variant === 'blue' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))' }}>
+              <div
+                style={{
+                  color:
+                    pill.variant === 'blue'
+                      ? 'hsl(var(--color-guru))'
+                      : 'hsl(var(--color-disciple))',
+                }}
+              >
                 {pill.icon}
               </div>
               <span
@@ -408,7 +426,9 @@ const HeroPage = memo(() => {
                 ? 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)))'
                 : 'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
             boxShadow:
-              i % 2 === 0 ? '0 0 8px hsl(var(--color-guru) / 0.4)' : '0 0 8px hsl(var(--color-disciple) / 0.4)',
+              i % 2 === 0
+                ? '0 0 8px hsl(var(--color-guru) / 0.4)'
+                : '0 0 8px hsl(var(--color-disciple) / 0.4)',
             left: `${20 + i * 20}%`,
             top: `${15 + i * 20}%`,
           }}

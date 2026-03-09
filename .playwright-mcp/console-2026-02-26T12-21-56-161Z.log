@@ -1,0 +1,19 @@
+[     485ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/solo/generate:0
+[  136666ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/solo/nutrition:0
+[  185808ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/workouts:0
+[  193708ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/workout-builder/08ffda27-ec96-4589-93a8-f2902d870a93:0
+[  208879ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/progress:0
+[  216642ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/solo/recovery:0
+[  233158ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/solo/achievements:0
+[  240689ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/dashboard/calculators:0
+[  241416ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/calculator-results:0
+[  242625ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/calculator-results:0
+[  244839ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/calculator-results:0
+[  248354ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/calculator-results/bmi:0
+[  249558ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/calculator-results/bmi:0
+[  251764ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/calculator-results/bmi:0
+[  256221ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/calculator-results:0
+[  257431ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://gym-gurus-production.up.railway.app/api/calculator-results:0
+[  272540ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/schedule:0
+[  280031ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/settings:0
+[  316078ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/dashboard:0

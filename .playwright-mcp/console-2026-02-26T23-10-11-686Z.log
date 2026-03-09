@@ -1,0 +1,2 @@
+[   93253ms] [ERROR] Failed to load resource: the server responded with a status of 503 () @ https://gym-gurus-production.up.railway.app/api/ai/generate-workout:0
+[  110004ms] [ERROR] Failed to load resource: the server responded with a status of 503 () @ https://gym-gurus-production.up.railway.app/api/ai/generate-workout:0

@@ -1,0 +1,8 @@
+[    1588ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/:0
+[    1751ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://gym-gurus-production.up.railway.app/api/analytics/web-vitals:0
+[    1917ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://gym-gurus-production.up.railway.app/api/analytics/web-vitals:0
+[   20769ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://gym-gurus-production.up.railway.app/api/analytics/web-vitals:0
+[   31984ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/auth/login?role=solo:0
+[   32167ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://gym-gurus-production.up.railway.app/api/analytics/web-vitals:0
+[   32200ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://gym-gurus-production.up.railway.app/api/analytics/web-vitals:0
+[   44833ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://gym-gurus-production.up.railway.app/api/analytics/web-vitals:0

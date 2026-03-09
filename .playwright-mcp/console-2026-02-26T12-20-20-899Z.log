@@ -1,0 +1,2 @@
+[     928ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/:0
+[   21193ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://gym-gurus-production.up.railway.app/auth/login?role=solo:0

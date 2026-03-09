@@ -3,22 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import logoImage from '@assets/Sophisticated Logo with Japanese Influences (3)_1757605872884.png';
 
-interface LandingHeaderProps {
-  currentPage: number;
-  onNavigate: (index: number) => void;
-}
-
 const navItems = [
-  { label: 'Home', index: 0 },
-  { label: 'How It Works', index: 1 },
-  { label: 'Features', index: 2 },
-  { label: 'About', index: 3 },
-  { label: 'Contact', index: 4 },
-  { label: 'Login', index: 5 },
-  { label: 'Pricing', index: 6 },
+  { label: 'Home', href: '#hero' },
+  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Features', href: '#features' },
+  { label: 'About', href: '#about' },
+  { label: 'Contact', href: '#contact' },
+  { label: 'Pricing', href: '#pricing' },
 ];
 
-const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => {
+const LandingHeader = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -30,11 +24,6 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const handleNavigate = (index: number) => {
-    onNavigate(index);
-    setIsMobileMenuOpen(false);
-  };
 
   return (
     <>
@@ -49,10 +38,10 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
       >
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           {/* Logo */}
-          <motion.div
+          <motion.a
+            href="#hero"
             whileHover={{ scale: 1.02 }}
             className="flex items-center gap-4 cursor-pointer"
-            onClick={() => handleNavigate(0)}
           >
             <div
               className="relative w-12 h-12 rounded-xl p-0.5"
@@ -63,7 +52,6 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                 boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
               }}
             >
-              {/* Sophisticated glass shine */}
               <div
                 className="absolute inset-0 rounded-xl"
                 style={{
@@ -83,7 +71,8 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                 className="text-xl font-extralight tracking-[0.3em]"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
+                  background:
+                    'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   letterSpacing: '0.2em',
@@ -109,51 +98,49 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
                 ELITE FITNESS
               </p>
             </div>
-          </motion.div>
+          </motion.a>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             {navItems.map((item) => (
-              <motion.button
-                key={item.index}
-                onClick={() => handleNavigate(item.index)}
+              <motion.a
+                key={item.href}
+                href={item.href}
                 whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                className="text-base font-light transition-colors relative tracking-wider"
+                className="text-base font-light transition-colors tracking-wider"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  color: currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
-                  background:
-                    currentPage === item.index
-                      ? 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)'
-                      : 'none',
-                  backgroundClip: currentPage === item.index ? 'text' : 'unset',
-                  WebkitBackgroundClip: currentPage === item.index ? 'text' : 'unset',
-                  WebkitTextFillColor:
-                    currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
+                  color: 'rgba(255, 255, 255, 0.7)',
                   letterSpacing: '0.05em',
+                  textDecoration: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255, 255, 255, 1)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255, 255, 255, 0.7)';
                 }}
               >
                 {item.label}
-
-                {/* Active indicator */}
-                {currentPage === item.index && (
-                  <motion.div
-                    layoutId="activeIndicator"
-                    className="absolute -bottom-1 left-0 right-0 h-px rounded-full"
-                    style={{
-                      background:
-                        'linear-gradient(90deg, hsl(var(--color-guru) / 0.6), hsl(var(--color-disciple) / 0.6))',
-                    }}
-                    transition={{ duration: 0.3 }}
-                  />
-                )}
-              </motion.button>
+              </motion.a>
             ))}
-          </nav>
 
-          {/* Empty space for balance */}
-          <div className="hidden md:block w-20" />
+            {/* Login CTA */}
+            <motion.a
+              href="/auth/login"
+              whileHover={{ y: -2 }}
+              className="text-base font-light transition-colors tracking-wider px-4 py-1.5 rounded-lg"
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                color: 'hsl(var(--color-guru))',
+                border: '1px solid hsl(var(--color-guru) / 0.4)',
+                letterSpacing: '0.05em',
+                textDecoration: 'none',
+              }}
+            >
+              Login
+            </motion.a>
+          </nav>
 
           {/* Mobile Menu Button */}
           <button
@@ -206,44 +193,41 @@ const LandingHeader = memo(({ currentPage, onNavigate }: LandingHeaderProps) => 
               {/* Navigation */}
               <nav className="flex flex-col gap-4">
                 {navItems.map((item, index) => (
-                  <motion.button
-                    key={item.index}
+                  <motion.a
+                    key={item.href}
+                    href={item.href}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    onClick={() => handleNavigate(item.index)}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className="text-left py-3 px-4 rounded-xl transition-all"
                     style={{
                       fontFamily: "'Playfair Display', serif",
-                      background:
-                        currentPage === item.index
-                          ? 'linear-gradient(135deg, hsl(var(--color-guru) / 0.12), hsl(var(--color-disciple) / 0.12))'
-                          : 'transparent',
-                      border:
-                        currentPage === item.index
-                          ? '1px solid hsl(var(--color-guru) / 0.2)'
-                          : '1px solid transparent',
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      textDecoration: 'none',
                     }}
                   >
-                    <span
-                      style={{
-                        color:
-                          currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
-                        background:
-                          currentPage === item.index
-                            ? 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)'
-                            : 'none',
-                        backgroundClip: currentPage === item.index ? 'text' : 'unset',
-                        WebkitBackgroundClip: currentPage === item.index ? 'text' : 'unset',
-                        WebkitTextFillColor:
-                          currentPage === item.index ? 'transparent' : 'rgba(255, 255, 255, 0.7)',
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      {item.label}
-                    </span>
-                  </motion.button>
+                    {item.label}
+                  </motion.a>
                 ))}
+
+                {/* Login CTA */}
+                <motion.a
+                  href="/auth/login"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: navItems.length * 0.1 }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-left py-3 px-4 rounded-xl transition-all mt-2"
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    color: 'hsl(var(--color-guru))',
+                    border: '1px solid hsl(var(--color-guru) / 0.3)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Login
+                </motion.a>
               </nav>
             </motion.div>
           </motion.div>

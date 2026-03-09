@@ -532,11 +532,16 @@ Consequence: `$onUpdate`, soft deletes, and future schema changes cannot be appl
 
 ---
 
-### § UX-1 — HIGH: Scroll-snap carousel landing
+### § UX-1 — ✅ RESOLVED (2026-03-09): Carousel → scrollable landing page
 
-**Skill:** `ux-researcher-designer` (journey mapping confirms drop-off) + `product-manager-toolkit` (conversion impact)
-
-7 full-screen `scroll-snap` slides break browser nav, hide login until slide 6. Replace with standard scrollable layout.
+Replaced JS `AnimatePresence` carousel with 6 vertically-stacked `<section id="...">` sections.
+Login moved to dedicated `/auth/login` route — `LoginCarouselPage.tsx` deleted.
+`PageCarousel.tsx` deleted. `LandingHeader` converted to static anchor-link nav.
+All 5 `carousel:navigate` dispatches replaced: `page:5` → `window.location.href='/auth/login'`,
+`page:4` (Enterprise Contact) → `scrollIntoView('#contact')`.
+Fixed simultaneously: CRO (login has URL, browser nav works), SEO (all 6 sections crawler-visible),
+Performance (carousel JS off critical path).
+Post-launch: section reorder A/B test + scroll-depth audit documented in `docs/plans/2026-03-09-ux1-carousel-to-scroll.md`.
 
 ---
 

@@ -1,0 +1,123 @@
+[     690ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[     703ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    1410ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    1417ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    4067ms] [WARNING] Error while trying to use the following icon from the Manifest: http://localhost:5174/icons/icon-144.png (Download error or resource isn't a valid image) @ http://localhost:5174/:0
+[    4133ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    4141ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    4208ms] [WARNING] Error while trying to use the following icon from the Manifest: http://localhost:5174/icons/icon-144.png (Download error or resource isn't a valid image) @ http://localhost:5174/:0
+[    4239ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    4288ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    4352ms] [WARNING] Error while trying to use the following icon from the Manifest: http://localhost:5174/icons/icon-144.png (Download error or resource isn't a valid image) @ http://localhost:5174/:0
+[    4381ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    4411ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    4446ms] [WARNING] Error while trying to use the following icon from the Manifest: http://localhost:5174/icons/icon-144.png (Download error or resource isn't a valid image) @ http://localhost:5174/:0
+[    4485ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    4502ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    4565ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    4581ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    4645ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    4666ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    4740ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    4750ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    4827ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    4830ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    4849ms] [WARNING] Error while trying to use the following icon from the Manifest: http://localhost:5174/icons/icon-144.png (Download error or resource isn't a valid image) @ http://localhost:5174/:0
+[    5116ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    5131ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    5395ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    5400ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    5576ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    5583ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    6163ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    6166ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    6909ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    6912ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[    9396ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[    9398ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   14422ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   14425ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   19048ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   19051ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   20510ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   20512ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   24164ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   24166ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   27711ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   27714ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   29523ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   29526ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   33688ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   33691ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   36536ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   36539ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   39144ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   39147ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   41242ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   41245ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   43715ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   43718ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   45443ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   45446ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   47248ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   47250ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   48789ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   48791ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   50488ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   50491ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   52510ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   52514ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   53789ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   53793ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   55463ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   55476ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   56969ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   56972ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   59969ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   59972ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   63028ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   63030ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   66255ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   66257ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   68923ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   68925ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   71747ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   71750ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   73525ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   73527ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   75909ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   75912ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   80695ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   80698ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   82507ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   82509ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   83724ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   83726ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   88108ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   88111ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   92053ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   92056ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   95135ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   95138ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   96573ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   96576ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[   97653ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[   97656ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[  102254ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[  102257ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[  104347ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[  104350ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[  106538ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[  106540ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[  108612ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[  108615ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[  113308ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[  113310ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[  114460ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[  114462ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[  117093ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[  117097ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[  121532ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[  121535ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0
+[  125543ms] [ERROR] WebSocket connection to 'ws://localhost:5000/?token=yKDvTAaQqMca' failed: Error during WebSocket handshake: Unexpected response code: 400 @ http://localhost:5174/@vite/client:535
+[  125547ms] [ERROR] Failed to load resource: the server responded with a status of 426 (Upgrade Required) @ http://localhost:5000/:0

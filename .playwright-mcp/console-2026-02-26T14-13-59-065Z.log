@@ -1,0 +1,2 @@
+[  537815ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://gym-gurus-production.up.railway.app/api/calculator-results/tdee:0
+[  537816ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://gym-gurus-production.up.railway.app/api/users/fitness-profile:0

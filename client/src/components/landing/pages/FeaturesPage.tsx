@@ -22,12 +22,11 @@ const ShimmerDot = ({
   <motion.div
     className="absolute w-1 h-1 rounded-full"
     style={{
-      background:
-        variant === 'blue'
-          ? 'hsl(var(--color-guru))'
-          : 'hsl(var(--color-disciple))',
+      background: variant === 'blue' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
       boxShadow:
-        variant === 'blue' ? '0 0 6px hsl(var(--color-guru) / 0.4)' : '0 0 6px hsl(var(--color-disciple) / 0.4)',
+        variant === 'blue'
+          ? '0 0 6px hsl(var(--color-guru) / 0.4)'
+          : '0 0 6px hsl(var(--color-disciple) / 0.4)',
     }}
     initial={{ opacity: 0, scale: 0 }}
     animate={{ opacity: 0.5, scale: 1 }}
@@ -87,7 +86,8 @@ const FeaturesPage = memo(() => {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
+          background:
+            'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
           bottom: '10%',
           left: '5%',
           filter: 'blur(80px)',
@@ -145,7 +145,10 @@ const FeaturesPage = memo(() => {
                           feature.variant === 'blue'
                             ? 'linear-gradient(135deg, hsl(var(--color-guru) / 0.15), hsl(var(--color-guru-secondary) / 0.1))'
                             : 'linear-gradient(135deg, hsl(var(--color-disciple) / 0.15), hsl(var(--color-disciple-secondary) / 0.1))',
-                        color: feature.variant === 'blue' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
+                        color:
+                          feature.variant === 'blue'
+                            ? 'hsl(var(--color-guru))'
+                            : 'hsl(var(--color-disciple))',
                       }}
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.6 }}
@@ -225,7 +228,8 @@ const FeaturesPage = memo(() => {
               className="text-4xl md:text-5xl lg:text-6xl font-light pb-3"
               style={{
                 fontFamily: "'Playfair Display', serif",
-                background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
+                background:
+                  'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -252,11 +256,14 @@ const FeaturesPage = memo(() => {
             {/* CTA */}
             <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.98 }}>
               <button
-                onClick={() => window.dispatchEvent(new CustomEvent('carousel:navigate', { detail: { page: 5 } }))}
+                onClick={() => {
+                  window.location.href = '/auth/login';
+                }}
                 className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all"
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  background: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
+                  background:
+                    'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-secondary)), hsl(var(--color-guru-accent)))',
                   boxShadow:
                     '0 20px 40px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                   color: '#ffffff',
@@ -278,7 +285,10 @@ const FeaturesPage = memo(() => {
                 <span className="font-light">30-day trial</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5" style={{ color: 'hsl(var(--color-disciple))' }} />
+                <CheckCircle
+                  className="w-3.5 h-3.5"
+                  style={{ color: 'hsl(var(--color-disciple))' }}
+                />
                 <span className="font-light">No credit card</span>
               </div>
               <div className="flex items-center gap-2">
@@ -333,7 +343,10 @@ const FeaturesPage = memo(() => {
                           feature.variant === 'blue'
                             ? 'linear-gradient(135deg, hsl(var(--color-guru) / 0.15), hsl(var(--color-guru-secondary) / 0.1))'
                             : 'linear-gradient(135deg, hsl(var(--color-disciple) / 0.15), hsl(var(--color-disciple-secondary) / 0.1))',
-                        color: feature.variant === 'blue' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
+                        color:
+                          feature.variant === 'blue'
+                            ? 'hsl(var(--color-guru))'
+                            : 'hsl(var(--color-disciple))',
                       }}
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.6 }}
@@ -396,8 +409,12 @@ const FeaturesPage = memo(() => {
           style={{
             left: dot.left,
             top: dot.top,
-            background: dot.variant === 'guru' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
-            boxShadow: dot.variant === 'guru' ? '0 0 6px hsl(var(--color-guru) / 0.4)' : '0 0 6px hsl(var(--color-disciple) / 0.4)',
+            background:
+              dot.variant === 'guru' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
+            boxShadow:
+              dot.variant === 'guru'
+                ? '0 0 6px hsl(var(--color-guru) / 0.4)'
+                : '0 0 6px hsl(var(--color-disciple) / 0.4)',
           }}
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 0.4, scale: 1 }}

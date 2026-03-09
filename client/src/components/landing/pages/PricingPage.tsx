@@ -417,13 +417,11 @@ const PricingPage = memo(() => {
                       <button
                         onClick={() => {
                           if (plan.priceMonthly === null) {
-                            window.dispatchEvent(
-                              new CustomEvent('carousel:navigate', { detail: { page: 4 } })
-                            );
+                            document
+                              .getElementById('contact')
+                              ?.scrollIntoView({ behavior: 'smooth' });
                           } else {
-                            window.dispatchEvent(
-                              new CustomEvent('carousel:navigate', { detail: { page: 5 } })
-                            );
+                            window.location.href = '/auth/login';
                           }
                         }}
                         className="w-full inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-light transition-all text-sm"
