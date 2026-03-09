@@ -1866,7 +1866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/appointments/me - Get appointments for the authenticated Disciple (client role)
+  // GET /api/appointments/me - Get appointments for the authenticated Disciple (client role).
   // Resolves user ID → client record via email. Must be declared before /client/:clientId.
   app.get('/api/appointments/me', secureAuth, apiRateLimit, async (req: Request, res: Response) => {
     try {
