@@ -392,7 +392,7 @@ function TrainerClientSchedule() {
     queryFn: async () => {
       // Use client-specific endpoint for clients, trainer endpoint for trainers
       // TrainerId is derived from session on the server — no ID in URL
-      const endpoint = isClient ? `/api/appointments/client/${user?.id}` : '/api/appointments';
+      const endpoint = isClient ? '/api/appointments/me' : '/api/appointments';
 
       const response = await fetch(endpoint);
       if (!response.ok) {

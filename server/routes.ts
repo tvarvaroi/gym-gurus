@@ -467,7 +467,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const allClients = await database
           .select()
           .from(clients)
-          .where(and(eq(clients.trainerId, trainerId), eq(clients.status, 'active'), isNull(clients.deletedAt)));
+          .where(
+            and(
+              eq(clients.trainerId, trainerId),
+              eq(clients.status, 'active'),
+              isNull(clients.deletedAt)
+            )
+          );
 
         const alerts: Array<{
           clientId: string;
@@ -544,7 +550,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Find client record by matching email using direct database query
       const db = await getDb();
-      const clientRecords = await db.select().from(clients).where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
+      const clientRecords = await db
+        .select()
+        .from(clients)
+        .where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
 
       console.log(`🔍 Looking for client with email: ${user.email}`);
       console.log(`📋 Found ${clientRecords.length} client record(s)`);
@@ -1175,7 +1184,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Find client record by matching email
       const db = await getDb();
-      const clientRecords = await db.select().from(clients).where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
+      const clientRecords = await db
+        .select()
+        .from(clients)
+        .where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
 
       if (clientRecords.length === 0) {
         return res.status(404).json({ error: 'Client profile not found' });
@@ -1850,6 +1862,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(appointmentList);
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
+      res.status(500).json({ error: 'Failed to fetch appointments' });
+    }
+  });
+
+  // GET /api/appointments/me - Get appointments for the authenticated Disciple (client role)
+  // Resolves user ID → client record via email. Must be declared before /client/:clientId.
+  app.get('/api/appointments/me', secureAuth, apiRateLimit, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as any)?.id as string;
+      if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+      const authenticatedUser = await storage.getUser(userId);
+      if (!authenticatedUser || authenticatedUser.role !== 'client') {
+        return res.status(403).json({ error: 'Only clients can access this endpoint' });
+      }
+
+      // Find the client record by matching email
+      const db = await getDb();
+      const [clientRecord] = await db
+        .select({ id: clients.id })
+        .from(clients)
+        .where(and(eq(clients.email, authenticatedUser.email), isNull(clients.deletedAt)))
+        .limit(1);
+
+      if (!clientRecord) {
+        return res.json([]);
+      }
+
+      const appointmentList = await storage.getAppointmentsByClient(clientRecord.id);
+      res.json(appointmentList);
+    } catch (error) {
+      console.error('Failed to fetch client appointments (me):', error);
       res.status(500).json({ error: 'Failed to fetch appointments' });
     }
   });
