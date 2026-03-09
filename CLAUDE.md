@@ -1,6 +1,6 @@
 # CLAUDE.md — GymGurus Developer Reference
 
-> Last updated: 2026-03-09 | Full skills inventory — 139+ skills across 4 locations (skills/, agents/, commands/, .agents/skills/)
+> Last updated: 2026-03-09 | Full skills inventory — 139+ skills across 5 locations including frontend-design plugin + ui-ux-pro-max
 
 ---
 
@@ -9,11 +9,12 @@
 **Before writing a single line of code, run this checklist every session, every task:**
 
 1. Read MEMORY.md — check memory for prior learnings from previous sessions
-2. FULL SKILLS INVENTORY — check ALL FOUR locations:
+2. FULL SKILLS INVENTORY — check ALL FIVE locations:
    - `C:/Users/tvarv/.claude/skills/` ← 30 workflow + meta skills
    - `C:/Users/tvarv/.claude/agents/` ← 12 GSD orchestrator agents
    - `C:/Users/tvarv/.claude/commands/` ← git + review + security-scan CLI commands
-   - `C:/Users/tvarv/Desktop/GymGurus - Copy/.agents/skills/` ← project-scoped skills (ui-ux-pro-max, vercel-react-best-practices, verification-before-completion, web-design-guidelines, writing-plans, executing-plans)
+   - `C:/Users/tvarv/.claude/plugins/cache/claude-plugins-official/frontend-design/` ← Anthropic frontend-design plugin (aesthetic direction for all UI)
+   - `C:/Users/tvarv/Desktop/GymGurus - Copy/.agents/skills/` ← project-scoped: ui-ux-pro-max, vercel-react-best-practices, verification-before-completion, web-design-guidelines, writing-plans, executing-plans
      Engineering skills live in `C:/Users/tvarv/.claude/skills/engineering-team/` and `engineering/`
      Marketing skills live in `C:/Users/tvarv/.claude/skills/marketing-skill/`
      C-Level advisory in `C:/Users/tvarv/.claude/skills/c-level-advisor/`
@@ -31,6 +32,38 @@
 **This is non-negotiable. Every task. Every time. No exceptions.**
 
 **The core principle:** You have 139+ skills across engineering, GSD project management, marketing (42 skills/7 pods), C-level advisory (28 roles), RA/QM compliance, finance, design, and more — spread across FOUR locations. The right skills for any task are rarely just the obvious ones. Always inventory all four locations. Always report what you loaded.
+
+---
+
+## 🎨 Design & Frontend Skills — Full Reference
+
+Five dedicated skills across 3 locations. Use ALL relevant ones for any UI/frontend task.
+
+| Skill                             | Location                                                           | What it does                                                                                                                                                                      | When to use                                                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **`frontend-design`**             | `~/.claude/plugins/cache/claude-plugins-official/frontend-design/` | Generates distinctive, production-grade UI with bold aesthetic choices, creative typography, animations, spatial composition. Avoids generic AI aesthetics. Built by Anthropic.   | Any UI build task — components, pages, landing pages, dashboards. Goes first to set aesthetic direction.                             |
+| **`ui-ux-pro-max`**               | `.agents/skills/ui-ux-pro-max/`                                    | 50 styles, 97 palettes, 57 font pairings, 99 UX guidelines, 25 chart types across 9 stacks. Has a pre-delivery checklist. Run `python3 scripts/search.py "query" --design-system` | After `frontend-design` direction is set. Use for palette/font/UX compliance checks. Run pre-delivery checklist before every commit. |
+| **`web-design-guidelines`**       | `.agents/skills/web-design-guidelines/`                            | Fetches Vercel's Web Interface Guidelines and audits files against them (accessibility, aria, focus, keyboard nav, semantic HTML).                                                | Before committing UI code — run audit against guidelines source.                                                                     |
+| **`vercel-react-best-practices`** | `.agents/skills/vercel-react-best-practices/`                      | 40+ rules on React performance: passive event listeners, bundle optimization, deduplication, memo, suspense.                                                                      | Any React component work — catches performance anti-patterns.                                                                        |
+| **`senior-frontend`**             | `~/.claude/skills/engineering-team/senior-frontend/`               | React/Next.js/TypeScript/Tailwind. Bundle analysis, a11y, component scaffolding, Python automation tools.                                                                         | Implementation — component architecture, state management, performance optimization.                                                 |
+
+**Workflow for any UI task:**
+
+```
+1. frontend-design      → commit to bold aesthetic direction first
+2. ui-ux-pro-max        → get design system (palette, fonts, UX rules)
+3. senior-frontend      → implement with React/TypeScript/Tailwind
+4. vercel-react-best-practices → check React performance patterns
+5. web-design-guidelines → audit accessibility + semantic HTML
+6. ui-ux-pro-max pre-delivery checklist → verify before claiming done
+```
+
+**Supporting skills for design work:**
+
+- `design-md` — analyze Stitch projects → synthesize DESIGN.md source of truth
+- `react-components` — convert Stitch designs → modular Vite/React components (uses Stitch MCP)
+- `brainstorming` — HARD GATE before any new component/page design
+- `ux-researcher-designer` — persona generation, journey mapping, usability test plans
 
 ---
 
