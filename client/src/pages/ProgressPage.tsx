@@ -834,7 +834,20 @@ export default function ProgressPage() {
         </div>
       )}
 
-      {selectedClientData && !loadingProgress && (
+      {selectedClientData && !loadingProgress && progressTypes.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-20 space-y-4 text-center"
+        >
+          <TrendingUp className="h-12 w-12 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            Progress gets tracked here as you and your trainer work together.
+          </p>
+        </motion.div>
+      )}
+
+      {selectedClientData && !loadingProgress && progressTypes.length > 0 && (
         <>
           {/* Enhanced Progress Overview */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -2,9 +2,19 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  CreditCard, Plus, DollarSign, TrendingUp, ArrowUpRight,
-  ArrowDownRight, Package, Users, Calendar, MoreVertical, Check
+  CreditCard,
+  Plus,
+  DollarSign,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+  Package,
+  Users,
+  Calendar,
+  MoreVertical,
+  Check,
 } from 'lucide-react';
+import { GuruIcon } from '@/components/icons/GuruIcon';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -58,10 +68,20 @@ export default function PaymentsPage() {
   const queryClient = useQueryClient();
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showRecordModal, setShowRecordModal] = useState(false);
-  const [newPlan, setNewPlan] = useState({ name: '', description: '', price: '', interval: 'monthly', sessions: '' });
+  const [newPlan, setNewPlan] = useState({
+    name: '',
+    description: '',
+    price: '',
+    interval: 'monthly',
+    sessions: '',
+  });
   const [newPayment, setNewPayment] = useState({ clientId: '', amount: '', description: '' });
 
-  const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery<PaymentPlan[]>({
+  const {
+    data: plans = [],
+    isLoading: plansLoading,
+    error: plansError,
+  } = useQuery<PaymentPlan[]>({
     queryKey: ['/api/payments/plans'],
   });
 
@@ -69,7 +89,11 @@ export default function PaymentsPage() {
     queryKey: ['/api/payments'],
   });
 
-  const { data: summary, isLoading: summaryLoading, error: summaryError } = useQuery<PaymentSummary>({
+  const {
+    data: summary,
+    isLoading: summaryLoading,
+    error: summaryError,
+  } = useQuery<PaymentSummary>({
     queryKey: ['/api/payments/summary'],
   });
 
@@ -81,13 +105,14 @@ export default function PaymentsPage() {
   });
 
   const createPlanMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/payments/plans', {
-      name: newPlan.name,
-      description: newPlan.description || null,
-      priceInCents: Math.round(parseFloat(newPlan.price) * 100),
-      billingInterval: newPlan.interval,
-      sessionCount: newPlan.sessions ? parseInt(newPlan.sessions) : null,
-    }),
+    mutationFn: () =>
+      apiRequest('POST', '/api/payments/plans', {
+        name: newPlan.name,
+        description: newPlan.description || null,
+        priceInCents: Math.round(parseFloat(newPlan.price) * 100),
+        billingInterval: newPlan.interval,
+        sessionCount: newPlan.sessions ? parseInt(newPlan.sessions) : null,
+      }),
     onSuccess: () => {
       toast({ title: 'Plan Created', description: 'Payment plan has been created.' });
       queryClient.invalidateQueries({ queryKey: ['/api/payments/plans'] });
@@ -96,19 +121,20 @@ export default function PaymentsPage() {
     },
     onError: (error: any) => {
       toast({
-        variant: "destructive",
-        title: "Error Creating Plan",
-        description: error.message || "Failed to create payment plan"
+        variant: 'destructive',
+        title: 'Error Creating Plan',
+        description: error.message || 'Failed to create payment plan',
       });
     },
   });
 
   const recordPaymentMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/payments/record', {
-      clientId: newPayment.clientId,
-      amountInCents: Math.round(parseFloat(newPayment.amount) * 100),
-      description: newPayment.description || null,
-    }),
+    mutationFn: () =>
+      apiRequest('POST', '/api/payments/record', {
+        clientId: newPayment.clientId,
+        amountInCents: Math.round(parseFloat(newPayment.amount) * 100),
+        description: newPayment.description || null,
+      }),
     onSuccess: () => {
       toast({ title: 'Payment Recorded', description: 'Payment has been recorded.' });
       queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
@@ -118,9 +144,9 @@ export default function PaymentsPage() {
     },
     onError: (error: any) => {
       toast({
-        variant: "destructive",
-        title: "Error Recording Payment",
-        description: error.message || "Failed to record payment"
+        variant: 'destructive',
+        title: 'Error Recording Payment',
+        description: error.message || 'Failed to record payment',
       });
     },
   });
@@ -170,8 +196,16 @@ export default function PaymentsPage() {
             ))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="glass"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
-            <Card className="glass"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
+            <Card className="glass">
+              <CardContent className="p-6">
+                <Skeleton className="h-48 w-full" />
+              </CardContent>
+            </Card>
+            <Card className="glass">
+              <CardContent className="p-6">
+                <Skeleton className="h-48 w-full" />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </PageTransition>
@@ -211,8 +245,14 @@ export default function PaymentsPage() {
                       {formatCurrency(summary?.thisMonthRevenue || 0)}
                     </p>
                   </div>
-                  <div className={`flex items-center gap-1 text-xs ${(summary?.changePercent || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {(summary?.changePercent || 0) >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  <div
+                    className={`flex items-center gap-1 text-xs ${(summary?.changePercent || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}
+                  >
+                    {(summary?.changePercent || 0) >= 0 ? (
+                      <ArrowUpRight className="w-3 h-3" />
+                    ) : (
+                      <ArrowDownRight className="w-3 h-3" />
+                    )}
                     {Math.abs(summary?.changePercent || 0)}%
                   </div>
                 </div>
@@ -223,7 +263,9 @@ export default function PaymentsPage() {
             <Card className="glass">
               <CardContent className="pt-6">
                 <p className="text-xs text-white/50 uppercase tracking-wide">Total Revenue</p>
-                <p className="text-2xl font-bold text-white mt-1">{formatCurrency(summary?.totalRevenue || 0)}</p>
+                <p className="text-2xl font-bold text-white mt-1">
+                  {formatCurrency(summary?.totalRevenue || 0)}
+                </p>
               </CardContent>
             </Card>
           </StaggerItem>
@@ -231,7 +273,9 @@ export default function PaymentsPage() {
             <Card className="glass">
               <CardContent className="pt-6">
                 <p className="text-xs text-white/50 uppercase tracking-wide">Outstanding</p>
-                <p className="text-2xl font-bold text-yellow-400 mt-1">{formatCurrency(summary?.outstandingAmount || 0)}</p>
+                <p className="text-2xl font-bold text-yellow-400 mt-1">
+                  {formatCurrency(summary?.outstandingAmount || 0)}
+                </p>
               </CardContent>
             </Card>
           </StaggerItem>
@@ -259,9 +303,17 @@ export default function PaymentsPage() {
                 <BarChart data={summary.monthlyRevenue}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="month" stroke="rgba(255,255,255,0.4)" fontSize={12} />
-                  <YAxis stroke="rgba(255,255,255,0.4)" fontSize={12} tickFormatter={(v) => `$${v}`} />
+                  <YAxis
+                    stroke="rgba(255,255,255,0.4)"
+                    fontSize={12}
+                    tickFormatter={(v) => `$${v}`}
+                  />
                   <Tooltip
-                    contentStyle={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                    contentStyle={{
+                      background: 'rgba(0,0,0,0.8)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                    }}
                     formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
                   />
                   <Bar dataKey="revenue" fill="rgba(212, 175, 55, 0.8)" radius={[4, 4, 0, 0]} />
@@ -271,80 +323,142 @@ export default function PaymentsPage() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Payment Plans */}
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                Payment Plans
-              </CardTitle>
-              <CardDescription>Your pricing packages for clients</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {plans.length === 0 ? (
-                <div className="text-center py-6">
-                  <Package className="w-8 h-8 text-white/20 mx-auto mb-2" />
-                  <p className="text-sm text-white/40">No plans yet</p>
-                  <Button variant="outline" size="sm" className="mt-2" onClick={() => setShowPlanModal(true)}>
-                    Create First Plan
-                  </Button>
-                </div>
-              ) : (
-                plans.filter(p => p.isActive).map((plan) => (
-                  <div key={plan.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
-                    <div>
-                      <p className="text-sm font-medium text-white/90">{plan.name}</p>
-                      <p className="text-xs text-white/50">{plan.description || plan.billingInterval}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-white">${(plan.priceInCents / 100).toFixed(2)}</p>
-                      <p className="text-[10px] text-white/40">/{plan.billingInterval === 'one_time' ? 'once' : plan.billingInterval.replace('ly', '')}</p>
-                    </div>
+        {plans.length === 0 && paymentHistory.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-20 space-y-6 text-center"
+          >
+            <GuruIcon size={128} variant="default" />
+            <div className="space-y-3">
+              <h2
+                className="text-3xl font-medium text-foreground"
+                style={{ fontFamily: 'Playfair Display, serif' }}
+              >
+                Your business starts here.
+              </h2>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                Set up a payment plan to start collecting revenue from your clients.
+              </p>
+            </div>
+            <Button onClick={() => setShowPlanModal(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create a Plan
+            </Button>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Payment Plans */}
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  Payment Plans
+                </CardTitle>
+                <CardDescription>Your pricing packages for clients</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {plans.length === 0 ? (
+                  <div className="text-center py-6">
+                    <Package className="w-8 h-8 text-white/20 mx-auto mb-2" />
+                    <p className="text-sm text-white/40">No plans yet</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => setShowPlanModal(true)}
+                    >
+                      Create First Plan
+                    </Button>
                   </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                ) : (
+                  plans
+                    .filter((p) => p.isActive)
+                    .map((plan) => (
+                      <div
+                        key={plan.id}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-white/90">{plan.name}</p>
+                          <p className="text-xs text-white/50">
+                            {plan.description || plan.billingInterval}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-white">
+                            ${(plan.priceInCents / 100).toFixed(2)}
+                          </p>
+                          <p className="text-[10px] text-white/40">
+                            /
+                            {plan.billingInterval === 'one_time'
+                              ? 'once'
+                              : plan.billingInterval.replace('ly', '')}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Recent Payments */}
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                Recent Payments
-              </CardTitle>
-              <CardDescription>Latest payment transactions</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {paymentHistory.length === 0 ? (
-                <div className="text-center py-6">
-                  <CreditCard className="w-8 h-8 text-white/20 mx-auto mb-2" />
-                  <p className="text-sm text-white/40">No payments recorded yet</p>
-                </div>
-              ) : (
-                paymentHistory.slice(0, 8).map((payment) => (
-                  <div key={payment.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${
-                        payment.status === 'completed' ? 'bg-green-400' :
-                        payment.status === 'pending' ? 'bg-yellow-400' : 'bg-red-400'
-                      }`} />
-                      <div>
-                        <p className="text-sm text-white/90">{payment.clientName || 'Unknown Client'}</p>
-                        <p className="text-xs text-white/40">{payment.paidAt ? new Date(payment.paidAt).toLocaleDateString() : 'Pending'}</p>
+            {/* Recent Payments */}
+            <Card className="glass">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  Recent Payments
+                </CardTitle>
+                <CardDescription>Latest payment transactions</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {paymentHistory.length === 0 ? (
+                  <div className="text-center py-6">
+                    <CreditCard className="w-8 h-8 text-white/20 mx-auto mb-2" />
+                    <p className="text-sm text-white/40">No payments recorded yet</p>
+                  </div>
+                ) : (
+                  paymentHistory.slice(0, 8).map((payment) => (
+                    <div
+                      key={payment.id}
+                      className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            payment.status === 'completed'
+                              ? 'bg-green-400'
+                              : payment.status === 'pending'
+                                ? 'bg-yellow-400'
+                                : 'bg-red-400'
+                          }`}
+                        />
+                        <div>
+                          <p className="text-sm text-white/90">
+                            {payment.clientName || 'Unknown Client'}
+                          </p>
+                          <p className="text-xs text-white/40">
+                            {payment.paidAt
+                              ? new Date(payment.paidAt).toLocaleDateString()
+                              : 'Pending'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-white">
+                          ${(payment.amountInCents / 100).toFixed(2)}
+                        </p>
+                        <Badge variant="outline" className="text-[10px]">
+                          {payment.status}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-white">${(payment.amountInCents / 100).toFixed(2)}</p>
-                      <Badge variant="outline" className="text-[10px]">{payment.status}</Badge>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Create Plan Modal */}
         <Dialog open={showPlanModal} onOpenChange={setShowPlanModal}>
@@ -354,13 +468,15 @@ export default function PaymentsPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Plan Name<span className="text-destructive ml-0.5">*</span></label>
+                <label className="text-sm text-white/60 mb-1 block">
+                  Plan Name<span className="text-destructive ml-0.5">*</span>
+                </label>
                 <input
                   type="text"
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
                   placeholder="e.g., Monthly Training Package"
                   value={newPlan.name}
-                  onChange={(e) => setNewPlan(p => ({ ...p, name: e.target.value }))}
+                  onChange={(e) => setNewPlan((p) => ({ ...p, name: e.target.value }))}
                 />
               </div>
               <div>
@@ -370,12 +486,14 @@ export default function PaymentsPage() {
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
                   placeholder="Brief description..."
                   value={newPlan.description}
-                  onChange={(e) => setNewPlan(p => ({ ...p, description: e.target.value }))}
+                  onChange={(e) => setNewPlan((p) => ({ ...p, description: e.target.value }))}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-white/60 mb-1 block">Price ($)<span className="text-destructive ml-0.5">*</span></label>
+                  <label className="text-sm text-white/60 mb-1 block">
+                    Price ($)<span className="text-destructive ml-0.5">*</span>
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -383,18 +501,23 @@ export default function PaymentsPage() {
                     className={`w-full bg-white/5 border rounded-lg px-3 py-2 text-sm text-white/90 ${newPlan.price && (isNaN(parseFloat(newPlan.price)) || parseFloat(newPlan.price) <= 0) ? 'border-destructive' : 'border-white/10'}`}
                     placeholder="0.00"
                     value={newPlan.price}
-                    onChange={(e) => setNewPlan(p => ({ ...p, price: e.target.value }))}
+                    onChange={(e) => setNewPlan((p) => ({ ...p, price: e.target.value }))}
                   />
-                  {newPlan.price && (isNaN(parseFloat(newPlan.price)) || parseFloat(newPlan.price) <= 0) && (
-                    <p className="text-xs text-destructive mt-1">Enter a valid price greater than $0</p>
-                  )}
+                  {newPlan.price &&
+                    (isNaN(parseFloat(newPlan.price)) || parseFloat(newPlan.price) <= 0) && (
+                      <p className="text-xs text-destructive mt-1">
+                        Enter a valid price greater than $0
+                      </p>
+                    )}
                 </div>
                 <div>
-                  <label className="text-sm text-white/60 mb-1 block">Billing Interval<span className="text-destructive ml-0.5">*</span></label>
+                  <label className="text-sm text-white/60 mb-1 block">
+                    Billing Interval<span className="text-destructive ml-0.5">*</span>
+                  </label>
                   <select
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
                     value={newPlan.interval}
-                    onChange={(e) => setNewPlan(p => ({ ...p, interval: e.target.value }))}
+                    onChange={(e) => setNewPlan((p) => ({ ...p, interval: e.target.value }))}
                   >
                     <option value="monthly">Monthly</option>
                     <option value="weekly">Weekly</option>
@@ -403,14 +526,16 @@ export default function PaymentsPage() {
                 </div>
               </div>
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Sessions Included (optional)</label>
+                <label className="text-sm text-white/60 mb-1 block">
+                  Sessions Included (optional)
+                </label>
                 <input
                   type="number"
                   min="0"
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
                   placeholder="Leave empty for unlimited"
                   value={newPlan.sessions}
-                  onChange={(e) => setNewPlan(p => ({ ...p, sessions: e.target.value }))}
+                  onChange={(e) => setNewPlan((p) => ({ ...p, sessions: e.target.value }))}
                 />
               </div>
               <Button
@@ -438,20 +563,26 @@ export default function PaymentsPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Client<span className="text-destructive ml-0.5">*</span></label>
+                <label className="text-sm text-white/60 mb-1 block">
+                  Client<span className="text-destructive ml-0.5">*</span>
+                </label>
                 <select
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
                   value={newPayment.clientId}
-                  onChange={(e) => setNewPayment(p => ({ ...p, clientId: e.target.value }))}
+                  onChange={(e) => setNewPayment((p) => ({ ...p, clientId: e.target.value }))}
                 >
                   <option value="">Select client...</option>
                   {clientsList.map((client: any) => (
-                    <option key={client.id} value={client.id}>{client.name}</option>
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-sm text-white/60 mb-1 block">Amount ($)<span className="text-destructive ml-0.5">*</span></label>
+                <label className="text-sm text-white/60 mb-1 block">
+                  Amount ($)<span className="text-destructive ml-0.5">*</span>
+                </label>
                 <input
                   type="number"
                   step="0.01"
@@ -459,11 +590,14 @@ export default function PaymentsPage() {
                   className={`w-full bg-white/5 border rounded-lg px-3 py-2 text-sm text-white/90 ${newPayment.amount && (isNaN(parseFloat(newPayment.amount)) || parseFloat(newPayment.amount) <= 0) ? 'border-destructive' : 'border-white/10'}`}
                   placeholder="0.00"
                   value={newPayment.amount}
-                  onChange={(e) => setNewPayment(p => ({ ...p, amount: e.target.value }))}
+                  onChange={(e) => setNewPayment((p) => ({ ...p, amount: e.target.value }))}
                 />
-                {newPayment.amount && (isNaN(parseFloat(newPayment.amount)) || parseFloat(newPayment.amount) <= 0) && (
-                  <p className="text-xs text-destructive mt-1">Enter a valid amount greater than $0</p>
-                )}
+                {newPayment.amount &&
+                  (isNaN(parseFloat(newPayment.amount)) || parseFloat(newPayment.amount) <= 0) && (
+                    <p className="text-xs text-destructive mt-1">
+                      Enter a valid amount greater than $0
+                    </p>
+                  )}
               </div>
               <div>
                 <label className="text-sm text-white/60 mb-1 block">Description</label>
@@ -472,7 +606,7 @@ export default function PaymentsPage() {
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/90"
                   placeholder="Payment for..."
                   value={newPayment.description}
-                  onChange={(e) => setNewPayment(p => ({ ...p, description: e.target.value }))}
+                  onChange={(e) => setNewPayment((p) => ({ ...p, description: e.target.value }))}
                 />
               </div>
               <Button

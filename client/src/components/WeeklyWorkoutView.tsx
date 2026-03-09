@@ -1,14 +1,14 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { format, startOfWeek, addWeeks, addDays } from "date-fns";
-import { ChevronLeft, ChevronRight, Calendar, Dumbbell } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { apiRequest } from "@/lib/queryClient";
-import { useUser } from "@/contexts/UserContext";
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { format, startOfWeek, addWeeks, addDays } from 'date-fns';
+import { ChevronLeft, ChevronRight, Calendar, Dumbbell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { apiRequest } from '@/lib/queryClient';
+import { useUser } from '@/contexts/UserContext';
 
 interface Exercise {
   id: string;
@@ -60,7 +60,7 @@ export default function WeeklyWorkoutView() {
   const { data, isLoading, error } = useQuery<WeeklyWorkoutsResponse>({
     queryKey: ['/api/client/workouts/weekly', weekOffset],
     queryFn: async () => {
-      if (!user?.id) throw new Error("User not found");
+      if (!user?.id) throw new Error('User not found');
       const response = await apiRequest(
         'GET',
         `/api/client/workouts/weekly?weekOffset=${weekOffset}`
@@ -76,10 +76,16 @@ export default function WeeklyWorkoutView() {
     if (!data?.workouts) return {};
 
     const grouped: Record<number, Workout[]> = {
-      0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []
+      0: [],
+      1: [],
+      2: [],
+      3: [],
+      4: [],
+      5: [],
+      6: [],
     };
 
-    data.workouts.forEach(workout => {
+    data.workouts.forEach((workout) => {
       if (workout.dayOfWeek !== null && workout.dayOfWeek !== undefined) {
         grouped[workout.dayOfWeek].push(workout);
       }
@@ -97,8 +103,8 @@ export default function WeeklyWorkoutView() {
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   }, [weekOffset]);
 
-  const handlePreviousWeek = () => setWeekOffset(prev => prev - 1);
-  const handleNextWeek = () => setWeekOffset(prev => prev + 1);
+  const handlePreviousWeek = () => setWeekOffset((prev) => prev - 1);
+  const handleNextWeek = () => setWeekOffset((prev) => prev + 1);
   const handleCurrentWeek = () => setWeekOffset(0);
 
   if (isLoading) {
@@ -187,7 +193,7 @@ export default function WeeklyWorkoutView() {
             <div className="text-center space-y-2">
               <h3 className="font-medium text-lg">No workouts this week</h3>
               <p className="text-sm text-muted-foreground">
-                Check other weeks or contact your trainer to schedule workouts
+                Your trainer hasn't assigned any workouts yet. Check back after your next session.
               </p>
             </div>
           </div>
@@ -223,7 +229,10 @@ export default function WeeklyWorkoutView() {
                   </div>
                   {isToday && (
                     <div className="mt-1">
-                      <Badge variant="outline" className="text-xs bg-cyan-500/10 border-cyan-500 px-2 py-0">
+                      <Badge
+                        variant="outline"
+                        className="text-xs bg-cyan-500/10 border-cyan-500 px-2 py-0"
+                      >
                         Today
                       </Badge>
                     </div>
@@ -240,7 +249,7 @@ export default function WeeklyWorkoutView() {
               const dayWorkouts = workoutsByDay[dayOfWeek] || [];
               const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
               const totalMinutes = dayWorkouts.reduce((sum, w) => sum + w.duration, 0);
-              const completedCount = dayWorkouts.filter(w => w.completedAt).length;
+              const completedCount = dayWorkouts.filter((w) => w.completedAt).length;
 
               return (
                 <motion.div
@@ -259,7 +268,8 @@ export default function WeeklyWorkoutView() {
                     <div className={`px-4 py-2.5 ${isToday ? 'bg-cyan-500/5' : 'bg-muted/20'}`}>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
-                          {dayWorkouts.length} workout{dayWorkouts.length > 1 ? 's' : ''} • {totalMinutes}m
+                          {dayWorkouts.length} workout{dayWorkouts.length > 1 ? 's' : ''} •{' '}
+                          {totalMinutes}m
                         </span>
                         {completedCount > 0 && (
                           <span className="text-xs text-emerald-600 font-medium">
@@ -287,10 +297,14 @@ export default function WeeklyWorkoutView() {
                           <div className="px-3 py-2.5 bg-muted/20 border-b border-border/20">
                             {/* Icon with Day & Time */}
                             <div className="flex items-start gap-2.5 mb-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                workout.completedAt ? 'bg-emerald-500/20' : 'bg-cyan-500/20'
-                              }`}>
-                                <Dumbbell className={`w-4 h-4 ${workout.completedAt ? 'text-emerald-600' : 'text-cyan-500'}`} />
+                              <div
+                                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                  workout.completedAt ? 'bg-emerald-500/20' : 'bg-cyan-500/20'
+                                }`}
+                              >
+                                <Dumbbell
+                                  className={`w-4 h-4 ${workout.completedAt ? 'text-emerald-600' : 'text-cyan-500'}`}
+                                />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[10px] text-muted-foreground/80 uppercase tracking-wide font-semibold">
@@ -311,14 +325,26 @@ export default function WeeklyWorkoutView() {
                             </div>
 
                             {/* Workout Title - Full Width */}
-                            <h3 className="font-semibold text-sm leading-tight mb-3 px-1">{workout.title}</h3>
+                            <h3 className="font-semibold text-sm leading-tight mb-3 px-1">
+                              {workout.title}
+                            </h3>
 
                             {/* Stats */}
                             <div className="space-y-1.5 text-[10px]">
                               <div className="flex items-center justify-center gap-2">
                                 <div className="flex items-center gap-1 text-muted-foreground">
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
                                   </svg>
                                   <span>{workout.duration}m</span>
                                 </div>
@@ -342,8 +368,12 @@ export default function WeeklyWorkoutView() {
                                     {idx + 1}
                                   </span>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-foreground font-medium leading-tight">{ex.name}</p>
-                                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{ex.sets} sets × {ex.reps} reps</p>
+                                    <p className="text-xs text-foreground font-medium leading-tight">
+                                      {ex.name}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                                      {ex.sets} sets × {ex.reps} reps
+                                    </p>
                                   </div>
                                 </div>
                               ))}
@@ -379,7 +409,10 @@ export default function WeeklyWorkoutView() {
               exit={{ opacity: 0, y: -20 }}
               className="mt-6"
             >
-              <WorkoutDetailView workout={selectedWorkout} onClose={() => setSelectedWorkout(null)} />
+              <WorkoutDetailView
+                workout={selectedWorkout}
+                onClose={() => setSelectedWorkout(null)}
+              />
             </motion.div>
           )}
         </div>
@@ -394,22 +427,26 @@ function WorkoutDetailView({ workout, onClose }: { workout: Workout; onClose: ()
     workout.exercises[0]?.id || null
   );
   const isCompleted = !!workout.completedAt;
-  const selectedExercise = workout.exercises.find(ex => ex.id === selectedExerciseId);
+  const selectedExercise = workout.exercises.find((ex) => ex.id === selectedExerciseId);
 
   return (
-    <Card className={`border overflow-hidden ${
-      isCompleted
-        ? 'bg-emerald-500/5 border-emerald-500/30'
-        : 'bg-gradient-to-br from-cyan-500/5 to-teal-500/5 border-cyan-500/30'
-    }`}>
+    <Card
+      className={`border overflow-hidden ${
+        isCompleted
+          ? 'bg-emerald-500/5 border-emerald-500/30'
+          : 'bg-gradient-to-br from-cyan-500/5 to-teal-500/5 border-cyan-500/30'
+      }`}
+    >
       {/* Header */}
       <div className="p-6 border-b flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
-            isCompleted
-              ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/20'
-              : 'bg-gradient-to-br from-cyan-500/20 to-teal-500/20'
-          }`}>
+          <div
+            className={`w-14 h-14 rounded-full flex items-center justify-center ${
+              isCompleted
+                ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/20'
+                : 'bg-gradient-to-br from-cyan-500/20 to-teal-500/20'
+            }`}
+          >
             <Dumbbell className={`w-7 h-7 ${isCompleted ? 'text-emerald-600' : 'text-cyan-500'}`} />
           </div>
           <div>
@@ -422,21 +459,22 @@ function WorkoutDetailView({ workout, onClose }: { workout: Workout; onClose: ()
               )}
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {workout.exercises.length} exercises • {workout.duration} minutes • {workout.difficulty}
+              {workout.exercises.length} exercises • {workout.duration} minutes •{' '}
+              {workout.difficulty}
             </p>
             {workout.description && (
               <p className="text-sm text-muted-foreground mt-2">{workout.description}</p>
             )}
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="hover:bg-cyan-500/10"
-        >
+        <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-cyan-500/10">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </Button>
       </div>
@@ -445,7 +483,9 @@ function WorkoutDetailView({ workout, onClose }: { workout: Workout; onClose: ()
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
         {/* Left Column - Exercise List */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Exercises</h4>
+          <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Exercises
+          </h4>
           <div className="space-y-3 max-h-[600px] overflow-y-auto pr-3 pb-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-cyan-500/30 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-cyan-500/50">
             {workout.exercises.map((exercise, exerciseIndex) => (
               <motion.div
@@ -464,11 +504,13 @@ function WorkoutDetailView({ workout, onClose }: { workout: Workout; onClose: ()
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <span className={`text-sm font-semibold w-8 h-8 rounded-full flex items-center justify-center ${
-                      selectedExerciseId === exercise.id
-                        ? 'bg-cyan-500 text-white'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <span
+                      className={`text-sm font-semibold w-8 h-8 rounded-full flex items-center justify-center ${
+                        selectedExerciseId === exercise.id
+                          ? 'bg-cyan-500 text-white'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
                       {exerciseIndex + 1}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -496,7 +538,9 @@ function WorkoutDetailView({ workout, onClose }: { workout: Workout; onClose: ()
 
         {/* Right Column - Exercise Details */}
         <div className="lg:border-l lg:pl-6">
-          <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Exercise Details</h4>
+          <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Exercise Details
+          </h4>
           {selectedExercise ? (
             <motion.div
               key={selectedExercise.id}
@@ -539,7 +583,7 @@ function ExerciseDetails({ exercise }: { exercise: Exercise }) {
               <div className="flex flex-col items-center gap-2">
                 <div className="w-16 h-16 rounded-full bg-cyan-500/20 flex items-center justify-center group-hover:bg-cyan-500/30 transition-colors">
                   <svg className="w-8 h-8 text-cyan-500" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
+                    <path d="M8 5v14l11-7z" />
                   </svg>
                 </div>
                 <span className="text-sm text-cyan-500">Watch Demo</span>
@@ -549,8 +593,18 @@ function ExerciseDetails({ exercise }: { exercise: Exercise }) {
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center space-y-2">
-              <svg className="w-12 h-12 text-muted-foreground mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <svg
+                className="w-12 h-12 text-muted-foreground mx-auto"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
               </svg>
               <p className="text-sm text-muted-foreground">Video coming soon</p>
             </div>
@@ -585,7 +639,12 @@ function ExerciseDetails({ exercise }: { exercise: Exercise }) {
         <div className="space-y-2">
           <p className="text-sm font-medium flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
             Instructions
           </p>
@@ -603,12 +662,24 @@ function ExerciseDetails({ exercise }: { exercise: Exercise }) {
       <div className="flex flex-wrap gap-4">
         {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
           <div className="flex items-center gap-2 text-sm">
-            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg
+              className="w-4 h-4 text-muted-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
             </svg>
             <div className="flex flex-wrap gap-1">
-              {exercise.muscleGroups.map(mg => (
-                <Badge key={mg} variant="secondary" className="text-xs">{mg}</Badge>
+              {exercise.muscleGroups.map((mg) => (
+                <Badge key={mg} variant="secondary" className="text-xs">
+                  {mg}
+                </Badge>
               ))}
             </div>
           </div>
@@ -617,8 +688,10 @@ function ExerciseDetails({ exercise }: { exercise: Exercise }) {
           <div className="flex items-center gap-2 text-sm">
             <Dumbbell className="w-4 h-4 text-muted-foreground" />
             <div className="flex flex-wrap gap-1">
-              {exercise.equipment.map(eq => (
-                <Badge key={eq} variant="outline" className="text-xs">{eq}</Badge>
+              {exercise.equipment.map((eq) => (
+                <Badge key={eq} variant="outline" className="text-xs">
+                  {eq}
+                </Badge>
               ))}
             </div>
           </div>

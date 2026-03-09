@@ -550,13 +550,13 @@ const ExercisesPage = memo(() => {
                 selectedDifficulty !== 'all' ||
                 selectedMuscleGroup !== 'all'
                   ? 'Try adjusting your filters or search query'
-                  : 'Start by adding your first exercise to the library'}
+                  : 'Your exercise library is empty. Add custom exercises to start building workouts.'}
               </p>
             </div>
             {exercises.length === 0 && (
               <Button onClick={() => setShowAddModal(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add Your First Exercise
+                Add Exercise
               </Button>
             )}
           </CardContent>

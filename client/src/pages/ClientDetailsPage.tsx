@@ -1385,7 +1385,15 @@ export default function ClientDetailsPage() {
                 </div>
               ))}
               {workoutAssignments.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No workouts assigned yet</p>
+                <div className="flex flex-col items-center py-10 text-center space-y-4">
+                  <Dumbbell className="h-10 w-10 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground">
+                    No workouts assigned to this client yet.
+                  </p>
+                  <Button size="sm" variant="outline" onClick={() => setShowWorkoutAssign(true)}>
+                    Assign a Workout
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -1920,21 +1928,10 @@ export default function ClientDetailsPage() {
               >
                 <Card className="glass-strong border-border/50 backdrop-blur-xl">
                   <CardContent className="py-16 text-center">
-                    <Activity className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-                    <h3 className="text-xl font-light mb-2">No Progress Data Yet</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Start tracking {client?.name}'s progress to see charts and insights here
+                    <TrendingUp className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground">
+                      No progress data recorded for this client yet.
                     </p>
-                    <Button
-                      onClick={() => {
-                        setShowProgressOverview(false);
-                        setShowProgressModal(true);
-                      }}
-                      className="gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add First Entry
-                    </Button>
                   </CardContent>
                 </Card>
               </motion.div>

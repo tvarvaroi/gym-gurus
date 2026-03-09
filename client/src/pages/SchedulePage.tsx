@@ -1375,37 +1375,181 @@ function TrainerClientSchedule() {
         </motion.div>
       )}
 
+      {/* Full-page empty state when no appointments */}
+      {appointments.length === 0 && !isLoading ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-20 space-y-6 text-center"
+        >
+          <CalendarIcon className="h-12 w-12 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            {isClient
+              ? 'No sessions scheduled yet. Your trainer will add appointments when you\u2019re ready to start.'
+              : 'No appointments scheduled this week. Add a session to start planning.'}
+          </p>
+          {isTrainer && <Button onClick={() => setShowAddModal(true)}>New Appointment</Button>}
+        </motion.div>
+      ) : null}
+
       {/* Calendar View */}
-      {viewMode === 'calendar' ? (
-        <CalendarView
-          events={appointments.map((apt) => ({
-            id: apt.id,
-            title: apt.title,
-            client: apt.client?.name || 'Unknown Client',
-            time: apt.startTime,
-            type:
-              apt.type === 'training'
-                ? 'session'
-                : apt.type === 'consultation'
-                  ? 'consultation'
-                  : 'check-in',
-            status:
-              apt.status === 'scheduled'
-                ? 'confirmed'
-                : apt.status === 'completed'
-                  ? 'completed'
-                  : 'pending',
-            date: apt.date, // Pass the date so CalendarView can filter by date
-          }))}
-        />
-      ) : viewMode === 'week' ? (
-        <div className="overflow-x-auto -mx-4 px-4">
+      {appointments.length > 0 &&
+        (viewMode === 'calendar' ? (
+          <CalendarView
+            events={appointments.map((apt) => ({
+              id: apt.id,
+              title: apt.title,
+              client: apt.client?.name || 'Unknown Client',
+              time: apt.startTime,
+              type:
+                apt.type === 'training'
+                  ? 'session'
+                  : apt.type === 'consultation'
+                    ? 'consultation'
+                    : 'check-in',
+              status:
+                apt.status === 'scheduled'
+                  ? 'confirmed'
+                  : apt.status === 'completed'
+                    ? 'completed'
+                    : 'pending',
+              date: apt.date, // Pass the date so CalendarView can filter by date
+            }))}
+          />
+        ) : viewMode === 'week' ? (
+          <div className="overflow-x-auto -mx-4 px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="grid grid-cols-7 gap-4"
+            >
+              {getWeekDays().map((day, dayIndex) => {
+                const dayAppointments = getAppointmentsForDate(day);
+                const isToday = isSameDay(day, new Date());
+
+                return (
+                  <motion.div
+                    key={day.toISOString()}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: dayIndex * 0.05 }}
+                  >
+                    <Card
+                      className={cn(
+                        'min-h-[280px] min-w-[80px] glass-strong border-border/50 transition-all duration-300 hover:shadow-premium-lg hover:-translate-y-1 group',
+                        isToday && 'ring-2 ring-primary/50 shadow-premium'
+                      )}
+                    >
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          {format(day, 'EEE')}
+                        </CardTitle>
+                        <CardDescription
+                          className={cn('text-2xl font-bold', isToday && 'text-primary')}
+                        >
+                          {format(day, 'd')}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <AnimatePresence>
+                          {dayAppointments.length === 0 ? (
+                            <motion.p
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              className="text-xs text-muted-foreground text-center py-8"
+                            >
+                              No appointments
+                            </motion.p>
+                          ) : (
+                            dayAppointments.map((apt, index) => {
+                              const config = typeConfig[apt.type];
+                              const Icon = config.icon;
+
+                              return (
+                                <motion.div
+                                  key={apt.id}
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.9 }}
+                                  transition={{ delay: index * 0.05 }}
+                                  whileHover={{ y: -2 }}
+                                  className={cn(
+                                    'p-3 rounded-lg backdrop-blur-sm transition-all border',
+                                    config.bg,
+                                    config.border,
+                                    'hover:shadow-md',
+                                    isTrainer && 'cursor-pointer'
+                                  )}
+                                  onClick={isTrainer ? () => handleEdit(apt) : undefined}
+                                  data-testid={`appointment-${apt.id}`}
+                                >
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Icon className={cn('h-3 w-3', config.text)} />
+                                    <div className={cn('text-xs font-semibold', config.text)}>
+                                      {apt.startTime}
+                                    </div>
+                                  </div>
+                                  <TruncatedText
+                                    as="div"
+                                    text={apt.client?.name || ''}
+                                    className="text-xs font-medium"
+                                  />
+                                  <TruncatedText
+                                    as="div"
+                                    text={apt.title}
+                                    className="text-xs text-muted-foreground"
+                                  />
+                                </motion.div>
+                              );
+                            })
+                          )}
+                        </AnimatePresence>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          </div>
+        ) : viewMode === 'list' ? (
+          // List View — mobile-friendly chronological week
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-            className="grid grid-cols-7 gap-4"
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="space-y-2"
           >
+            {/* List view week navigation */}
+            <Card className="glass-strong border-border/50 shadow-premium">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-primary/10"
+                    onClick={() => setSelectedDate(addDays(selectedDate, -7))}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <h2 className="text-lg font-light tracking-wide">
+                    {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} -{' '}
+                    {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-primary/10"
+                    onClick={() => setSelectedDate(addDays(selectedDate, 7))}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Day-by-day list */}
             {getWeekDays().map((day, dayIndex) => {
               const dayAppointments = getAppointmentsForDate(day);
               const isToday = isSameDay(day, new Date());
@@ -1413,407 +1557,283 @@ function TrainerClientSchedule() {
               return (
                 <motion.div
                   key={day.toISOString()}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: dayIndex * 0.05 }}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: dayIndex * 0.04 }}
                 >
                   <Card
                     className={cn(
-                      'min-h-[280px] min-w-[80px] glass-strong border-border/50 transition-all duration-300 hover:shadow-premium-lg hover:-translate-y-1 group',
-                      isToday && 'ring-2 ring-primary/50 shadow-premium'
+                      'transition-all duration-200 border-border/50',
+                      isToday && 'border-l-4 border-l-primary shadow-sm'
                     )}
                   >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
-                        {format(day, 'EEE')}
-                      </CardTitle>
-                      <CardDescription
-                        className={cn('text-2xl font-bold', isToday && 'text-primary')}
-                      >
-                        {format(day, 'd')}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <AnimatePresence>
-                        {dayAppointments.length === 0 ? (
-                          <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="text-xs text-muted-foreground text-center py-8"
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        {/* Date column */}
+                        <div className={cn('text-center min-w-[48px]', isToday && 'text-primary')}>
+                          <p className="text-xs font-medium text-muted-foreground uppercase">
+                            {format(day, 'EEE')}
+                          </p>
+                          <p
+                            className={cn(
+                              'text-2xl font-light',
+                              isToday && 'text-primary font-medium'
+                            )}
                           >
-                            No appointments
-                          </motion.p>
-                        ) : (
-                          dayAppointments.map((apt, index) => {
-                            const config = typeConfig[apt.type];
-                            const Icon = config.icon;
+                            {format(day, 'd')}
+                          </p>
+                        </div>
 
-                            return (
-                              <motion.div
-                                key={apt.id}
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                transition={{ delay: index * 0.05 }}
-                                whileHover={{ y: -2 }}
-                                className={cn(
-                                  'p-3 rounded-lg backdrop-blur-sm transition-all border',
-                                  config.bg,
-                                  config.border,
-                                  'hover:shadow-md',
-                                  isTrainer && 'cursor-pointer'
-                                )}
-                                onClick={isTrainer ? () => handleEdit(apt) : undefined}
-                                data-testid={`appointment-${apt.id}`}
-                              >
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Icon className={cn('h-3 w-3', config.text)} />
-                                  <div className={cn('text-xs font-semibold', config.text)}>
-                                    {apt.startTime}
+                        {/* Events column */}
+                        <div className="flex-1 space-y-2">
+                          {dayAppointments.length === 0 ? (
+                            <div className="flex items-center gap-2 py-2">
+                              <Moon className="h-4 w-4 text-muted-foreground/40" />
+                              <span className="text-sm text-muted-foreground/60 font-light">
+                                No appointments
+                              </span>
+                            </div>
+                          ) : (
+                            dayAppointments.map((apt) => {
+                              const config = typeConfig[apt.type];
+                              const Icon = config?.icon || Dumbbell;
+                              const textColor = config?.text || 'text-foreground';
+                              const bgColor = config?.bg || 'bg-muted/10';
+                              return (
+                                <div
+                                  key={apt.id}
+                                  className={cn(
+                                    'flex items-center gap-3 p-2.5 rounded-lg',
+                                    bgColor,
+                                    isTrainer && 'cursor-pointer hover:brightness-110'
+                                  )}
+                                  onClick={isTrainer ? () => handleEdit(apt) : undefined}
+                                >
+                                  <Icon className={cn('h-4 w-4 shrink-0', textColor)} />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{apt.title}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {apt.startTime}
+                                      {apt.endTime ? ` - ${apt.endTime}` : ''}
+                                      {apt.client?.name ? ` · ${apt.client.name}` : ''}
+                                    </p>
                                   </div>
+                                  {apt.status === 'completed' && (
+                                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                                  )}
                                 </div>
-                                <TruncatedText
-                                  as="div"
-                                  text={apt.client?.name || ''}
-                                  className="text-xs font-medium"
-                                />
-                                <TruncatedText
-                                  as="div"
-                                  text={apt.title}
-                                  className="text-xs text-muted-foreground"
-                                />
-                              </motion.div>
-                            );
-                          })
-                        )}
-                      </AnimatePresence>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </motion.div>
               );
             })}
           </motion.div>
-        </div>
-      ) : viewMode === 'list' ? (
-        // List View — mobile-friendly chronological week
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="space-y-2"
-        >
-          {/* List view week navigation */}
-          <Card className="glass-strong border-border/50 shadow-premium">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-primary/10"
-                  onClick={() => setSelectedDate(addDays(selectedDate, -7))}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-                <h2 className="text-lg font-light tracking-wide">
-                  {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} -{' '}
-                  {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-primary/10"
-                  onClick={() => setSelectedDate(addDays(selectedDate, 7))}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Day-by-day list */}
-          {getWeekDays().map((day, dayIndex) => {
-            const dayAppointments = getAppointmentsForDate(day);
-            const isToday = isSameDay(day, new Date());
-
-            return (
-              <motion.div
-                key={day.toISOString()}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: dayIndex * 0.04 }}
-              >
-                <Card
-                  className={cn(
-                    'transition-all duration-200 border-border/50',
-                    isToday && 'border-l-4 border-l-primary shadow-sm'
-                  )}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      {/* Date column */}
-                      <div className={cn('text-center min-w-[48px]', isToday && 'text-primary')}>
-                        <p className="text-xs font-medium text-muted-foreground uppercase">
-                          {format(day, 'EEE')}
-                        </p>
-                        <p
-                          className={cn(
-                            'text-2xl font-light',
-                            isToday && 'text-primary font-medium'
-                          )}
-                        >
-                          {format(day, 'd')}
-                        </p>
-                      </div>
-
-                      {/* Events column */}
-                      <div className="flex-1 space-y-2">
-                        {dayAppointments.length === 0 ? (
-                          <div className="flex items-center gap-2 py-2">
-                            <Moon className="h-4 w-4 text-muted-foreground/40" />
-                            <span className="text-sm text-muted-foreground/60 font-light">
-                              No appointments
-                            </span>
-                          </div>
-                        ) : (
-                          dayAppointments.map((apt) => {
-                            const config = typeConfig[apt.type];
-                            const Icon = config?.icon || Dumbbell;
-                            const textColor = config?.text || 'text-foreground';
-                            const bgColor = config?.bg || 'bg-muted/10';
-                            return (
-                              <div
-                                key={apt.id}
-                                className={cn(
-                                  'flex items-center gap-3 p-2.5 rounded-lg',
-                                  bgColor,
-                                  isTrainer && 'cursor-pointer hover:brightness-110'
-                                )}
-                                onClick={isTrainer ? () => handleEdit(apt) : undefined}
-                              >
-                                <Icon className={cn('h-4 w-4 shrink-0', textColor)} />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{apt.title}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {apt.startTime}
-                                    {apt.endTime ? ` - ${apt.endTime}` : ''}
-                                    {apt.client?.name ? ` · ${apt.client.name}` : ''}
-                                  </p>
-                                </div>
-                                {apt.status === 'completed' && (
-                                  <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                                )}
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
+        ) : (
+          // Day View
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
+            <Card className="glass-strong border-border/50 shadow-premium">
+              <CardContent className="p-6">
+                {getAppointmentsForDate(selectedDate).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 space-y-6">
+                    <div className="relative inline-block">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                      >
+                        <CalendarIcon className="h-20 w-20 text-muted-foreground/40" />
+                      </motion.div>
+                      <motion.div
+                        className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
+                        animate={{ opacity: [0.3, 0.6, 0.3] }}
+                        transition={{
+                          duration: 2,
+                          repeat: prefersReducedMotion ? 0 : Infinity,
+                          ease: 'easeInOut',
+                        }}
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </motion.div>
-      ) : (
-        // Day View
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
-          <Card className="glass-strong border-border/50 shadow-premium">
-            <CardContent className="p-6">
-              {getAppointmentsForDate(selectedDate).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 space-y-6">
-                  <div className="relative inline-block">
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                    >
-                      <CalendarIcon className="h-20 w-20 text-muted-foreground/40" />
-                    </motion.div>
-                    <motion.div
-                      className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
-                      animate={{ opacity: [0.3, 0.6, 0.3] }}
-                      transition={{
-                        duration: 2,
-                        repeat: prefersReducedMotion ? 0 : Infinity,
-                        ease: 'easeInOut',
-                      }}
-                    />
+                    <div className="space-y-2 text-center">
+                      <h3 className="font-light text-xl">No appointments scheduled</h3>
+                      <p className="text-sm font-light text-muted-foreground/80">
+                        Click "New Appointment" to schedule a session
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-2 text-center">
-                    <h3 className="font-light text-xl">No appointments scheduled</h3>
-                    <p className="text-sm font-light text-muted-foreground/80">
-                      Click "New Appointment" to schedule a session
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <AnimatePresence>
-                    {getAppointmentsForDate(selectedDate).map((appointment, index) => {
-                      const config = typeConfig[appointment.type];
-                      const Icon = config.icon;
+                ) : (
+                  <div className="space-y-4">
+                    <AnimatePresence>
+                      {getAppointmentsForDate(selectedDate).map((appointment, index) => {
+                        const config = typeConfig[appointment.type];
+                        const Icon = config.icon;
 
-                      return (
-                        <motion.div
-                          key={appointment.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          transition={{ delay: index * 0.05 }}
-                        >
-                          <Card className="glass-strong border-border/50 hover:shadow-premium-lg transition-all duration-300 hover:-translate-y-1 group">
-                            <CardContent className="p-5">
-                              <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-4 flex-1">
-                                  <div
-                                    className={cn(
-                                      'w-1 h-full rounded-full bg-gradient-to-b',
-                                      config.color
-                                    )}
-                                  />
-                                  <div className="space-y-3 flex-1">
-                                    <div className="flex items-center gap-3 flex-wrap">
-                                      <div
-                                        className={cn(
-                                          'flex items-center gap-2 px-3 py-1.5 rounded-full',
-                                          config.bg,
-                                          config.border,
-                                          'border'
-                                        )}
-                                      >
-                                        <Icon className={cn('h-4 w-4', config.text)} />
-                                        <span className={cn('text-sm font-medium', config.text)}>
-                                          {config.label}
-                                        </span>
-                                      </div>
-                                      <h4 className="font-semibold text-lg">{appointment.title}</h4>
-                                      {appointment.status === 'cancelled' && (
-                                        <Badge variant="destructive" className="text-xs">
-                                          Cancelled
-                                        </Badge>
+                        return (
+                          <motion.div
+                            key={appointment.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ delay: index * 0.05 }}
+                          >
+                            <Card className="glass-strong border-border/50 hover:shadow-premium-lg transition-all duration-300 hover:-translate-y-1 group">
+                              <CardContent className="p-5">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start gap-4 flex-1">
+                                    <div
+                                      className={cn(
+                                        'w-1 h-full rounded-full bg-gradient-to-b',
+                                        config.color
                                       )}
-                                      {appointment.recurrencePattern &&
-                                        appointment.recurrencePattern !== 'none' && (
-                                          <Badge variant="outline" className="text-xs gap-1">
-                                            <Repeat className="h-3 w-3" />
-                                            {appointment.recurrencePattern === 'weekly'
-                                              ? 'Weekly'
-                                              : appointment.recurrencePattern === 'biweekly'
-                                                ? 'Biweekly'
-                                                : 'Monthly'}
+                                    />
+                                    <div className="space-y-3 flex-1">
+                                      <div className="flex items-center gap-3 flex-wrap">
+                                        <div
+                                          className={cn(
+                                            'flex items-center gap-2 px-3 py-1.5 rounded-full',
+                                            config.bg,
+                                            config.border,
+                                            'border'
+                                          )}
+                                        >
+                                          <Icon className={cn('h-4 w-4', config.text)} />
+                                          <span className={cn('text-sm font-medium', config.text)}>
+                                            {config.label}
+                                          </span>
+                                        </div>
+                                        <h4 className="font-semibold text-lg">
+                                          {appointment.title}
+                                        </h4>
+                                        {appointment.status === 'cancelled' && (
+                                          <Badge variant="destructive" className="text-xs">
+                                            Cancelled
                                           </Badge>
                                         )}
-                                    </div>
-                                    <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
-                                      <div className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4" />
-                                        <span className="font-medium">
-                                          {appointment.startTime} - {appointment.endTime}
-                                        </span>
+                                        {appointment.recurrencePattern &&
+                                          appointment.recurrencePattern !== 'none' && (
+                                            <Badge variant="outline" className="text-xs gap-1">
+                                              <Repeat className="h-3 w-3" />
+                                              {appointment.recurrencePattern === 'weekly'
+                                                ? 'Weekly'
+                                                : appointment.recurrencePattern === 'biweekly'
+                                                  ? 'Biweekly'
+                                                  : 'Monthly'}
+                                            </Badge>
+                                          )}
                                       </div>
-                                      <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4" />
-                                        <span>{appointment.client?.name}</span>
+                                      <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
+                                        <div className="flex items-center gap-2">
+                                          <Clock className="h-4 w-4" />
+                                          <span className="font-medium">
+                                            {appointment.startTime} - {appointment.endTime}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <User className="h-4 w-4" />
+                                          <span>{appointment.client?.name}</span>
+                                        </div>
+                                        {appointment.location && (
+                                          <div className="flex items-center gap-2">
+                                            <MapPin className="h-4 w-4" />
+                                            <span>{appointment.location}</span>
+                                          </div>
+                                        )}
+                                        {appointment.meetingUrl && (
+                                          <div className="flex items-center gap-2">
+                                            <Video className="h-4 w-4" />
+                                            <a
+                                              href={appointment.meetingUrl}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="hover:underline text-primary hover:text-primary/80"
+                                            >
+                                              Join Online
+                                            </a>
+                                          </div>
+                                        )}
                                       </div>
-                                      {appointment.location && (
-                                        <div className="flex items-center gap-2">
-                                          <MapPin className="h-4 w-4" />
-                                          <span>{appointment.location}</span>
-                                        </div>
-                                      )}
-                                      {appointment.meetingUrl && (
-                                        <div className="flex items-center gap-2">
-                                          <Video className="h-4 w-4" />
-                                          <a
-                                            href={appointment.meetingUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="hover:underline text-primary hover:text-primary/80"
-                                          >
-                                            Join Online
-                                          </a>
-                                        </div>
+                                      {appointment.description && (
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                          {appointment.description}
+                                        </p>
                                       )}
                                     </div>
-                                    {appointment.description && (
-                                      <p className="text-sm text-muted-foreground leading-relaxed">
-                                        {appointment.description}
-                                      </p>
-                                    )}
                                   </div>
-                                </div>
-                                {isTrainer && (
-                                  <div className="flex gap-2">
-                                    <motion.div
-                                      whileHover={{ opacity: 0.8 }}
-                                      whileTap={{ scale: 0.9 }}
-                                    >
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="hover:bg-primary/10"
-                                        onClick={() => handleEdit(appointment)}
-                                        data-testid={`button-edit-${appointment.id}`}
+                                  {isTrainer && (
+                                    <div className="flex gap-2">
+                                      <motion.div
+                                        whileHover={{ opacity: 0.8 }}
+                                        whileTap={{ scale: 0.9 }}
                                       >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                    </motion.div>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <motion.div
-                                          whileHover={{ opacity: 0.8 }}
-                                          whileTap={{ scale: 0.9 }}
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="hover:bg-primary/10"
+                                          onClick={() => handleEdit(appointment)}
+                                          data-testid={`button-edit-${appointment.id}`}
                                         >
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="hover:bg-destructive/10"
-                                            data-testid={`button-delete-${appointment.id}`}
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                      </motion.div>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <motion.div
+                                            whileHover={{ opacity: 0.8 }}
+                                            whileTap={{ scale: 0.9 }}
                                           >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </motion.div>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            This will cancel the appointment with{' '}
-                                            {appointment.client?.name}. This action cannot be
-                                            undone.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <div className="flex justify-end gap-4">
-                                          <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() => handleDelete(appointment.id)}
-                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                          >
-                                            Cancel Appointment
-                                          </AlertDialogAction>
-                                        </div>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="hover:bg-destructive/10"
+                                              data-testid={`button-delete-${appointment.id}`}
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </motion.div>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              This will cancel the appointment with{' '}
+                                              {appointment.client?.name}. This action cannot be
+                                              undone.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <div className="flex justify-end gap-4">
+                                            <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              onClick={() => handleDelete(appointment.id)}
+                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            >
+                                              Cancel Appointment
+                                            </AlertDialogAction>
+                                          </div>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </div>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
     </div>
   );
 }

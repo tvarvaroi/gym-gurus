@@ -845,11 +845,27 @@ Functional template (lucide icon + Inter text + CTA) added to:
 
 Scope: Ronin role only. § DS-6 role illustration integration also resolved via this work.
 
-### § UX-5b — BACKLOG: Empty states for Guru and Disciple roles
+### § UX-5b — ✅ RESOLVED (2026-03-09): Empty states for Guru and Disciple roles
 
-**Blocked by:** no Guru or Disciple test credentials for visual verification.
+Implemented per `docs/plans/2026-03-09-ux5b-empty-states-guru-disciple.md`.
 
-Once credentials are available, audit Guru pages (Clients, Client Details, Payments, Exercise Library) and Disciple pages for missing empty states. Use the same empty state pattern established in § UX-5.
+**Guru (emotional template — GuruIcon 128px + Playfair Display):**
+
+- `ClientsPage.tsx` — "Your roster awaits." + Add a Client CTA
+- `PaymentsPage.tsx` — "Your business starts here." + Create a Plan CTA (full-page ternary, shown only when both `plans.length === 0 && paymentHistory.length === 0`)
+
+**Guru (functional template — lucide icon + Inter):**
+
+- `ExercisesPage.tsx` — Dumbbell icon + updated copy "Your exercise library is empty. Add custom exercises to start building workouts." + "Add Exercise" CTA
+- `ClientDetailsPage.tsx` (workout assignments) — Dumbbell + "No workouts assigned to this client yet." + "Assign a Workout"
+- `ClientDetailsPage.tsx` (progress) — TrendingUp + "No progress data recorded for this client yet." (no CTA)
+- `SchedulePage.tsx` (TrainerClientSchedule, `appointments.length === 0`) — CalendarIcon + "No appointments scheduled this week." + "New Appointment" button
+
+**Disciple (functional template — no illustration, no CTA, waiting-state copy):**
+
+- `WeeklyWorkoutView.tsx` — Dumbbell + "Your trainer hasn't assigned any workouts yet. Check back after your next session."
+- `SchedulePage.tsx` (isClient, `appointments.length === 0`) — CalendarIcon + "No sessions scheduled yet. Your trainer will add appointments when you're ready to start."
+- `ProgressPage.tsx` (isClient/trainer-selected, `progressTypes.length === 0`) — TrendingUp + "Progress gets tracked here as you and your trainer work together."
 
 ---
 
@@ -1189,7 +1205,7 @@ Every page in the app uses the same layout: full-width container, padding 24px, 
 - Achievements page — "Earn your first scar."
 - Schedule page — "The path is empty. For now."
 
-Remaining opportunity: GuruIcon/DiscipleIcon in Guru/Disciple empty states — blocked on § UX-5b (credentials required).
+GuruIcon deployed in Guru empty states (Clients, Payments) — see § UX-5b ✅. DiscipleIcon not used per design decision (Disciple empty states are waiting states, not motivational).
 
 ---
 
