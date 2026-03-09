@@ -788,9 +788,17 @@ Add Login button to `LandingHeader.tsx`. Fix `/disciple-login` route (§ VA-1).
 
 ---
 
-### § UX-3 — MEDIUM: Role CSS flash
+### § UX-3 — ✅ RESOLVED (2026-03-09): Role CSS flash eliminated
 
-**Skill:** `senior-frontend` + `performance-profiler` (CLS metric)
+**Root cause:** `:root` defaults match `.role-guru` (gold), so ronin/disciple users saw gold→purple/teal flash during auth API round-trip.
+
+**Fix:**
+
+1. `client/index.html` — blocking inline script before React hydrates reads `localStorage.getItem('gg_role')` and applies role class synchronously
+2. `client/src/components/AuthGuard.tsx` — persists `user.role` to `gg_role` in localStorage on auth success, clears it on logout
+3. Result: role class is on `<html>` before first paint — zero flash
+
+**Original suggestion (not used):**
 
 ```tsx
 <div data-role={user.role} className="app-shell">
@@ -949,7 +957,7 @@ Current manual process:
 10. Fix `Solo_ai` → "Ronin AI" in pricing display (§ VA-4)
 11. Add `noopener noreferrer` to all `target="_blank"` links
 12. Consolidate `SettingsPage.tsx` local `TIER_NAMES` map → shared `getPlanDisplayName()` from `client/src/lib/roles.ts`
-13. `checkDatabaseAvailability` (or equivalent health check) should use `SELECT 1` not a schema-dependent query — currently causes false CRITICAL log on first boot after migrations run before schema is fully in sync
+13. ✅ RESOLVED (2026-03-09): `checkDatabaseAvailability` now uses `db.execute(sql\`SELECT 1\`)` — no schema dependency, no false CRITICAL log on first boot
 
 ---
 

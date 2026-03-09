@@ -36,10 +36,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Apply role-specific CSS class to <html> for theming.
   // Must be on the same element as .dark for CSS variables to resolve correctly.
+  // Also persists the role to localStorage so index.html's blocking script can apply
+  // it synchronously on the next load — eliminating the role colour flash (§ UX-3).
   useEffect(() => {
     document.documentElement.classList.remove(...ALL_ROLE_CSS_CLASSES);
     if (user?.role) {
       document.documentElement.classList.add(getRoleCssClass(user.role as InternalRole));
+      localStorage.setItem('gg_role', user.role);
+    } else {
+      localStorage.removeItem('gg_role');
     }
   }, [user]);
 

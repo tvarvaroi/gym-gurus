@@ -212,7 +212,10 @@ export class DatabaseStorage implements IStorage {
   // Users - Replit Auth operations (IMPORTANT: mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
     const db = await getDb();
-    const [user] = await db.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt)));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.id, id), isNull(users.deletedAt)));
     return user;
   }
 
@@ -235,13 +238,19 @@ export class DatabaseStorage implements IStorage {
   // Clients
   async getClient(id: string): Promise<Client | undefined> {
     const db = await getDb();
-    const [client] = await db.select().from(clients).where(and(eq(clients.id, id), isNull(clients.deletedAt)));
+    const [client] = await db
+      .select()
+      .from(clients)
+      .where(and(eq(clients.id, id), isNull(clients.deletedAt)));
     return client || undefined;
   }
 
   async getClientsByTrainer(trainerId: string): Promise<Client[]> {
     const db = await getDb();
-    return await db.select().from(clients).where(and(eq(clients.trainerId, trainerId), isNull(clients.deletedAt)));
+    return await db
+      .select()
+      .from(clients)
+      .where(and(eq(clients.trainerId, trainerId), isNull(clients.deletedAt)));
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
@@ -1288,7 +1297,10 @@ export class DatabaseStorage implements IStorage {
       const db = await getDb();
 
       // Get all clients for this trainer (excluding soft-deleted)
-      const allClients = await db.select().from(clients).where(and(eq(clients.trainerId, trainerId), isNull(clients.deletedAt)));
+      const allClients = await db
+        .select()
+        .from(clients)
+        .where(and(eq(clients.trainerId, trainerId), isNull(clients.deletedAt)));
       const activeClients = allClients.filter((c) => c.status === 'active');
       const inactiveClients = allClients.filter((c) => c.status !== 'active');
 
@@ -1571,8 +1583,8 @@ let isDatabaseAvailable = false;
 export async function checkDatabaseAvailability(): Promise<boolean> {
   try {
     const db = await getDb();
-    // Try a simple query to test connection
-    await db.select().from(users).limit(1);
+    // Raw SELECT 1 — no schema dependency, safe to run before migrations
+    await db.execute(sql`SELECT 1`);
     isDatabaseAvailable = true;
     return true;
   } catch (error) {

@@ -76,6 +76,22 @@
     </script>
   </head>
   <body>
+    <!-- Blocking role-class script: runs synchronously before React hydrates.
+         Reads last-known role from localStorage and applies the CSS class to
+         <html> immediately, eliminating the role colour flash on load (§ UX-3).
+         'gg_role' is written by AuthGuard.tsx on auth success, cleared on logout. -->
+    <script>
+      (function () {
+        try {
+          var role = localStorage.getItem('gg_role');
+          if (role) {
+            var map = { trainer: 'role-guru', solo: 'role-ronin', client: 'role-disciple' };
+            var cls = map[role];
+            if (cls) document.documentElement.classList.add(cls);
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
