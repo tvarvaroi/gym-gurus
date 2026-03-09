@@ -838,3 +838,20 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ================================================
+   § DS-2 — BRAND TYPOGRAPHY
+   Playfair Display for all primary headings — already
+   loaded via Google Fonts in index.html.
+   Maintains the luxury editorial identity inside the app.
+   ================================================ */
+h1,
+.page-title {
+  font-family: 'Playfair Display', serif;
+}
+
+.section-label {
+  font-family: 'Cormorant Garamond', serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}

@@ -63,7 +63,7 @@ export default function LoginPage() {
   // Role from URL param as initial state — can be changed inline
   const initialRole = useMemo<AuthRole | null>(() => {
     const r = new URLSearchParams(window.location.search).get('role');
-    return r === 'trainer' || r === 'solo' ? r : null;
+    return r === 'trainer' || r === 'solo' ? r : 'trainer';
   }, []);
   const [activeRole, setActiveRole] = useState<AuthRole | null>(initialRole);
 

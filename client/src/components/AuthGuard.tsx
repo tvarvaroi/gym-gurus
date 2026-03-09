@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { ALL_ROLE_CSS_CLASSES, getRoleCssClass } from '@/lib/roles';
 import type { InternalRole } from '@/lib/roles';
+import { toast } from '@/hooks/use-toast';
 
 /**
  * Pure auth gate. Does exactly two things:
@@ -171,6 +172,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Not authenticated — redirect to landing page.
+  // Not authenticated — show feedback then redirect to landing page.
+  toast({ title: 'Please sign in to continue' });
   return <Redirect to="/" />;
 }

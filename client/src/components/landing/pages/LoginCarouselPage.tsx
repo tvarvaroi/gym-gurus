@@ -120,7 +120,7 @@ const ParallaxCard = ({
 
 const LoginCarouselPage = memo(() => {
   const prefersReducedMotion = useReducedMotion();
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>('trainer');
 
   const handleSignIn = () => {
     if (selectedRole) {

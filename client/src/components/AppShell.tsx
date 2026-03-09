@@ -40,8 +40,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Custom sidebar dimensions for the fitness application
   const style = {
-    '--sidebar-width': '20rem',       // 320px — generous for content labels
-    '--sidebar-width-icon': '6rem',   // 96px — icon mode with logo (80px + padding)
+    '--sidebar-width': '20rem', // 320px — generous for content labels
+    '--sidebar-width-icon': '6rem', // 96px — icon mode with logo (80px + padding)
   };
 
   // Persist sidebar open/closed state across navigations via cookie
@@ -76,7 +76,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Skip to main content
             </a>
             <div className="flex h-screen w-full">
-              <AppSidebar />
+              {/* § UX-4 — hidden on mobile; MobileBottomNav handles mobile nav */}
+              <div className="hidden md:flex">
+                <AppSidebar />
+              </div>
               <div className="flex flex-col flex-1 min-w-0">
                 <AppHeaderComponent />
                 <TrialBanner />
