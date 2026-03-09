@@ -1,6 +1,6 @@
 # CLAUDE.md — GymGurus Developer Reference
 
-> Last updated: 2026-03-09 | Full skills inventory enforced — check ALL local and global skills every task
+> Last updated: 2026-03-09 | Full skills inventory — 139+ skills across 4 locations (skills/, agents/, commands/, .agents/skills/)
 
 ---
 
@@ -9,15 +9,17 @@
 **Before writing a single line of code, run this checklist every session, every task:**
 
 1. Read MEMORY.md — check memory for prior learnings from previous sessions
-2. FULL SKILLS INVENTORY — check ALL THREE locations:
-   LOCAL project skills: C:/Users/tvarv/.claude/skills/
-   GLOBAL Claude skills: ~/.claude/skills/ (or equivalent global install path)
-   AGENTS skills: C:/Users/tvarv/Desktop/GymGurus - Copy/.agents/skills/
-   Check every category in all three: engineering/, marketing/, product-team/, design/, business/, devops/
-   Full skills repo for reference: https://github.com/alirezarezvani/claude-skills
-   Do NOT rely on the table below as exhaustive — all three locations may have skills not listed here.
-3. MAP skills to the task — identify ALL relevant skills across ALL categories from ALL THREE locations.
-   A landing page task needs marketing + seo + cro + psychology skills, not just frontend.
+2. FULL SKILLS INVENTORY — check ALL FOUR locations:
+   - `C:/Users/tvarv/.claude/skills/` ← 30 workflow + meta skills
+   - `C:/Users/tvarv/.claude/agents/` ← 12 GSD orchestrator agents
+   - `C:/Users/tvarv/.claude/commands/` ← git + review + security-scan CLI commands
+   - `C:/Users/tvarv/Desktop/GymGurus - Copy/.agents/skills/` ← project-scoped skills (ui-ux-pro-max, vercel-react-best-practices, verification-before-completion, web-design-guidelines, writing-plans, executing-plans)
+     Engineering skills live in `C:/Users/tvarv/.claude/skills/engineering-team/` and `engineering/`
+     Marketing skills live in `C:/Users/tvarv/.claude/skills/marketing-skill/`
+     C-Level advisory in `C:/Users/tvarv/.claude/skills/c-level-advisor/`
+     GSD project management in `C:/Users/tvarv/.claude/get-shit-done/workflows/`
+3. MAP skills to the task — identify ALL relevant skills across ALL categories from ALL FOUR locations.
+   A landing page task needs ui-ux-pro-max + marketing/seo + cro + psychology, not just senior-frontend.
    A DB task may need observability + runbook skills too.
    Report which skills you loaded from which location and what each contributes BEFORE acting.
 4. Read every SKILL.md — use Read tool on every matched skill before writing any code
@@ -28,46 +30,246 @@
 
 **This is non-negotiable. Every task. Every time. No exceptions.**
 
-**The core principle:** You have skills across engineering, marketing, product, design, SEO, CRO, psychology, copywriting, and more — installed across three locations. The right skills for any task are rarely just the obvious ones. Always inventory all three locations first. Always report what you loaded. Never assume you already know which skills apply.
+**The core principle:** You have 139+ skills across engineering, GSD project management, marketing (42 skills/7 pods), C-level advisory (28 roles), RA/QM compliance, finance, design, and more — spread across FOUR locations. The right skills for any task are rarely just the obvious ones. Always inventory all four locations. Always report what you loaded.
 
 ---
 
-## 🗺️ Complete Skill Map — All 67 Skills
+## 🗺️ Complete Skill Directory — 139+ Skills Across 4 Locations
+
+### LOCATION 1: `C:/Users/tvarv/.claude/skills/` — Workflow & Meta Skills
+
+#### Engineering Workflow (activate before ANY code task)
+
+| Skill                            | When to use                                                                   |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| `brainstorming`                  | **HARD GATE** — any new feature/component. Present design, get approval FIRST |
+| `writing-plans`                  | Have a spec/requirements? Use this BEFORE touching code to create PLAN.md     |
+| `executing-plans`                | Have an approved PLAN.md? Use this to execute it with atomic commits          |
+| `systematic-debugging`           | Any bug, test failure, or unexpected behavior — BEFORE proposing fixes        |
+| `test-driven-development`        | Implementing any feature or bugfix — write tests BEFORE implementation        |
+| `verification-before-completion` | Before ANY claim of "done" — run verification commands first                  |
+| `requesting-code-review`         | Before merging — verify work meets requirements                               |
+| `receiving-code-review`          | When getting feedback — before implementing suggestions                       |
+| `finishing-a-development-branch` | Implementation complete, tests pass — guides integration decisions            |
+| `dispatching-parallel-agents`    | 2+ independent tasks that can run without shared state                        |
+| `subagent-driven-development`    | Executing plans with independent tasks in current session                     |
+| `using-git-worktrees`            | Starting feature work needing isolation from current workspace                |
+| `using-superpowers`              | Start of any conversation — establishes how to find and use skills            |
+| `enhance-prompt`                 | Vague UI idea → polished Stitch-optimized prompt                              |
+| `design-md`                      | Analyze Stitch projects → synthesize DESIGN.md design system                  |
+| `react-components`               | Convert Stitch designs → modular Vite/React components                        |
+
+#### Meta/Self-Improvement
+
+| Skill                                       | When to use                                                                  |
+| ------------------------------------------- | ---------------------------------------------------------------------------- |
+| `self-improving-agent` (`engineering-team`) | `/si:review` · `/si:promote` · `/si:extract` — end of every session          |
+| `writing-skills`                            | Creating new skills, editing existing skills, verifying skills before deploy |
+| `agents`                                    | Reference skill for building multi-agent systems                             |
+| `verification-before-completion`            | Iron Law: evidence before any completion claim                               |
+
+#### Engineering Specialties (`engineering-team/` + `engineering/`)
+
+| Skill                    | When to use                                                       |
+| ------------------------ | ----------------------------------------------------------------- |
+| `senior-architect`       | Architecture analysis, system design, dependency audit            |
+| `senior-backend`         | Express routes, middleware, DB operations, API design             |
+| `senior-frontend`        | React components, state, performance, bundle analysis             |
+| `senior-fullstack`       | Cross-layer code quality + security scoring                       |
+| `senior-qa`              | Testing strategy, coverage analysis, automation                   |
+| `senior-devops`          | CI/CD, containers, infrastructure, monitoring                     |
+| `senior-secops`          | Security ops, incident response, vulnerability management         |
+| `senior-security`        | Threat modeling, pen testing, compliance, secure architecture     |
+| `senior-data-scientist`  | ML, statistics, experiments, feature engineering                  |
+| `senior-data-engineer`   | Data pipelines, ETL, data quality                                 |
+| `senior-ml-engineer`     | Model deployment, MLOps, LLM integration                          |
+| `senior-prompt-engineer` | Prompt optimization, A/B testing, evaluation                      |
+| `senior-computer-vision` | CV models, YOLO, Detectron2, ONNX/TensorRT                        |
+| `code-reviewer`          | PR analysis, quality metrics, auto-flags `as any` / `console.log` |
+| `aws-solution-architect` | Lambda, API Gateway, ECS, CloudFormation IaC                      |
+| `ms365-tenant-manager`   | M365 admin, PowerShell, Azure AD, Conditional Access              |
+| `tdd-guide`              | TDD workflow, test-first design, acceptance testing               |
+| `tech-stack-evaluator`   | Framework comparison, TCO analysis, ecosystem health              |
+| `playwright-pro`         | E2E tests, `/pw:generate`, `/pw:fix`, `/pw:coverage`              |
+
+#### Business & Growth (`business-growth/`)
+
+| Skill                      | When to use                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| `customer-success-manager` | Customer health scoring, churn risk, expansion opportunities |
+| `revenue-operations`       | Pipeline coverage, MAPE forecast, GTM efficiency             |
+| `sales-engineer`           | RFP analysis, competitive matrix, POC planning               |
+
+#### Product Management (`product-team/`)
+
+| Skill                     | When to use                                               |
+| ------------------------- | --------------------------------------------------------- |
+| `product-manager-toolkit` | RICE prioritization, customer interview synthesis, PRD    |
+| `agile-product-owner`     | User story generation, sprint planning, INVEST criteria   |
+| `ux-researcher-designer`  | Persona generation, journey mapping, usability test plans |
+| `scrum-master`            | Sprint facilitation, retrospectives, team coaching        |
+
+#### Project Management (`project-management/`)
+
+| Skill                 | When to use                                               |
+| --------------------- | --------------------------------------------------------- |
+| `senior-pm`           | WSJF, Monte Carlo simulation, EMV risk, portfolio health  |
+| `jira-expert`         | Jira config, custom workflows, JQL, automation            |
+| `confluence-expert`   | Knowledge bases, documentation strategy                   |
+| `atlassian-admin`     | Atlassian suite admin, SSO, user provisioning             |
+| `atlassian-templates` | Sprint planning, retrospective, project charter templates |
+
+#### RA/QM Compliance (`ra-qm-team/`) — use for MedTech/regulated industries
+
+| Skill                                   | When to use                              |
+| --------------------------------------- | ---------------------------------------- |
+| `regulatory-affairs-head`               | RA strategy, regulatory intelligence     |
+| `quality-manager-qms-iso13485`          | ISO 13485 compliance, QMS                |
+| `capa-officer`                          | CAPA system, root cause analysis         |
+| `risk-management-specialist`            | ISO 14971, FMEA, risk analysis           |
+| `information-security-manager-iso27001` | ISO 27001, ISMS, data protection         |
+| `mdr-745-specialist`                    | EU MDR 2017/745, technical documentation |
+| `fda-consultant-specialist`             | FDA 510(k), PMA, QSR                     |
+| `gdpr-dsgvo-expert`                     | GDPR/DSGVO compliance, data privacy      |
+
+#### Finance (`finance/`)
+
+| Skill               | When to use                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| `financial-analyst` | DCF valuation, ratio analysis, budget variance, forecasting |
+
+#### Documentation, Standards, Templates
+
+| Skill             | When to use                                                  |
+| ----------------- | ------------------------------------------------------------ |
+| `doc-coauthoring` | 3-stage documentation: context → refinement → reader testing |
+| `standards`       | Code standards, style guides, quality gates                  |
+| `templates`       | Ready-to-use templates across domains                        |
+
+#### C-Level Advisory (`c-level-advisor/`) — 28 skills
+
+**Roles:** `ceo-advisor`, `cto-advisor`, `coo-advisor`, `cpo-advisor`, `cmo-advisor`, `cfo-advisor`, `cro-advisor`, `ciso-advisor`, `chro-advisor`, `executive-mentor`
+
+**Orchestration:** `cs-onboard` (setup), `chief-of-staff` (router), `board-meeting` (multi-role deliberation), `decision-logger`
+
+**Cross-cutting:** `board-deck-builder`, `scenario-war-room`, `competitive-intel`, `org-health-diagnostic`, `ma-playbook`, `intl-expansion`
+
+**Culture:** `culture-architect`, `company-os`, `founder-coach`, `strategic-alignment`, `change-management`, `internal-narrative`
+
+Start with `/cs:setup` first time, then use `chief-of-staff` to route questions.
+
+#### Marketing (`marketing-skill/`) — 42 skills across 7 pods
+
+Start with `marketing-ops` skill to route to the correct specialist. Available pods:
+
+| Pod                  | Skills                                                                                                            |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Content** (8)      | content-strategy, content-production, content-editing, humanizer, social-media, brand-voice, repurposing, writing |
+| **SEO** (5)          | traditional-seo, ai-seo (AEO/GEO), schema-optimizer, site-architecture, technical-seo                             |
+| **CRO** (6)          | page-optimizer, form-conversion, signup-flows, onboarding, popups, paywall-design                                 |
+| **Channels** (5)     | email-sequences, paid-advertising, cold-email, ad-creative, social-media-mgmt                                     |
+| **Growth** (4)       | ab-testing, referral-programs, free-tools-acquisition, churn-prevention                                           |
+| **Intelligence** (4) | competitor-analysis, marketing-psychology, analytics-tracking, campaign-measurement                               |
+| **Sales/GTM** (2)    | pricing-strategy, launch-planning                                                                                 |
+
+---
+
+### LOCATION 2: `C:/Users/tvarv/.claude/agents/` — GSD Orchestrator Agents
+
+The GSD system (Get Shit Done v1.22.4) is a structured project delivery framework with goal-backward verification. Use `/gsd:*` commands to activate.
+
+| Agent                      | Purpose                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| `gsd-planner`              | Creates PLAN.md with task breakdown, dependency analysis, goal-backward verification |
+| `gsd-executor`             | Executes PLAN.md with atomic commits, deviation handling, checkpoint protocol        |
+| `gsd-verifier`             | Verifies phase goal achievement — checks codebase delivers what was promised         |
+| `gsd-plan-checker`         | Validates plan WILL achieve goal before execution starts                             |
+| `gsd-debugger`             | Scientific debugging with persistent state across sessions                           |
+| `gsd-codebase-mapper`      | Produces STACK.md, ARCHITECTURE.md, TESTING.md, CONCERNS.md                          |
+| `gsd-roadmapper`           | Creates project roadmap with phases, success criteria, coverage validation           |
+| `gsd-phase-researcher`     | Researches phase requirements and dependencies before planning                       |
+| `gsd-project-researcher`   | Researches existing codebase context (tech, arch, quality, concerns)                 |
+| `gsd-integration-checker`  | Verifies cross-phase integration and E2E user workflows                              |
+| `gsd-nyquist-auditor`      | Audits plan completeness (sufficient detail for execution without guessing)          |
+| `gsd-research-synthesizer` | Synthesizes multiple research docs into actionable planner context                   |
+
+**GSD slash commands** (30+ available): `/gsd:new-project`, `/gsd:plan-phase`, `/gsd:execute-phase`, `/gsd:debug`, `/gsd:verify-work`, `/gsd:progress`, `/gsd:health`, `/gsd:map-codebase` and more.
+
+---
+
+### LOCATION 3: `C:/Users/tvarv/.claude/commands/` — CLI Commands
+
+| Command          | When to use                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| `/git:cm`        | Stage + commit (no push) with conventional commit message                            |
+| `/git:cp`        | Stage + commit + push to origin                                                      |
+| `/git:pr`        | Create pull request from current branch                                              |
+| `/review`        | Local quality gate: YAML linting, workflow validation, Python syntax, Markdown links |
+| `/security-scan` | Secret detection (Gitleaks) + dependency vulnerabilities (Safety)                    |
+
+**Workflow:** Make changes → `/review` → `/security-scan` → `/git:cp` → `/git:pr`
+
+---
+
+### LOCATION 4: `C:/Users/tvarv/Desktop/GymGurus - Copy/.agents/skills/` — Project-Scoped Skills
+
+| Skill                            | When to use                                                       |
+| -------------------------------- | ----------------------------------------------------------------- |
+| `ui-ux-pro-max`                  | Any UI work — 50 styles, 99 UX guidelines, pre-delivery checklist |
+| `vercel-react-best-practices`    | React/Next.js performance, bundle optimization, 40+ rules         |
+| `verification-before-completion` | Iron Law before ANY completion claim                              |
+| `web-design-guidelines`          | Web interface design standards                                    |
+| `writing-plans`                  | Creating PLAN.md files for multi-step tasks                       |
+| `executing-plans`                | Executing approved plans with review checkpoints                  |
+| `nano-banana`                    | (check SKILL.md for description)                                  |
+
+---
+
+## 🗺️ GymGurus Task → Skill Quick Reference
 
 ### Engineering Skills (activate before ANY code task)
 
-| Task                      | Skill                                            | Key Command / Capability                                                 |
-| ------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------ |
-| **Any new feature**       | `brainstorming`                                  | HARD GATE — present design, get approval BEFORE implementing             |
-| **Code review / PR**      | `code-reviewer` + `pr-review-expert`             | `python scripts/code_quality_checker.py ./server --language typescript`  |
-| **Architecture analysis** | `senior-architect`                               | `python scripts/project_architect.py . --verbose`                        |
-| **Dependency audit**      | `senior-architect` + `dependency-auditor`        | `python scripts/dependency_analyzer.py . --verbose` + CVE + license scan |
-| **Tech debt**             | `tech-debt-tracker` + `cto-advisor`              | Debt scanner → WSJF prioritizer → dashboard                              |
-| **Backend / Express**     | `senior-backend`                                 | `python scripts/api_scaffolder.py` · security hardening workflow         |
-| **Frontend / React**      | `senior-frontend` + `frontend-design`            | Bundle analysis · a11y · component scaffolding                           |
-| **Fullstack changes**     | `senior-fullstack`                               | Code quality + security scoring across full stack                        |
-| **DB schema changes**     | `database-designer` + `database-schema-designer` | Schema analyzer · Expand-Contract migrations · RLS · index optimizer     |
-| **API design**            | `api-design-reviewer`                            | REST conventions · breaking change detection · design scorecard          |
-| **API tests**             | `api-test-suite-builder` + `playwright-pro`      | Route scanner → test scaffold · `/pw:generate`                           |
-| **Stripe / billing**      | `stripe-integration-expert`                      | Subscription state machine · idempotent webhooks                         |
-| **CI/CD pipeline**        | `ci-cd-pipeline-builder`                         | Stack detection → GitHub Actions / GitLab CI generation                  |
-| **Observability**         | `observability-designer`                         | SLI/SLO design · golden signals · burn rate alerting                     |
-| **Performance**           | `performance-profiler`                           | Flamegraphs · bundle analysis · EXPLAIN ANALYZE · k6 load tests          |
-| **Security audit**        | `skill-security-auditor` + `env-secrets-manager` | Secret leak scan · .env lifecycle · rotation workflow                    |
-| **Incident response**     | `incident-commander`                             | `python scripts/incident_classifier.py` · PIR generation                 |
-| **Runbooks**              | `runbook-generator`                              | Stack detection → deployment/incident/DB runbooks                        |
-| **Email templates**       | `email-template-builder`                         | React Email templates · Resend/Postmark/SES integration                  |
-| **AI features (RAG)**     | `rag-architect`                                  | Chunking strategies · embedding benchmarks · retrieval eval              |
-| **Multi-agent design**    | `agent-designer` + `agent-workflow-designer`     | Supervisor/swarm/pipeline/hierarchical patterns                          |
-| **3+ independent bugs**   | `dispatching-parallel-agents`                    | `Task()` per independent domain — parallel execution                     |
-| **MCP integration**       | `mcp-server-builder`                             | OpenAPI → MCP tool definitions · validation                              |
-| **Memory curation**       | `self-improving-agent`                           | `/si:review` · `/si:promote` · `/si:extract`                             |
-| **Skill validation**      | `skill-tester` + `skill-security-auditor`        | Structure compliance · quality scoring · security gate                   |
-| **AWS migration**         | `aws-solution-architect`                         | Lambda · API Gateway · ECS · CloudFormation IaC                          |
-| **Prompt improvement**    | `prompt-engineer-toolkit`                        | A/B eval · versioned prompt templates · quality scoring                  |
-| **UI visual design**      | `frontend-design`                                | Intentional aesthetic direction · production-grade UI                    |
-| **Design system**         | `design-md`                                      | `DESIGN.md` synthesis from existing screens                              |
-| **Web artifacts**         | `web-artifacts-builder`                          | Multi-component React artifacts · shadcn/ui · bundle script              |
+| Task                      | Skill                                            | Key Command / Capability                                                  |
+| ------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------- |
+| **Any new feature**       | `brainstorming`                                  | HARD GATE — present design, get approval BEFORE implementing              |
+| **Code review / PR**      | `code-reviewer` + `pr-review-expert`             | `python scripts/code_quality_checker.py ./server --language typescript`   |
+| **Architecture analysis** | `senior-architect`                               | `python scripts/project_architect.py . --verbose`                         |
+| **Dependency audit**      | `senior-architect` + `dependency-auditor`        | `python scripts/dependency_analyzer.py . --verbose` + CVE + license scan  |
+| **Tech debt**             | `tech-debt-tracker` + `cto-advisor`              | Debt scanner → WSJF prioritizer → dashboard                               |
+| **Backend / Express**     | `senior-backend`                                 | `python scripts/api_scaffolder.py` · security hardening workflow          |
+| **Frontend / React**      | `senior-frontend` + `frontend-design`            | Bundle analysis · a11y · component scaffolding                            |
+| **Fullstack changes**     | `senior-fullstack`                               | Code quality + security scoring across full stack                         |
+| **DB schema changes**     | `database-designer` + `database-schema-designer` | Schema analyzer · Expand-Contract migrations · RLS · index optimizer      |
+| **API design**            | `api-design-reviewer`                            | REST conventions · breaking change detection · design scorecard           |
+| **API tests**             | `api-test-suite-builder` + `playwright-pro`      | Route scanner → test scaffold · `/pw:generate`                            |
+| **Stripe / billing**      | `stripe-integration-expert`                      | Subscription state machine · idempotent webhooks                          |
+| **CI/CD pipeline**        | `ci-cd-pipeline-builder`                         | Stack detection → GitHub Actions / GitLab CI generation                   |
+| **Observability**         | `observability-designer`                         | SLI/SLO design · golden signals · burn rate alerting                      |
+| **Performance**           | `performance-profiler`                           | Flamegraphs · bundle analysis · EXPLAIN ANALYZE · k6 load tests           |
+| **Security audit**        | `skill-security-auditor` + `env-secrets-manager` | Secret leak scan · .env lifecycle · rotation workflow                     |
+| **Incident response**     | `incident-commander`                             | `python scripts/incident_classifier.py` · PIR generation                  |
+| **Runbooks**              | `runbook-generator`                              | Stack detection → deployment/incident/DB runbooks                         |
+| **Email templates**       | `email-template-builder`                         | React Email templates · Resend/Postmark/SES integration                   |
+| **AI features (RAG)**     | `rag-architect`                                  | Chunking strategies · embedding benchmarks · retrieval eval               |
+| **Multi-agent design**    | `agent-designer` + `agent-workflow-designer`     | Supervisor/swarm/pipeline/hierarchical patterns                           |
+| **3+ independent bugs**   | `dispatching-parallel-agents`                    | `Task()` per independent domain — parallel execution                      |
+| **MCP integration**       | `mcp-server-builder`                             | OpenAPI → MCP tool definitions · validation                               |
+| **Memory curation**       | `self-improving-agent`                           | `/si:review` · `/si:promote` · `/si:extract`                              |
+| **Skill validation**      | `skill-tester` + `skill-security-auditor`        | Structure compliance · quality scoring · security gate                    |
+| **AWS migration**         | `aws-solution-architect`                         | Lambda · API Gateway · ECS · CloudFormation IaC                           |
+| **Prompt improvement**    | `prompt-engineer-toolkit`                        | A/B eval · versioned prompt templates · quality scoring                   |
+| **UI visual design**      | `frontend-design` + `ui-ux-pro-max`              | Intentional aesthetic · 99 UX guidelines · pre-delivery checklist         |
+| **Design system**         | `design-md`                                      | `DESIGN.md` synthesis from existing screens                               |
+| **Web artifacts**         | `web-artifacts-builder` + `react-components`     | Multi-component React artifacts · shadcn/ui · Stitch designs → components |
+| **Any bug**               | `systematic-debugging`                           | Scientific method debugging — BEFORE proposing fixes                      |
+| **Multi-step plan**       | `writing-plans` + `executing-plans`              | PLAN.md creation → atomic execution with checkpoints                      |
+| **Branch complete**       | `finishing-a-development-branch`                 | Integration decision guide when implementation is done                    |
+| **Before any commit**     | `verification-before-completion`                 | Iron Law: run verification BEFORE claiming done                           |
+| **Marketing copy/SEO**    | `marketing-skill` (route via `marketing-ops`)    | 42 skills across 7 pods: content, SEO, CRO, channels, growth, intel, GTM  |
+| **Financial analysis**    | `finance/financial-analyst`                      | DCF valuation · ratio analysis · budget variance · forecasting            |
+| **MedTech compliance**    | `ra-qm-team`                                     | ISO 13485 · MDR · FDA · ISO 27001 · GDPR — 12 specialist roles            |
+| **Structured project**    | GSD system (via `/gsd:*` commands)               | `/gsd:plan-phase` → `/gsd:execute-phase` → `/gsd:verify-work`             |
+| **Prompt refinement**     | `enhance-prompt`                                 | Vague idea → Stitch-optimized implementation-ready prompt                 |
 
 ### Product & Project Management Skills
 
@@ -106,25 +308,25 @@
 
 When Claude Code opens a file in this repo, activate these skills:
 
-| File / Area                      | Activate                                                       |
-| -------------------------------- | -------------------------------------------------------------- |
-| `server/routes.ts`               | `senior-backend` + `code-reviewer` + `api-design-reviewer`     |
-| `server/routes/*.ts` (new route) | `brainstorming` → `api-test-suite-builder` → `senior-backend`  |
-| `shared/schema.ts`               | `database-designer` + `database-schema-designer`               |
-| `server/migrations/`             | `database-designer` (Expand-Contract pattern)                  |
-| `client/src/App.tsx`             | `senior-frontend` + `code-reviewer`                            |
-| `client/src/components/`         | `brainstorming` → `frontend-design` → `senior-frontend`        |
-| `client/src/pages/`              | `ux-researcher-designer` (journey map) + `senior-frontend`     |
-| `server/routes/webhooks.ts`      | `stripe-integration-expert` — DO NOT TOUCH middleware order    |
-| `server/middleware/`             | `skill-security-auditor` + `senior-backend`                    |
-| `server/services/aiService.ts`   | `rag-architect` + `prompt-engineer-toolkit`                    |
-| `.env` / env vars                | `env-secrets-manager`                                          |
-| `package.json`                   | `dependency-auditor` (CVE + license scan before adding deps)   |
-| `playwright.config.ts` / tests   | `playwright-pro` (`/pw:generate`, `/pw:fix`, `/pw:coverage`)   |
-| `.github/workflows/`             | `ci-cd-pipeline-builder`                                       |
-| Any PR                           | `pr-review-expert` + `code-reviewer`                           |
-| Any incident                     | `incident-commander`                                           |
-| Any new AI feature               | `rag-architect` + `agent-designer` + `prompt-engineer-toolkit` |
+| File / Area                      | Activate                                                                     |
+| -------------------------------- | ---------------------------------------------------------------------------- |
+| `server/routes.ts`               | `senior-backend` + `code-reviewer` + `api-design-reviewer`                   |
+| `server/routes/*.ts` (new route) | `brainstorming` → `api-test-suite-builder` → `senior-backend`                |
+| `shared/schema.ts`               | `database-designer` + `database-schema-designer`                             |
+| `server/migrations/`             | `database-designer` (Expand-Contract pattern)                                |
+| `client/src/App.tsx`             | `senior-frontend` + `code-reviewer`                                          |
+| `client/src/components/`         | `brainstorming` → `ui-ux-pro-max` → `frontend-design` → `senior-frontend`    |
+| `client/src/pages/`              | `ux-researcher-designer` (journey map) + `ui-ux-pro-max` + `senior-frontend` |
+| `server/routes/webhooks.ts`      | `stripe-integration-expert` — DO NOT TOUCH middleware order                  |
+| `server/middleware/`             | `skill-security-auditor` + `senior-backend`                                  |
+| `server/services/aiService.ts`   | `rag-architect` + `prompt-engineer-toolkit`                                  |
+| `.env` / env vars                | `env-secrets-manager`                                                        |
+| `package.json`                   | `dependency-auditor` (CVE + license scan before adding deps)                 |
+| `playwright.config.ts` / tests   | `playwright-pro` (`/pw:generate`, `/pw:fix`, `/pw:coverage`)                 |
+| `.github/workflows/`             | `ci-cd-pipeline-builder`                                                     |
+| Any PR                           | `pr-review-expert` + `code-reviewer`                                         |
+| Any incident                     | `incident-commander`                                                         |
+| Any new AI feature               | `rag-architect` + `agent-designer` + `prompt-engineer-toolkit`               |
 
 ---
 
