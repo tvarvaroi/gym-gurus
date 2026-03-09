@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { RoninIcon } from '@/components/icons/RoninIcon';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
@@ -270,15 +271,27 @@ export default function Achievements() {
         className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
       >
         {filteredAchievements.length === 0 && (
-          <div className="col-span-full flex flex-col items-center py-12 text-center space-y-3">
-            <Trophy className="h-12 w-12 text-muted-foreground/30" />
-            <div className="space-y-1">
-              <p className="text-base font-medium text-muted-foreground">No achievements found</p>
-              <p className="text-sm text-muted-foreground/60">
-                Complete workouts and hit milestones to unlock achievements
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="col-span-full flex flex-col items-center py-16 text-center space-y-6"
+          >
+            <RoninIcon size={128} variant="default" />
+            <div className="space-y-3">
+              <h2
+                className="text-3xl font-medium text-foreground"
+                style={{ fontFamily: 'Playfair Display, serif' }}
+              >
+                Earn your first scar.
+              </h2>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                Train consistently and your achievements will reflect the work you put in.
               </p>
             </div>
-          </div>
+            <Button onClick={() => (window.location.href = '/solo/generate')}>
+              Start Training
+            </Button>
+          </motion.div>
         )}
         <AnimatePresence mode="popLayout">
           {filteredAchievements.slice(0, visibleCount).map((achievement, index) => {

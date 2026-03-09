@@ -36,7 +36,6 @@ interface Message {
   timestamp: Date;
 }
 
-
 // ─── Markdown preprocessing ──────────────────────────────────────────────────
 
 /** Fix markdown tables that arrive without proper newlines between rows */
@@ -214,6 +213,7 @@ export default function AICoach() {
   const [limitReached, setLimitReached] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   const { data: _user } = useQuery({
     queryKey: ['/api/auth/user'],
@@ -432,16 +432,21 @@ export default function AICoach() {
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <h1 className="text-xl font-bold font-['Playfair_Display']">
-              AI <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Coach</span>
+              AI{' '}
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Coach
+              </span>
             </h1>
           </div>
           <div className="flex items-center gap-1.5">
             {remaining !== null && limit !== null && limit > 0 && (
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                remaining === 0
-                  ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                  : 'bg-muted/50 border-border/50 text-muted-foreground'
-              }`}>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                  remaining === 0
+                    ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                    : 'bg-muted/50 border-border/50 text-muted-foreground'
+                }`}
+              >
                 {remaining === 0 ? 'Limit' : `${remaining}/${limit}`}
               </span>
             )}
@@ -481,10 +486,7 @@ export default function AICoach() {
                     )}
                   </Badge>
                 )}
-                <Badge
-                  variant="outline"
-                  className="bg-primary/10 border-primary/30 text-primary"
-                >
+                <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary">
                   <Zap className="h-3 w-3 mr-1" />
                   AI Powered
                 </Badge>
@@ -500,254 +502,259 @@ export default function AICoach() {
         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
           {/* Quick action chips — inside chat, above messages */}
           <QuickActions onSelect={handleSend} visible={messages.length <= 1 && !isTyping} />
-              <AnimatePresence initial={false}>
-                {messages.map((message, index) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3 }}
-                    className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+          <AnimatePresence initial={false}>
+            {messages.map((message, index) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+                className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+              >
+                {/* Avatar */}
+                <div
+                  className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                    message.role === 'assistant'
+                      ? 'bg-gradient-to-br from-purple-500 to-indigo-500'
+                      : 'bg-gradient-to-br from-cyan-500 to-teal-500'
+                  }`}
+                >
+                  {message.role === 'assistant' ? (
+                    <Bot className="h-4 w-4 text-white" />
+                  ) : (
+                    <User className="h-4 w-4 text-white" />
+                  )}
+                </div>
+
+                {/* Message Bubble */}
+                <div className="max-w-[85%] md:max-w-[80%] flex flex-col gap-1">
+                  <div
+                    className={`rounded-2xl px-4 py-3 ${
+                      message.role === 'assistant'
+                        ? 'bg-muted/80 rounded-tl-none'
+                        : 'bg-purple-500/30 rounded-tr-none'
+                    }`}
                   >
-                    {/* Avatar */}
-                    <div
-                      className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                        message.role === 'assistant'
-                          ? 'bg-gradient-to-br from-purple-500 to-indigo-500'
-                          : 'bg-gradient-to-br from-cyan-500 to-teal-500'
-                      }`}
-                    >
-                      {message.role === 'assistant' ? (
-                        <Bot className="h-4 w-4 text-white" />
-                      ) : (
-                        <User className="h-4 w-4 text-white" />
-                      )}
-                    </div>
-
-                    {/* Message Bubble */}
-                    <div className="max-w-[85%] md:max-w-[80%] flex flex-col gap-1">
-                      <div
-                        className={`rounded-2xl px-4 py-3 ${
-                          message.role === 'assistant'
-                            ? 'bg-muted/80 rounded-tl-none'
-                            : 'bg-purple-500/30 rounded-tr-none'
-                        }`}
-                      >
-                        {message.role === 'assistant' ? (
-                          <div className="text-sm font-light leading-relaxed prose prose-invert prose-sm max-w-none prose-table:w-full prose-th:text-left prose-th:px-3 prose-th:py-1.5 prose-th:border prose-th:border-white/10 prose-th:bg-white/5 prose-td:px-3 prose-td:py-1.5 prose-td:border prose-td:border-white/10 prose-headings:font-medium prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-strong:font-medium">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {fixMarkdownTables(message.content)}
-                            </ReactMarkdown>
-                          </div>
-                        ) : (
-                          <p className="text-sm font-light whitespace-pre-wrap leading-relaxed">
-                            {message.content}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {message.timestamp.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
+                    {message.role === 'assistant' ? (
+                      <div className="text-sm font-light leading-relaxed prose prose-invert prose-sm max-w-none prose-table:w-full prose-th:text-left prose-th:px-3 prose-th:py-1.5 prose-th:border prose-th:border-white/10 prose-th:bg-white/5 prose-td:px-3 prose-td:py-1.5 prose-td:border prose-td:border-white/10 prose-headings:font-medium prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-strong:font-medium">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {fixMarkdownTables(message.content)}
+                        </ReactMarkdown>
                       </div>
-                      {/* Save as Workout button — shown on assistant workout messages */}
-                      {message.role === 'assistant' &&
-                        index > 0 &&
-                        looksLikeWorkout(message.content) &&
-                        !savedWorkoutIds.has(message.id) &&
-                        (namingMessageId === message.id ? (
-                          <div className="self-start flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={workoutNameInput}
-                              onChange={(e) => setWorkoutNameInput(e.target.value)}
-                              className="px-2 py-1 text-xs rounded-lg border border-purple-500/30 bg-background text-foreground w-44 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
-                              placeholder="Workout name"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter')
-                                  saveWorkoutFromChat(message, workoutNameInput);
-                                if (e.key === 'Escape') setNamingMessageId(null);
-                              }}
-                              autoFocus
-                            />
-                            <button
-                              type="button"
-                              onClick={() => saveWorkoutFromChat(message, workoutNameInput)}
-                              disabled={savingMessageId === message.id}
-                              className="flex items-center gap-1 px-3 py-2 min-h-[36px] text-xs rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
-                            >
-                              {savingMessageId === message.id ? (
-                                <RefreshCw className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Save className="h-3 w-3" />
-                              )}
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setNamingMessageId(null)}
-                              className="px-3 py-2 min-h-[36px] text-xs rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setWorkoutNameInput('AI Coach Workout');
-                              setNamingMessageId(message.id);
-                            }}
-                            className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-colors"
-                          >
-                            <Save className="h-3 w-3" />
-                            Save as Workout
-                          </button>
-                        ))}
-                      {/* Start Now button — shown after workout is saved */}
-                      {message.role === 'assistant' && savedWorkoutIds.has(message.id) && (
-                        <div className="self-start flex items-center gap-2">
-                          <span className="text-xs text-primary flex items-center gap-1">
-                            <Save className="h-3 w-3" /> Saved!
-                          </span>
-                          <a
-                            href={`/workout-execution/${savedWorkoutIds.get(message.id)}`}
-                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-colors"
-                          >
-                            <Play className="h-3 w-3" />
-                            Start Now
-                          </a>
-                        </div>
-                      )}
-                      {/* Save Meal Plan button (F4) — shown on assistant meal plan messages */}
-                      {message.role === 'assistant' &&
-                        index > 0 &&
-                        looksLikeMealPlan(message.content) &&
-                        !savedMealPlanIds.has(message.id) && (
-                          <button
-                            type="button"
-                            onClick={() => saveMealPlanFromChat(message)}
-                            disabled={savingMealPlanId === message.id}
-                            className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
-                          >
-                            {savingMealPlanId === message.id ? (
-                              <RefreshCw className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Apple className="h-3 w-3" />
-                            )}
-                            Save Meal Plan
-                          </button>
-                        )}
-                      {message.role === 'assistant' && savedMealPlanIds.has(message.id) && (
-                        <span className="self-start text-xs text-primary flex items-center gap-1">
-                          <Apple className="h-3 w-3" /> Meal plan saved!
-                        </span>
-                      )}
-                      {/* Action buttons (F6) — contextual navigation */}
-                      {message.role === 'assistant' &&
-                        index > 0 &&
-                        (() => {
-                          const isWorkout = looksLikeWorkout(message.content);
-                          const isMealPlan = looksLikeMealPlan(message.content);
-                          const actions = detectActions(message.content, isWorkout, isMealPlan);
-                          if (actions.length === 0) return null;
-                          return (
-                            <div className="self-start flex items-center gap-1.5 mt-1">
-                              {actions.map((action) => (
-                                <a
-                                  key={action.href}
-                                  href={action.href}
-                                  className="flex items-center gap-1 px-3 py-1.5 min-h-[32px] text-xs rounded-full border border-border/50 text-muted-foreground hover:text-purple-400 hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
-                                >
-                                  <action.icon className="h-3 w-3" />
-                                  {action.label}
-                                </a>
-                              ))}
-                            </div>
-                          );
-                        })()}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-
-              {/* Suggested prompts shown when only the welcome message exists */}
-              {messages.length <= 1 && !isTyping && (
-                <div className="flex flex-col items-center justify-center py-6 space-y-3">
-                  <div className="rounded-xl border border-border/30 bg-muted/20 p-4 max-w-lg w-full space-y-3">
-                    <p className="text-xs text-muted-foreground/60 uppercase tracking-wider text-center">
-                      Try asking
+                    ) : (
+                      <p className="text-sm font-light whitespace-pre-wrap leading-relaxed">
+                        {message.content}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {message.timestamp.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        'Create a push workout',
-                        'Rest day nutrition tips',
-                        'Training frequency guide',
-                        'Break a bench plateau',
-                      ].map((prompt) => (
+                  </div>
+                  {/* Save as Workout button — shown on assistant workout messages */}
+                  {message.role === 'assistant' &&
+                    index > 0 &&
+                    looksLikeWorkout(message.content) &&
+                    !savedWorkoutIds.has(message.id) &&
+                    (namingMessageId === message.id ? (
+                      <div className="self-start flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={workoutNameInput}
+                          onChange={(e) => setWorkoutNameInput(e.target.value)}
+                          className="px-2 py-1 text-xs rounded-lg border border-purple-500/30 bg-background text-foreground w-44 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                          placeholder="Workout name"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveWorkoutFromChat(message, workoutNameInput);
+                            if (e.key === 'Escape') setNamingMessageId(null);
+                          }}
+                          autoFocus
+                        />
                         <button
-                          key={prompt}
-                          onClick={() => handleSend(prompt)}
-                          className="text-left px-3 py-2 rounded-lg border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-all min-h-[44px] flex items-center"
+                          type="button"
+                          onClick={() => saveWorkoutFromChat(message, workoutNameInput)}
+                          disabled={savingMessageId === message.id}
+                          className="flex items-center gap-1 px-3 py-2 min-h-[36px] text-xs rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
                         >
-                          {prompt}
+                          {savingMessageId === message.id ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Save className="h-3 w-3" />
+                          )}
+                          Save
                         </button>
-                      ))}
+                        <button
+                          type="button"
+                          onClick={() => setNamingMessageId(null)}
+                          className="px-3 py-2 min-h-[36px] text-xs rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWorkoutNameInput('AI Coach Workout');
+                          setNamingMessageId(message.id);
+                        }}
+                        className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-colors"
+                      >
+                        <Save className="h-3 w-3" />
+                        Save as Workout
+                      </button>
+                    ))}
+                  {/* Start Now button — shown after workout is saved */}
+                  {message.role === 'assistant' && savedWorkoutIds.has(message.id) && (
+                    <div className="self-start flex items-center gap-2">
+                      <span className="text-xs text-primary flex items-center gap-1">
+                        <Save className="h-3 w-3" /> Saved!
+                      </span>
+                      <a
+                        href={`/workout-execution/${savedWorkoutIds.get(message.id)}`}
+                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-colors"
+                      >
+                        <Play className="h-3 w-3" />
+                        Start Now
+                      </a>
                     </div>
+                  )}
+                  {/* Save Meal Plan button (F4) — shown on assistant meal plan messages */}
+                  {message.role === 'assistant' &&
+                    index > 0 &&
+                    looksLikeMealPlan(message.content) &&
+                    !savedMealPlanIds.has(message.id) && (
+                      <button
+                        type="button"
+                        onClick={() => saveMealPlanFromChat(message)}
+                        disabled={savingMealPlanId === message.id}
+                        className="self-start flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                      >
+                        {savingMealPlanId === message.id ? (
+                          <RefreshCw className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Apple className="h-3 w-3" />
+                        )}
+                        Save Meal Plan
+                      </button>
+                    )}
+                  {message.role === 'assistant' && savedMealPlanIds.has(message.id) && (
+                    <span className="self-start text-xs text-primary flex items-center gap-1">
+                      <Apple className="h-3 w-3" /> Meal plan saved!
+                    </span>
+                  )}
+                  {/* Action buttons (F6) — contextual navigation */}
+                  {message.role === 'assistant' &&
+                    index > 0 &&
+                    (() => {
+                      const isWorkout = looksLikeWorkout(message.content);
+                      const isMealPlan = looksLikeMealPlan(message.content);
+                      const actions = detectActions(message.content, isWorkout, isMealPlan);
+                      if (actions.length === 0) return null;
+                      return (
+                        <div className="self-start flex items-center gap-1.5 mt-1">
+                          {actions.map((action) => (
+                            <a
+                              key={action.href}
+                              href={action.href}
+                              className="flex items-center gap-1 px-3 py-1.5 min-h-[32px] text-xs rounded-full border border-border/50 text-muted-foreground hover:text-purple-400 hover:border-purple-500/30 hover:bg-purple-500/5 transition-colors"
+                            >
+                              <action.icon className="h-3 w-3" />
+                              {action.label}
+                            </a>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Empty state — shown when only the welcome message exists */}
+          {messages.length <= 1 && !isTyping && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center py-8 space-y-4 text-center"
+            >
+              <Sparkles className="h-12 w-12 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                Ask anything about training, recovery, or nutrition. Your coach is ready.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => chatInputRef.current?.focus()}>
+                Ask a Question
+              </Button>
+              <div className="grid grid-cols-2 gap-2 w-full max-w-sm mt-2">
+                {[
+                  'Create a push workout',
+                  'Rest day nutrition tips',
+                  'Training frequency guide',
+                  'Break a bench plateau',
+                ].map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => handleSend(prompt)}
+                    className="text-left px-3 py-2 rounded-lg border border-border/30 text-sm text-muted-foreground hover:text-foreground hover:border-purple-500/30 hover:bg-purple-500/5 transition-all min-h-[44px] flex items-center"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Typing Indicator */}
+          <AnimatePresence>
+            {isTyping && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex gap-3"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-white" />
+                </div>
+                <div className="bg-muted/80 rounded-2xl rounded-tl-none px-4 py-3">
+                  <div className="flex gap-1">
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-purple-400"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{
+                        duration: 0.6,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
+                        delay: 0,
+                      }}
+                    />
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-purple-400"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{
+                        duration: 0.6,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
+                        delay: 0.2,
+                      }}
+                    />
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-purple-400"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{
+                        duration: 0.6,
+                        repeat: prefersReducedMotion ? 0 : Infinity,
+                        delay: 0.4,
+                      }}
+                    />
                   </div>
                 </div>
-              )}
-
-              {/* Typing Indicator */}
-              <AnimatePresence>
-                {isTyping && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex gap-3"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="bg-muted/80 rounded-2xl rounded-tl-none px-4 py-3">
-                      <div className="flex gap-1">
-                        <motion.div
-                          className="w-2 h-2 rounded-full bg-purple-400"
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: prefersReducedMotion ? 0 : Infinity,
-                            delay: 0,
-                          }}
-                        />
-                        <motion.div
-                          className="w-2 h-2 rounded-full bg-purple-400"
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: prefersReducedMotion ? 0 : Infinity,
-                            delay: 0.2,
-                          }}
-                        />
-                        <motion.div
-                          className="w-2 h-2 rounded-full bg-purple-400"
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: prefersReducedMotion ? 0 : Infinity,
-                            delay: 0.4,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <div ref={messagesEndRef} />
-            </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <div ref={messagesEndRef} />
+        </div>
 
         {/* Input Area — fixed at bottom on mobile */}
         <div className="flex-none border-t border-border/50 p-3 pb-16 md:p-4 md:pb-4 bg-background/80 backdrop-blur-md">
@@ -758,8 +765,8 @@ export default function AICoach() {
                 <span className="text-sm font-medium">Daily AI limit reached</span>
               </div>
               <p className="text-xs text-muted-foreground text-center">
-                You've used all your AI requests for today. Upgrade for more daily requests, or
-                your limit resets at midnight UTC.
+                You've used all your AI requests for today. Upgrade for more daily requests, or your
+                limit resets at midnight UTC.
               </p>
               <a
                 href="/pricing"
@@ -773,6 +780,7 @@ export default function AICoach() {
             <div className="flex gap-2 items-center">
               <div className="flex-1 flex items-center rounded-full border border-border/30 bg-background/50 pl-4 pr-1.5 py-1">
                 <Input
+                  ref={chatInputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}

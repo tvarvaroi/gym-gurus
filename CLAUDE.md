@@ -828,11 +828,28 @@ Add Login button to `LandingHeader.tsx`. Fix `/disciple-login` route (§ VA-1).
 
 ---
 
-### § UX-5 — MEDIUM: No empty states
+### § UX-5 — ✅ RESOLVED (2026-03-09): Empty states — Ronin scope
 
-**Skill:** `ux-researcher-designer` (empty state patterns) + `senior-frontend`
+**Design doc:** `docs/plans/2026-03-09-ux5-empty-states.md`
 
-Progress, Schedule, My Clients, Exercise Library — all show blank on first use.
+Emotional template (RoninIcon 128px + Playfair Display headline + Inter body + gold CTA) added to:
+
+- `ProgressPage.tsx` — "Your story starts here." (triggers: `soloProgress.totalWorkouts === 0`)
+- `solo/Achievements.tsx` — "Earn your first scar." (triggers: `filteredAchievements.length === 0`)
+- `SchedulePage.tsx` (SoloScheduleView) — "The path is empty. For now." (triggers: `events.length === 0`)
+
+Functional template (lucide icon + Inter text + CTA) added to:
+
+- `WorkoutPlans.tsx` — Dumbbell icon, approved copy, CTA → `/solo/generate`
+- `solo/AICoach.tsx` — Sparkles icon, approved copy, "Ask a Question" CTA focuses input
+
+Scope: Ronin role only. § DS-6 role illustration integration also resolved via this work.
+
+### § UX-5b — BACKLOG: Empty states for Guru and Disciple roles
+
+**Blocked by:** no Guru or Disciple test credentials for visual verification.
+
+Once credentials are available, audit Guru pages (Clients, Client Details, Payments, Exercise Library) and Disciple pages for missing empty states. Use the same empty state pattern established in § UX-5.
 
 ---
 
@@ -1164,19 +1181,15 @@ Every page in the app uses the same layout: full-width container, padding 24px, 
 
 ---
 
-### § DS-6 — LOW: The role illustrations are a standout detail that should be amplified
+### § DS-6 — ✅ RESOLVED (2026-03-09): Role illustrations integrated into Ronin empty states
 
-**`frontend-design` verdict:** _"What's the one thing someone will remember?"_
+`RoninIcon` (128px, `variant="default"`) now appears on 3 Ronin emotional empty states:
 
-The Guru (samurai), Ronin (wandering warrior), and Disciple (student) illustrations on the login page are the most distinctive and memorable visual element in the entire product. They are used once — on the login page — and never seen again.
+- Progress page — "Your story starts here."
+- Achievements page — "Earn your first scar."
+- Schedule page — "The path is empty. For now."
 
-These illustrations should recur throughout the product:
-
-- Empty state for new Guru: "Welcome, Guru. Add your first client." — Guru illustration
-- Empty state for new Ronin: "Your journey begins here." — Ronin illustration
-- Achievement unlock animation could feature the relevant role illustration
-
-This is zero-effort brand reinforcement that turns a one-time login choice into an ongoing identity system.
+Remaining opportunity: GuruIcon/DiscipleIcon in Guru/Disciple empty states — blocked on § UX-5b (credentials required).
 
 ---
 

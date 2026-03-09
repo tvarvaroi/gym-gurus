@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { RoninIcon } from '@/components/icons/RoninIcon';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -197,11 +198,13 @@ export default function ProgressPage() {
           icon={<TrendingUp className="h-full w-full" />}
           title={isClient || isSolo ? 'My' : 'Progress'}
           titleAccent={isClient || isSolo ? 'Progress' : 'Tracking'}
-          subtitle={isSolo
-            ? 'Track your fitness progress and goals'
-            : isClient
-              ? 'View your fitness journey tracked by your trainer'
-              : 'Monitor client progress and track fitness goals with precision'}
+          subtitle={
+            isSolo
+              ? 'Track your fitness progress and goals'
+              : isClient
+                ? 'View your fitness journey tracked by your trainer'
+                : 'Monitor client progress and track fitness goals with precision'
+          }
         />
         {/* Only trainers can add progress entries */}
         {isTrainer && (
@@ -349,6 +352,30 @@ export default function ProgressPage() {
         </div>
       )}
 
+      {isSolo && !loadingSoloProgress && (!soloProgress || soloProgress.totalWorkouts === 0) && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-20 space-y-6 text-center"
+        >
+          <RoninIcon size={128} variant="default" />
+          <div className="space-y-3">
+            <h2
+              className="text-3xl font-medium text-foreground"
+              style={{ fontFamily: 'Playfair Display, serif' }}
+            >
+              Your story starts here.
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+              Complete your first workout and your progress will begin to take shape.
+            </p>
+          </div>
+          <Button onClick={() => (window.location.href = '/solo/generate')}>
+            Generate a Workout
+          </Button>
+        </motion.div>
+      )}
+
       {isSolo && !loadingSoloProgress && soloProgress && soloProgress.totalWorkouts > 0 && (
         <div className="space-y-6">
           {/* Stats Cards */}
@@ -384,7 +411,9 @@ export default function ProgressPage() {
                   return (
                     <p className="text-2xl font-bold mt-1">
                       {isValid ? avg : '\u2014'}
-                      {isValid && <span className="text-sm font-light text-muted-foreground ml-1">min</span>}
+                      {isValid && (
+                        <span className="text-sm font-light text-muted-foreground ml-1">min</span>
+                      )}
                     </p>
                   );
                 })()}
@@ -721,7 +750,9 @@ export default function ProgressPage() {
                           {workout.volume.toLocaleString()}kg
                         </span>
                       )}
-                      <span>{workout.sets} {workout.sets === 1 ? 'set' : 'sets'}</span>
+                      <span>
+                        {workout.sets} {workout.sets === 1 ? 'set' : 'sets'}
+                      </span>
                     </div>
                   </div>
                 ))}

@@ -355,9 +355,7 @@ const CompactWorkoutRow = memo(
             <Clock className="h-3 w-3" />
             {workout.duration}m
           </span>
-          <span className="text-xs text-muted-foreground">
-            {formatCategory(workout.category)}
-          </span>
+          <span className="text-xs text-muted-foreground">{formatCategory(workout.category)}</span>
           <Badge
             variant={
               workout.difficulty === 'beginner'
@@ -389,7 +387,10 @@ const CompactWorkoutRow = memo(
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="backdrop-blur-xl bg-background/95 border-border/50">
+          <DropdownMenuContent
+            align="end"
+            className="backdrop-blur-xl bg-background/95 border-border/50"
+          >
             <DropdownMenuItem onClick={() => onEdit(workout)} className="cursor-pointer">
               <Edit className="mr-2 h-4 w-4" />
               Edit
@@ -716,11 +717,13 @@ const WorkoutPlans = memo(() => {
               icon={<Dumbbell className="h-full w-full" />}
               title="My"
               titleAccent="Workouts"
-              subtitle={isSolo
-                ? 'Your saved workouts — generate new ones with AI or build from scratch'
-                : isClient
-                  ? 'Your personalized workout plans from your trainer'
-                  : 'Create and manage personalized workout routines'}
+              subtitle={
+                isSolo
+                  ? 'Your saved workouts — generate new ones with AI or build from scratch'
+                  : isClient
+                    ? 'Your personalized workout plans from your trainer'
+                    : 'Create and manage personalized workout routines'
+              }
             />
             {/* Role-specific actions */}
             {isSolo && (
@@ -888,7 +891,11 @@ const WorkoutPlans = memo(() => {
               <div
                 className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${isSolo ? 'from-purple-500/20 to-indigo-500/5 border-purple-500/20' : 'from-primary/20 to-primary/5 border-primary/20'} backdrop-blur-sm border flex items-center justify-center`}
               >
-                <Target className={`w-10 h-10 ${isSolo ? 'text-purple-400' : 'text-primary'}`} />
+                {isSolo ? (
+                  <Dumbbell className="w-10 h-10 text-purple-400" />
+                ) : (
+                  <Target className="w-10 h-10 text-primary" />
+                )}
               </div>
             </motion.div>
             <div className="text-center space-y-3">
@@ -899,7 +906,7 @@ const WorkoutPlans = memo(() => {
                 {searchQuery
                   ? 'No workouts found matching your search. Try a different term.'
                   : isSolo
-                    ? 'Generate your first workout with AI to start training'
+                    ? 'No workouts saved yet. Generate your first AI-powered workout to get started.'
                     : 'Create your first workout plan to start building personalized routines for your clients'}
               </p>
             </div>
@@ -910,8 +917,8 @@ const WorkoutPlans = memo(() => {
                     className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-light transition-all duration-300"
                     onClick={() => (window.location.href = '/solo/generate')}
                   >
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Generate with AI
+                    <Dumbbell className="mr-2 h-4 w-4" />
+                    Generate a Workout
                   </Button>
                 </motion.div>
               ) : (

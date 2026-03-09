@@ -74,6 +74,7 @@ import { format, startOfWeek, endOfWeek, addDays, isSameDay, parseISO } from 'da
 import { cn } from '@/lib/utils';
 import CalendarView from '@/components/CalendarView';
 import { useUser } from '@/contexts/UserContext';
+import { RoninIcon } from '@/components/icons/RoninIcon';
 
 // Combined Appointment + Workout Assignment form schema
 const appointmentFormSchema = z.object({
@@ -328,6 +329,28 @@ function SoloScheduleView() {
             <CalendarIcon className="w-12 h-12 text-muted-foreground/40" />
           </motion.div>
         </Card>
+      ) : events.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-20 space-y-6 text-center"
+        >
+          <RoninIcon size={128} variant="default" />
+          <div className="space-y-3">
+            <h2
+              className="text-3xl font-medium text-foreground"
+              style={{ fontFamily: 'Playfair Display, serif' }}
+            >
+              The path is empty. For now.
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+              Generate a workout and schedule it to start building your training week.
+            </p>
+          </div>
+          <Button onClick={() => (window.location.href = '/solo/generate')}>
+            Generate a Workout
+          </Button>
+        </motion.div>
       ) : viewMode === 'calendar' ? (
         <CalendarView events={calendarEvents} />
       ) : (
@@ -482,7 +505,6 @@ function TrainerClientSchedule() {
   // Create appointment mutation
   const createAppointmentMutation = useMutation({
     mutationFn: async (data: AppointmentFormData) => {
-
       // Create appointment (backend will automatically create workout assignment if workoutId is provided)
       const appointmentData = {
         clientId: data.clientId,
