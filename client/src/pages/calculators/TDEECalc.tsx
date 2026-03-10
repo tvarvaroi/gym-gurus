@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Calculator, Activity, Scale, Ruler, Target } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
@@ -307,10 +306,8 @@ export function TDEECalculator() {
       </div>
 
       {/* Results */}
-      <motion.div
-        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
+        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6 animate-in fade-in slide-in-from-bottom-3 duration-300"
         key={`${results.targetCalories}-${goal}`}
       >
         <div className="text-center mb-6">
@@ -329,7 +326,7 @@ export function TDEECalculator() {
             <p className="font-bold text-lg">{results.tdee}</p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Macros */}
       <div className="bg-card rounded-xl p-6 shadow-sm mb-6">

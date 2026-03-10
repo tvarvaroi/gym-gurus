@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Heart, Activity, Zap } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type CalculationMethod = 'age' | 'karvonen' | 'manual';
@@ -125,7 +123,7 @@ export default function PremiumHeartRateZonesCalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Method Selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Calculation Method</label>
@@ -135,16 +133,15 @@ export default function PremiumHeartRateZonesCalc() {
               { value: 'karvonen', label: 'Karvonen' },
               { value: 'manual', label: 'Manual' },
             ].map((m) => (
-              <motion.button
+              <button
                 key={m.value}
                 onClick={() => setMethod(m.value as CalculationMethod)}
-                whileHover={{ scale: 1.02 }}
-                className={`py-3 rounded-xl font-medium transition-all ${
+                className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                   method === m.value ? 'premium-button' : 'bg-card border border-border'
                 }`}
               >
                 {m.label}
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -212,29 +209,27 @@ export default function PremiumHeartRateZonesCalc() {
         {/* Formula Selection (for age method) */}
         {method === 'age' && (
           <div className="grid grid-cols-2 gap-3">
-            <motion.button
+            <button
               onClick={() => setFormula('tanaka')}
-              whileHover={{ scale: 1.02 }}
-              className={`py-3 rounded-xl font-medium transition-all ${
+              className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                 formula === 'tanaka' ? 'premium-button' : 'bg-card border border-border'
               }`}
             >
               Tanaka (Recommended)
-            </motion.button>
-            <motion.button
+            </button>
+            <button
               onClick={() => setFormula('standard')}
-              whileHover={{ scale: 1.02 }}
-              className={`py-3 rounded-xl font-medium transition-all ${
+              className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                 formula === 'standard' ? 'premium-button' : 'bg-card border border-border'
               }`}
             >
               220 - Age
-            </motion.button>
+            </button>
           </div>
         )}
 
         {/* Max HR Display */}
-        <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+        <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
           <p className="text-sm text-muted-foreground mb-2">Estimated Maximum Heart Rate</p>
           <p
             className="text-6xl font-light gradient-text"
@@ -248,18 +243,12 @@ export default function PremiumHeartRateZonesCalc() {
               Heart Rate Reserve: {maxHR - restingHR} bpm
             </p>
           )}
-        </motion.div>
+        </div>
 
         {/* Heart Rate Zones */}
         <div className="space-y-3">
           {zones.map((zone, index) => (
-            <motion.div
-              key={zone.name}
-              className={`rounded-xl overflow-hidden ${zone.bgColor}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
+            <div key={zone.name} className={`rounded-xl overflow-hidden ${zone.bgColor}`}>
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className={`font-bold ${zone.color}`}>{zone.name}</h4>
@@ -270,14 +259,12 @@ export default function PremiumHeartRateZonesCalc() {
                 <p className="text-sm text-muted-foreground">{zone.description}</p>
               </div>
               <div className="h-2 bg-background/30">
-                <motion.div
+                <div
                   className={`h-full ${zone.bgColor.replace('100', '500')}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${zone.maxPercent}%` }}
-                  transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
+                  style={{ width: `${zone.maxPercent}%` }}
                 />
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
@@ -303,7 +290,7 @@ export default function PremiumHeartRateZonesCalc() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

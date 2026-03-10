@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Activity, Timer, TrendingUp } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type TestMethod = 'cooper' | 'rockport' | 'beep' | 'manual';
@@ -227,7 +225,7 @@ export default function PremiumVO2MaxCalc() {
       results={result}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Test Method Selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Select Test Method</label>
@@ -238,16 +236,15 @@ export default function PremiumVO2MaxCalc() {
               { value: 'beep', label: 'Beep Test' },
               { value: 'manual', label: 'Manual Entry' },
             ].map((m) => (
-              <motion.button
+              <button
                 key={m.value}
                 onClick={() => setMethod(m.value as TestMethod)}
-                whileHover={{ scale: 1.02 }}
-                className={`py-3 rounded-xl font-medium transition-all ${
+                className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                   method === m.value ? 'premium-button' : 'bg-card border border-border'
                 }`}
               >
                 {m.label}
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -273,24 +270,22 @@ export default function PremiumVO2MaxCalc() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <motion.button
+              <button
                 onClick={() => setGender('male')}
-                whileHover={{ scale: 1.02 }}
-                className={`py-3 rounded-xl font-medium transition-all ${
+                className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                   gender === 'male' ? 'premium-button' : 'bg-card border border-border'
                 }`}
               >
                 Male
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 onClick={() => setGender('female')}
-                whileHover={{ scale: 1.02 }}
-                className={`py-3 rounded-xl font-medium transition-all ${
+                className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                   gender === 'female' ? 'premium-button' : 'bg-card border border-border'
                 }`}
               >
                 Female
-              </motion.button>
+              </button>
             </div>
 
             <div className="space-y-2">
@@ -429,7 +424,9 @@ export default function PremiumVO2MaxCalc() {
         )}
 
         {/* Results */}
-        <motion.div className={`rounded-xl p-6 ${result.bgColor}`} whileHover={{ y: -4 }}>
+        <div
+          className={`rounded-xl p-6 hover:-translate-y-1 transition-transform ${result.bgColor}`}
+        >
           <div className="text-center mb-6">
             <p className="text-sm opacity-70 mb-1">Estimated VO2 Max</p>
             <p className={`text-6xl font-bold ${result.color}`}>{result.vo2max.toFixed(1)}</p>
@@ -450,7 +447,7 @@ export default function PremiumVO2MaxCalc() {
               <p className="text-lg font-bold">{result.percentile}</p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Reference Values */}
         <div className="premium-card">
@@ -472,7 +469,7 @@ export default function PremiumVO2MaxCalc() {
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

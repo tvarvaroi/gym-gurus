@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Calculator } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
@@ -100,7 +98,7 @@ export default function PremiumTDEECalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Input Section */}
         <div className="space-y-6">
           {/* Gender Selection */}
@@ -108,19 +106,17 @@ export default function PremiumTDEECalc() {
             <label className="text-sm font-medium text-foreground">Gender</label>
             <div className="grid grid-cols-2 gap-3">
               {(['male', 'female'] as Gender[]).map((g) => (
-                <motion.button
+                <button
                   key={g}
                   onClick={() => setGender(g)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`py-3 px-4 rounded-xl font-medium transition-all ${
+                  className={`py-3 px-4 rounded-xl font-medium transition-all hover:scale-[1.02] active:scale-[0.98] ${
                     gender === g
                       ? 'premium-button'
                       : 'bg-card hover:bg-card/80 border border-border'
                   }`}
                 >
                   {g.charAt(0).toUpperCase() + g.slice(1)}
-                </motion.button>
+                </button>
               ))}
             </div>
           </div>
@@ -187,12 +183,10 @@ export default function PremiumTDEECalc() {
             <label className="text-sm font-medium">Activity Level</label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {ACTIVITY_LEVELS.map((level) => (
-                <motion.button
+                <button
                   key={level.value}
                   onClick={() => setActivityLevel(level.value as ActivityLevel)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`p-3 rounded-xl text-left transition-all ${
+                  className={`p-3 rounded-xl text-left transition-all hover:scale-[1.02] active:scale-[0.98] ${
                     activityLevel === level.value
                       ? 'premium-gradient-bg-strong border-2 border-primary'
                       : 'bg-card hover:bg-card/80 border border-border'
@@ -200,7 +194,7 @@ export default function PremiumTDEECalc() {
                 >
                   <div className="font-medium text-sm">{level.label}</div>
                   <div className="text-xs text-muted-foreground">{level.description}</div>
-                </motion.button>
+                </button>
               ))}
             </div>
           </div>
@@ -210,12 +204,10 @@ export default function PremiumTDEECalc() {
             <label className="text-sm font-medium">Goal</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {GOALS.map((g) => (
-                <motion.button
+                <button
                   key={g.value}
                   onClick={() => setGoal(g.value as Goal)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`p-3 rounded-xl text-center transition-all ${
+                  className={`p-3 rounded-xl text-center transition-all hover:scale-[1.02] active:scale-[0.98] ${
                     goal === g.value
                       ? 'premium-gradient-bg-strong border-2 border-primary'
                       : 'bg-card hover:bg-card/80 border border-border'
@@ -223,7 +215,7 @@ export default function PremiumTDEECalc() {
                 >
                   <div className="font-medium text-sm">{g.label}</div>
                   <div className="text-xs text-muted-foreground">{g.description}</div>
-                </motion.button>
+                </button>
               ))}
             </div>
           </div>
@@ -235,7 +227,7 @@ export default function PremiumTDEECalc() {
 
           <div className="grid md:grid-cols-3 gap-4">
             {/* BMR */}
-            <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+            <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
               <p className="text-sm text-muted-foreground mb-2">Basal Metabolic Rate</p>
               <p
                 className="text-5xl font-light gradient-text"
@@ -244,10 +236,10 @@ export default function PremiumTDEECalc() {
                 {results.bmr}
               </p>
               <p className="text-xs text-muted-foreground mt-2">calories/day at rest</p>
-            </motion.div>
+            </div>
 
             {/* TDEE */}
-            <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+            <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
               <p className="text-sm text-muted-foreground mb-2">TDEE</p>
               <p
                 className="text-5xl font-light gradient-text"
@@ -256,10 +248,10 @@ export default function PremiumTDEECalc() {
                 {results.tdee}
               </p>
               <p className="text-xs text-muted-foreground mt-2">maintenance calories</p>
-            </motion.div>
+            </div>
 
             {/* Adjusted for Goal */}
-            <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+            <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
               <p className="text-sm text-muted-foreground mb-2">Target Calories</p>
               <p
                 className="text-5xl font-light gradient-text"
@@ -268,7 +260,7 @@ export default function PremiumTDEECalc() {
                 {results.adjustedCalories}
               </p>
               <p className="text-xs text-muted-foreground mt-2">for your goal</p>
-            </motion.div>
+            </div>
           </div>
 
           {/* Macro Breakdown */}
@@ -325,7 +317,7 @@ export default function PremiumTDEECalc() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

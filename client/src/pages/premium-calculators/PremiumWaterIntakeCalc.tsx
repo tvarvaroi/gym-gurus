@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Droplets, Scale, Activity, ThermometerSun, Coffee, Beer } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type WeightUnit = 'kg' | 'lbs';
@@ -85,7 +83,7 @@ export default function PremiumWaterIntakeCalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Weight Input */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium">
@@ -112,24 +110,22 @@ export default function PremiumWaterIntakeCalc() {
 
         {/* Unit Toggle */}
         <div className="grid grid-cols-2 gap-3">
-          <motion.button
+          <button
             onClick={() => setWeightUnit('kg')}
-            whileHover={{ scale: 1.02 }}
-            className={`py-3 rounded-xl font-medium transition-all ${
+            className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
               weightUnit === 'kg' ? 'premium-button' : 'bg-card border border-border'
             }`}
           >
             Kilograms (kg)
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             onClick={() => setWeightUnit('lbs')}
-            whileHover={{ scale: 1.02 }}
-            className={`py-3 rounded-xl font-medium transition-all ${
+            className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
               weightUnit === 'lbs' ? 'premium-button' : 'bg-card border border-border'
             }`}
           >
             Pounds (lbs)
-          </motion.button>
+          </button>
         </div>
 
         {/* Activity Level */}
@@ -140,19 +136,17 @@ export default function PremiumWaterIntakeCalc() {
           </label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {Object.entries(ACTIVITY_LEVELS).map(([key, level]) => (
-              <motion.button
+              <button
                 key={key}
                 onClick={() => setActivityLevel(key as ActivityLevel)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`p-3 rounded-xl text-center transition-all ${
+                className={`p-3 rounded-xl text-center transition-all hover:scale-[1.02] active:scale-[0.98] ${
                   activityLevel === key
                     ? 'premium-gradient-bg-strong border-2 border-primary'
                     : 'bg-card hover:bg-card/80 border border-border'
                 }`}
               >
                 <div className="font-medium text-sm">{level.name}</div>
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -165,12 +159,10 @@ export default function PremiumWaterIntakeCalc() {
           </label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {Object.entries(CLIMATE_FACTORS).map(([key, climateInfo]) => (
-              <motion.button
+              <button
                 key={key}
                 onClick={() => setClimate(key as Climate)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`p-3 rounded-xl text-center transition-all ${
+                className={`p-3 rounded-xl text-center transition-all hover:scale-[1.02] active:scale-[0.98] ${
                   climate === key
                     ? 'premium-gradient-bg-strong border-2 border-primary'
                     : 'bg-card hover:bg-card/80 border border-border'
@@ -178,7 +170,7 @@ export default function PremiumWaterIntakeCalc() {
               >
                 <span className="text-2xl block mb-1">{climateInfo.icon}</span>
                 <p className="font-medium text-sm">{climateInfo.name}</p>
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -191,21 +183,19 @@ export default function PremiumWaterIntakeCalc() {
               Caffeine (cups/day)
             </label>
             <div className="flex items-center gap-2">
-              <motion.button
+              <button
                 onClick={() => setCaffeineServings(Math.max(0, caffeineServings - 1))}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 rounded-lg bg-card border border-border font-bold"
+                className="px-4 py-2 rounded-lg bg-card border border-border font-bold active:scale-95"
               >
                 -
-              </motion.button>
+              </button>
               <span className="flex-1 text-center text-xl font-bold">{caffeineServings}</span>
-              <motion.button
+              <button
                 onClick={() => setCaffeineServings(Math.min(10, caffeineServings + 1))}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 rounded-lg bg-card border border-border font-bold"
+                className="px-4 py-2 rounded-lg bg-card border border-border font-bold active:scale-95"
               >
                 +
-              </motion.button>
+              </button>
             </div>
           </div>
           <div className="space-y-2">
@@ -214,27 +204,25 @@ export default function PremiumWaterIntakeCalc() {
               Alcohol (drinks/day)
             </label>
             <div className="flex items-center gap-2">
-              <motion.button
+              <button
                 onClick={() => setAlcoholServings(Math.max(0, alcoholServings - 1))}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 rounded-lg bg-card border border-border font-bold"
+                className="px-4 py-2 rounded-lg bg-card border border-border font-bold active:scale-95"
               >
                 -
-              </motion.button>
+              </button>
               <span className="flex-1 text-center text-xl font-bold">{alcoholServings}</span>
-              <motion.button
+              <button
                 onClick={() => setAlcoholServings(Math.min(10, alcoholServings + 1))}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 rounded-lg bg-card border border-border font-bold"
+                className="px-4 py-2 rounded-lg bg-card border border-border font-bold active:scale-95"
               >
                 +
-              </motion.button>
+              </button>
             </div>
           </div>
         </div>
 
         {/* Results */}
-        <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+        <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
           <p className="text-sm text-muted-foreground mb-2">Daily Water Intake</p>
           <p
             className="text-6xl font-light gradient-text"
@@ -245,7 +233,7 @@ export default function PremiumWaterIntakeCalc() {
           <p className="text-lg text-muted-foreground mt-2">
             {results.totalMl} ml / {results.totalOunces} oz
           </p>
-        </motion.div>
+        </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-4">
@@ -297,7 +285,7 @@ export default function PremiumWaterIntakeCalc() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

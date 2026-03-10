@@ -1,8 +1,6 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Trophy, Scale, TrendingUp, Dumbbell } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import {
   getStrengthClassification,
   getStrengthStandardsForWeight,
@@ -92,29 +90,27 @@ export default function PremiumStrengthStandardsCalc() {
       results={{ overallScore, overallClassification, results }}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Gender Selection */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Gender</label>
           <div className="grid grid-cols-2 gap-3">
-            <motion.button
+            <button
               onClick={() => setGender('male')}
-              whileHover={{ scale: 1.02 }}
-              className={`py-3 rounded-xl font-medium transition-all ${
+              className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                 gender === 'male' ? 'premium-button' : 'bg-card border border-border'
               }`}
             >
               Male
-            </motion.button>
-            <motion.button
+            </button>
+            <button
               onClick={() => setGender('female')}
-              whileHover={{ scale: 1.02 }}
-              className={`py-3 rounded-xl font-medium transition-all ${
+              className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                 gender === 'female' ? 'premium-button' : 'bg-card border border-border'
               }`}
             >
               Female
-            </motion.button>
+            </button>
           </div>
         </div>
 
@@ -144,24 +140,22 @@ export default function PremiumStrengthStandardsCalc() {
 
         {/* Unit Toggle */}
         <div className="grid grid-cols-2 gap-3">
-          <motion.button
+          <button
             onClick={() => setUnit('kg')}
-            whileHover={{ scale: 1.02 }}
-            className={`py-3 rounded-xl font-medium transition-all ${
+            className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
               unit === 'kg' ? 'premium-button' : 'bg-card border border-border'
             }`}
           >
             Kilograms (kg)
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             onClick={() => setUnit('lbs')}
-            whileHover={{ scale: 1.02 }}
-            className={`py-3 rounded-xl font-medium transition-all ${
+            className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
               unit === 'lbs' ? 'premium-button' : 'bg-card border border-border'
             }`}
           >
             Pounds (lbs)
-          </motion.button>
+          </button>
         </div>
 
         {/* Lift Inputs */}
@@ -196,9 +190,8 @@ export default function PremiumStrengthStandardsCalc() {
         </div>
 
         {/* Overall Score */}
-        <motion.div
-          className={`rounded-xl p-6 ${CLASSIFICATION_COLORS[overallClassification].bg}`}
-          whileHover={{ y: -4 }}
+        <div
+          className={`rounded-xl p-6 hover:-translate-y-1 transition-transform ${CLASSIFICATION_COLORS[overallClassification].bg}`}
         >
           <div className="text-center">
             <p className="text-sm opacity-80 mb-1">Overall Strength Level</p>
@@ -217,7 +210,7 @@ export default function PremiumStrengthStandardsCalc() {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Individual Lift Results */}
         <div className="premium-card">
@@ -227,12 +220,7 @@ export default function PremiumStrengthStandardsCalc() {
           </h3>
           <div className="space-y-4">
             {results.map((result) => (
-              <motion.div
-                key={result.key}
-                className="p-4 bg-secondary/50 rounded-lg"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
+              <div key={result.key} className="p-4 bg-secondary/50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium">
                     {result.icon} {result.name}
@@ -248,11 +236,9 @@ export default function PremiumStrengthStandardsCalc() {
 
                 {/* Progress bar */}
                 <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
-                  <motion.div
+                  <div
                     className="h-full bg-primary"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, result.score)}%` }}
-                    transition={{ duration: 0.5 }}
+                    style={{ width: `${Math.min(100, result.score)}%` }}
                   />
                 </div>
 
@@ -262,7 +248,7 @@ export default function PremiumStrengthStandardsCalc() {
                   </span>
                   <span>Score: {result.score}/100</span>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -289,7 +275,7 @@ export default function PremiumStrengthStandardsCalc() {
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

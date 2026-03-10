@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Activity, Timer, TrendingUp, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
@@ -472,10 +471,8 @@ export function VO2MaxCalculator() {
       </div>
 
       {/* Results */}
-      <motion.div
-        className={`rounded-xl p-6 mb-6 ${result.bgColor}`}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
+        className={`rounded-xl p-6 mb-6 animate-in fade-in zoom-in-95 duration-300 ${result.bgColor}`}
         key={result.vo2max.toFixed(1)}
       >
         <div className="text-center mb-6">
@@ -498,7 +495,7 @@ export function VO2MaxCalculator() {
             <p className="text-lg font-bold">{result.percentile}</p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Reference Values */}
       <div className="bg-card rounded-xl p-6 shadow-sm mb-6">

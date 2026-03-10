@@ -1,10 +1,8 @@
 import { Switch, Route } from 'wouter';
 import { lazy, Suspense, useEffect } from 'react';
 import { useUser } from '@/contexts/UserContext';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { trackPageView } from '@/lib/analytics';
-import { PageTransition } from '@/components/AnimationComponents';
 import { LoadingFallback } from '@/components/LoadingFallback';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { LoginPage } from '@/components/LoginPage';
@@ -104,25 +102,25 @@ const TestLoginPage = lazy(() =>
 
 // --- Route factories ---
 
-/** Wraps a lazy component in Suspense + PageTransition. */
+/** Wraps a lazy component in Suspense + CSS fade-in. */
 function lazyRoute(C: React.LazyExoticComponent<any>) {
   return () => (
     <Suspense fallback={<LoadingFallback />}>
-      <PageTransition>
+      <div className="w-full animate-in fade-in duration-200">
         <C />
-      </PageTransition>
+      </div>
     </Suspense>
   );
 }
 
-/** Wraps a lazy component in ProtectedRoute + Suspense + PageTransition. */
+/** Wraps a lazy component in ProtectedRoute + Suspense + CSS fade-in. */
 function protectedRoute(C: React.LazyExoticComponent<any>, role?: 'trainer' | 'client') {
   return () => (
     <ProtectedRoute requiredRole={role}>
       <Suspense fallback={<LoadingFallback />}>
-        <PageTransition>
+        <div className="w-full animate-in fade-in duration-200">
           <C />
-        </PageTransition>
+        </div>
       </Suspense>
     </ProtectedRoute>
   );
@@ -137,17 +135,17 @@ function HomePage() {
   if (isSolo) {
     return (
       <Suspense fallback={<LoadingFallback />}>
-        <PageTransition>
+        <div className="w-full animate-in fade-in duration-200">
           <SoloDashboard />
-        </PageTransition>
+        </div>
       </Suspense>
     );
   }
 
   return (
-    <PageTransition>
+    <div className="w-full animate-in fade-in duration-200">
       <Dashboard />
-    </PageTransition>
+    </div>
   );
 }
 
@@ -157,7 +155,9 @@ function WorkoutPage() {
 
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <PageTransition>{isClient ? <WorkoutExecution /> : <WorkoutBuilder />}</PageTransition>
+      <div className="w-full animate-in fade-in duration-200">
+        {isClient ? <WorkoutExecution /> : <WorkoutBuilder />}
+      </div>
     </Suspense>
   );
 }
@@ -172,99 +172,124 @@ export function RouterConfig() {
   }, [location]);
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div key={location} className="w-full">
-        <Suspense fallback={<LoadingFallback />}>
-          <Switch>
-            {/* Dev-only routes — tree-shaken in production builds */}
-            {import.meta.env.DEV && (
-              <Route path="/test-login" component={lazyRoute(TestLoginPage)} />
-            )}
-            {import.meta.env.DEV && (
-              <Route path="/preview-login">{() => <LoginPage />}</Route>
-            )}
-            {import.meta.env.DEV && (
-              <Route path="/login2" component={lazyRoute(AuthLoginPage)} />
-            )}
-            {import.meta.env.DEV && (
-              <Route path="/test-auth-login" component={lazyRoute(TestAuthLogin)} />
-            )}
+    <div key={location} className="w-full">
+      <Suspense fallback={<LoadingFallback />}>
+        <Switch>
+          {/* Dev-only routes — tree-shaken in production builds */}
+          {import.meta.env.DEV && <Route path="/test-login" component={lazyRoute(TestLoginPage)} />}
+          {import.meta.env.DEV && <Route path="/preview-login">{() => <LoginPage />}</Route>}
+          {import.meta.env.DEV && <Route path="/login2" component={lazyRoute(AuthLoginPage)} />}
+          {import.meta.env.DEV && (
+            <Route path="/test-auth-login" component={lazyRoute(TestAuthLogin)} />
+          )}
 
-            {/* Legal (public) */}
-            <Route path="/terms" component={lazyRoute(TermsPage)} />
-            <Route path="/privacy" component={lazyRoute(PrivacyPage)} />
+          {/* Legal (public) */}
+          <Route path="/terms" component={lazyRoute(TermsPage)} />
+          <Route path="/privacy" component={lazyRoute(PrivacyPage)} />
 
-            {/* Auth */}
-            <Route path="/auth/login" component={lazyRoute(AuthLoginPage)} />
-            <Route path="/auth/register" component={lazyRoute(RegisterPage)} />
-            <Route path="/auth/forgot-password" component={lazyRoute(ForgotPasswordPage)} />
-            <Route path="/auth/reset-password" component={lazyRoute(ResetPasswordPage)} />
+          {/* Auth */}
+          <Route path="/auth/login" component={lazyRoute(AuthLoginPage)} />
+          <Route path="/auth/register" component={lazyRoute(RegisterPage)} />
+          <Route path="/auth/forgot-password" component={lazyRoute(ForgotPasswordPage)} />
+          <Route path="/auth/reset-password" component={lazyRoute(ResetPasswordPage)} />
 
-            {/* Authenticated routes */}
-            <Route path="/dashboard" component={HomePage} />
-            <Route path="/clients/:id" component={protectedRoute(ClientDetailsPageComponent, 'trainer')} />
-            <Route path="/clients" component={protectedRoute(ClientsPageContent, 'trainer')} />
-            <Route path="/workouts" component={lazyRoute(WorkoutPlans)} />
-            <Route path="/workout-execution/:id" component={lazyRoute(WorkoutExecution)} />
-            <Route path="/workout-builder/:id" component={WorkoutPage} />
-            <Route path="/exercises" component={protectedRoute(ExercisesPageComponent, 'trainer')} />
-            <Route path="/progress" component={lazyRoute(ProgressPageComponent)} />
-            <Route path="/schedule" component={lazyRoute(SchedulePageComponent)} />
-            <Route path="/payments" component={protectedRoute(PaymentsPageComponent, 'trainer')} />
+          {/* Authenticated routes */}
+          <Route path="/dashboard" component={HomePage} />
+          <Route
+            path="/clients/:id"
+            component={protectedRoute(ClientDetailsPageComponent, 'trainer')}
+          />
+          <Route path="/clients" component={protectedRoute(ClientsPageContent, 'trainer')} />
+          <Route path="/workouts" component={lazyRoute(WorkoutPlans)} />
+          <Route path="/workout-execution/:id" component={lazyRoute(WorkoutExecution)} />
+          <Route path="/workout-builder/:id" component={WorkoutPage} />
+          <Route path="/exercises" component={protectedRoute(ExercisesPageComponent, 'trainer')} />
+          <Route path="/progress" component={lazyRoute(ProgressPageComponent)} />
+          <Route path="/schedule" component={lazyRoute(SchedulePageComponent)} />
+          <Route path="/payments" component={protectedRoute(PaymentsPageComponent, 'trainer')} />
 
-            {/* Public calculators */}
-            <Route path="/calculators" component={lazyRoute(CalculatorsHub)} />
-            <Route path="/calculators/1rm" component={lazyRoute(OneRepMaxCalc)} />
-            <Route path="/calculators/plates" component={lazyRoute(PlatesCalc)} />
-            <Route path="/calculators/tdee" component={lazyRoute(TDEECalc)} />
-            <Route path="/calculators/strength-standards" component={lazyRoute(StrengthStandardsCalc)} />
-            <Route path="/calculators/bmi" component={lazyRoute(BMICalc)} />
-            <Route path="/calculators/body-fat" component={lazyRoute(BodyFatCalc)} />
-            <Route path="/calculators/macros" component={lazyRoute(MacroCalc)} />
-            <Route path="/calculators/vo2max" component={lazyRoute(VO2MaxCalc)} />
-            <Route path="/calculators/heart-rate-zones" component={lazyRoute(HeartRateZonesCalc)} />
-            <Route path="/calculators/calories-burned" component={lazyRoute(CaloriesBurnedCalc)} />
-            <Route path="/calculators/ideal-weight" component={lazyRoute(IdealWeightCalc)} />
-            <Route path="/calculators/water-intake" component={lazyRoute(WaterIntakeCalc)} />
+          {/* Public calculators */}
+          <Route path="/calculators" component={lazyRoute(CalculatorsHub)} />
+          <Route path="/calculators/1rm" component={lazyRoute(OneRepMaxCalc)} />
+          <Route path="/calculators/plates" component={lazyRoute(PlatesCalc)} />
+          <Route path="/calculators/tdee" component={lazyRoute(TDEECalc)} />
+          <Route
+            path="/calculators/strength-standards"
+            component={lazyRoute(StrengthStandardsCalc)}
+          />
+          <Route path="/calculators/bmi" component={lazyRoute(BMICalc)} />
+          <Route path="/calculators/body-fat" component={lazyRoute(BodyFatCalc)} />
+          <Route path="/calculators/macros" component={lazyRoute(MacroCalc)} />
+          <Route path="/calculators/vo2max" component={lazyRoute(VO2MaxCalc)} />
+          <Route path="/calculators/heart-rate-zones" component={lazyRoute(HeartRateZonesCalc)} />
+          <Route path="/calculators/calories-burned" component={lazyRoute(CaloriesBurnedCalc)} />
+          <Route path="/calculators/ideal-weight" component={lazyRoute(IdealWeightCalc)} />
+          <Route path="/calculators/water-intake" component={lazyRoute(WaterIntakeCalc)} />
 
-            {/* Premium calculators (authenticated only) */}
-            <Route path="/dashboard/calculators" component={protectedRoute(PremiumCalculatorsHub)} />
-            <Route path="/dashboard/calculators/tdee" component={protectedRoute(PremiumTDEECalc)} />
-            <Route path="/dashboard/calculators/bmi" component={protectedRoute(PremiumBMICalc)} />
-            <Route path="/dashboard/calculators/body-fat" component={protectedRoute(PremiumBodyFatCalc)} />
-            <Route path="/dashboard/calculators/macros" component={protectedRoute(PremiumMacroCalc)} />
-            <Route path="/dashboard/calculators/1rm" component={protectedRoute(Premium1RMCalc)} />
-            <Route path="/dashboard/calculators/plates" component={protectedRoute(PremiumPlatesCalc)} />
-            <Route path="/dashboard/calculators/strength-standards" component={protectedRoute(PremiumStrengthStandardsCalc)} />
-            <Route path="/dashboard/calculators/vo2max" component={protectedRoute(PremiumVO2MaxCalc)} />
-            <Route path="/dashboard/calculators/heart-rate-zones" component={protectedRoute(PremiumHeartRateZonesCalc)} />
-            <Route path="/dashboard/calculators/calories-burned" component={protectedRoute(PremiumCaloriesBurnedCalc)} />
-            <Route path="/dashboard/calculators/ideal-weight" component={protectedRoute(PremiumIdealWeightCalc)} />
-            <Route path="/dashboard/calculators/water-intake" component={protectedRoute(PremiumWaterIntakeCalc)} />
+          {/* Premium calculators (authenticated only) */}
+          <Route path="/dashboard/calculators" component={protectedRoute(PremiumCalculatorsHub)} />
+          <Route path="/dashboard/calculators/tdee" component={protectedRoute(PremiumTDEECalc)} />
+          <Route path="/dashboard/calculators/bmi" component={protectedRoute(PremiumBMICalc)} />
+          <Route
+            path="/dashboard/calculators/body-fat"
+            component={protectedRoute(PremiumBodyFatCalc)}
+          />
+          <Route
+            path="/dashboard/calculators/macros"
+            component={protectedRoute(PremiumMacroCalc)}
+          />
+          <Route path="/dashboard/calculators/1rm" component={protectedRoute(Premium1RMCalc)} />
+          <Route
+            path="/dashboard/calculators/plates"
+            component={protectedRoute(PremiumPlatesCalc)}
+          />
+          <Route
+            path="/dashboard/calculators/strength-standards"
+            component={protectedRoute(PremiumStrengthStandardsCalc)}
+          />
+          <Route
+            path="/dashboard/calculators/vo2max"
+            component={protectedRoute(PremiumVO2MaxCalc)}
+          />
+          <Route
+            path="/dashboard/calculators/heart-rate-zones"
+            component={protectedRoute(PremiumHeartRateZonesCalc)}
+          />
+          <Route
+            path="/dashboard/calculators/calories-burned"
+            component={protectedRoute(PremiumCaloriesBurnedCalc)}
+          />
+          <Route
+            path="/dashboard/calculators/ideal-weight"
+            component={protectedRoute(PremiumIdealWeightCalc)}
+          />
+          <Route
+            path="/dashboard/calculators/water-intake"
+            component={protectedRoute(PremiumWaterIntakeCalc)}
+          />
 
-            {/* Solo user routes */}
-            <Route path="/solo" component={lazyRoute(SoloDashboard)} />
-            <Route path="/solo/onboarding" component={lazyRoute(SoloOnboarding)} />
-            <Route path="/solo/coach" component={lazyRoute(AICoach)} />
-            <Route path="/solo/recovery" component={lazyRoute(Recovery)} />
-            <Route path="/solo/achievements" component={lazyRoute(SoloAchievements)} />
-            <Route path="/solo/generate" component={lazyRoute(WorkoutGenerator)} />
-            <Route path="/solo/nutrition" component={lazyRoute(NutritionPlanner)} />
+          {/* Solo user routes */}
+          <Route path="/solo" component={lazyRoute(SoloDashboard)} />
+          <Route path="/solo/onboarding" component={lazyRoute(SoloOnboarding)} />
+          <Route path="/solo/coach" component={lazyRoute(AICoach)} />
+          <Route path="/solo/recovery" component={lazyRoute(Recovery)} />
+          <Route path="/solo/achievements" component={lazyRoute(SoloAchievements)} />
+          <Route path="/solo/generate" component={lazyRoute(WorkoutGenerator)} />
+          <Route path="/solo/nutrition" component={lazyRoute(NutritionPlanner)} />
 
-            {/* Disciple login (public) */}
-            <Route path="/disciple-login" component={lazyRoute(DiscipleLoginPage)} />
+          {/* Disciple login (public) */}
+          <Route path="/disciple-login" component={lazyRoute(DiscipleLoginPage)} />
 
-            {/* Pricing and Settings */}
-            <Route path="/pricing" component={lazyRoute(PricingPage)} />
-            <Route path="/settings" component={lazyRoute(SettingsPage)} />
+          {/* Pricing and Settings */}
+          <Route path="/pricing" component={lazyRoute(PricingPage)} />
+          <Route path="/settings" component={lazyRoute(SettingsPage)} />
 
-            {/* Landing page — must be last before 404 */}
-            <Route path="/" component={lazyRoute(LandingPage)} />
+          {/* Landing page — must be last before 404 */}
+          <Route path="/" component={lazyRoute(LandingPage)} />
 
-            <Route component={NotFound} />
-          </Switch>
-        </Suspense>
-      </motion.div>
-    </AnimatePresence>
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    </div>
   );
 }

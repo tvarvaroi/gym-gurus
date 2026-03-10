@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
 import {
   Calculator,
@@ -23,7 +22,6 @@ import { Link } from 'wouter';
 import { useUser } from '@/contexts/UserContext';
 import { LuxuryCard } from '@/components/LuxuryCard';
 import { useQuery } from '@tanstack/react-query';
-import { fadeInUp, staggerContainer } from '@/lib/premiumAnimations';
 import { useSEO } from '@/lib/seo';
 
 const calculators: {
@@ -158,24 +156,19 @@ export default function PremiumCalculatorsHub() {
   const favoriteResults = allResults.filter((r: any) => r.isFavorite);
 
   return (
-    <motion.div
-      className="max-w-7xl mx-auto p-6 space-y-8"
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-    >
+    <div className="max-w-7xl mx-auto p-6 space-y-8">
       {/* Hero Section */}
-      <motion.div variants={fadeInUp}>
+      <div>
         <PageHeader
           icon={<Calculator className="h-full w-full" />}
           title="Fitness"
           titleAccent="Calculators"
           subtitle="Track your progress with saved results and personalized insights"
         />
-      </motion.div>
+      </div>
 
       {/* Stats Overview */}
-      <motion.div variants={fadeInUp} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-zinc-900/80 rounded-2xl border border-border/20 p-5">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground/60 font-medium">Total Calculations</p>
@@ -207,14 +200,14 @@ export default function PremiumCalculatorsHub() {
             }
           </p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Recent Results & Favorites */}
       {(recentResults.length > 0 || favoriteResults.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Results */}
           {recentResults.length > 0 && (
-            <motion.div variants={fadeInUp}>
+            <div>
               <LuxuryCard title="Recent Results" icon={<Clock className="w-5 h-5" />} hover={false}>
                 <div className="space-y-3 mt-4">
                   {recentResults.map((result: any) => (
@@ -237,12 +230,12 @@ export default function PremiumCalculatorsHub() {
                   ))}
                 </div>
               </LuxuryCard>
-            </motion.div>
+            </div>
           )}
 
           {/* Favorites */}
           {favoriteResults.length > 0 && (
-            <motion.div variants={fadeInUp}>
+            <div>
               <LuxuryCard
                 title="Favorite Calculators"
                 icon={<Star className="w-5 h-5" />}
@@ -268,7 +261,7 @@ export default function PremiumCalculatorsHub() {
                   ))}
                 </div>
               </LuxuryCard>
-            </motion.div>
+            </div>
           )}
         </div>
       )}
@@ -279,10 +272,7 @@ export default function PremiumCalculatorsHub() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {calculators.map((calc, index) => (
             <Link key={calc.id} href={`/dashboard/calculators/${calc.id}`}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+              <div
                 className={`p-6 rounded-xl cursor-pointer premium-card relative overflow-hidden group`}
               >
                 {/* Background gradient */}
@@ -312,11 +302,11 @@ export default function PremiumCalculatorsHub() {
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
             </Link>
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

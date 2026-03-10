@@ -685,17 +685,19 @@ Delete all standalone `useQuery({ queryKey: ['/api/user'] })`. Use `useUser()` e
 
 ---
 
-### § FE-7 — MEDIUM: framer-motion in 122 files (~90kb gzipped)
+### § FE-7 — ✅ PARTIALLY RESOLVED (2026-03-10): framer-motion reduced from 116 files
 
 **Skill:** `performance-profiler` (bundle analysis) + `senior-frontend`
 
-```bash
-# Bundle analysis
-npx webpack-bundle-analyzer dist/stats.json
-# or: npx vite-bundle-visualizer
-```
+Removed framer-motion from 28 files in 3 targeted fixes:
 
-Replace trivial fades with CSS. Keep framer-motion only for complex gesture/drag/spring work.
+1. **RouterConfig.tsx** — removed PageTransition/AnimatePresence, replaced with CSS `animate-in fade-in duration-200`. Breaks the `App.tsx → RouterConfig → AnimationComponents → framer-motion` eager import chain.
+2. **LoadingFallback.tsx** — replaced animated spinner with `animate-spin` + `animate-pulse`.
+3. **All 26 calculator files** (13 regular + 13 premium including both hubs) — replaced `motion.div/button` with plain divs/buttons + Tailwind `animate-in`, `hover:scale-*`, `transition-transform`, `transition-[width]` classes.
+
+**Remaining:** vendor-motion (38.44 kB gzipped) still appears in `modulepreload` due to `AppShell.tsx` → `AppSidebar/AppHeader/AuthGuard` → framer-motion chain. Eliminating this requires refactoring those core layout components — a larger task.
+
+To complete: remove framer-motion from `AppSidebar.tsx`, `AppHeader.tsx`, `AuthGuard.tsx`, and the remaining ~55 decorative pages that use trivial opacity fades.
 
 ---
 

@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Apple } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
@@ -108,22 +106,21 @@ export default function PremiumMacroCalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Gender */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Gender</label>
           <div className="grid grid-cols-2 gap-3">
             {(['male', 'female'] as Gender[]).map((g) => (
-              <motion.button
+              <button
                 key={g}
                 onClick={() => setGender(g)}
-                whileHover={{ scale: 1.02 }}
-                className={`py-3 rounded-xl font-medium transition-all ${
+                className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                   gender === g ? 'premium-button' : 'bg-card border border-border'
                 }`}
               >
                 {g.charAt(0).toUpperCase() + g.slice(1)}
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -193,11 +190,10 @@ export default function PremiumMacroCalc() {
               { value: 'active', label: 'Active', desc: '5-6 workouts/week' },
               { value: 'very_active', label: 'Very Active', desc: 'Daily training' },
             ].map((level) => (
-              <motion.button
+              <button
                 key={level.value}
                 onClick={() => setActivityLevel(level.value as ActivityLevel)}
-                whileHover={{ scale: 1.02 }}
-                className={`p-3 rounded-xl text-left transition-all ${
+                className={`p-3 rounded-xl text-left transition-all hover:scale-[1.02] ${
                   activityLevel === level.value
                     ? 'premium-gradient-bg-strong border-2 border-primary'
                     : 'bg-card border border-border'
@@ -205,7 +201,7 @@ export default function PremiumMacroCalc() {
               >
                 <div className="font-medium text-sm">{level.label}</div>
                 <div className="text-xs text-muted-foreground">{level.desc}</div>
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -220,11 +216,10 @@ export default function PremiumMacroCalc() {
               { value: 'lean_bulk', label: 'Lean Bulk', desc: '+250 cal' },
               { value: 'bulk', label: 'Bulk', desc: '+500 cal' },
             ].map((g) => (
-              <motion.button
+              <button
                 key={g.value}
                 onClick={() => setGoal(g.value as Goal)}
-                whileHover={{ scale: 1.02 }}
-                className={`p-3 rounded-xl text-center transition-all ${
+                className={`p-3 rounded-xl text-center transition-all hover:scale-[1.02] ${
                   goal === g.value
                     ? 'premium-gradient-bg-strong border-2 border-primary'
                     : 'bg-card border border-border'
@@ -232,7 +227,7 @@ export default function PremiumMacroCalc() {
               >
                 <div className="font-medium text-sm">{g.label}</div>
                 <div className="text-xs text-muted-foreground">{g.desc}</div>
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -255,7 +250,7 @@ export default function PremiumMacroCalc() {
 
         {/* Results */}
         <div className="space-y-6">
-          <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+          <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
             <p className="text-sm text-muted-foreground mb-2">Daily Calories</p>
             <p
               className="text-6xl font-light gradient-text"
@@ -263,11 +258,11 @@ export default function PremiumMacroCalc() {
             >
               {results.calories}
             </p>
-          </motion.div>
+          </div>
 
           {/* Macro Circles */}
           <div className="grid grid-cols-3 gap-4">
-            <motion.div className="premium-card text-center" whileHover={{ scale: 1.05 }}>
+            <div className="premium-card text-center hover:scale-105 transition-transform">
               <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
                 <span className="text-2xl font-bold text-red-600 dark:text-red-300">
                   {results.protein}g
@@ -275,9 +270,9 @@ export default function PremiumMacroCalc() {
               </div>
               <p className="font-medium">Protein</p>
               <p className="text-xs text-muted-foreground">{results.proteinCalories} cal</p>
-            </motion.div>
+            </div>
 
-            <motion.div className="premium-card text-center" whileHover={{ scale: 1.05 }}>
+            <div className="premium-card text-center hover:scale-105 transition-transform">
               <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
                 <span className="text-2xl font-bold text-yellow-600 dark:text-yellow-300">
                   {results.carbs}g
@@ -285,9 +280,9 @@ export default function PremiumMacroCalc() {
               </div>
               <p className="font-medium">Carbs</p>
               <p className="text-xs text-muted-foreground">{results.carbsCalories} cal</p>
-            </motion.div>
+            </div>
 
-            <motion.div className="premium-card text-center" whileHover={{ scale: 1.05 }}>
+            <div className="premium-card text-center hover:scale-105 transition-transform">
               <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                 <span className="text-2xl font-bold text-green-600 dark:text-green-300">
                   {results.fat}g
@@ -295,7 +290,7 @@ export default function PremiumMacroCalc() {
               </div>
               <p className="font-medium">Fat</p>
               <p className="text-xs text-muted-foreground">{results.fatCalories} cal</p>
-            </motion.div>
+            </div>
           </div>
 
           {/* Macro Bar */}
@@ -350,7 +345,7 @@ export default function PremiumMacroCalc() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Flame, Clock, Activity, Scale, Dumbbell, Bike, PersonStanding, Heart } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
@@ -268,10 +267,8 @@ export function CaloriesBurnedCalculator() {
       </div>
 
       {/* Results */}
-      <motion.div
-        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
+        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6 animate-in fade-in zoom-in-95 duration-300"
         key={`${caloriesBurned}-${selectedExercise.name}`}
       >
         <div className="text-center">
@@ -289,7 +286,7 @@ export function CaloriesBurnedCalculator() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Time to Burn Goals */}
       <div className="bg-card rounded-xl p-6 shadow-sm mb-6">
@@ -338,13 +335,11 @@ export function CaloriesBurnedCalculator() {
                     <span className="font-medium">{calories} cal</span>
                   </div>
                   <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                    <motion.div
-                      className={`h-full rounded-full ${
+                    <div
+                      className={`h-full rounded-full transition-[width] duration-500 ${
                         exercise.name === selectedExercise.name ? 'bg-orange-500' : 'bg-primary/60'
                       }`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percentage}%` }}
-                      transition={{ duration: 0.5 }}
+                      style={{ width: `${percentage}%` }}
                     />
                   </div>
                 </div>

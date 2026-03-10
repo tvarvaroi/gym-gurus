@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Trophy, Scale, TrendingUp, Dumbbell } from 'lucide-react';
 import {
   getStrengthClassification,
@@ -200,10 +199,8 @@ export function StrengthStandardsCalculator() {
       </div>
 
       {/* Overall Score */}
-      <motion.div
-        className={`rounded-xl p-6 mb-6 ${CLASSIFICATION_COLORS[overallClassification].bg}`}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
+        className={`rounded-xl p-6 mb-6 animate-in fade-in zoom-in-95 duration-300 ${CLASSIFICATION_COLORS[overallClassification].bg}`}
         key={overallScore}
       >
         <div className="text-center">
@@ -221,7 +218,7 @@ export function StrengthStandardsCalculator() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Individual Lift Results */}
       <div className="bg-card rounded-xl p-6 shadow-sm mb-6">
@@ -231,11 +228,9 @@ export function StrengthStandardsCalculator() {
         </h3>
         <div className="space-y-4">
           {results.map((result) => (
-            <motion.div
+            <div
               key={result.key}
-              className="p-4 bg-secondary/50 rounded-lg"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              className="p-4 bg-secondary/50 rounded-lg animate-in fade-in slide-in-from-left-5 duration-300"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium">
@@ -252,11 +247,9 @@ export function StrengthStandardsCalculator() {
 
               {/* Progress bar */}
               <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
-                <motion.div
-                  className="h-full bg-primary"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(100, result.score)}%` }}
-                  transition={{ duration: 0.5 }}
+                <div
+                  className="h-full bg-primary transition-[width] duration-500"
+                  style={{ width: `${Math.min(100, result.score)}%` }}
                 />
               </div>
 
@@ -285,7 +278,7 @@ export function StrengthStandardsCalculator() {
                   })}
                 </div>
               )}
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

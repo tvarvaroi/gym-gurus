@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Scale, Ruler, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
@@ -221,10 +220,8 @@ export function BMICalculator() {
       </div>
 
       {/* BMI Result */}
-      <motion.div
-        className={`rounded-xl p-6 mb-6 ${categoryInfo.bgColor}`}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
+        className={`rounded-xl p-6 mb-6 animate-in fade-in zoom-in-95 duration-300 ${categoryInfo.bgColor}`}
         key={result.bmi.toFixed(1)}
       >
         <div className="text-center mb-4">
@@ -235,11 +232,9 @@ export function BMICalculator() {
 
         {/* BMI Scale */}
         <div className="relative h-4 bg-gradient-to-r from-blue-400 via-green-400 via-yellow-400 via-orange-400 to-red-500 rounded-full mb-2">
-          <motion.div
-            className="absolute top-0 w-3 h-3 bg-white border-2 border-gray-800 rounded-full -translate-x-1/2"
+          <div
+            className="absolute top-0 w-3 h-3 bg-white border-2 border-gray-800 rounded-full -translate-x-1/2 transition-[left] duration-500"
             style={{ left: `${scalePosition}%`, top: '2px' }}
-            animate={{ left: `${scalePosition}%` }}
-            transition={{ type: 'spring', stiffness: 300 }}
           />
         </div>
         <div className="flex justify-between text-xs text-muted-foreground">
@@ -250,7 +245,7 @@ export function BMICalculator() {
           <span>35</span>
           <span>40+</span>
         </div>
-      </motion.div>
+      </div>
 
       {/* Health Risk & Ideal Weight */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

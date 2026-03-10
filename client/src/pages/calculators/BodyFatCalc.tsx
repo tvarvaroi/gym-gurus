@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Percent, Ruler, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
@@ -287,10 +286,8 @@ export function BodyFatCalculator() {
       </div>
 
       {/* Results */}
-      <motion.div
-        className={`rounded-xl p-6 mb-6 ${result.bgColor}`}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
+        className={`rounded-xl p-6 mb-6 animate-in fade-in zoom-in-95 duration-300 ${result.bgColor}`}
         key={result.bodyFat.toFixed(1)}
       >
         <div className="text-center mb-6">
@@ -309,28 +306,24 @@ export function BodyFatCalculator() {
             <p className="text-2xl font-bold">{result.fatMass.toFixed(1)} kg</p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Body composition bar */}
       <div className="bg-card rounded-xl p-6 shadow-sm mb-6">
         <h3 className="font-bold mb-4">Body Composition</h3>
         <div className="h-8 rounded-full overflow-hidden flex">
-          <motion.div
-            className="bg-blue-500 flex items-center justify-center text-white text-sm font-medium"
-            initial={{ width: 0 }}
-            animate={{ width: `${100 - result.bodyFat}%` }}
-            transition={{ duration: 0.5 }}
+          <div
+            className="bg-blue-500 flex items-center justify-center text-white text-sm font-medium transition-[width] duration-500"
+            style={{ width: `${100 - result.bodyFat}%` }}
           >
             {(100 - result.bodyFat).toFixed(0)}% Lean
-          </motion.div>
-          <motion.div
-            className="bg-yellow-500 flex items-center justify-center text-white text-sm font-medium"
-            initial={{ width: 0 }}
-            animate={{ width: `${result.bodyFat}%` }}
-            transition={{ duration: 0.5 }}
+          </div>
+          <div
+            className="bg-yellow-500 flex items-center justify-center text-white text-sm font-medium transition-[width] duration-500"
+            style={{ width: `${result.bodyFat}%` }}
           >
             {result.bodyFat.toFixed(0)}% Fat
-          </motion.div>
+          </div>
         </div>
       </div>
 

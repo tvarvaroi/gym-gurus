@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Heart, Activity, Zap, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
@@ -280,10 +279,8 @@ export function HeartRateZonesCalculator() {
       </div>
 
       {/* Max HR Display */}
-      <motion.div
-        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
+        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6 animate-in fade-in slide-in-from-bottom-3 duration-300"
         key={maxHR}
       >
         <div className="flex items-center justify-between">
@@ -303,19 +300,16 @@ export function HeartRateZonesCalculator() {
             </div>
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Heart Rate Zones */}
       <div className="bg-card rounded-xl p-6 shadow-sm mb-6">
         <h3 className="font-bold text-lg mb-4">Your Training Zones</h3>
         <div className="space-y-3">
           {zones.map((zone, index) => (
-            <motion.div
+            <div
               key={zone.name}
-              className={`rounded-xl overflow-hidden ${zone.bgColor}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
+              className={`rounded-xl overflow-hidden animate-in fade-in slide-in-from-left-5 duration-300 ${zone.bgColor}`}
             >
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -338,14 +332,12 @@ export function HeartRateZonesCalculator() {
               </div>
               {/* Visual bar */}
               <div className="h-2 bg-background/30">
-                <motion.div
-                  className={`h-full ${zone.bgColor.replace('100', '500')}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${zone.maxPercent}%` }}
-                  transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
+                <div
+                  className={`h-full transition-[width] duration-500 ${zone.bgColor.replace('100', '500')}`}
+                  style={{ width: `${zone.maxPercent}%` }}
                 />
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
@@ -355,7 +347,7 @@ export function HeartRateZonesCalculator() {
         <h3 className="font-bold mb-4">Zone Distribution</h3>
         <div className="h-8 rounded-full overflow-hidden flex">
           {zones.map((zone, index) => (
-            <motion.div
+            <div
               key={zone.name}
               className={`h-full flex items-center justify-center text-white text-xs font-medium ${
                 index === 0
@@ -368,12 +360,10 @@ export function HeartRateZonesCalculator() {
                         ? 'bg-orange-500'
                         : 'bg-red-500'
               }`}
-              initial={{ width: 0 }}
-              animate={{ width: '20%' }}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
+              style={{ width: '20%' }}
             >
               Z{index + 1}
-            </motion.div>
+            </div>
           ))}
         </div>
         <div className="flex justify-between mt-2 text-xs text-muted-foreground">

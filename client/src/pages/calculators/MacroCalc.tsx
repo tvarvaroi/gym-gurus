@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Calculator, Target, Scale, Activity } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
@@ -309,10 +308,8 @@ export function MacroCalculator() {
       </div>
 
       {/* Results */}
-      <motion.div
-        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
+        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6 animate-in fade-in slide-in-from-bottom-3 duration-300"
         key={`${result.calories}-${dietType}`}
       >
         <div className="text-center mb-6">
@@ -371,7 +368,7 @@ export function MacroCalculator() {
           <span>{Math.round((result.carbsCalories / result.calories) * 100)}% carbs</span>
           <span>{Math.round((result.fatCalories / result.calories) * 100)}% fat</span>
         </div>
-      </motion.div>
+      </div>
 
       {/* Per Meal Breakdown */}
       <div className="bg-card rounded-xl p-6 shadow-sm mb-6">

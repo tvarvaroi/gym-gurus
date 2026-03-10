@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Target, Scale, Ruler, User } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
@@ -105,7 +103,7 @@ export default function PremiumIdealWeightCalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Gender Selection */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium">
@@ -113,24 +111,22 @@ export default function PremiumIdealWeightCalc() {
             Gender
           </label>
           <div className="grid grid-cols-2 gap-3">
-            <motion.button
+            <button
               onClick={() => setGender('male')}
-              whileHover={{ scale: 1.02 }}
-              className={`py-3 rounded-xl font-medium transition-all ${
+              className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                 gender === 'male' ? 'premium-button' : 'bg-card border border-border'
               }`}
             >
               Male
-            </motion.button>
-            <motion.button
+            </button>
+            <button
               onClick={() => setGender('female')}
-              whileHover={{ scale: 1.02 }}
-              className={`py-3 rounded-xl font-medium transition-all ${
+              className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                 gender === 'female' ? 'premium-button' : 'bg-card border border-border'
               }`}
             >
               Female
-            </motion.button>
+            </button>
           </div>
         </div>
 
@@ -158,7 +154,7 @@ export default function PremiumIdealWeightCalc() {
         {results && (
           <>
             {/* Average Result */}
-            <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+            <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
               <p className="text-sm text-muted-foreground mb-2">Average Ideal Weight</p>
               <p
                 className="text-6xl font-light gradient-text"
@@ -170,7 +166,7 @@ export default function PremiumIdealWeightCalc() {
               <p className="text-lg text-muted-foreground mt-2">
                 {results.averageIdeal.lbs.toFixed(1)} lbs
               </p>
-            </motion.div>
+            </div>
 
             {/* Healthy BMI Range */}
             <div className="premium-card">
@@ -210,12 +206,7 @@ export default function PremiumIdealWeightCalc() {
                     formula.idealKg >= results.bmiRange.minKg &&
                     formula.idealKg <= results.bmiRange.maxKg;
                   return (
-                    <motion.div
-                      key={formula.key}
-                      className="p-4 bg-secondary/50 rounded-lg"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                    >
+                    <div key={formula.key} className="p-4 bg-secondary/50 rounded-lg">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="font-medium">{formula.name}</p>
@@ -231,14 +222,14 @@ export default function PremiumIdealWeightCalc() {
                           )}
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
             </div>
           </>
         )}
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

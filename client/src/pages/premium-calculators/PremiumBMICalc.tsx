@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Scale } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 function calculateBMI(weight: number, height: number) {
@@ -58,7 +56,7 @@ export default function PremiumBMICalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium">Weight (kg)</label>
@@ -96,7 +94,7 @@ export default function PremiumBMICalc() {
         </div>
 
         <div className="space-y-6">
-          <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+          <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
             <p className="text-sm text-muted-foreground mb-2">Body Mass Index</p>
             <p
               className="text-6xl font-light gradient-text"
@@ -107,9 +105,9 @@ export default function PremiumBMICalc() {
             <p className="text-xs text-muted-foreground mt-1">kg/m²</p>
             <p className="text-xl font-medium mt-3">{results.category}</p>
             <p className="text-sm text-muted-foreground mt-2">{results.healthRisk}</p>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

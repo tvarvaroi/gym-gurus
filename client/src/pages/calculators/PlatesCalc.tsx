@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Calculator, Minus, Plus, RotateCcw } from 'lucide-react';
 import {
   calculatePlates,
@@ -57,10 +56,7 @@ export function PlatesCalculator() {
     <div className="max-w-2xl mx-auto p-6">
       <Breadcrumbs
         showHome={false}
-        items={[
-          { label: 'All Calculators', href: '/calculators' },
-          { label: 'Plate Calculator' },
-        ]}
+        items={[{ label: 'All Calculators', href: '/calculators' }, { label: 'Plate Calculator' }]}
       />
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
@@ -163,12 +159,9 @@ export function PlatesCalculator() {
               Array(p.count)
                 .fill(null)
                 .map((_, i) => (
-                  <motion.div
+                  <div
                     key={`left-${idx}-${i}`}
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: (idx * p.count + i) * 0.05 }}
-                    className={`rounded-sm mx-0.5 ${plateColors[p.plate]?.bg || 'bg-gray-400'}`}
+                    className={`rounded-sm mx-0.5 animate-in zoom-in duration-300 ${plateColors[p.plate]?.bg || 'bg-gray-400'}`}
                     style={{
                       width: '14px',
                       height: `${getPlateHeight(p.plate, unit)}px`,
@@ -199,12 +192,9 @@ export function PlatesCalculator() {
               Array(p.count)
                 .fill(null)
                 .map((_, i) => (
-                  <motion.div
+                  <div
                     key={`right-${idx}-${i}`}
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: (idx * p.count + i) * 0.05 }}
-                    className={`rounded-sm mx-0.5 ${plateColors[p.plate]?.bg || 'bg-gray-400'}`}
+                    className={`rounded-sm mx-0.5 animate-in zoom-in duration-300 ${plateColors[p.plate]?.bg || 'bg-gray-400'}`}
                     style={{
                       width: '14px',
                       height: `${getPlateHeight(p.plate, unit)}px`,

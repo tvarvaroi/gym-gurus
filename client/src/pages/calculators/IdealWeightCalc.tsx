@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Scale, Ruler, User, Target, TrendingUp, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
@@ -289,10 +288,8 @@ export function IdealWeightCalculator() {
       {results && (
         <>
           {/* Average Result */}
-          <motion.div
-            className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
+            className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6 animate-in fade-in zoom-in-95 duration-300"
             key={`${heightCm}-${gender}`}
           >
             <div className="text-center">
@@ -321,7 +318,7 @@ export function IdealWeightCalculator() {
                 </div>
               </div>
             )}
-          </motion.div>
+          </div>
 
           {/* Formula Comparison */}
           <div className="bg-card rounded-xl p-6 shadow-sm mb-6">
@@ -335,11 +332,9 @@ export function IdealWeightCalculator() {
                   formula.idealKg >= results.bmiRange.minKg &&
                   formula.idealKg <= results.bmiRange.maxKg;
                 return (
-                  <motion.div
+                  <div
                     key={formula.key}
-                    className="p-4 bg-secondary/50 rounded-lg"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    className="p-4 bg-secondary/50 rounded-lg animate-in fade-in slide-in-from-left-5 duration-300"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div>
@@ -369,7 +364,7 @@ export function IdealWeightCalculator() {
                         }}
                       />
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>

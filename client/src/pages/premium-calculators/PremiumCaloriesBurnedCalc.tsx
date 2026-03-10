@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Flame, Clock, Scale, Dumbbell } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 const EXERCISE_CATEGORIES = {
@@ -125,7 +123,7 @@ export default function PremiumCaloriesBurnedCalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Weight Input */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium">
@@ -152,24 +150,22 @@ export default function PremiumCaloriesBurnedCalc() {
 
         {/* Unit Toggle */}
         <div className="grid grid-cols-2 gap-3">
-          <motion.button
+          <button
             onClick={() => setUnit('kg')}
-            whileHover={{ scale: 1.02 }}
-            className={`py-3 rounded-xl font-medium transition-all ${
+            className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
               unit === 'kg' ? 'premium-button' : 'bg-card border border-border'
             }`}
           >
             Kilograms (kg)
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             onClick={() => setUnit('lbs')}
-            whileHover={{ scale: 1.02 }}
-            className={`py-3 rounded-xl font-medium transition-all ${
+            className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
               unit === 'lbs' ? 'premium-button' : 'bg-card border border-border'
             }`}
           >
             Pounds (lbs)
-          </motion.button>
+          </button>
         </div>
 
         {/* Duration */}
@@ -199,18 +195,17 @@ export default function PremiumCaloriesBurnedCalc() {
           <label className="text-sm font-medium">Exercise Category</label>
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(EXERCISE_CATEGORIES).map(([key, category]) => (
-              <motion.button
+              <button
                 key={key}
                 onClick={() => handleCategoryChange(key)}
-                whileHover={{ scale: 1.02 }}
-                className={`p-3 rounded-xl font-medium transition-all ${
+                className={`p-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                   selectedCategory === key
                     ? 'premium-gradient-bg-strong border-2 border-primary'
                     : 'bg-card hover:bg-card/80 border border-border'
                 }`}
               >
                 {category.name}
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -239,7 +234,7 @@ export default function PremiumCaloriesBurnedCalc() {
         </div>
 
         {/* Results */}
-        <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+        <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
           <p className="text-sm text-muted-foreground mb-2">Estimated Calories Burned</p>
           <p
             className="text-6xl font-light gradient-text"
@@ -258,7 +253,7 @@ export default function PremiumCaloriesBurnedCalc() {
               <p className="font-bold text-lg">{selectedExercise.met}</p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Time to Burn Goals */}
         <div className="premium-card">
@@ -280,7 +275,7 @@ export default function PremiumCaloriesBurnedCalc() {
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

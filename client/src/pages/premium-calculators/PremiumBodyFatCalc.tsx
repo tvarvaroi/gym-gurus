@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Activity } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import { useFitnessProfile } from '@/hooks/useFitnessProfile';
 
 type Gender = 'male' | 'female';
@@ -79,22 +77,21 @@ export default function PremiumBodyFatCalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium">Gender</label>
             <div className="grid grid-cols-2 gap-3">
               {(['male', 'female'] as Gender[]).map((g) => (
-                <motion.button
+                <button
                   key={g}
                   onClick={() => setGender(g)}
-                  whileHover={{ scale: 1.02 }}
-                  className={`py-3 rounded-xl font-medium transition-all ${
+                  className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
                     gender === g ? 'premium-button' : 'bg-card border border-border'
                   }`}
                 >
                   {g.charAt(0).toUpperCase() + g.slice(1)}
-                </motion.button>
+                </button>
               ))}
             </div>
           </div>
@@ -172,7 +169,7 @@ export default function PremiumBodyFatCalc() {
           </div>
         </div>
 
-        <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+        <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
           <p className="text-sm text-muted-foreground mb-2">Body Fat Percentage</p>
           <p
             className="text-6xl font-light gradient-text"
@@ -181,8 +178,8 @@ export default function PremiumBodyFatCalc() {
             {results.bodyFat.toFixed(1)}%
           </p>
           <p className="text-xl font-medium mt-4">{results.category}</p>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import {
   Calculator,
@@ -145,11 +144,7 @@ export function CalculatorsHub() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 mb-8"
-      >
+      <div className="flex items-center gap-3 mb-8 animate-in fade-in slide-in-from-top-3 duration-300">
         <div className="p-2 rounded-xl bg-primary/10 flex-shrink-0">
           <Calculator className="h-7 w-7 text-primary" />
         </div>
@@ -164,17 +159,12 @@ export function CalculatorsHub() {
             Tools to help you train smarter and track your progress
           </p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Calculator Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {CALCULATORS.map((calc, index) => (
-          <motion.div
-            key={calc.path}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
+        {CALCULATORS.map((calc) => (
+          <div key={calc.path} className="animate-in fade-in slide-in-from-bottom-3 duration-300">
             <Link href={calc.path}>
               <a className="block">
                 <div className="bg-card rounded-2xl p-6 transition-all hover:scale-[1.02] cursor-pointer border border-border/20 hover:border-primary/20 relative overflow-hidden">
@@ -191,17 +181,12 @@ export function CalculatorsHub() {
                 </div>
               </a>
             </Link>
-          </motion.div>
+          </div>
         ))}
       </div>
 
       {/* Quick Stats Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="mt-8 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6"
-      >
+      <div className="mt-8 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
         <h2 className="font-bold text-lg mb-4">Quick Reference</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-background/50 rounded-lg p-4 text-center">
@@ -225,7 +210,7 @@ export function CalculatorsHub() {
             <p className="text-xs text-muted-foreground">(bodyweight multiplier)</p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Info Cards */}
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">

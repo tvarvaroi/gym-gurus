@@ -1,8 +1,6 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Dumbbell } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import {
   calculateAll1RM,
   generateRepMaxTable,
@@ -40,7 +38,7 @@ export default function Premium1RMCalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Input Section */}
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-2">
@@ -84,40 +82,36 @@ export default function Premium1RMCalc() {
         {/* Quick Rep Buttons */}
         <div className="flex flex-wrap gap-2">
           {[1, 3, 5, 8, 10, 12, 15].map((r) => (
-            <motion.button
+            <button
               key={r}
               onClick={() => setReps(r)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105 active:scale-95 ${
                 reps === r ? 'premium-button' : 'bg-card border border-border'
               }`}
             >
               {r} rep{r !== 1 ? 's' : ''}
-            </motion.button>
+            </button>
           ))}
         </div>
 
         {/* Unit Toggle */}
         <div className="grid grid-cols-2 gap-3">
-          <motion.button
+          <button
             onClick={() => setUnit('kg')}
-            whileHover={{ scale: 1.02 }}
-            className={`py-3 rounded-xl font-medium transition-all ${
+            className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
               unit === 'kg' ? 'premium-button' : 'bg-card border border-border'
             }`}
           >
             Kilograms (kg)
-          </motion.button>
-          <motion.button
+          </button>
+          <button
             onClick={() => setUnit('lbs')}
-            whileHover={{ scale: 1.02 }}
-            className={`py-3 rounded-xl font-medium transition-all ${
+            className={`py-3 rounded-xl font-medium transition-all hover:scale-[1.02] ${
               unit === 'lbs' ? 'premium-button' : 'bg-card border border-border'
             }`}
           >
             Pounds (lbs)
-          </motion.button>
+          </button>
         </div>
 
         {/* Formula Selection */}
@@ -137,7 +131,7 @@ export default function Premium1RMCalc() {
         </div>
 
         {/* Results */}
-        <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+        <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
           <p className="text-sm text-muted-foreground mb-2">Estimated 1RM</p>
           <p
             className="text-6xl font-light gradient-text"
@@ -160,7 +154,7 @@ export default function Premium1RMCalc() {
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Rep Max Table */}
         <div className="premium-card">
@@ -203,7 +197,7 @@ export default function Premium1RMCalc() {
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }

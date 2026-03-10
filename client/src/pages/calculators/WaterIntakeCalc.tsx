@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Droplets, Scale, Activity, Sun, ThermometerSun, Coffee, Beer, Info } from 'lucide-react';
 import { useSEO } from '@/lib/seo';
 import RelatedCalculators from '@/components/RelatedCalculators';
@@ -258,10 +257,8 @@ export function WaterIntakeCalculator() {
       </div>
 
       {/* Results */}
-      <motion.div
-        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
+        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6 animate-in fade-in zoom-in-95 duration-300"
         key={results.totalMl}
       >
         <div className="text-center mb-6">
@@ -289,7 +286,7 @@ export function WaterIntakeCalculator() {
             <p className="text-xs text-muted-foreground">cups (8oz)</p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Breakdown */}
       <div className="bg-card rounded-xl p-6 shadow-sm mb-6">

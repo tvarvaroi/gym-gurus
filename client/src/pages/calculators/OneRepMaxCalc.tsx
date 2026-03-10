@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Calculator, Info, ChevronDown, ChevronUp, Dumbbell } from 'lucide-react';
 import {
   calculateAll1RM,
@@ -152,10 +151,8 @@ export function OneRepMaxCalculator() {
       </div>
 
       {/* Results Section */}
-      <motion.div
-        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
+        className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 mb-6 animate-in fade-in slide-in-from-bottom-3 duration-300"
         key={`${weight}-${reps}-${selectedFormula}`}
       >
         <div className="text-center mb-4">
@@ -180,7 +177,7 @@ export function OneRepMaxCalculator() {
             </p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Rep Max Table */}
       <div className="bg-card rounded-xl p-6 shadow-sm mb-6">

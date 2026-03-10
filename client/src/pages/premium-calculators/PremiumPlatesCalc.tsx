@@ -1,8 +1,6 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Calculator, Minus, Plus, Dumbbell } from 'lucide-react';
 import { PremiumCalculatorWrapper } from '@/components/PremiumCalculatorWrapper';
-import { fadeInUp } from '@/lib/premiumAnimations';
 import {
   calculatePlates,
   getWarmupPyramid,
@@ -47,7 +45,7 @@ export default function PremiumPlatesCalc() {
       results={results}
       hasResults={hasResults}
     >
-      <motion.div variants={fadeInUp} className="space-y-8">
+      <div className="space-y-8">
         {/* Settings */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -80,13 +78,12 @@ export default function PremiumPlatesCalc() {
         <div className="space-y-2">
           <label className="text-sm font-medium">Target Weight</label>
           <div className="flex items-center justify-center gap-4">
-            <motion.button
+            <button
               onClick={() => handleWeightChange(-increment * 2)}
-              whileTap={{ scale: 0.95 }}
-              className="p-3 rounded-full bg-card border border-border"
+              className="p-3 rounded-full bg-card border border-border active:scale-95"
             >
               <Minus className="w-6 h-6" />
-            </motion.button>
+            </button>
             <input
               type="number"
               value={targetWeight}
@@ -96,13 +93,12 @@ export default function PremiumPlatesCalc() {
               min={result.barbellWeight}
             />
             <span className="text-2xl text-muted-foreground">{unit}</span>
-            <motion.button
+            <button
               onClick={() => handleWeightChange(increment * 2)}
-              whileTap={{ scale: 0.95 }}
-              className="p-3 rounded-full bg-card border border-border"
+              className="p-3 rounded-full bg-card border border-border active:scale-95"
             >
               <Plus className="w-6 h-6" />
-            </motion.button>
+            </button>
           </div>
         </div>
 
@@ -112,18 +108,16 @@ export default function PremiumPlatesCalc() {
             ? [60, 80, 100, 120, 140, 160, 180, 200]
             : [135, 185, 225, 275, 315, 365, 405, 495]
           ).map((w) => (
-            <motion.button
+            <button
               key={w}
               onClick={() => setTargetWeight(w)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105 active:scale-95 ${
                 targetWeight === w ? 'premium-button' : 'bg-card border border-border'
               }`}
             >
               {w}
               {unit}
-            </motion.button>
+            </button>
           ))}
         </div>
 
@@ -137,11 +131,8 @@ export default function PremiumPlatesCalc() {
                 Array(p.count)
                   .fill(null)
                   .map((_, i) => (
-                    <motion.div
+                    <div
                       key={`left-${idx}-${i}`}
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ delay: (idx * p.count + i) * 0.05 }}
                       className={`rounded-sm mx-0.5 ${plateColors[p.plate]?.bg || 'bg-gray-400'}`}
                       style={{
                         width: '14px',
@@ -173,11 +164,8 @@ export default function PremiumPlatesCalc() {
                 Array(p.count)
                   .fill(null)
                   .map((_, i) => (
-                    <motion.div
+                    <div
                       key={`right-${idx}-${i}`}
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ delay: (idx * p.count + i) * 0.05 }}
                       className={`rounded-sm mx-0.5 ${plateColors[p.plate]?.bg || 'bg-gray-400'}`}
                       style={{
                         width: '14px',
@@ -207,7 +195,7 @@ export default function PremiumPlatesCalc() {
         </div>
 
         {/* Results */}
-        <motion.div className="premium-card premium-glow text-center" whileHover={{ y: -4 }}>
+        <div className="premium-card premium-glow text-center hover:-translate-y-1 transition-transform">
           <p className="text-sm text-muted-foreground mb-2">Load on each side</p>
           <p
             className="text-3xl font-light gradient-text"
@@ -228,7 +216,7 @@ export default function PremiumPlatesCalc() {
               </p>
             )}
           </div>
-        </motion.div>
+        </div>
 
         {/* Warmup Pyramid */}
         <div className="premium-card">
@@ -262,7 +250,7 @@ export default function PremiumPlatesCalc() {
             })}
           </div>
         </div>
-      </motion.div>
+      </div>
     </PremiumCalculatorWrapper>
   );
 }
