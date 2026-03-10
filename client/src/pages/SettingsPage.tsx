@@ -37,6 +37,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useRef } from 'react';
+import { getRoleDisplayName, type InternalRole } from '@/lib/roles';
 // Inline subscription helpers (mirrors server/services/subscription.ts logic)
 function isInTrial(user: {
   trialEndsAt?: string | null;
@@ -465,7 +466,9 @@ function ProfileTab() {
                   ? `${user.firstName} ${user.lastName ?? ''}`.trim()
                   : (user?.email ?? '')}
               </p>
-              <p className="text-sm text-muted-foreground capitalize">{user?.role}</p>
+              <p className="text-sm text-muted-foreground">
+                {user?.role ? getRoleDisplayName(user.role as InternalRole) : ''}
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5">Click photo to change</p>
             </div>
           </div>

@@ -366,7 +366,7 @@ export function TDEECalculator() {
             style={{ width: `${((results.macros.carbs * 4) / results.targetCalories) * 100}%` }}
           />
           <div
-            className="bg-green-500"
+            className="bg-violet-500"
             style={{ width: `${((results.macros.fat * 9) / results.targetCalories) * 100}%` }}
           />
         </div>

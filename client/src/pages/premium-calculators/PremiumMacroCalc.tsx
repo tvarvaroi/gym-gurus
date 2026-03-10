@@ -305,7 +305,7 @@ export default function PremiumMacroCalc() {
                 style={{ width: `${(results.carbsCalories / results.calories) * 100}%` }}
               />
               <div
-                className="bg-green-500"
+                className="bg-violet-500"
                 style={{ width: `${(results.fatCalories / results.calories) * 100}%` }}
               />
             </div>

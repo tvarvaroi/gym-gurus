@@ -260,7 +260,7 @@ export default function PremiumWaterIntakeCalc() {
           <div className="space-y-3">
             {[
               { label: 'Base requirement', value: results.baseIntake, color: 'bg-cyan-500' },
-              { label: 'Activity bonus', value: results.activityBonus, color: 'bg-green-500' },
+              { label: 'Activity bonus', value: results.activityBonus, color: 'bg-primary' },
               { label: 'Climate adjustment', value: results.climateBonus, color: 'bg-orange-500' },
               {
                 label: 'Caffeine compensation',

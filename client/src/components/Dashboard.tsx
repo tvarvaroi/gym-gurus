@@ -184,22 +184,22 @@ const Dashboard = memo(() => {
           case 'client_updated':
           case 'client_created':
           case 'client_deleted':
-            queryClient.invalidateQueries({ queryKey: ['/api/clients', user?.id] });
-            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats', user?.id] });
-            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts', user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts'] });
             break;
           case 'workout_updated':
           case 'workout_created':
           case 'workout_deleted':
-            queryClient.invalidateQueries({ queryKey: ['/api/workouts', user?.id] });
-            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats', user?.id] });
-            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts', user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['/api/workouts'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts'] });
             break;
           case 'session_updated':
           case 'session_created':
           case 'session_completed':
-            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats', user?.id] });
-            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts', user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts'] });
             break;
         }
       },
@@ -213,8 +213,8 @@ const Dashboard = memo(() => {
     isLoading: loadingClients,
     error: clientsError,
   } = useQuery({
-    queryKey: ['/api/clients', user?.id, 'noPagination'],
-    queryFn: () => fetch(`/api/clients/${user?.id}?noPagination=true`).then((res) => res.json()),
+    queryKey: ['/api/clients'],
+    queryFn: () => fetch('/api/clients').then((res) => res.json()),
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
     refetchOnWindowFocus: true,

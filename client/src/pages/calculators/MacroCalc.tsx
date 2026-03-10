@@ -359,7 +359,7 @@ export function MacroCalculator() {
             style={{ width: `${(result.carbsCalories / result.calories) * 100}%` }}
           />
           <div
-            className="bg-green-500"
+            className="bg-violet-500"
             style={{ width: `${(result.fatCalories / result.calories) * 100}%` }}
           />
         </div>

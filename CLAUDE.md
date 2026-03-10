@@ -566,6 +566,18 @@ scriptSrc: ["'self'", `'nonce-${generateNonce()}'`],
 
 ---
 
+### § SEC-5 — ✅ RESOLVED (2026-03-10): CSP nonce for inline role-flash script
+
+**Root cause:** The role-flash prevention IIFE in `client/index.html` (§UX-3) used an inline `<script>` tag which violated the `scriptSrc: ["'self'"]` CSP set in §SEC-3.
+
+**Fix:**
+
+1. `server/index.ts` — added `crypto.randomBytes(16).toString('base64')` nonce middleware before helmet; updated `scriptSrc` directive to use `(_req, res) => \`'nonce-\${res.locals.cspNonce}'\``
+2. `server/vite.ts` — `serveStatic` now uses `{ index: false }` on `express.static`, reads `index.html`, replaces `{{NONCE}}` with `res.locals.cspNonce`, and sends the modified HTML; dev `setupVite` handler also replaces the placeholder before Vite transforms
+3. `client/index.html` — added `nonce="{{NONCE}}"` attribute to the blocking script tag
+
+---
+
 ### § SEC-4 — HIGH: Debug routes in production
 
 **Skill:** `skill-security-auditor`
@@ -586,6 +598,20 @@ if (import.meta.env.DEV) { /* client-side debug routes */ }
 Navigating to `/disciple-login` renders the landing carousel. **Client users cannot log in.**
 
 Check `App.tsx` — the `<Route path="/disciple-login">` component binding is missing or wrong.
+
+---
+
+### § VA-4b — ✅ RESOLVED (2026-03-10): Settings page shows display role name
+
+`getRoleDisplayName()` already existed in `client/src/lib/roles.ts`. Added import to `SettingsPage.tsx` and replaced `{user?.role}` (with CSS `capitalize`) at line 468 with `{getRoleDisplayName(user.role as InternalRole)}`. Settings now shows "Ronin", "Guru", or "Disciple" instead of the raw DB value.
+
+---
+
+### § BE-7 — ✅ RESOLVED (2026-03-10): Guru dashboard fetching wrong URL
+
+**Root cause:** `Dashboard.tsx` `queryFn` called `fetch('/api/clients/${user?.id}?noPagination=true')`. No route `GET /api/clients/:id` exists — the UUID path fell through to the SPA catch-all `app.use('*', res.sendFile('index.html'))`, returning HTML → JSON.parse threw "Unexpected token '<'".
+
+**Fix:** Changed URL to `/api/clients` (the correct route), updated `queryKey` from `['/api/clients', user?.id, 'noPagination']` → `['/api/clients']`, and updated all 3 WebSocket `queryClient.invalidateQueries` calls to remove stale `user?.id` suffixes. Not a server bug — client-side wrong URL construction.
 
 ---
 
@@ -901,10 +927,13 @@ Implemented per `docs/plans/2026-03-09-ux5b-empty-states-guru-disciple.md`.
 
 | Issue                          | BV  | TC  | RR  | Effort | WSJF     | Sprint   |
 | ------------------------------ | --- | --- | --- | ------ | -------- | -------- |
+| § BE-7 Guru dashboard broken   | 10  | 10  | 10  | 1      | **30**   | Now      |
 | § VA-1 disciple login broken   | 10  | 10  | 8   | 1      | **28**   | Now      |
 | § VA-6/7 personal data in prod | 8   | 10  | 7   | 1      | **25**   | Now      |
 | § SEC-1 mock data in prod      | 9   | 10  | 10  | 2      | **14.5** | Now      |
+| § SEC-5 CSP inline violation   | 5   | 8   | 9   | 3      | **7.3**  | Sprint 1 |
 | § VA-4 raw plan ID in UI       | 7   | 6   | 3   | 1      | **16**   | Sprint 1 |
+| § VA-4b raw role in Settings   | 5   | 5   | 5   | 1      | **15**   | Sprint 1 |
 | § VA-2 404 = landing page      | 6   | 8   | 5   | 2      | **9.5**  | Sprint 1 |
 | § SEC-3 CSP unsafe-inline      | 5   | 7   | 10  | 2      | **11**   | Sprint 1 |
 | § SEC-4 debug routes in prod   | 6   | 8   | 8   | 2      | **11**   | Sprint 1 |
@@ -1083,11 +1112,17 @@ The `frontend-design` skill is explicit: _"Commit to a cohesive aesthetic. Domin
 
 **Specific breakdowns:**
 
-1. **Gold → Purple switch on login.** The landing is built entirely around gold-on-black. The first thing a user sees after logging in is a purple sidebar. There is no transition, no deliberate contrast — it just changes. The luxury brand promise evaporates.
+1. **Gold → Purple switch on login.** ✅ RESOLVED (2026-03-10) — Audit (H-5) confirmed login page already bridges landing ↔ app correctly: `background: '#0a0a0a'` (aligned to landing's exact value), Playfair Display heading, role-reactive ambient orbs preview the app accent, card border tints to role color. No jarring transition — the role-color shift (gold→purple for Ronin) is intentional and animated.
 
-2. **Nutrition Planner green.** Active states in the Nutrition Planner use a bright `#22c55e` green — completely unrelated to either the gold or the purple. This colour appears nowhere else in the product.
+2. **Structural green in calculators.** ✅ RESOLVED (2026-03-10) — (H-7) Replaced all structural `bg-green-500`/`text-green-[x]` in calculator pages with `bg-violet-500` (fat macro bar segments in MacroCalc, TDEECalc, PremiumMacroCalc — keeps multicolor bar readable) and `bg-primary` (WaterIntakeCalc, PremiumWaterIntakeCalc activity bonus dots). Semantic green kept: HeartRateZones Z3 bar (standard medical color), IdealWeight healthy BMI range indicators. Also removed `text-green-500`/`text-green-400` structural colors from CalculatorsHub.
 
-3. **Public calculators: light mode only.** The calculators hub (`/calculators`) uses a white background with multicoloured icons. It looks like a feature clipped from a different product and embedded here. There is no dark overlay, no gold accent, no connection to the GymGurus brand.
+3. **Public calculators: light mode only.** ✅ RESOLVED (2026-03-10) — (H-6) Rewrote `CalculatorsHub.tsx` (`/calculators`): added `dark min-h-screen bg-[#0a0a0a]` wrapper to force landing-page dark context regardless of auth state. Replaced all 12 rainbow icon badge colors (`bg-blue-100 dark:bg-blue-900/30` etc.) with uniform gold treatment (`bg-[rgba(201,168,76,0.10)]`, `text-[#c9a84c]`). Pro Tip card headings (`text-green-400`, `text-blue-400`) → `color: #c9a84c`. Gold gradient on page heading `span`. Cards use `rgba(255,255,255,0.04)` dark glass with gold hover border.
+
+**Remaining §DS-1 work (not yet resolved):**
+
+4. **Nutrition Planner green.** Active states in the Nutrition Planner use a bright `#22c55e` green — completely unrelated to either the gold or the purple. Needs replacement with `var(--primary)`.
+
+5. **Full design system tokens.** The CSS variable consolidation (`--color-brand-gold`, `--color-accent` per role, etc.) is the long-term fix. Low-effort structural changes (H-5, H-6, H-7) addressed now; token refactor is a Sprint 2 task.
 
 **Fix — define the design system properly:**
 

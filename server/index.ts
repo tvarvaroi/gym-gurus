@@ -27,6 +27,7 @@ import { fileURLToPath } from 'url';
 import express, { type Request, Response, NextFunction } from 'express';
 import compression from 'compression';
 import helmet from 'helmet';
+import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
@@ -54,6 +55,12 @@ const skipForWebSocket = (middleware: any) => (req: Request, res: Response, next
   return middleware(req, res, next);
 };
 
+// Generate a per-request CSP nonce and expose it via res.locals.cspNonce
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
 // Security headers with Helmet (skip for WebSocket connections)
 app.use(
   skipForWebSocket(
@@ -63,7 +70,7 @@ app.use(
         : {
             directives: {
               defaultSrc: ["'self'"],
-              scriptSrc: ["'self'"],
+              scriptSrc: ["'self'", (_req: any, res: any) => `'nonce-${res.locals.cspNonce}'`],
               styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
               imgSrc: ["'self'", 'data:', 'https:'],
               connectSrc: ["'self'", 'wss:'],
