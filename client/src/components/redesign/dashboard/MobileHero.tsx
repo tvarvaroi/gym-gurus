@@ -64,7 +64,11 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
 
   const animProps = prefersReducedMotion
     ? {}
-    : { initial: { opacity: 0, y: -8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
+    : {
+        initial: { opacity: 0, y: -8 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.3 },
+      };
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -83,7 +87,11 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({ title: 'Photo updated — background removed!' });
     } catch {
-      toast({ title: 'Failed to upload photo', description: 'Please try again later.', variant: 'destructive' });
+      toast({
+        title: 'Failed to upload photo',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -111,7 +119,13 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
               <Loader2 className="w-4 h-4 text-white animate-spin" />
             </div>
           )}
-          <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoUpload}
+            disabled={uploading}
+          />
         </label>
         <div className="flex-1 min-w-0">
           <p className="text-xs tracking-widest text-muted-foreground/50 font-medium">{greeting}</p>
@@ -140,12 +154,15 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
             <label className="relative cursor-pointer group block">
               <div
                 className="absolute inset-[-30px] blur-[60px] opacity-20"
-                style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.7) 0%, transparent 60%)' }}
+                style={{
+                  background:
+                    'radial-gradient(circle, hsl(var(--primary) / 0.7) 0%, transparent 60%)',
+                }}
               />
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative h-[180px] lg:h-[260px] w-auto object-contain"
+                className="relative h-[180px] lg:h-[260px] w-auto max-w-[120px] lg:max-w-[180px] object-contain"
                 style={{ filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))' }}
               />
               <div className="absolute inset-0 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -154,12 +171,20 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
                   <span className="text-xs text-white">Change</span>
                 </div>
               </div>
-              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={uploading}
+              />
               {uploading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
                   <div className="bg-black/70 rounded-2xl px-6 py-4 backdrop-blur-sm flex flex-col items-center">
                     <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
-                    <span className="text-xs text-white/80 font-medium">Removing background...</span>
+                    <span className="text-xs text-white/80 font-medium">
+                      Removing background...
+                    </span>
                   </div>
                 </div>
               )}
@@ -170,9 +195,17 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
             <label className="relative cursor-pointer group block">
               <div className="w-44 h-44 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-colors">
                 <Camera className="w-7 h-7 text-muted-foreground/40" />
-                <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">Upload</span>
+                <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
+                  Upload
+                </span>
               </div>
-              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={uploading}
+              />
             </label>
           </div>
         )}

@@ -298,21 +298,21 @@ export default function Recovery() {
                             : `border ${getStatusBg(muscle.recoveryStatus)}`
                       }`}
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-sm">
+                      <div className="flex flex-wrap items-start gap-1 mb-2">
+                        <span className="font-medium text-sm flex-1 min-w-0">
                           {formatMuscleGroupName(muscle.muscleGroup)}
                         </span>
                         {neverTrained ? (
                           <Badge
                             variant="outline"
-                            className="text-xs text-muted-foreground/50 border-border/30"
+                            className="text-xs text-muted-foreground/50 border-border/30 flex-shrink-0"
                           >
                             Not trained
                           </Badge>
                         ) : (
                           <Badge
                             variant="outline"
-                            className={`text-xs ${getStatusColor(muscle.recoveryStatus)} border-current/30 bg-current/10`}
+                            className={`text-xs ${getStatusColor(muscle.recoveryStatus)} border-current/30 bg-current/10 flex-shrink-0`}
                           >
                             {muscle.recoveryStatus}
                           </Badge>

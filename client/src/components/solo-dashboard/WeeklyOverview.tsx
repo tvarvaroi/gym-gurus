@@ -51,9 +51,7 @@ function ConsolidatedStats({
     {
       value: streak,
       label: 'Streak',
-      sub: streak > 0
-        ? `${streak} day${streak !== 1 ? 's' : ''}`
-        : 'days',
+      sub: streak > 0 ? `${streak} day${streak !== 1 ? 's' : ''}` : 'days',
       href: '/solo/achievements',
     },
     {
@@ -65,7 +63,10 @@ function ConsolidatedStats({
   ];
 
   return (
-    <motion.div {...animProps} className="hidden md:block bg-card rounded-2xl border border-border/20 p-4 sm:p-6">
+    <motion.div
+      {...animProps}
+      className="hidden md:block bg-card rounded-2xl border border-border/20 p-4 sm:p-6"
+    >
       <div className="md:flex md:items-center md:justify-between md:gap-0">
         {stats.map((stat, index) => (
           <div key={stat.label} className="flex items-center gap-0 md:gap-8">
@@ -279,7 +280,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
             return (
               <Link key={i} href="/schedule">
                 <div
-                  className={`rounded-xl p-2 min-w-[64px] flex-shrink-0 snap-start md:min-w-0 md:flex-shrink flex flex-col items-center cursor-pointer hover:bg-white/[0.04] transition-colors ${
+                  className={`rounded-xl p-2 pb-3 min-w-[64px] min-h-[96px] flex-shrink-0 snap-start md:min-w-0 md:flex-shrink flex flex-col items-center cursor-pointer hover:bg-white/[0.04] transition-colors ${
                     isToday
                       ? 'bg-primary/10 ring-1 ring-primary/30'
                       : hasWorkout
@@ -427,7 +428,8 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
           </div>
         </Link>
       ) : (
-        !hasAnyWorkouts && (
+        !hasAnyWorkouts &&
+        plannedCount === 0 && (
           <div className="mt-4 pt-3 border-t border-border/10 text-center">
             <p className="text-xs text-muted-foreground/60">
               No workouts this week yet — start one to fill this board!
