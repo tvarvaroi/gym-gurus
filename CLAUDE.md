@@ -1005,6 +1005,15 @@ Current manual process:
 
 ---
 
+## Layout Rules — Learned from Visual Audit (2026-03-10)
+
+- **No fixed heights on content containers.** Use `min-h-*` to set a floor, not `h-*` which clips overflowing content. Fixed heights are only acceptable on: chart containers (recharts requires them), loading skeletons, and decorative elements with no dynamic content.
+- **Multi-word labels in flex rows need `flex-wrap`.** `flex justify-between` with dynamic text (e.g. muscle names from DB) will overflow on narrow grid cards. Use `flex flex-wrap gap-1` + `flex-1 min-w-0` on the label + `flex-shrink-0` on the badge.
+- **`w-auto` images inside `absolute` containers overflow their parent.** Always pair `w-auto` with `max-w-[...]` or switch to a fixed-width wrapper div with `overflow-hidden`.
+- **Empty states must account for ALL data states.** Check every branch: if a component has both `completed` and `planned` data, the "no data" empty state condition must exclude BOTH (`!hasCompleted && !hasPlanned`), not just one.
+
+---
+
 ## Quick Wins (< 1 hour, no architecture impact)
 
 **Skill:** `code-reviewer` PR Analyzer catches all of these automatically
