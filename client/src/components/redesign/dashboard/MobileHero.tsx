@@ -99,7 +99,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   }
 
   return (
-    <motion.div {...animProps} className={`pt-3${hasPhoto ? ' md:pb-3 lg:pb-6' : ''}`}>
+    <motion.div {...animProps} className={`pt-3 md:pt-0${hasPhoto ? ' md:pb-3 lg:pb-6' : ''}`}>
       {/* Mobile: compact inline avatar + greeting */}
       <div className="flex items-center gap-4 md:hidden">
         <label className="relative cursor-pointer group flex-shrink-0">
@@ -138,7 +138,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
 
       {/* Desktop: larger hero with photo */}
       <div
-        className={`hidden md:block relative${hasPhoto ? ' md:min-h-[180px] lg:min-h-[258px]' : ''}`}
+        className={`hidden md:block relative${hasPhoto ? ' md:min-h-[181px] lg:min-h-[257px]' : ''}`}
         style={{ overflow: 'visible' }}
       >
         <div className={`text-left ${hasPhoto ? 'pr-[160px] lg:pr-[220px]' : ''}`}>
@@ -168,10 +168,10 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
                 className="relative h-[210px] lg:h-[300px] w-auto max-w-[140px] lg:max-w-[210px] object-contain"
                 style={{ filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))' }}
               />
-              <div className="absolute inset-0 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="bg-black/50 rounded-full px-3 py-1.5 backdrop-blur-sm flex items-center gap-1.5">
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
+                <div className="bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm flex items-center gap-1.5 border border-white/10 shadow-lg whitespace-nowrap">
                   <Camera className="w-3.5 h-3.5 text-white" />
-                  <span className="text-xs text-white">Change</span>
+                  <span className="text-xs text-white font-medium">Change photo</span>
                 </div>
               </div>
               <input
