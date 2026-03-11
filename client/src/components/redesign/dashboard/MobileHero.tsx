@@ -99,7 +99,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   }
 
   return (
-    <motion.div {...animProps} className={`pt-3${hasPhoto ? ' md:pb-10 lg:pb-12' : ''}`}>
+    <motion.div {...animProps} className={`pt-3${hasPhoto ? ' md:pb-3 lg:pb-6' : ''}`}>
       {/* Mobile: compact inline avatar + greeting */}
       <div className="flex items-center gap-4 md:hidden">
         <label className="relative cursor-pointer group flex-shrink-0">
@@ -138,7 +138,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
 
       {/* Desktop: larger hero with photo */}
       <div
-        className={`hidden md:block relative${hasPhoto ? ' md:min-h-[200px] lg:min-h-[270px]' : ''}`}
+        className={`hidden md:block relative${hasPhoto ? ' md:min-h-[180px] lg:min-h-[258px]' : ''}`}
         style={{ overflow: 'visible' }}
       >
         <div className={`text-left ${hasPhoto ? 'pr-[160px] lg:pr-[220px]' : ''}`}>
