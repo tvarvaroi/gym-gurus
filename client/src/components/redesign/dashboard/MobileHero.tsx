@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Loader2 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { Camera, Loader2, Play } from 'lucide-react';
+import { Link } from 'wouter';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useToast } from '@/hooks/use-toast';
+import { formatVolume } from '@/lib/format';
 
 interface MobileHeroProps {
   user: any;
@@ -58,9 +60,37 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
 
+  // Deduplicated — same query keys as ActionZone and useSoloDashboardData; no new network calls
+  const { data: soloStats } = useQuery<any>({
+    queryKey: ['/api/solo/stats'],
+    retry: false,
+    staleTime: 2 * 60 * 1000,
+  });
+  const { data: todayWorkout } = useQuery<any>({
+    queryKey: ['/api/solo/today-workout'],
+    retry: false,
+    staleTime: 60 * 1000,
+  });
+
   const greeting = getGreeting();
   const subtitle = getMotivationalSubtitle(gamification, fitnessProfile);
   const hasPhoto = !!user?.profileImageUrl;
+
+  // Stats — sourced from already-fetched data
+  const totalWorkouts = gamification?.totalWorkoutsCompleted ?? soloStats?.totalWorkouts ?? 0;
+  const streak = gamification?.currentStreakDays ?? 0;
+  const weeklyVolume = soloStats?.weeklyVolumeKg ?? 0;
+  const rankValue =
+    gamification?.xpTitle || (gamification?.level != null ? `Level ${gamification.level}` : '—');
+
+  // Action button logic (mirrors ActionZone)
+  const workout = todayWorkout?.workout || todayWorkout?.suggestedWorkout;
+  const isCompleted = workout?.status === 'completed';
+  const workoutHref =
+    workout && !isCompleted
+      ? `/workout-execution/${workout.workoutId || workout.id}`
+      : '/solo/generate';
+  const workoutLabel = workout && !isCompleted ? "Start Today's Workout" : 'Generate Workout';
 
   const animProps = prefersReducedMotion
     ? {}
@@ -98,9 +128,16 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
     }
   }
 
+  const stats = [
+    { value: String(totalWorkouts), label: 'TOTAL WORKOUTS' },
+    { value: String(streak), label: 'STREAK', suffix: streak === 1 ? 'day' : 'days' },
+    { value: formatVolume(weeklyVolume), label: 'THIS WEEK', suffix: 'kg' },
+    { value: rankValue, label: 'RANK' },
+  ];
+
   return (
-    <motion.div {...animProps} className={`pt-3 md:pt-0${hasPhoto ? ' md:-mt-6 lg:-mt-8' : ''}`}>
-      {/* Mobile: compact inline avatar + greeting */}
+    <motion.div {...animProps} className="pt-3 md:pt-0">
+      {/* Mobile: compact inline avatar + greeting — unchanged */}
       <div className="flex items-center gap-4 md:hidden">
         <label className="relative cursor-pointer group flex-shrink-0">
           {hasPhoto ? (
@@ -136,27 +173,60 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
         </div>
       </div>
 
-      {/* Desktop: larger hero with photo */}
+      {/* Desktop: elevated card with photo bleeding out of bottom-right */}
       <div
-        className={`hidden md:block relative${hasPhoto ? ' md:min-h-[181px] lg:min-h-[257px]' : ''}`}
+        className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg"
         style={{ overflow: 'visible' }}
       >
-        <div className={`text-left ${hasPhoto ? 'pr-[160px] lg:pr-[220px]' : ''}`}>
-          <p className="text-sm uppercase tracking-widest text-muted-foreground font-medium mb-2">
-            {greeting}
-          </p>
-          <h1 className="text-4xl lg:text-5xl font-bold font-['Playfair_Display'] leading-tight mb-2">
+        {/* Card content — right padding reserves space for photo */}
+        <div className={`p-6 lg:p-8 ${hasPhoto ? 'pr-[180px] lg:pr-[250px]' : ''}`}>
+          {/* Greeting */}
+          <p className="text-xs tracking-[0.2em] uppercase text-white/40 mb-2">{greeting}</p>
+
+          {/* Name */}
+          <h1 className="text-5xl lg:text-6xl font-bold font-['Playfair_Display'] leading-tight mb-2">
             {user?.firstName || 'Warrior'}
           </h1>
-          <p className="text-sm text-muted-foreground mb-4">{subtitle}</p>
+
+          {/* Subtitle */}
+          <p className="text-sm text-white/50 mb-6">{subtitle}</p>
+
+          {/* Stats row */}
+          <div className="flex items-start mb-6">
+            {stats.map((stat, i) => (
+              <div
+                key={stat.label}
+                className={`flex-1 ${i > 0 ? 'pl-4 lg:pl-6 border-l border-white/10' : ''} ${i < stats.length - 1 ? 'pr-4 lg:pr-6' : ''}`}
+              >
+                <div className="text-2xl font-bold text-white leading-none">
+                  {stat.value}
+                  {stat.suffix && (
+                    <span className="text-sm font-normal text-white/50 ml-1">{stat.suffix}</span>
+                  )}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-white/50 mt-1.5">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Action button — Link styled as button (avoids <a><button> nesting) */}
+          <Link
+            href={workoutHref}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors cursor-pointer"
+          >
+            <Play className="w-4 h-4" />
+            {workoutLabel}
+          </Link>
         </div>
 
-        {/* Desktop photo */}
+        {/* Photo — absolute bottom-right, 20% bleeds below card edge */}
         {hasPhoto ? (
-          <div className="absolute right-0 bottom-0 translate-y-[15%] z-10">
+          <div className="absolute right-0 bottom-0 translate-y-[20%] z-10">
             <label className="relative cursor-pointer group block">
               <div
-                className="absolute inset-[-30px] blur-[60px] opacity-20"
+                className="absolute inset-[-30px] blur-[60px] opacity-20 pointer-events-none"
                 style={{
                   background:
                     'radial-gradient(circle, hsl(var(--primary) / 0.7) 0%, transparent 60%)',
@@ -165,13 +235,14 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative h-[210px] lg:h-[300px] w-auto max-w-[140px] lg:max-w-[210px] object-contain"
+                className="relative h-[220px] lg:h-[320px] w-auto max-w-[150px] lg:max-w-[220px] object-contain"
                 style={{
                   filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
                   maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
                   WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
                 }}
               />
+              {/* Change photo badge — emerges from photo bottom on hover */}
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
                 <div className="bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm flex items-center gap-1.5 border border-white/10 shadow-lg whitespace-nowrap">
                   <Camera className="w-3.5 h-3.5 text-white" />
@@ -198,12 +269,13 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
             </label>
           </div>
         ) : (
-          <div className="absolute right-0 top-0">
+          /* No photo: dashed upload zone centered in the right side */
+          <div className="absolute right-6 lg:right-8 top-1/2 -translate-y-1/2">
             <label className="relative cursor-pointer group block">
-              <div className="w-44 h-44 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-colors">
+              <div className="w-40 h-40 rounded-2xl border-2 border-dashed border-border/30 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-colors">
                 <Camera className="w-7 h-7 text-muted-foreground/40" />
                 <span className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
-                  Upload
+                  Upload Photo
                 </span>
               </div>
               <input
@@ -215,6 +287,16 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
               />
             </label>
           </div>
+        )}
+
+        {/* Gradient at card bottom-right to soften photo bleed transition */}
+        {hasPhoto && (
+          <div
+            className="absolute bottom-0 right-0 w-[200px] lg:w-[280px] h-6 rounded-br-2xl pointer-events-none"
+            style={{
+              background: 'linear-gradient(to top, hsl(var(--card)) 0%, transparent 100%)',
+            }}
+          />
         )}
       </div>
     </motion.div>
