@@ -166,7 +166,11 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
                 className="relative h-[210px] lg:h-[300px] w-auto max-w-[140px] lg:max-w-[210px] object-contain"
-                style={{ filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))' }}
+                style={{
+                  filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
+                  maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
+                }}
               />
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
                 <div className="bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm flex items-center gap-1.5 border border-white/10 shadow-lg whitespace-nowrap">
