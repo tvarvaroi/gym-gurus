@@ -99,7 +99,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   }
 
   return (
-    <motion.div {...animProps} className="pt-3">
+    <motion.div {...animProps} className={`pt-3${hasPhoto ? ' md:pb-10 lg:pb-12' : ''}`}>
       {/* Mobile: compact inline avatar + greeting */}
       <div className="flex items-center gap-4 md:hidden">
         <label className="relative cursor-pointer group flex-shrink-0">
@@ -137,8 +137,11 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
       </div>
 
       {/* Desktop: larger hero with photo */}
-      <div className="hidden md:block relative" style={{ overflow: 'visible' }}>
-        <div className={`text-left ${hasPhoto ? 'pr-[140px]' : ''}`}>
+      <div
+        className={`hidden md:block relative${hasPhoto ? ' md:min-h-[200px] lg:min-h-[270px]' : ''}`}
+        style={{ overflow: 'visible' }}
+      >
+        <div className={`text-left ${hasPhoto ? 'pr-[160px] lg:pr-[220px]' : ''}`}>
           <p className="text-sm uppercase tracking-widest text-muted-foreground font-medium mb-2">
             {greeting}
           </p>
@@ -150,7 +153,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
 
         {/* Desktop photo */}
         {hasPhoto ? (
-          <div className="absolute right-0 bottom-0 translate-y-[15%] z-0">
+          <div className="absolute right-0 bottom-0 translate-y-[15%] z-10">
             <label className="relative cursor-pointer group block">
               <div
                 className="absolute inset-[-30px] blur-[60px] opacity-20"
@@ -162,7 +165,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative h-[180px] lg:h-[260px] w-auto max-w-[120px] lg:max-w-[180px] object-contain"
+                className="relative h-[210px] lg:h-[300px] w-auto max-w-[140px] lg:max-w-[210px] object-contain"
                 style={{ filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))' }}
               />
               <div className="absolute inset-0 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition-opacity">
