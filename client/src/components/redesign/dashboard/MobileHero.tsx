@@ -99,7 +99,10 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   }
 
   return (
-    <motion.div {...animProps} className={`pt-3 md:pt-0${hasPhoto ? ' md:pb-3 lg:pb-6' : ''}`}>
+    <motion.div
+      {...animProps}
+      className={`pt-3 md:pt-0${hasPhoto ? ' md:-mt-6 lg:-mt-8 md:pb-0 lg:pb-2' : ''}`}
+    >
       {/* Mobile: compact inline avatar + greeting */}
       <div className="flex items-center gap-4 md:hidden">
         <label className="relative cursor-pointer group flex-shrink-0">
