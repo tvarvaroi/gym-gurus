@@ -174,11 +174,8 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
         </div>
       </div>
 
-      {/* Desktop: elevated card with photo bleeding out of bottom-right */}
-      <div
-        className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg"
-        style={{ overflow: 'visible' }}
-      >
+      {/* Desktop: elevated card with photo anchored bottom-right */}
+      <div className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg overflow-hidden">
         {/* Card content — right padding reserves space for photo */}
         <div className={`p-6 lg:p-8 ${hasPhoto ? 'pr-[180px] lg:pr-[250px]' : ''}`}>
           {/* Greeting */}
@@ -215,36 +212,24 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
           {/* Action button — Link styled as button (avoids <a><button> nesting) */}
           <Link
             href={workoutHref}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[hsl(43_54%_55%)] text-[hsl(0_0%_8%)] font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors cursor-pointer"
           >
             <Play className="w-4 h-4" />
             {workoutLabel}
           </Link>
         </div>
 
-        {/* Photo — absolute bottom-right, 20% bleeds below card edge */}
+        {/* Photo — absolute bottom-right, contained within card */}
         {hasPhoto ? (
-          <div className="absolute right-0 bottom-0 translate-y-[20%] z-10">
+          <div className="absolute right-0 bottom-0">
             <label className="relative cursor-pointer group block">
-              <div
-                className="absolute inset-[-30px] blur-[60px] opacity-20 pointer-events-none"
-                style={{
-                  background:
-                    'radial-gradient(circle, hsl(var(--primary) / 0.7) 0%, transparent 60%)',
-                }}
-              />
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="relative h-[220px] lg:h-[320px] w-auto max-w-[150px] lg:max-w-[220px] object-contain"
-                style={{
-                  filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.6))',
-                  maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
-                  WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
-                }}
+                className="h-[220px] lg:h-[320px] w-auto max-w-[150px] lg:max-w-[220px] object-cover object-top"
               />
-              {/* Change photo badge — emerges from photo bottom on hover */}
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
+              {/* Change photo badge */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
                 <div className="bg-black/70 rounded-full px-3 py-1.5 backdrop-blur-sm flex items-center gap-1.5 border border-white/10 shadow-lg whitespace-nowrap">
                   <Camera className="w-3.5 h-3.5 text-white" />
                   <span className="text-xs text-white font-medium">Change photo</span>
@@ -288,16 +273,6 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
               />
             </label>
           </div>
-        )}
-
-        {/* Gradient at card bottom-right to soften photo bleed transition */}
-        {hasPhoto && (
-          <div
-            className="absolute bottom-0 right-0 w-[200px] lg:w-[280px] h-6 rounded-br-2xl pointer-events-none"
-            style={{
-              background: 'linear-gradient(to top, hsl(var(--card)) 0%, transparent 100%)',
-            }}
-          />
         )}
       </div>
     </motion.div>

@@ -203,7 +203,7 @@ export function ActionZone() {
                 }
               >
                 <ActionButton
-                  variant="gold"
+                  variant="primary"
                   size="lg"
                   fullWidth
                   icon={<Play className="w-5 h-5" />}
@@ -222,7 +222,7 @@ export function ActionZone() {
               Generate a smart workout based on your recovery.
             </p>
             <Link href="/solo/generate">
-              <ActionButton variant="gold" size="lg" fullWidth>
+              <ActionButton variant="primary" size="lg" fullWidth>
                 Generate Workout
               </ActionButton>
             </Link>
