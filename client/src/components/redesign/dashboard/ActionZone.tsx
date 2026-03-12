@@ -6,7 +6,12 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { ActionButton } from '@/components/ui/premium';
 
 function getContextualSuggestion(ctx: {
-  fatigueData?: Array<{ muscleGroup: string; fatigueLevel: number; recoveryStatus: string; lastTrainedAt: string | null }>;
+  fatigueData?: Array<{
+    muscleGroup: string;
+    fatigueLevel: number;
+    recoveryStatus: string;
+    lastTrainedAt: string | null;
+  }>;
   totalWorkouts?: number;
   hasWorkoutToday?: boolean;
   lastWorkoutDate?: string | null;
@@ -15,15 +20,29 @@ function getContextualSuggestion(ctx: {
   const defaultAction = { action: 'Chat with AI Coach', actionHref: '/solo/coach' };
 
   if (!ctx.totalWorkouts || ctx.totalWorkouts === 0) {
-    return { message: 'Ready to start your fitness journey? Generate your first AI-powered workout!', action: 'Generate Workout', actionHref: '/solo/generate' };
+    return {
+      message: 'Ready to start your fitness journey? Generate your first AI-powered workout!',
+      action: 'Generate Workout',
+      actionHref: '/solo/generate',
+    };
   }
   if (ctx.hasWorkoutToday) {
-    return { message: 'Great workout today! Stay hydrated and get enough protein for recovery.', action: 'View Recovery', actionHref: '/solo/recovery' };
+    return {
+      message: 'Great workout today! Stay hydrated and get enough protein for recovery.',
+      action: 'View Recovery',
+      actionHref: '/solo/recovery',
+    };
   }
   if (ctx.lastWorkoutDate) {
-    const daysSinceLast = Math.floor((Date.now() - new Date(ctx.lastWorkoutDate).getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceLast = Math.floor(
+      (Date.now() - new Date(ctx.lastWorkoutDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
     if (daysSinceLast >= 3) {
-      return { message: `It's been ${daysSinceLast} days since your last workout. A quick session can help maintain momentum!`, action: 'Generate Workout', actionHref: '/solo/generate' };
+      return {
+        message: `It's been ${daysSinceLast} days since your last workout. A quick session can help maintain momentum!`,
+        action: 'Generate Workout',
+        actionHref: '/solo/generate',
+      };
     }
   }
   const fatigueData = ctx.fatigueData;
@@ -31,20 +50,42 @@ function getContextualSuggestion(ctx: {
     const recovered = fatigueData.filter((m) => m.recoveryStatus === 'recovered');
     const fatigued = fatigueData.filter((m) => m.recoveryStatus === 'fatigued');
     if (fatigued.length >= 5) {
-      return { message: `${fatigued.length} muscle groups are still fatigued. Consider a rest day or light cardio.`, action: 'View Recovery', actionHref: '/solo/recovery' };
+      return {
+        message: `${fatigued.length} muscle groups are still fatigued. Consider a rest day or light cardio.`,
+        action: 'View Recovery',
+        actionHref: '/solo/recovery',
+      };
     }
     if (recovered.length > 0 && fatigued.length > 0) {
-      const ready = recovered.slice(0, 3).map((m) => m.muscleGroup.replace(/_/g, ' ')).join(', ');
-      return { message: `Your ${ready} are recovered and ready to train.`, action: 'View Recovery', actionHref: '/solo/recovery' };
+      const ready = recovered
+        .slice(0, 3)
+        .map((m) => m.muscleGroup.replace(/_/g, ' '))
+        .join(', ');
+      return {
+        message: `Your ${ready} are recovered and ready to train.`,
+        action: 'View Recovery',
+        actionHref: '/solo/recovery',
+      };
     }
     if (fatigued.length === 0 && recovered.length > 0) {
-      return { message: 'All muscle groups are fully recovered. Great time for your next workout!', action: 'Generate Workout', actionHref: '/solo/generate' };
+      return {
+        message: 'All muscle groups are fully recovered. Great time for your next workout!',
+        action: 'Generate Workout',
+        actionHref: '/solo/generate',
+      };
     }
   }
   if (ctx.streak && ctx.streak >= 3) {
-    return { message: `${ctx.streak}-day streak! Keep the momentum going.`, action: 'Generate Workout', actionHref: '/solo/generate' };
+    return {
+      message: `${ctx.streak}-day streak! Keep the momentum going.`,
+      action: 'Generate Workout',
+      actionHref: '/solo/generate',
+    };
   }
-  return { message: 'Keep up the great work! Consistency is key to reaching your goals.', ...defaultAction };
+  return {
+    message: 'Keep up the great work! Consistency is key to reaching your goals.',
+    ...defaultAction,
+  };
 }
 
 export function ActionZone() {
@@ -73,11 +114,18 @@ export function ActionZone() {
 
   const animProps = prefersReducedMotion
     ? {}
-    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.3 },
+      };
 
   if (isLoading) {
     return (
-      <motion.div {...animProps} className="bg-card rounded-2xl p-5 border border-border/20 flex items-center justify-center min-h-[100px]">
+      <motion.div
+        {...animProps}
+        className="bg-card rounded-2xl p-5 border border-border/20 flex items-center justify-center min-h-[100px]"
+      >
         <Dumbbell className="w-5 h-5 text-muted-foreground animate-pulse" />
       </motion.div>
     );
@@ -87,8 +135,12 @@ export function ActionZone() {
   const isCompleted = workout?.status === 'completed';
   const isInProgress = workout?.status === 'in_progress';
 
-  const exerciseCount = workout?.exerciseCount || (Array.isArray(workout?.exercises) ? workout.exercises.length : 0);
-  const muscleText = workout?.muscleGroups?.slice(0, 4).map((m: string) => m.replace(/_/g, ' ')).join(' · ');
+  const exerciseCount =
+    workout?.exerciseCount || (Array.isArray(workout?.exercises) ? workout.exercises.length : 0);
+  const muscleText = workout?.muscleGroups
+    ?.slice(0, 4)
+    .map((m: string) => m.replace(/_/g, ' '))
+    .join(' · ');
 
   const suggestion = getContextualSuggestion({
     fatigueData: fatigueData ?? undefined,
@@ -100,7 +152,9 @@ export function ActionZone() {
 
   return (
     <motion.div {...animProps} className="space-y-2.5">
-      <div className={`rounded-2xl p-4 md:p-5 border ${isCompleted ? 'bg-green-500/5 border-green-500/20' : 'bg-card border-border/20'}`}>
+      <div
+        className={`rounded-2xl p-4 md:p-5 border ${isCompleted ? 'bg-green-500/5 border-green-500/20' : 'bg-card border-border/20'}`}
+      >
         {workout ? (
           <>
             {/* Label row */}
@@ -110,7 +164,8 @@ export function ActionZone() {
               </span>
               {!isCompleted && exerciseCount > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  {exerciseCount} exercises{workout.estimatedTime ? ` · ~${workout.estimatedTime} min` : ''}
+                  {exerciseCount} exercises
+                  {workout.estimatedTime ? ` · ~${workout.estimatedTime} min` : ''}
                 </span>
               )}
             </div>
@@ -121,9 +176,18 @@ export function ActionZone() {
             {/* Completed stats */}
             {isCompleted && workout.stats ? (
               <div className="flex gap-5 mb-3 text-sm">
-                <div><span className="font-bold tabular-nums">{workout.stats.duration}</span><span className="text-muted-foreground ml-1">min</span></div>
-                <div><span className="font-bold tabular-nums">{workout.stats.totalSets}</span><span className="text-muted-foreground ml-1">sets</span></div>
-                <div><span className="font-bold tabular-nums">{workout.stats.totalVolume}</span><span className="text-muted-foreground ml-1">kg</span></div>
+                <div>
+                  <span className="font-bold tabular-nums">{workout.stats.duration}</span>
+                  <span className="text-muted-foreground ml-1">min</span>
+                </div>
+                <div>
+                  <span className="font-bold tabular-nums">{workout.stats.totalSets}</span>
+                  <span className="text-muted-foreground ml-1">sets</span>
+                </div>
+                <div>
+                  <span className="font-bold tabular-nums">{workout.stats.totalVolume}</span>
+                  <span className="text-muted-foreground ml-1">kg</span>
+                </div>
               </div>
             ) : muscleText ? (
               <p className="text-sm text-muted-foreground capitalize mb-3">{muscleText}</p>
@@ -131,8 +195,19 @@ export function ActionZone() {
 
             {/* CTA */}
             {!isCompleted && (
-              <Link href={workout.workoutId || workout.source === 'saved' ? `/workout-execution/${workout.workoutId || workout.id}` : '/workouts'}>
-                <ActionButton variant="primary" size="lg" fullWidth icon={<Play className="w-5 h-5" />}>
+              <Link
+                href={
+                  workout.workoutId || workout.source === 'saved'
+                    ? `/workout-execution/${workout.workoutId || workout.id}`
+                    : '/workouts'
+                }
+              >
+                <ActionButton
+                  variant="gold"
+                  size="lg"
+                  fullWidth
+                  icon={<Play className="w-5 h-5" />}
+                >
                   {isInProgress ? 'Continue Workout' : 'Start Workout'}
                 </ActionButton>
               </Link>
@@ -140,10 +215,14 @@ export function ActionZone() {
           </>
         ) : (
           <>
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium mb-2">No Workout Planned</p>
-            <p className="text-sm text-muted-foreground mb-4">Generate a smart workout based on your recovery.</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium mb-2">
+              No Workout Planned
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Generate a smart workout based on your recovery.
+            </p>
             <Link href="/solo/generate">
-              <ActionButton variant="primary" size="lg" fullWidth>
+              <ActionButton variant="gold" size="lg" fullWidth>
                 Generate Workout
               </ActionButton>
             </Link>

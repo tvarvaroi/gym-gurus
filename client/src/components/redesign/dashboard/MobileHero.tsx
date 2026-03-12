@@ -81,7 +81,8 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   const streak = gamification?.currentStreakDays ?? 0;
   const weeklyVolume = soloStats?.weeklyVolumeKg ?? 0;
   const rankValue =
-    gamification?.xpTitle || (gamification?.level != null ? `Level ${gamification.level}` : '—');
+    gamification?.rankGenZ ||
+    (gamification?.currentLevel != null ? `Level ${gamification.currentLevel}` : '—');
 
   // Action button logic (mirrors ActionZone)
   const workout = todayWorkout?.workout || todayWorkout?.suggestedWorkout;
@@ -136,7 +137,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   ];
 
   return (
-    <motion.div {...animProps} className="pt-3 md:pt-0">
+    <motion.div {...animProps} className="pt-3 md:pt-0 relative z-10">
       {/* Mobile: compact inline avatar + greeting — unchanged */}
       <div className="flex items-center gap-4 md:hidden">
         <label className="relative cursor-pointer group flex-shrink-0">
