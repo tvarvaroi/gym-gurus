@@ -214,7 +214,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
           {/* Action button — Link styled as button (avoids <a><button> nesting) */}
           <Link
             href={workoutHref}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[hsl(43_54%_55%)] text-[hsl(0_0%_8%)] font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer"
           >
             <Play className="w-4 h-4" />
             {workoutLabel}
