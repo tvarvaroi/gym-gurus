@@ -221,7 +221,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
 
         {/* Photo — spans full card height, anchored to right edge */}
         {hasPhoto ? (
-          <div className="absolute right-0 top-0 bottom-0 w-[170px] lg:w-[230px]">
+          <div className="absolute right-0 top-10 bottom-0 w-[170px] lg:w-[230px]">
             <label className="relative cursor-pointer group block h-full">
               <img
                 src={user.profileImageUrl}
