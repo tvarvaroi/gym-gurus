@@ -175,9 +175,9 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
       </div>
 
       {/* Desktop: elevated card with photo anchored bottom-right */}
-      <div className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg overflow-hidden">
+      <div className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg overflow-hidden min-h-[300px] lg:min-h-[320px]">
         {/* Card content — right padding reserves space for photo */}
-        <div className={`p-6 lg:p-8 ${hasPhoto ? 'pr-[180px] lg:pr-[250px]' : ''}`}>
+        <div className={`p-6 lg:p-8 ${hasPhoto ? 'pr-[190px] lg:pr-[250px]' : ''}`}>
           {/* Greeting */}
           <p className="text-xs tracking-[0.2em] uppercase text-white/40 mb-2">{greeting}</p>
 
@@ -219,14 +219,14 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
           </Link>
         </div>
 
-        {/* Photo — absolute bottom-right, contained within card */}
+        {/* Photo — spans full card height, anchored to right edge */}
         {hasPhoto ? (
-          <div className="absolute right-0 bottom-0">
-            <label className="relative cursor-pointer group block">
+          <div className="absolute right-0 top-0 bottom-0 w-[170px] lg:w-[230px]">
+            <label className="relative cursor-pointer group block h-full">
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="h-[220px] lg:h-[320px] w-auto max-w-[150px] lg:max-w-[220px] object-cover object-top"
+                className="w-full h-full object-cover object-top"
               />
               {/* Change photo badge */}
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
