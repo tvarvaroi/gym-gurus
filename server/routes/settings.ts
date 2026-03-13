@@ -1,8 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
+import sharp from 'sharp';
 import { db } from '../db';
 import { users, clients, workouts } from '../../shared/schema';
-import { eq, sql, isNull } from 'drizzle-orm';
+import { eq, sql, isNull, and } from 'drizzle-orm';
 import { getUserById } from '../auth';
 import { uploadImage, isR2Configured } from '../services/fileUpload';
 
@@ -172,7 +173,17 @@ router.post(
         const arrayBuffer = await resultBlob.arrayBuffer();
         processedBuffer = Buffer.from(arrayBuffer);
         mimeType = 'image/png';
-        console.log('Background removal successful');
+        // Normalize to 600×900 canvas: trim transparent edges, place subject
+        // bottom-right so the person stands at the card's right edge in the UI.
+        processedBuffer = await sharp(processedBuffer)
+          .trim()
+          .resize(600, 900, {
+            fit: 'contain',
+            position: 'south east',
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+          })
+          .png()
+          .toBuffer();
       } catch (bgError) {
         console.error('Background removal failed, using original:', bgError);
       }

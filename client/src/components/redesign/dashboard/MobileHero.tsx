@@ -221,12 +221,12 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
 
         {/* Photo — spans full card height, anchored to right edge */}
         {hasPhoto ? (
-          <div className="absolute right-0 top-10 bottom-0 w-[35%] lg:w-[40%]">
+          <div className="absolute right-0 top-10 bottom-0 w-[35%] lg:w-[40%] overflow-hidden">
             <label className="relative cursor-pointer group block h-full">
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="w-full h-full object-cover object-top"
+                className="absolute right-0 bottom-0 h-full w-auto max-w-none"
               />
               {/* Change photo badge */}
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
