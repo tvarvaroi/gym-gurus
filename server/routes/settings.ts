@@ -166,12 +166,14 @@ router.post(
       let mimeType = req.file.mimetype;
 
       try {
-        // Pre-process: normalize contrast + slight brightness boost so the
-        // segmentation model handles dark-on-dark photos (e.g. dark jacket on
-        // dark background) more reliably. Output is only used for BG removal.
+        // Pre-process: aggressive contrast enhancement for dark-on-dark photos.
+        // sharp 0.34.5 supports clahe. Only used for BG removal — not stored.
         const preprocessedBuffer = await sharp(req.file.buffer)
           .normalize()
-          .modulate({ brightness: 1.1, saturation: 1.1 })
+          .clahe({ width: 3, height: 3, maxSlope: 3 })
+          .modulate({ brightness: 1.25, saturation: 1.3 })
+          .linear(1.3, -20)
+          .sharpen({ sigma: 0.8 })
           .jpeg({ quality: 95 })
           .toBuffer();
 
@@ -183,13 +185,13 @@ router.post(
         processedBuffer = Buffer.from(arrayBuffer);
         mimeType = 'image/png';
 
-        // Normalize to 600×900 canvas: trim transparent edges, center subject
-        // at bottom so all photo types render at consistent scale in the card.
+        // Normalize to 600×900 canvas: trim transparent edges, subject anchored
+        // bottom-right so person stands at the card's right edge in the UI.
         processedBuffer = await sharp(processedBuffer)
           .trim()
           .resize(600, 900, {
             fit: 'contain',
-            position: 'south',
+            position: 'south east',
             background: { r: 0, g: 0, b: 0, alpha: 0 },
           })
           .png()
