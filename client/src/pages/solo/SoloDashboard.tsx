@@ -6,6 +6,7 @@ import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 import { useSoloDashboardData } from '@/hooks/useSoloDashboardData';
 import { DashboardSkeleton } from '@/components/solo-dashboard/DashboardSkeleton';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { BlurFade } from '@/components/ui/blur-fade';
 
 // Phase 2 redesign components
 import { MobileHero } from '@/components/redesign/dashboard/MobileHero';
@@ -66,59 +67,77 @@ export function SoloDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-3 md:space-y-6 pb-6">
-      {user && !user.onboardingCompleted && <OnboardingPrompt />}
+      {user && !user.onboardingCompleted && (
+        <BlurFade delay={0}>
+          <OnboardingPrompt />
+        </BlurFade>
+      )}
 
       {/* Phase 2: Mobile-first hero */}
-      <MobileHero
-        user={user}
-        gamification={data.gamification}
-        fitnessProfile={data.fitnessProfile}
-      />
+      <BlurFade delay={0.05}>
+        <MobileHero
+          user={user}
+          gamification={data.gamification}
+          fitnessProfile={data.fitnessProfile}
+        />
+      </BlurFade>
 
       {/* Phase 2: Full-width workout CTA — above fold */}
-      <ActionZone />
+      <BlurFade delay={0.1}>
+        <ActionZone />
+      </BlurFade>
 
       {/* Phase 2: Horizontal scroll stat strip (mobile only — desktop uses WeeklyOverview) */}
-      <div className="md:hidden">
+      <BlurFade delay={0.15} className="md:hidden">
         <QuickStats
           stats={data.soloStats}
           strengthSummary={data.strengthSummary}
           gamification={data.gamification}
         />
-      </div>
+      </BlurFade>
 
       {/* Phase 2: Compact 7-day week strip (mobile only — desktop uses WeeklyOverview) */}
-      <div className="md:hidden">
+      <BlurFade delay={0.2} className="md:hidden">
         <WeekStrip weeklyActivity={data.weeklyActivity} />
-      </div>
+      </BlurFade>
 
       {/* Existing: Volume chart + detailed weekly log (desktop) */}
-      <WeeklyOverview
-        stats={data.soloStats}
-        strengthSummary={data.strengthSummary}
-        gamification={data.gamification}
-        progress={data.progress}
-        weeklyActivity={data.weeklyActivity}
-        loading={data.weeklyLoading}
-      />
+      <BlurFade delay={0.2}>
+        <WeeklyOverview
+          stats={data.soloStats}
+          strengthSummary={data.strengthSummary}
+          gamification={data.gamification}
+          progress={data.progress}
+          weeklyActivity={data.weeklyActivity}
+          loading={data.weeklyLoading}
+        />
+      </BlurFade>
 
-      <RecoveryBodyStatus fatigueData={data.fatigueData} loading={data.recoveryLoading} />
+      <BlurFade delay={0.25}>
+        <RecoveryBodyStatus fatigueData={data.fatigueData} loading={data.recoveryLoading} />
+      </BlurFade>
 
-      <BodyIntelligencePanel
-        data={data.bodyIntelligence}
-        fitnessProfile={data.fitnessProfile}
-        loading={data.bodyIntelLoading}
-      />
+      <BlurFade delay={0.3}>
+        <BodyIntelligencePanel
+          data={data.bodyIntelligence}
+          fitnessProfile={data.fitnessProfile}
+          loading={data.bodyIntelLoading}
+        />
+      </BlurFade>
 
       {/* Phase 2: Compact quick-access nav */}
-      <WidgetScroller />
+      <BlurFade delay={0.35}>
+        <WidgetScroller />
+      </BlurFade>
 
-      <RecentActivityFeed
-        progress={data.progress}
-        xpHistory={data.xpHistory}
-        mealPlans={data.mealPlans}
-        loading={data.activityLoading}
-      />
+      <BlurFade delay={0.4}>
+        <RecentActivityFeed
+          progress={data.progress}
+          xpHistory={data.xpHistory}
+          mealPlans={data.mealPlans}
+          loading={data.activityLoading}
+        />
+      </BlurFade>
     </div>
   );
 }

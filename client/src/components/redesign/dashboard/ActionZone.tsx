@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Dumbbell, Play, ChevronRight } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { ActionButton } from '@/components/ui/premium';
+import { BorderBeam } from '@/components/ui/border-beam';
 
 function getContextualSuggestion(ctx: {
   fatigueData?: Array<{
@@ -153,8 +154,17 @@ export function ActionZone() {
   return (
     <motion.div {...animProps} className="space-y-2.5">
       <div
-        className={`rounded-2xl p-4 md:p-5 border ${isCompleted ? 'bg-green-500/5 border-green-500/20' : 'bg-card border-border/20'}`}
+        className={`relative rounded-2xl p-4 md:p-5 border overflow-hidden ${isCompleted ? 'bg-green-500/5 border-green-500/20' : 'bg-card border-border/20'}`}
       >
+        {workout && !isCompleted && (
+          <BorderBeam
+            size={80}
+            duration={5}
+            colorFrom="hsl(var(--primary))"
+            colorTo="rgba(255,255,255,0.05)"
+            borderWidth={1}
+          />
+        )}
         {workout ? (
           <>
             {/* Label row */}

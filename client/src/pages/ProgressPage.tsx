@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { NumberTicker } from '@/components/ui/number-ticker';
 import { RoninIcon } from '@/components/icons/RoninIcon';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -386,14 +387,16 @@ export default function ProgressPage() {
             <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground font-light">Total Workouts</p>
-                <p className="text-2xl font-bold mt-1">{soloProgress.totalWorkouts}</p>
+                <p className="text-2xl font-bold mt-1">
+                  <NumberTicker value={soloProgress.totalWorkouts} className="text-2xl font-bold" />
+                </p>
               </CardContent>
             </Card>
             <Card className="border-teal-500/20 bg-gradient-to-br from-teal-500/5 to-transparent">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground font-light">Total Volume</p>
                 <p className="text-2xl font-bold mt-1">
-                  {soloProgress.totalVolumeKg.toLocaleString()}
+                  <NumberTicker value={soloProgress.totalVolumeKg} className="text-2xl font-bold" />
                   <span className="text-sm font-light text-muted-foreground ml-1">kg</span>
                 </p>
               </CardContent>
@@ -421,7 +424,9 @@ export default function ProgressPage() {
             <Card className="border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground font-light">Total Sets</p>
-                <p className="text-2xl font-bold mt-1">{soloProgress.totalSets.toLocaleString()}</p>
+                <p className="text-2xl font-bold mt-1">
+                  <NumberTicker value={soloProgress.totalSets} className="text-2xl font-bold" />
+                </p>
               </CardContent>
             </Card>
           </motion.div>

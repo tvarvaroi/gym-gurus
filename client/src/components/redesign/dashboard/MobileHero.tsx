@@ -6,6 +6,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useToast } from '@/hooks/use-toast';
 import { formatVolume } from '@/lib/format';
+import { NumberTicker } from '@/components/ui/number-ticker';
+import { BorderBeam } from '@/components/ui/border-beam';
 
 interface MobileHeroProps {
   user: any;
@@ -130,10 +132,30 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   }
 
   const stats = [
-    { value: String(totalWorkouts), label: 'TOTAL WORKOUTS' },
-    { value: String(streak), label: 'STREAK', suffix: streak === 1 ? 'day' : 'days' },
-    { value: formatVolume(weeklyVolume), label: 'THIS WEEK', suffix: 'kg' },
-    { value: rankValue, label: 'RANK' },
+    {
+      numericValue: totalWorkouts,
+      displayValue: null as string | null,
+      label: 'TOTAL WORKOUTS',
+      suffix: undefined as string | undefined,
+    },
+    {
+      numericValue: streak,
+      displayValue: null as string | null,
+      label: 'STREAK',
+      suffix: streak === 1 ? 'day' : 'days',
+    },
+    {
+      numericValue: null as number | null,
+      displayValue: formatVolume(weeklyVolume),
+      label: 'THIS WEEK',
+      suffix: 'kg',
+    },
+    {
+      numericValue: null as number | null,
+      displayValue: rankValue,
+      label: 'RANK',
+      suffix: undefined as string | undefined,
+    },
   ];
 
   return (
@@ -176,6 +198,13 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
 
       {/* Desktop: elevated card with photo anchored bottom-right */}
       <div className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg overflow-hidden min-h-[300px] lg:min-h-[320px]">
+        <BorderBeam
+          size={120}
+          duration={8}
+          colorFrom="hsl(var(--primary))"
+          colorTo="rgba(255,255,255,0.1)"
+          borderWidth={1}
+        />
         {/* Card content — right padding reserves space for photo */}
         <div className={`p-6 lg:p-8 ${hasPhoto ? 'pr-[44%] lg:pr-[48%]' : ''}`}>
           {/* Greeting */}
@@ -197,7 +226,14 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
                 className={`flex-1 ${i > 0 ? 'pl-4 lg:pl-6 border-l border-white/10' : ''} ${i < stats.length - 1 ? 'pr-4 lg:pr-6' : ''}`}
               >
                 <div className="text-2xl font-bold text-white leading-none">
-                  {stat.value}
+                  {stat.numericValue !== null ? (
+                    <NumberTicker
+                      value={stat.numericValue}
+                      className="text-2xl font-bold text-white"
+                    />
+                  ) : (
+                    <span className="tabular-nums">{stat.displayValue}</span>
+                  )}
                   {stat.suffix && (
                     <span className="text-sm font-normal text-white/50 ml-1">{stat.suffix}</span>
                   )}

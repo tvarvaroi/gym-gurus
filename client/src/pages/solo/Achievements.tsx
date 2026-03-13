@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import { NumberTicker } from '@/components/ui/number-ticker';
+import { AnimatedCircularProgressBar } from '@/components/ui/animated-circular-progress-bar';
 import { RoninIcon } from '@/components/icons/RoninIcon';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -222,15 +224,27 @@ export default function Achievements() {
 
         {/* Stats — only show when achievements are defined */}
         {mappedAchievements.length > 0 && (
-          <div className="flex gap-4">
-            <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
-              <p className="text-2xl font-light text-amber-400">
-                {earnedCount}/{mappedAchievements.length}
-              </p>
-              <p className="text-xs text-muted-foreground">Unlocked</p>
+          <div className="flex items-center gap-4">
+            {/* Circular unlock progress */}
+            <div className="relative">
+              <AnimatedCircularProgressBar
+                value={Math.round((earnedCount / mappedAchievements.length) * 100)}
+                max={100}
+                gaugePrimaryColor="hsl(var(--primary))"
+                gaugeSecondaryColor="hsl(var(--muted))"
+                className="size-20 text-sm"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[11px] font-bold leading-none">
+                  {earnedCount}/{mappedAchievements.length}
+                </span>
+                <span className="text-[9px] text-muted-foreground mt-0.5">unlocked</span>
+              </div>
             </div>
             <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
-              <p className="text-2xl font-light text-purple-400">{totalXP.toLocaleString()}</p>
+              <p className="text-2xl font-light text-amber-400 tabular-nums">
+                <NumberTicker value={totalXP} className="text-2xl font-light text-amber-400" />
+              </p>
               <p className="text-xs text-muted-foreground">XP Earned</p>
             </div>
           </div>
