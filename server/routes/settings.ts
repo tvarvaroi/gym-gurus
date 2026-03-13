@@ -166,20 +166,30 @@ router.post(
       let mimeType = req.file.mimetype;
 
       try {
+        // Pre-process: normalize contrast + slight brightness boost so the
+        // segmentation model handles dark-on-dark photos (e.g. dark jacket on
+        // dark background) more reliably. Output is only used for BG removal.
+        const preprocessedBuffer = await sharp(req.file.buffer)
+          .normalize()
+          .modulate({ brightness: 1.1, saturation: 1.1 })
+          .jpeg({ quality: 95 })
+          .toBuffer();
+
         // Server-side background removal (model cached after first call)
         const { removeBackground } = await import('@imgly/background-removal-node');
-        const inputBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
+        const inputBlob = new Blob([preprocessedBuffer], { type: 'image/jpeg' });
         const resultBlob = await removeBackground(inputBlob);
         const arrayBuffer = await resultBlob.arrayBuffer();
         processedBuffer = Buffer.from(arrayBuffer);
         mimeType = 'image/png';
-        // Normalize to 600×900 canvas: trim transparent edges, place subject
-        // bottom-right so the person stands at the card's right edge in the UI.
+
+        // Normalize to 600×900 canvas: trim transparent edges, center subject
+        // at bottom so all photo types render at consistent scale in the card.
         processedBuffer = await sharp(processedBuffer)
           .trim()
           .resize(600, 900, {
             fit: 'contain',
-            position: 'south east',
+            position: 'south',
             background: { r: 0, g: 0, b: 0, alpha: 0 },
           })
           .png()
