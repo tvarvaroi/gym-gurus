@@ -20,6 +20,10 @@
 
 - [[notes/decisions]]
 
+## Design
+
+- [[notes/design-upgrade-plan]]
+
 ## Resources
 
 - [[maps/resources-index]]
