@@ -1,6 +1,38 @@
 # CLAUDE.md — GymGurus Developer Reference
 
-> Last updated: 2026-03-09 | Full skills inventory — 139+ skills across 5 locations including frontend-design plugin + ui-ux-pro-max
+> Last updated: 2026-03-13 | Full skills inventory — 139+ skills across 5 locations including frontend-design plugin + ui-ux-pro-max
+
+---
+
+## Second Brain — Obsidian Knowledge System
+
+This project uses `_brain/` as a shared knowledge base between Obsidian and Claude Code.
+
+### On EVERY task — read first:
+
+1. `_brain/maps/gymgurus-overview.md` — project orientation
+2. `_brain/notes/gotchas.md` — hours of debugging stored here, check before touching anything
+3. Any relevant note from `_brain/notes/` before starting work
+
+### When you discover something new — write immediately:
+
+- New gotcha → append to `_brain/notes/gotchas.md`
+- New architectural decision → append to `_brain/notes/decisions.md`
+- New pattern discovered → create `_brain/notes/[topic].md`
+
+### When researching external libraries or APIs — always use webfetch:
+
+- Fetch the official docs URL
+- Save to `_brain/resources/[library-name].md` with source URL and fetch date at top
+- Add entry to `_brain/maps/resources-index.md`
+- NEVER rely on training data alone for library APIs — always fetch current docs first
+
+### Zettelkasten rules:
+
+- Every note is self-contained — readable without needing other notes
+- Link related notes with `[[note-name]]` syntax
+- Maps link, they do not explain
+- Inbox is temporary — process into notes within the same session
 
 ---
 
