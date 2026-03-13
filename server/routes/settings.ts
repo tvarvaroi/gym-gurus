@@ -166,20 +166,9 @@ router.post(
       let mimeType = req.file.mimetype;
 
       try {
-        // Pre-process: aggressive contrast enhancement for dark-on-dark photos.
-        // sharp 0.34.5 supports clahe. Only used for BG removal — not stored.
-        const preprocessedBuffer = await sharp(req.file.buffer)
-          .normalize()
-          .clahe({ width: 3, height: 3, maxSlope: 3 })
-          .modulate({ brightness: 1.25, saturation: 1.3 })
-          .linear(1.3, -20)
-          .sharpen({ sigma: 0.8 })
-          .jpeg({ quality: 95 })
-          .toBuffer();
-
         // Server-side background removal (model cached after first call)
         const { removeBackground } = await import('@imgly/background-removal-node');
-        const inputBlob = new Blob([preprocessedBuffer], { type: 'image/jpeg' });
+        const inputBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
         const resultBlob = await removeBackground(inputBlob);
         const arrayBuffer = await resultBlob.arrayBuffer();
         processedBuffer = Buffer.from(arrayBuffer);
