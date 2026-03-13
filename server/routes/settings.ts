@@ -174,40 +174,7 @@ router.post(
         processedBuffer = Buffer.from(arrayBuffer);
         mimeType = 'image/png';
 
-        // Smart center-anchored placement on 600×900 canvas.
-        // Subject is right-anchored; vertical center locked at 52% of canvas height
-        // so different-height subjects always appear at the same visual position.
-        const TARGET_W = 600;
-        const TARGET_H = 900;
-        const CENTER_Y = 0.52;
-
-        const trimmed = sharp(processedBuffer).trim();
-        const { width: subW, height: subH } = await trimmed.metadata();
-
-        const scaleRatio = Math.min(TARGET_W / subW!, TARGET_H / subH!);
-        const scaledW = Math.round(subW! * scaleRatio);
-        const scaledH = Math.round(subH! * scaleRatio);
-
-        const scaledBuffer = await trimmed
-          .resize(scaledW, scaledH, { fit: 'fill' })
-          .png()
-          .toBuffer();
-
-        const subjectCenterY = Math.round(TARGET_H * CENTER_Y);
-        const topOffset = Math.max(0, subjectCenterY - Math.round(scaledH / 2));
-        const leftOffset = TARGET_W - scaledW;
-
-        processedBuffer = await sharp({
-          create: {
-            width: TARGET_W,
-            height: TARGET_H,
-            channels: 4,
-            background: { r: 0, g: 0, b: 0, alpha: 0 },
-          },
-        })
-          .composite([{ input: scaledBuffer, top: topOffset, left: leftOffset }])
-          .png()
-          .toBuffer();
+        processedBuffer = await sharp(processedBuffer).trim().png().toBuffer();
       } catch (bgError) {
         console.error('Background removal failed, using original:', bgError);
       }

@@ -226,7 +226,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
               <img
                 src={user.profileImageUrl}
                 alt={user.firstName || 'Profile'}
-                className="absolute right-0 bottom-0 h-full w-auto max-w-none"
+                className="w-full h-full object-contain object-center"
               />
               {/* Change photo badge */}
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
