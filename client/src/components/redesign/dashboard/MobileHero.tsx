@@ -177,7 +177,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
       {/* Desktop: elevated card with photo anchored bottom-right */}
       <div className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg overflow-hidden min-h-[300px] lg:min-h-[320px]">
         {/* Card content — right padding reserves space for photo */}
-        <div className={`p-6 lg:p-8 ${hasPhoto ? 'pr-[190px] lg:pr-[250px]' : ''}`}>
+        <div className={`p-6 lg:p-8 ${hasPhoto ? 'pr-[37%] lg:pr-[42%]' : ''}`}>
           {/* Greeting */}
           <p className="text-xs tracking-[0.2em] uppercase text-white/40 mb-2">{greeting}</p>
 
@@ -221,7 +221,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
 
         {/* Photo — spans full card height, anchored to right edge */}
         {hasPhoto ? (
-          <div className="absolute right-0 top-10 bottom-0 w-[170px] lg:w-[230px]">
+          <div className="absolute right-0 top-10 bottom-0 w-[35%] lg:w-[40%]">
             <label className="relative cursor-pointer group block h-full">
               <img
                 src={user.profileImageUrl}
