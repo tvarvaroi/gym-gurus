@@ -218,28 +218,59 @@ Community copy-paste components. Key categories:
 
 ## PART 3 — IMPLEMENTATION PHASES
 
-### Phase 1 — Foundation (do first, highest ROI)
+### Phase 1 — Foundation ✅ COMPLETED 2026-03-14 (commit 413d760)
 
-1. `NumberTicker` — replaces ALL static stat numbers across every role
-2. `BlurFade` — staggered page load entrance on every dashboard
-3. `AnimatedCircularProgressBar` — all progress rings
-4. `BorderBeam` — all active card states
+**Components installed** (all in `client/src/components/ui/`):
 
-### Phase 2 — Showcase moments
+- `number-ticker.tsx` — spring-animated count-up, triggers on scroll-into-view
+- `blur-fade.tsx` — blur+fade entrance with configurable direction/delay
+- `animated-circular-progress-bar.tsx` — CSS-animated SVG ring, no extra deps
+- `border-beam.tsx` — framer-motion `offsetPath` traveling gradient border
+
+**Applied:**
+
+| Component                     | Files changed       | What                                                                      |
+| ----------------------------- | ------------------- | ------------------------------------------------------------------------- |
+| `NumberTicker`                | `QuickStats.tsx`    | 3 of 4 stats (workouts, streak, PRs) — volume stays string (formatVolume) |
+| `NumberTicker`                | `MobileHero.tsx`    | 2 desktop stats (totalWorkouts, streak) — volume & rank stay string       |
+| `NumberTicker`                | `ProgressPage.tsx`  | Total Workouts, Total Volume, Total Sets                                  |
+| `NumberTicker`                | `Achievements.tsx`  | XP Earned counter                                                         |
+| `BlurFade`                    | `SoloDashboard.tsx` | 8 sections, delays 0.05–0.40s                                             |
+| `AnimatedCircularProgressBar` | `Achievements.tsx`  | Header unlock % ring (replaces plain text ratio)                          |
+| `BorderBeam`                  | `MobileHero.tsx`    | Desktop hero card — **REVERTED** (wrong domain pattern)                   |
+| `BorderBeam`                  | `ActionZone.tsx`    | Today's workout card — **REVERTED** (wrong domain pattern)                |
+
+**NOT yet done (still todo for Phase 1 scope):**
+
+- NumberTicker on Guru dashboard stats
+- NumberTicker on Disciple dashboard stats
+- BlurFade on non-dashboard pages (Workouts, Recovery, Achievements, AI Coach)
+- AnimatedCircularProgressBar on Nutrition macros, Recovery muscle groups
+- BorderBeam reverted from hero + ActionZone — see design-language.md for correct patterns
+
+> ⚠️ **DESIGN LANGUAGE GATE**: Phases 2–4 below were written before `_brain/notes/design-language.md` was completed. Re-evaluate every component against that document before implementing. The following are explicitly flagged as **SaaS-landing patterns — do not implement in the app**:
+>
+> - `Confetti` — celebration overkill for a performance/discipline domain
+> - `SparklesText` — decorative noise, not earned signal
+> - `WobbleCard` — playful 3D tilt conflicts with serious training context
+> - `ShimmerButton` — SaaS-marketing CTA, not appropriate for in-app actions
+> - `BorderBeam` — too decorative for functional UI cards (hero, workout card)
+
+### Phase 2 — Showcase moments (RE-EVALUATE against design-language.md before starting)
 
 5. Workout execution: set completion + rest timer ring
-6. Achievement unlock: Confetti + SparklesText
-7. Landing hero: LampEffect or BackgroundBeams
+6. Achievement unlock: motion treatment TBD (Confetti/SparklesText flagged — do not use)
+7. Landing hero: LampEffect or BackgroundBeams (landing only, not app interior)
 8. Workout Plans: Display Cards
 
-### Phase 3 — Polish
+### Phase 3 — Polish (RE-EVALUATE against design-language.md before starting)
 
 9. MagicCard on all major cards
-10. WobbleCard on feature/plan cards
-11. ShimmerButton on all primary CTAs
+10. WobbleCard — FLAGGED, do not implement
+11. ShimmerButton — FLAGGED, do not implement
 12. Chart replacements
 
-### Phase 4 — Premium / 3D
+### Phase 4 — Premium / 3D (RE-EVALUATE against design-language.md before starting)
 
 13. Achievement 3D badge (R3F + framer-motion-3d)
 14. Body map SVG for Recovery page

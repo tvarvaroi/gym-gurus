@@ -7,7 +7,6 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useToast } from '@/hooks/use-toast';
 import { formatVolume } from '@/lib/format';
 import { NumberTicker } from '@/components/ui/number-ticker';
-import { BorderBeam } from '@/components/ui/border-beam';
 
 interface MobileHeroProps {
   user: any;
@@ -198,13 +197,6 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
 
       {/* Desktop: elevated card with photo anchored bottom-right */}
       <div className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg overflow-hidden min-h-[300px] lg:min-h-[320px]">
-        <BorderBeam
-          size={120}
-          duration={8}
-          colorFrom="hsl(var(--primary))"
-          colorTo="rgba(255,255,255,0.1)"
-          borderWidth={1}
-        />
         {/* Card content — right padding reserves space for photo */}
         <div className={`p-6 lg:p-8 ${hasPhoto ? 'pr-[44%] lg:pr-[48%]' : ''}`}>
           {/* Greeting */}
