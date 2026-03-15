@@ -39,28 +39,37 @@ export async function generateAccessCode(): Promise<string> {
 
 /**
  * Create an access code for a client.
- * Deactivates any existing active code first.
+ *
+ * The client_access_codes table has a UNIQUE constraint on client_id, so each
+ * client can only ever have ONE row.  We use an upsert: if a row already exists
+ * we UPDATE it in place; otherwise we INSERT a fresh row.  This replaces the
+ * previous deactivate-then-insert pattern which violated the unique constraint
+ * on the second call.
  */
 export async function createAccessCodeForClient(
   clientId: string,
   trainerId: string
 ): Promise<string> {
   const db = await getDb();
-
-  // Deactivate existing active codes for this client
-  await db
-    .update(clientAccessCodes)
-    .set({ isActive: false })
-    .where(and(eq(clientAccessCodes.clientId, clientId), eq(clientAccessCodes.isActive, true)));
-
   const code = await generateAccessCode();
 
-  await db.insert(clientAccessCodes).values({
-    clientId,
-    accessCode: code,
-    isActive: true,
-    createdBy: trainerId,
-  });
+  await db
+    .insert(clientAccessCodes)
+    .values({
+      clientId,
+      accessCode: code,
+      isActive: true,
+      createdBy: trainerId,
+    })
+    .onConflictDoUpdate({
+      target: clientAccessCodes.clientId,
+      set: {
+        accessCode: code,
+        isActive: true,
+        createdBy: trainerId,
+        lastUsedAt: null,
+      },
+    });
 
   return code;
 }
@@ -103,7 +112,13 @@ export async function validateAccessCode(code: string): Promise<typeof users.$in
   const [existingUser] = await db
     .select()
     .from(users)
-    .where(and(eq(users.email, client.email.toLowerCase()), eq(users.role, 'client'), isNull(users.deletedAt)))
+    .where(
+      and(
+        eq(users.email, client.email.toLowerCase()),
+        eq(users.role, 'client'),
+        isNull(users.deletedAt)
+      )
+    )
     .limit(1);
 
   if (existingUser) return existingUser;
@@ -144,7 +159,9 @@ export async function regenerateAccessCode(
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.trainerId, trainerId), isNull(clients.deletedAt)))
+    .where(
+      and(eq(clients.id, clientId), eq(clients.trainerId, trainerId), isNull(clients.deletedAt))
+    )
     .limit(1);
 
   if (!client) return null;
@@ -162,7 +179,9 @@ export async function revokeAccessCode(clientId: string, trainerId: string): Pro
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.trainerId, trainerId), isNull(clients.deletedAt)))
+    .where(
+      and(eq(clients.id, clientId), eq(clients.trainerId, trainerId), isNull(clients.deletedAt))
+    )
     .limit(1);
 
   if (!client) return false;
@@ -188,7 +207,9 @@ export async function getActiveAccessCode(
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, clientId), eq(clients.trainerId, trainerId), isNull(clients.deletedAt)))
+    .where(
+      and(eq(clients.id, clientId), eq(clients.trainerId, trainerId), isNull(clients.deletedAt))
+    )
     .limit(1);
 
   if (!client) return null;

@@ -64,8 +64,11 @@ export default function DiscipleLoginPage() {
 
       if (response.ok) {
         const result = await response.json();
+        // Populate cache immediately so AuthGuard reads it before the network
+        // refetch completes, then invalidate to trigger a fresh fetch that
+        // confirms the session cookie is set.
         queryClient.setQueryData(['/api/auth/user'], result.user);
-        queryClient.setQueryData(['/api/auth/me'], result.user);
+        await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
         setLocation('/dashboard');
       } else {
         const err = await response.json();
