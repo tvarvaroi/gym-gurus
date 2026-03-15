@@ -3,6 +3,11 @@
 > Comprehensive read-only audit. Accuracy-first. Written for future Claude Code sessions.
 > Last updated: 2026-03-14
 
+## Repository
+
+- **GitHub:** https://github.com/tvarvaroi/gym-gurus
+- **Live:** https://gym-gurus-production.up.railway.app
+
 ---
 
 ## PAGES — By Role

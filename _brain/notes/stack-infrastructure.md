@@ -1,5 +1,12 @@
 # Stack — Infrastructure
 
+## Repository
+
+- **GitHub:** https://github.com/tvarvaroi/gym-gurus
+- **Live:** https://gym-gurus-production.up.railway.app
+- Main branch deploys automatically to Railway via Nixpacks
+- Can be cloned and referenced in any future session
+
 ## Hosting
 
 - **Railway** — auto-deploys from `main` branch via GitHub integration.
