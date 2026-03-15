@@ -222,7 +222,11 @@ router.post('/record', async (req: Request, res: Response) => {
     // Send notification to trainer
     try {
       const { notifyPaymentReceived } = await import('../services/notificationService');
-      const client = await database.select().from(clients).where(and(eq(clients.id, clientId), isNull(clients.deletedAt))).limit(1);
+      const client = await database
+        .select()
+        .from(clients)
+        .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
+        .limit(1);
       if (client.length > 0) {
         const amountFormatted = `$${(amountInCents / 100).toFixed(2)}`;
         await notifyPaymentReceived(userId, client[0].name, amountFormatted, result[0].id);
@@ -407,8 +411,8 @@ router.post('/create-checkout-session', async (req: Request, res: Response) => {
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       allow_promotion_codes: true,
-      success_url: `${origin}/pricing?success=true`,
-      cancel_url: `${origin}/pricing`,
+      success_url: `${origin}/payment-success?tier=${tier}`,
+      cancel_url: `${origin}/payment-cancelled`,
       metadata: { userId: user.id, tier },
       subscription_data: {
         metadata: { userId: user.id, tier },

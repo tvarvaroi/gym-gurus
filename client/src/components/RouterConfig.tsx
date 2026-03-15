@@ -82,9 +82,11 @@ const TestAuthLogin = lazy(() => import('@/pages/auth/TestAuthLogin'));
 // Disciple login page
 const DiscipleLoginPage = lazy(() => import('@/pages/DiscipleLoginPage'));
 
-// Pricing and Settings
+// Pricing, Settings and payment result pages
 const PricingPage = lazy(() => import('@/pages/PricingPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess'));
+const PaymentCancelled = lazy(() => import('@/pages/PaymentCancelled'));
 
 // Solo user pages
 const SoloDashboard = lazy(() => import('@/pages/solo/SoloDashboard'));
@@ -283,6 +285,10 @@ export function RouterConfig() {
           {/* Pricing and Settings */}
           <Route path="/pricing" component={lazyRoute(PricingPage)} />
           <Route path="/settings" component={lazyRoute(SettingsPage)} />
+
+          {/* Payment result pages (public — Stripe redirects here) */}
+          <Route path="/payment-success" component={lazyRoute(PaymentSuccess)} />
+          <Route path="/payment-cancelled" component={lazyRoute(PaymentCancelled)} />
 
           {/* Landing page — must be last before 404 */}
           <Route path="/" component={lazyRoute(LandingPage)} />

@@ -16,6 +16,8 @@ export function isPublicRoute(pathname: string): boolean {
     pathname === '/privacy' ||
     pathname.startsWith('/calculators') ||
     pathname === '/disciple-login' ||
+    pathname === '/payment-success' ||
+    pathname === '/payment-cancelled' ||
     pathname.startsWith('/auth/') ||
     // Debug routes exist only in dev builds — tree-shaken in production
     (import.meta.env.DEV &&

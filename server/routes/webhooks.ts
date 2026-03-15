@@ -216,6 +216,7 @@ function extractTierFromSubscription(subscription: any): string | null {
   const priceId = subscription.items?.data?.[0]?.price?.id;
   if (!priceId) return null;
   if (priceId === process.env.STRIPE_PRICE_ID_SOLO) return 'solo';
+  if (priceId === process.env.STRIPE_PRICE_ID_SOLO_AI) return 'solo_ai';
   if (priceId === process.env.STRIPE_PRICE_ID_TRAINER) return 'trainer';
   if (priceId === process.env.STRIPE_PRICE_ID_PRO) return 'pro';
   return null;

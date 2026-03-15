@@ -623,13 +623,15 @@ if (import.meta.env.DEV) { /* client-side debug routes */ }
 
 ---
 
-### § VA-1 — CRITICAL: `/disciple-login` broken
+### § VA-1 — ✅ RESOLVED (2026-03-15): `/disciple-login` fixed and verified in production
 
-**Skill:** `playwright-pro` (`/pw:generate` a test to catch this regression)
+**Root causes fixed:**
 
-Navigating to `/disciple-login` renders the landing carousel. **Client users cannot log in.**
+1. `UserContext.tsx` missing `/disciple-login` in `isPublicPage` list — caused unnecessary auth API call that triggered redirect
+2. `server/services/accessCode.ts` — UNIQUE constraint on `clientId` caused access code regeneration to fail; fixed with `INSERT ... ON CONFLICT (clientId) DO UPDATE` upsert
+3. `DiscipleLoginPage.tsx` — added `queryClient.invalidateQueries` after `setQueryData` to ensure auth state propagates correctly
 
-Check `App.tsx` — the `<Route path="/disciple-login">` component binding is missing or wrong.
+**Verified:** Playwright screenshot confirms code `GG-WQVD-KAJX` submits → navigates to `/dashboard` → Disciple dashboard loads with teal theme. E2E regression test: `e2e/disciple-login.spec.ts`.
 
 ---
 
@@ -960,7 +962,7 @@ Implemented per `docs/plans/2026-03-09-ux5b-empty-states-guru-disciple.md`.
 | Issue                          | BV  | TC  | RR  | Effort | WSJF     | Sprint   |
 | ------------------------------ | --- | --- | --- | ------ | -------- | -------- |
 | § BE-7 Guru dashboard broken   | 10  | 10  | 10  | 1      | **30**   | Now      |
-| § VA-1 disciple login broken   | 10  | 10  | 8   | 1      | **28**   | Now      |
+| § VA-1 disciple login broken   | 10  | 10  | 8   | 1      | **28**   | ✅ Done  |
 | § VA-6/7 personal data in prod | 8   | 10  | 7   | 1      | **25**   | Now      |
 | § SEC-1 mock data in prod      | 9   | 10  | 10  | 2      | **14.5** | Now      |
 | § SEC-5 CSP inline violation   | 5   | 8   | 9   | 3      | **7.3**  | Sprint 1 |

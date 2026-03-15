@@ -49,6 +49,11 @@ const optionalEnvSchema = z.object({
   // Stripe Payments
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  // Stripe Price IDs — one per subscription tier (set in Railway environment)
+  STRIPE_PRICE_ID_SOLO: z.string().optional(),
+  STRIPE_PRICE_ID_SOLO_AI: z.string().optional(),
+  STRIPE_PRICE_ID_TRAINER: z.string().optional(),
+  STRIPE_PRICE_ID_PRO: z.string().optional(),
 
   // Analytics (client-side, exposed via Vite)
   VITE_GA_MEASUREMENT_ID: z.string().optional(),
@@ -153,6 +158,16 @@ function warnOptionalVars(config: EnvConfig): void {
       key: 'STRIPE_WEBHOOK_SECRET',
       feature: 'Stripe webhook verification',
       set: !!config.STRIPE_WEBHOOK_SECRET,
+    },
+    {
+      key: 'STRIPE_PRICE_ID_SOLO / SOLO_AI / TRAINER / PRO',
+      feature: 'Stripe Checkout tier subscriptions',
+      set: !!(
+        config.STRIPE_PRICE_ID_SOLO &&
+        config.STRIPE_PRICE_ID_SOLO_AI &&
+        config.STRIPE_PRICE_ID_TRAINER &&
+        config.STRIPE_PRICE_ID_PRO
+      ),
     },
     {
       key: 'VITE_GA_MEASUREMENT_ID',

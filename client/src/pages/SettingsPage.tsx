@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 import { getRoleDisplayName, type InternalRole } from '@/lib/roles';
+import { apiRequest } from '@/lib/queryClient';
 // Inline subscription helpers (mirrors server/services/subscription.ts logic)
 function isInTrial(user: {
   trialEndsAt?: string | null;
@@ -655,7 +656,7 @@ function SubscriptionTab() {
 
   const openPortal = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/payments/create-portal-session', { method: 'POST' });
+      const res = await apiRequest('POST', '/api/payments/create-portal-session', {});
       if (!res.ok) throw new Error('Failed to open billing portal');
       return res.json();
     },
