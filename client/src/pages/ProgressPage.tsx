@@ -16,6 +16,7 @@ import {
   Users,
   Trophy,
   CheckCircle,
+  Zap,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProgressFormModal from '../components/ProgressFormModal';
@@ -23,14 +24,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/contexts/UserContext';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
-// Import all chart components directly
+import {
+  ZoneBandChart,
+  PeriodToggle,
+  type Period,
+} from '@/components/redesign/charts/ZoneBandChart';
+// Import recharts for trainer/client progress charts
 import {
   Bar,
   BarChart,
   AreaChart,
   Area,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -57,6 +61,8 @@ interface Client {
 export default function ProgressPage() {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [volumePeriod, setVolumePeriod] = useState<Period>('4W');
+  const [trendPeriod, setTrendPeriod] = useState<Period>('6M');
   const prefersReducedMotion = useReducedMotion();
 
   // Get current user and role from context
@@ -129,6 +135,85 @@ export default function ProgressPage() {
     enabled: isSolo,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Period-filtered data for zone-band charts
+  const filterByPeriod = useMemo(() => {
+    const periodDays: Record<Period, number> = { '7D': 7, '4W': 28, '6M': 182, '1Y': 365 };
+    return (history: { date: string; volume: number; [k: string]: any }[], period: Period) => {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - periodDays[period]);
+      return history
+        .filter((w) => new Date(w.date) >= cutoff)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    };
+  }, []);
+
+  const volumeChartData = useMemo(() => {
+    if (!soloProgress?.weeklyData) return [];
+    // weeklyData has { week, volume, workouts } — use as-is for volume chart
+    const periodDays: Record<Period, number> = { '7D': 7, '4W': 28, '6M': 182, '1Y': 365 };
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - periodDays[volumePeriod]);
+    // weeklyData 'week' labels like "Mar 3", so we use all for now (API gives limited weeks)
+    return soloProgress.weeklyData
+      .filter((w) => w.volume > 0)
+      .map((w) => ({ label: w.week, value: w.volume }));
+  }, [soloProgress?.weeklyData, volumePeriod]);
+
+  const trendChartData = useMemo(() => {
+    if (!soloProgress?.history) return [];
+    const filtered = filterByPeriod(soloProgress.history, trendPeriod);
+    return filtered.map((w) => ({
+      label: new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      value: w.volume,
+    }));
+  }, [soloProgress?.history, trendPeriod, filterByPeriod]);
+
+  // Compute volume zones based on data range
+  const volumeZones = useMemo(() => {
+    if (volumeChartData.length < 2) return undefined;
+    const vals = volumeChartData.map((d) => d.value);
+    const max = Math.max(...vals);
+    const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+    return [
+      { label: 'Detraining', min: 0, max: avg * 0.5, color: 'rgba(239, 68, 68, 0.04)' },
+      { label: 'Moderate', min: avg * 0.5, max: avg * 0.85, color: 'rgba(245, 158, 11, 0.04)' },
+      { label: 'Optimal', min: avg * 0.85, max: max * 1.2, color: 'rgba(34, 197, 94, 0.04)' },
+    ];
+  }, [volumeChartData]);
+
+  const trendZones = useMemo(() => {
+    if (trendChartData.length < 2) return undefined;
+    const vals = trendChartData.map((d) => d.value);
+    const max = Math.max(...vals);
+    const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+    return [
+      { label: 'Detraining', min: 0, max: avg * 0.5, color: 'rgba(239, 68, 68, 0.04)' },
+      { label: 'Moderate', min: avg * 0.5, max: avg * 0.85, color: 'rgba(245, 158, 11, 0.04)' },
+      { label: 'Optimal', min: avg * 0.85, max: max * 1.2, color: 'rgba(34, 197, 94, 0.04)' },
+    ];
+  }, [trendChartData]);
+
+  // Training load ratio (current week vs 4-week avg)
+  const trainingLoadRatio = useMemo(() => {
+    if (!soloProgress?.weeklyData || soloProgress.weeklyData.length < 2) return null;
+    const data = soloProgress.weeklyData;
+    const currentWeek = data[data.length - 1]?.volume || 0;
+    const prev4 = data.slice(Math.max(0, data.length - 5), data.length - 1);
+    if (prev4.length === 0) return null;
+    const avg4 = prev4.reduce((s, w) => s + w.volume, 0) / prev4.length;
+    if (avg4 === 0) return null;
+    const ratio = currentWeek / avg4;
+    return {
+      ratio: Math.round(ratio * 100) / 100,
+      currentWeek,
+      avg4Week: Math.round(avg4),
+      status: ratio > 1.3 ? 'high' : ratio < 0.8 ? 'low' : 'optimal',
+      statusLabel: ratio > 1.3 ? 'High Load' : ratio < 0.8 ? 'Detraining Risk' : 'Sweet Spot',
+      statusColor: ratio > 1.3 ? 'text-amber-400' : ratio < 0.8 ? 'text-red-400' : 'text-green-400',
+      barColor: ratio > 1.3 ? 'bg-amber-400' : ratio < 0.8 ? 'bg-red-400' : 'bg-green-400',
+    };
+  }, [soloProgress?.weeklyData]);
 
   // Fetch selected client's progress - using development endpoint that doesn't require auth
   const { data: progressData = [], isLoading: loadingProgress } = useQuery<ProgressEntry[]>({
@@ -431,98 +516,201 @@ export default function ProgressPage() {
             </Card>
           </motion.div>
 
-          {/* Weekly Volume Chart */}
+          {/* Weekly Volume — Zone Band Chart */}
           {soloProgress.weeklyData.some((w) => w.volume > 0) && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
-                <CardHeader>
-                  <CardTitle className="text-lg font-light">Weekly Volume</CardTitle>
-                  <CardDescription>Total volume lifted per week (kg)</CardDescription>
+              <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg font-light flex items-center gap-2">
+                        <Weight className="w-5 h-5 text-primary" />
+                        Weekly Volume
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        Total volume lifted per week
+                      </CardDescription>
+                    </div>
+                    <PeriodToggle value={volumePeriod} onChange={setVolumePeriod} />
+                  </div>
+                  {/* Hero number */}
+                  <div className="mt-3">
+                    <span className="text-3xl font-bold text-foreground">
+                      <NumberTicker
+                        value={volumeChartData[volumeChartData.length - 1]?.value || 0}
+                        className="text-3xl font-bold"
+                      />
+                    </span>
+                    <span className="text-sm font-light text-muted-foreground ml-1">
+                      kg this week
+                    </span>
+                    {volumeChartData.length >= 2 &&
+                      (() => {
+                        const curr = volumeChartData[volumeChartData.length - 1]?.value || 0;
+                        const prev = volumeChartData[volumeChartData.length - 2]?.value || 0;
+                        if (prev === 0) return null;
+                        const pct = ((curr - prev) / prev) * 100;
+                        const isUp = pct > 0;
+                        return (
+                          <span
+                            className={`ml-2 text-xs font-medium ${isUp ? 'text-green-400' : 'text-red-400'}`}
+                          >
+                            {isUp ? (
+                              <TrendingUp className="w-3 h-3 inline mr-0.5" />
+                            ) : (
+                              <TrendingDown className="w-3 h-3 inline mr-0.5" />
+                            )}
+                            {Math.abs(pct).toFixed(0)}%
+                          </span>
+                        );
+                      })()}
+                  </div>
                 </CardHeader>
-                <CardContent className="-mx-2 md:mx-0">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={soloProgress.weeklyData}>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
-                      <XAxis
-                        dataKey="week"
-                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      />
-                      <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <Bar dataKey="volume" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <CardContent className="pt-0">
+                  <ZoneBandChart
+                    data={volumeChartData}
+                    zones={volumeZones}
+                    height={200}
+                    unit="kg"
+                    showAverage
+                  />
                 </CardContent>
               </Card>
             </motion.div>
           )}
 
-          {/* Volume Trend AreaChart */}
+          {/* Volume Trend — Zone Band Chart */}
           {soloProgress.history.length >= 3 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
             >
-              <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
-                <CardHeader>
-                  <CardTitle className="text-lg font-light flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    Volume Trend
-                  </CardTitle>
-                  <CardDescription>Per-session volume over time (kg)</CardDescription>
-                </CardHeader>
-                <CardContent className="-mx-2 md:mx-0">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart
-                      data={[...soloProgress.history]
-                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                        .map((w) => ({
-                          date: new Date(w.date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          }),
-                          volume: w.volume,
-                        }))}
-                    >
-                      <defs>
-                        <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-20" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+              <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg font-light flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-primary" />
+                        Volume Trend
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        Per-session volume over time
+                      </CardDescription>
+                    </div>
+                    <PeriodToggle value={trendPeriod} onChange={setTrendPeriod} />
+                  </div>
+                  {/* Hero number */}
+                  <div className="mt-3">
+                    <span className="text-3xl font-bold text-foreground">
+                      <NumberTicker
+                        value={trendChartData[trendChartData.length - 1]?.value || 0}
+                        className="text-3xl font-bold"
                       />
-                      <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
+                    </span>
+                    <span className="text-sm font-light text-muted-foreground ml-1">
+                      kg last session
+                    </span>
+                    {trendChartData.length >= 2 &&
+                      (() => {
+                        const curr = trendChartData[trendChartData.length - 1]?.value || 0;
+                        const prev = trendChartData[trendChartData.length - 2]?.value || 0;
+                        if (prev === 0) return null;
+                        const pct = ((curr - prev) / prev) * 100;
+                        const isUp = pct > 0;
+                        return (
+                          <span
+                            className={`ml-2 text-xs font-medium ${isUp ? 'text-green-400' : 'text-red-400'}`}
+                          >
+                            {isUp ? (
+                              <TrendingUp className="w-3 h-3 inline mr-0.5" />
+                            ) : (
+                              <TrendingDown className="w-3 h-3 inline mr-0.5" />
+                            )}
+                            {Math.abs(pct).toFixed(0)}%
+                          </span>
+                        );
+                      })()}
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <ZoneBandChart
+                    data={trendChartData}
+                    zones={trendZones}
+                    height={200}
+                    unit="kg"
+                    showAverage
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Training Load Ratio */}
+          {trainingLoadRatio && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.17 }}
+            >
+              <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-light flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-primary" />
+                    Training Load Ratio
+                  </CardTitle>
+                  <CardDescription>This week vs 4-week average (ACWR)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-end gap-6 mb-4">
+                    <div>
+                      <span className="text-4xl font-bold text-foreground">
+                        {trainingLoadRatio.ratio.toFixed(2)}
+                      </span>
+                      <span className={`ml-2 text-sm font-medium ${trainingLoadRatio.statusColor}`}>
+                        {trainingLoadRatio.statusLabel}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Visual ratio bar */}
+                  <div className="space-y-3">
+                    <div className="relative h-3 bg-white/[0.04] rounded-full overflow-hidden">
+                      {/* Zone markers */}
+                      <div className="absolute left-[38%] top-0 h-full w-px bg-white/10" />
+                      <div className="absolute left-[62%] top-0 h-full w-px bg-white/10" />
+                      {/* Current position */}
+                      <div
+                        className={`absolute top-0 h-full rounded-full transition-all duration-700 ${trainingLoadRatio.barColor}`}
+                        style={{
+                          width: `${Math.min(100, trainingLoadRatio.ratio * 50)}%`,
+                          opacity: 0.8,
                         }}
                       />
-                      <Area
-                        type="monotone"
-                        dataKey="volume"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={2}
-                        fill="url(#volumeGradient)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                    </div>
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>Detraining</span>
+                      <span>Sweet Spot (0.8–1.3)</span>
+                      <span>Overreaching</span>
+                    </div>
+                    <div className="flex gap-6 text-xs text-muted-foreground mt-2">
+                      <span>
+                        This week:{' '}
+                        <strong className="text-foreground">
+                          {trainingLoadRatio.currentWeek.toLocaleString()} kg
+                        </strong>
+                      </span>
+                      <span>
+                        4-wk avg:{' '}
+                        <strong className="text-foreground">
+                          {trainingLoadRatio.avg4Week.toLocaleString()} kg
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
