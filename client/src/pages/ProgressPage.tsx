@@ -194,26 +194,42 @@ export default function ProgressPage() {
     ];
   }, [trendChartData]);
 
-  // Training load ratio (current week vs 4-week avg)
+  // Real training readiness from ACWR endpoint
+  const { data: readinessData } = useQuery<{
+    score: number;
+    status: 'optimal' | 'moderate' | 'low';
+    acuteLoad: number;
+    chronicLoad: number;
+    ratio: number;
+    recommendation: string;
+  }>({
+    queryKey: ['/api/solo/readiness'],
+    enabled: isSolo,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Derived training load display from readiness API
   const trainingLoadRatio = useMemo(() => {
-    if (!soloProgress?.weeklyData || soloProgress.weeklyData.length < 2) return null;
-    const data = soloProgress.weeklyData;
-    const currentWeek = data[data.length - 1]?.volume || 0;
-    const prev4 = data.slice(Math.max(0, data.length - 5), data.length - 1);
-    if (prev4.length === 0) return null;
-    const avg4 = prev4.reduce((s, w) => s + w.volume, 0) / prev4.length;
-    if (avg4 === 0) return null;
-    const ratio = currentWeek / avg4;
+    if (!readinessData || (readinessData.acuteLoad === 0 && readinessData.chronicLoad === 0))
+      return null;
+    const { ratio, status, acuteLoad, chronicLoad } = readinessData;
     return {
-      ratio: Math.round(ratio * 100) / 100,
-      currentWeek,
-      avg4Week: Math.round(avg4),
-      status: ratio > 1.3 ? 'high' : ratio < 0.8 ? 'low' : 'optimal',
-      statusLabel: ratio > 1.3 ? 'High Load' : ratio < 0.8 ? 'Detraining Risk' : 'Sweet Spot',
-      statusColor: ratio > 1.3 ? 'text-amber-400' : ratio < 0.8 ? 'text-red-400' : 'text-green-400',
-      barColor: ratio > 1.3 ? 'bg-amber-400' : ratio < 0.8 ? 'bg-red-400' : 'bg-green-400',
+      ratio,
+      currentWeek: acuteLoad,
+      avg4Week: chronicLoad,
+      status,
+      statusLabel:
+        status === 'optimal' ? 'Sweet Spot' : status === 'low' ? 'Needs Recovery' : 'Moderate',
+      statusColor:
+        status === 'optimal'
+          ? 'text-green-400'
+          : status === 'low'
+            ? 'text-red-400'
+            : 'text-amber-400',
+      barColor:
+        status === 'optimal' ? 'bg-green-400' : status === 'low' ? 'bg-red-400' : 'bg-amber-400',
     };
-  }, [soloProgress?.weeklyData]);
+  }, [readinessData]);
 
   // Fetch selected client's progress - using development endpoint that doesn't require auth
   const { data: progressData = [], isLoading: loadingProgress } = useQuery<ProgressEntry[]>({
@@ -650,7 +666,7 @@ export default function ProgressPage() {
             </motion.div>
           )}
 
-          {/* Training Load Ratio */}
+          {/* Training Load Ratio + 4-Week Overview */}
           {trainingLoadRatio && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -661,28 +677,43 @@ export default function ProgressPage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-light flex items-center gap-2">
                     <Zap className="w-5 h-5 text-primary" />
-                    Training Load Ratio
+                    Training Load
                   </CardTitle>
-                  <CardDescription>This week vs 4-week average (ACWR)</CardDescription>
+                  <CardDescription>Acute:Chronic Workload Ratio (ACWR)</CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {/* TLR Hero */}
                   <div className="flex items-end gap-6 mb-4">
                     <div>
                       <span className="text-4xl font-bold text-foreground">
-                        {trainingLoadRatio.ratio.toFixed(2)}
+                        <NumberTicker
+                          value={trainingLoadRatio.ratio}
+                          decimalPlaces={2}
+                          className="text-4xl font-bold"
+                        />
                       </span>
                       <span className={`ml-2 text-sm font-medium ${trainingLoadRatio.statusColor}`}>
                         {trainingLoadRatio.statusLabel}
                       </span>
                     </div>
+                    {readinessData && (
+                      <div className="ml-auto text-right">
+                        <span className="text-xs text-muted-foreground block">Readiness</span>
+                        <span className={`text-2xl font-bold ${trainingLoadRatio.statusColor}`}>
+                          <NumberTicker
+                            value={readinessData.score}
+                            className={`text-2xl font-bold ${trainingLoadRatio.statusColor}`}
+                          />
+                          <span className="text-sm font-light">%</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                   {/* Visual ratio bar */}
                   <div className="space-y-3">
                     <div className="relative h-3 bg-white/[0.04] rounded-full overflow-hidden">
-                      {/* Zone markers */}
                       <div className="absolute left-[38%] top-0 h-full w-px bg-white/10" />
                       <div className="absolute left-[62%] top-0 h-full w-px bg-white/10" />
-                      {/* Current position */}
                       <div
                         className={`absolute top-0 h-full rounded-full transition-all duration-700 ${trainingLoadRatio.barColor}`}
                         style={{
@@ -696,21 +727,50 @@ export default function ProgressPage() {
                       <span>Sweet Spot (0.8–1.3)</span>
                       <span>Overreaching</span>
                     </div>
-                    <div className="flex gap-6 text-xs text-muted-foreground mt-2">
-                      <span>
-                        This week:{' '}
-                        <strong className="text-foreground">
-                          {trainingLoadRatio.currentWeek.toLocaleString()} kg
-                        </strong>
-                      </span>
-                      <span>
-                        4-wk avg:{' '}
-                        <strong className="text-foreground">
-                          {trainingLoadRatio.avg4Week.toLocaleString()} kg
-                        </strong>
-                      </span>
+                  </div>
+
+                  {/* 4-Week Overview Stat Cards */}
+                  <div className="grid grid-cols-3 gap-3 mt-5">
+                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                        Acute (7d)
+                      </p>
+                      <p className="text-lg font-bold">
+                        <NumberTicker
+                          value={trainingLoadRatio.currentWeek}
+                          className="text-lg font-bold"
+                        />
+                        <span className="text-xs font-light text-muted-foreground ml-0.5">kg</span>
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                        Chronic (28d avg)
+                      </p>
+                      <p className="text-lg font-bold">
+                        <NumberTicker
+                          value={trainingLoadRatio.avg4Week}
+                          className="text-lg font-bold"
+                        />
+                        <span className="text-xs font-light text-muted-foreground ml-0.5">kg</span>
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                        Ratio
+                      </p>
+                      <p className={`text-lg font-bold ${trainingLoadRatio.statusColor}`}>
+                        {trainingLoadRatio.ratio.toFixed(2)}
+                      </p>
                     </div>
                   </div>
+
+                  {/* Recommendation */}
+                  {readinessData?.recommendation && (
+                    <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
+                      {readinessData.recommendation}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

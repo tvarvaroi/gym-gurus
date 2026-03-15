@@ -39,6 +39,7 @@ import {
   AlertCircle,
   Heart,
 } from 'lucide-react';
+import { EquipmentSelector } from '@/components/ui/equipment-selector';
 
 // Workout focus options
 const workoutFocusOptions = [
@@ -170,7 +171,7 @@ export default function WorkoutGenerator() {
   const [goal, setGoal] = useState('strength');
   const [inspiredBy, setInspiredBy] = useState('none');
   const [duration, setDuration] = useState([45]);
-  const [equipment, setEquipment] = useState('full_gym');
+  const [equipment, setEquipment] = useState<string[]>(['barbell', 'dumbbells', 'bench']);
   const [includeWarmup, setIncludeWarmup] = useState(true);
   const [includeCooldown, setIncludeCooldown] = useState(true);
   const [difficulty, setDifficulty] = useState('intermediate');
@@ -230,14 +231,16 @@ export default function WorkoutGenerator() {
     setLimitReached(false);
 
     try {
-      // Map equipment UI value to API format
-      const equipmentMap: Record<string, string[]> = {
-        full_gym: ['barbell', 'dumbbells', 'machines', 'cables', 'pull-up bar'],
-        dumbbells: ['dumbbells'],
-        barbell: ['barbell'],
-        bodyweight: ['bodyweight'],
-        home_gym: ['dumbbells', 'pull-up bar', 'resistance bands'],
-        resistance_bands: ['resistance bands'],
+      // Map equipment selector IDs to API-friendly names
+      const equipmentIdToApi: Record<string, string> = {
+        barbell: 'barbell',
+        dumbbells: 'dumbbells',
+        kettlebell: 'kettlebell',
+        resistance_bands: 'resistance bands',
+        pull_up_bar: 'pull-up bar',
+        bench: 'bench',
+        cable_machine: 'cables',
+        bodyweight: 'bodyweight',
       };
 
       // Map UI focus values to explicit muscle group lists so Claude knows
@@ -255,7 +258,8 @@ export default function WorkoutGenerator() {
       const requestBody = JSON.stringify({
         goal: goal === 'muscle' ? 'hypertrophy' : goal,
         experienceLevel: difficulty,
-        availableEquipment: equipmentMap[equipment] || ['barbell', 'dumbbells'],
+        availableEquipment:
+          equipment.length > 0 ? equipment.map((id) => equipmentIdToApi[id] || id) : ['bodyweight'],
         duration: duration[0],
         focusMuscles: workoutFocus === 'full_body' ? undefined : focusMuscleMap[workoutFocus],
         inspiredBy: inspiredBy !== 'none' ? inspiredBy : undefined,
@@ -355,7 +359,7 @@ export default function WorkoutGenerator() {
 
   // Shared save logic: create workout record then attach exercises (matched from library or newly created)
   const persistGeneratedWorkout = async (): Promise<string> => {
-    if (!generatedWorkout) return;
+    if (!generatedWorkout) return '';
 
     // 1. Create the workout row with all required fields
     const response = await fetch('/api/workouts', {
@@ -364,8 +368,7 @@ export default function WorkoutGenerator() {
       credentials: 'include',
       body: JSON.stringify({
         title: generatedWorkout.name,
-        description:
-          generatedWorkout.description || `AI-generated ${workoutFocus.replace(/_/g, ' ')} workout`,
+        description: `AI-generated ${workoutFocus.replace(/_/g, ' ')} workout`,
         duration: duration[0],
         difficulty: difficulty,
         category: workoutFocus,
@@ -505,10 +508,7 @@ export default function WorkoutGenerator() {
                 For {clientData.name}
               </Badge>
             )}
-            <Badge
-              variant="outline"
-              className="bg-primary/10 border-primary/30 text-primary"
-            >
+            <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary">
               <Sparkles className="h-3 w-3 mr-1" />
               AI Powered
             </Badge>
@@ -659,21 +659,13 @@ export default function WorkoutGenerator() {
                 </div>
               </div>
 
-              {/* Equipment */}
+              {/* Equipment — SVG illustration grid, multi-select */}
               <div className="space-y-2">
                 <Label>Available Equipment</Label>
-                <Select value={equipment} onValueChange={setEquipment}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {equipmentOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Tap to select — choose all that apply
+                </p>
+                <EquipmentSelector selected={equipment} onChange={setEquipment} />
               </div>
 
               {/* Difficulty */}

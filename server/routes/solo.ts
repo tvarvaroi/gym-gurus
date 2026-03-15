@@ -1774,4 +1774,293 @@ router.get('/body-intelligence', async (req: Request, res: Response) => {
   }
 });
 
+// ==================== Training Readiness (ACWR) ====================
+
+router.get('/readiness', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const database = await getDb();
+    const now = new Date();
+
+    // Last 28 days of completed sessions
+    const twentyEightDaysAgo = new Date(now);
+    twentyEightDaysAgo.setDate(twentyEightDaysAgo.getDate() - 28);
+
+    const sessions = await database
+      .select({
+        startedAt: workoutSessions.startedAt,
+        totalVolumeKg: workoutSessions.totalVolumeKg,
+      })
+      .from(workoutSessions)
+      .where(
+        and(
+          eq(workoutSessions.userId, userId),
+          eq(workoutSessions.isActive, false),
+          gte(workoutSessions.startedAt, twentyEightDaysAgo)
+        )
+      )
+      .orderBy(workoutSessions.startedAt);
+
+    if (sessions.length === 0) {
+      return res.json({
+        score: 50,
+        status: 'moderate',
+        acuteLoad: 0,
+        chronicLoad: 0,
+        ratio: 0,
+        recommendation:
+          'No recent training data. Start a workout to begin tracking your readiness.',
+      });
+    }
+
+    // Acute load (ATL): total volume from last 7 days
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const acuteLoad = sessions
+      .filter((s) => s.startedAt >= sevenDaysAgo)
+      .reduce((sum, s) => sum + (Number(s.totalVolumeKg) || 0), 0);
+
+    // Chronic load (CTL): average weekly volume over last 28 days
+    // Group sessions into 4 weeks and average
+    const weeklyVolumes: number[] = [0, 0, 0, 0];
+    for (const s of sessions) {
+      const daysAgo = Math.floor((now.getTime() - s.startedAt.getTime()) / 86400000);
+      const weekIndex = Math.min(3, Math.floor(daysAgo / 7));
+      weeklyVolumes[weekIndex] += Number(s.totalVolumeKg) || 0;
+    }
+    const weeksWithData = weeklyVolumes.filter((v) => v > 0).length || 1;
+    const chronicLoad = weeklyVolumes.reduce((s, v) => s + v, 0) / Math.max(weeksWithData, 1);
+
+    // Training load ratio (TLR = ATL / CTL)
+    const ratio = chronicLoad > 0 ? acuteLoad / chronicLoad : 0;
+
+    // Derive score and status
+    let score: number;
+    let status: 'optimal' | 'moderate' | 'low';
+    let recommendation: string;
+
+    if (ratio >= 0.8 && ratio <= 1.3) {
+      // Sweet spot
+      score = Math.round(75 + ((1.3 - Math.abs(ratio - 1.05)) / 0.5) * 25);
+      score = Math.min(100, Math.max(75, score));
+      status = 'optimal';
+      recommendation =
+        'Your training load is well-balanced. Keep up the consistency — this is the sweet spot for progress without overtraining.';
+    } else if (ratio > 1.3 && ratio <= 1.5) {
+      // Moderate overreach
+      score = Math.round(74 - ((ratio - 1.3) / 0.2) * 24);
+      score = Math.min(74, Math.max(50, score));
+      status = 'moderate';
+      recommendation =
+        "You're pushing harder than usual. Consider a lighter session today or focus on recovery work to stay in the optimal zone.";
+    } else if (ratio > 1.5) {
+      // High overreach risk
+      score = Math.round(49 - ((ratio - 1.5) / 0.5) * 24);
+      score = Math.min(49, Math.max(25, score));
+      status = 'low';
+      recommendation =
+        'Training load is significantly elevated. Your body needs recovery — a rest day or light mobility work would be ideal.';
+    } else if (ratio < 0.8 && ratio > 0) {
+      // Detraining risk
+      score = Math.round(50 + (ratio / 0.8) * 24);
+      score = Math.min(74, Math.max(50, score));
+      status = 'moderate';
+      recommendation =
+        'Your recent training volume has dropped. Time to ramp back up gradually — a moderate workout today would keep momentum going.';
+    } else {
+      // No meaningful ratio (e.g. only 1 week of data)
+      score = 50;
+      status = 'moderate';
+      recommendation =
+        'Building your training baseline. Keep training consistently so we can give you more accurate readiness insights.';
+    }
+
+    res.json({
+      score,
+      status,
+      acuteLoad: Math.round(acuteLoad),
+      chronicLoad: Math.round(chronicLoad),
+      ratio: Math.round(ratio * 100) / 100,
+      recommendation,
+    });
+  } catch (error) {
+    console.error('Error computing readiness:', error);
+    res.status(500).json({ error: 'Failed to compute readiness' });
+  }
+});
+
+// ==================== Exercise History (Per-Movement Tracking) ====================
+
+router.get('/exercises/:exerciseId/history', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const exerciseId = req.params.exerciseId;
+    if (!exerciseId) {
+      return res.status(400).json({ error: 'Exercise ID required' });
+    }
+
+    const database = await getDb();
+
+    // Get exercise info
+    const [exercise] = await database
+      .select()
+      .from(exercises)
+      .where(eq(exercises.id, exerciseId))
+      .limit(1);
+
+    if (!exercise) {
+      return res.status(404).json({ error: 'Exercise not found' });
+    }
+
+    // Get all set logs for this exercise by this user — join through workoutSessions for user ownership
+    const setLogs = await database
+      .select({
+        weightKg: workoutSetLogs.weightKg,
+        reps: workoutSetLogs.reps,
+        rpe: workoutSetLogs.rpe,
+        completedAt: workoutSetLogs.completedAt,
+        sessionId: workoutSetLogs.sessionId,
+        setNumber: workoutSetLogs.setNumber,
+      })
+      .from(workoutSetLogs)
+      .innerJoin(workoutSessions, eq(workoutSetLogs.sessionId, workoutSessions.id))
+      .where(and(eq(workoutSetLogs.exerciseId, exerciseId), eq(workoutSessions.userId, userId)))
+      .orderBy(desc(workoutSetLogs.completedAt))
+      .limit(200);
+
+    // Group by session to build history entries
+    const sessionMap = new Map<string, { date: Date; sets: typeof setLogs }>();
+    for (const log of setLogs) {
+      const sid = log.sessionId as string;
+      if (!sessionMap.has(sid)) {
+        sessionMap.set(sid, { date: log.completedAt || new Date(), sets: [] });
+      }
+      sessionMap.get(sid)!.sets.push(log);
+    }
+
+    // Build history + find PR + 1RM trend
+    let personalRecord = { weight: 0, reps: 0, date: '', estimatedOneRepMax: 0 };
+    const history: {
+      date: string;
+      weight: number;
+      reps: number;
+      rpe: number | null;
+      estimatedOneRepMax: number;
+    }[] = [];
+    const oneRepMaxTrend: { date: string; value: number }[] = [];
+
+    const sessionEntries = [...sessionMap.entries()].sort(
+      (a, b) => a[1].date.getTime() - b[1].date.getTime()
+    );
+
+    for (const [, session] of sessionEntries) {
+      // Best set this session (highest estimated 1RM)
+      let bestSet = { weight: 0, reps: 0, rpe: null as number | null, e1rm: 0 };
+      for (const set of session.sets) {
+        const w = Number(set.weightKg) || 0;
+        const r = set.reps || 0;
+        const e1rm = w * (1 + r / 30); // Epley formula
+        if (e1rm > bestSet.e1rm) {
+          bestSet = { weight: w, reps: r, rpe: set.rpe, e1rm };
+        }
+      }
+
+      if (bestSet.weight > 0) {
+        const dateStr = session.date.toISOString();
+        history.push({
+          date: dateStr,
+          weight: bestSet.weight,
+          reps: bestSet.reps,
+          rpe: bestSet.rpe,
+          estimatedOneRepMax: Math.round(bestSet.e1rm * 10) / 10,
+        });
+        oneRepMaxTrend.push({
+          date: dateStr,
+          value: Math.round(bestSet.e1rm * 10) / 10,
+        });
+
+        // Track PR
+        if (bestSet.e1rm > personalRecord.estimatedOneRepMax) {
+          personalRecord = {
+            weight: bestSet.weight,
+            reps: bestSet.reps,
+            date: dateStr,
+            estimatedOneRepMax: Math.round(bestSet.e1rm * 10) / 10,
+          };
+        }
+      }
+    }
+
+    res.json({
+      exercise: {
+        id: exercise.id,
+        name: exercise.name,
+        muscleGroups: exercise.muscleGroups,
+        equipment: exercise.equipment,
+      },
+      history: history.reverse(), // Most recent first
+      personalRecord: personalRecord.weight > 0 ? personalRecord : null,
+      oneRepMaxTrend,
+    });
+  } catch (error) {
+    console.error('Error getting exercise history:', error);
+    res.status(500).json({ error: 'Failed to get exercise history' });
+  }
+});
+
+// ==================== Workout Sessions (for streak calendar) ====================
+
+router.get('/workout-sessions', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const database = await getDb();
+    const weeksBack = parseInt(req.query.weeks as string, 10) || 12;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - weeksBack * 7);
+
+    const sessions = await database
+      .select({
+        id: workoutSessions.id,
+        workoutName: workoutSessions.workoutName,
+        startedAt: workoutSessions.startedAt,
+        totalVolumeKg: workoutSessions.totalVolumeKg,
+        workoutType: workoutSessions.workoutType,
+      })
+      .from(workoutSessions)
+      .where(
+        and(
+          eq(workoutSessions.userId, userId),
+          eq(workoutSessions.isActive, false),
+          gte(workoutSessions.startedAt, cutoff)
+        )
+      )
+      .orderBy(desc(workoutSessions.startedAt));
+
+    res.json(
+      sessions.map((s) => ({
+        id: s.id,
+        workoutName: s.workoutName || 'Workout',
+        date: s.startedAt.toISOString(),
+        totalVolumeKg: Number(s.totalVolumeKg) || 0,
+        workoutType: s.workoutType || null,
+      }))
+    );
+  } catch (error) {
+    console.error('Error getting workout sessions:', error);
+    res.status(500).json({ error: 'Failed to get workout sessions' });
+  }
+});
+
 export default router;

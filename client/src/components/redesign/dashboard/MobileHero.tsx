@@ -73,44 +73,46 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
     staleTime: 60 * 1000,
   });
 
-  // Recovery data — same queryKey as useSoloDashboardData, so React Query deduplicates (no extra fetch)
-  const { data: fatigueData } = useQuery<any[]>({
-    queryKey: ['/api/recovery/fatigue'],
+  // Real training-load readiness from ACWR calculation
+  const { data: readinessData } = useQuery<{
+    score: number;
+    status: 'optimal' | 'moderate' | 'low';
+    acuteLoad: number;
+    chronicLoad: number;
+    ratio: number;
+    recommendation: string;
+  }>({
+    queryKey: ['/api/solo/readiness'],
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
 
   const readiness = useMemo(() => {
-    if (!fatigueData || fatigueData.length === 0) return null;
-    const score = Math.round(
-      fatigueData.reduce((acc: number, m: any) => acc + (100 - (m.fatigueLevel || 0)), 0) /
-        fatigueData.length
-    );
-    const status = score >= 75 ? 'high' : score >= 50 ? 'moderate' : 'low';
+    if (!readinessData) return null;
+    const { score, status } = readinessData;
+    const isOptimal = status === 'optimal';
+    const isLow = status === 'low';
     return {
       score,
       status,
-      label: score >= 75 ? 'Ready to Train' : score >= 50 ? 'Moderate Recovery' : 'Needs Rest',
-      stripeColor:
-        score >= 75
-          ? 'from-green-500 to-emerald-400'
-          : score >= 50
-            ? 'from-amber-500 to-yellow-400'
-            : 'from-red-500 to-rose-400',
-      glowColor:
-        score >= 75
-          ? 'rgba(34, 197, 94, 0.08)'
-          : score >= 50
-            ? 'rgba(245, 158, 11, 0.08)'
-            : 'rgba(239, 68, 68, 0.08)',
-      badgeClasses:
-        score >= 75
-          ? 'bg-green-500/15 text-green-400 border-green-500/30'
-          : score >= 50
-            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-            : 'bg-red-500/15 text-red-400 border-red-500/30',
+      label: isOptimal ? 'Ready to Train' : isLow ? 'Needs Rest' : 'Moderate Recovery',
+      stripeColor: isOptimal
+        ? 'from-green-500 to-emerald-400'
+        : isLow
+          ? 'from-red-500 to-rose-400'
+          : 'from-amber-500 to-yellow-400',
+      glowColor: isOptimal
+        ? 'rgba(34, 197, 94, 0.08)'
+        : isLow
+          ? 'rgba(239, 68, 68, 0.08)'
+          : 'rgba(245, 158, 11, 0.08)',
+      badgeClasses: isOptimal
+        ? 'bg-green-500/15 text-green-400 border-green-500/30'
+        : isLow
+          ? 'bg-red-500/15 text-red-400 border-red-500/30'
+          : 'bg-amber-500/15 text-amber-400 border-amber-500/30',
     };
-  }, [fatigueData]);
+  }, [readinessData]);
 
   const greeting = getGreeting();
   const subtitle = getMotivationalSubtitle(gamification, fitnessProfile);

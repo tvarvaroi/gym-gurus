@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { AnimatedCircularProgressBar } from '@/components/ui/animated-circular-progress-bar';
+import { StreakCalendar } from '@/components/ui/streak-calendar';
 import { RoninIcon } from '@/components/icons/RoninIcon';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -249,6 +250,19 @@ export default function Achievements() {
             </div>
           </div>
         )}
+      </motion.div>
+
+      {/* Streak Calendar — consistency visualization */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 }}
+      >
+        <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
+          <CardContent className="pt-5 pb-4">
+            <StreakCalendar weeks={12} />
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Category Tabs */}

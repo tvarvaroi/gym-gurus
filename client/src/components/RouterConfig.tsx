@@ -96,6 +96,7 @@ const Recovery = lazy(() => import('@/pages/solo/Recovery'));
 const SoloAchievements = lazy(() => import('@/pages/solo/Achievements'));
 const WorkoutGenerator = lazy(() => import('@/pages/solo/WorkoutGenerator'));
 const NutritionPlanner = lazy(() => import('@/pages/solo/NutritionPlanner'));
+const ExerciseDetailPage = lazy(() => import('@/pages/solo/ExerciseDetailPage'));
 
 // Dev-only test page (named export)
 const TestLoginPage = lazy(() =>
@@ -278,6 +279,10 @@ export function RouterConfig() {
           <Route path="/solo/achievements" component={lazyRoute(SoloAchievements)} />
           <Route path="/solo/generate" component={lazyRoute(WorkoutGenerator)} />
           <Route path="/solo/nutrition" component={lazyRoute(NutritionPlanner)} />
+          <Route
+            path="/solo/exercises/:exerciseId/history"
+            component={lazyRoute(ExerciseDetailPage)}
+          />
 
           {/* Disciple login (public) */}
           <Route path="/disciple-login" component={lazyRoute(DiscipleLoginPage)} />

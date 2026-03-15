@@ -109,9 +109,23 @@ export default function Recovery() {
     queryKey: ['/api/recovery/recommendations'],
   });
 
-  // Calculate overall recovery score
-  const overallRecovery =
-    fatigueData.length > 0
+  // Real training-load readiness from ACWR calculation
+  const { data: readinessData } = useQuery<{
+    score: number;
+    status: 'optimal' | 'moderate' | 'low';
+    acuteLoad: number;
+    chronicLoad: number;
+    ratio: number;
+    recommendation: string;
+  }>({
+    queryKey: ['/api/solo/readiness'],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Use ACWR readiness score when available, fallback to fatigue-based proxy
+  const overallRecovery = readinessData
+    ? readinessData.score
+    : fatigueData.length > 0
       ? Math.round(
           fatigueData.reduce((acc, m) => acc + (100 - m.fatigueLevel), 0) / fatigueData.length
         )

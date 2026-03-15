@@ -7,6 +7,9 @@ import { useSoloDashboardData } from '@/hooks/useSoloDashboardData';
 import { DashboardSkeleton } from '@/components/solo-dashboard/DashboardSkeleton';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { BlurFade } from '@/components/ui/blur-fade';
+import { StreakCalendar } from '@/components/ui/streak-calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Activity } from 'lucide-react';
 
 // Phase 2 redesign components
 import { MobileHero } from '@/components/redesign/dashboard/MobileHero';
@@ -111,6 +114,21 @@ export function SoloDashboard() {
           weeklyActivity={data.weeklyActivity}
           loading={data.weeklyLoading}
         />
+      </BlurFade>
+
+      {/* Streak Calendar — contribution graph */}
+      <BlurFade delay={0.22}>
+        <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-light flex items-center gap-2">
+              <Activity className="w-5 h-5 text-primary" />
+              Training Consistency
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <StreakCalendar weeks={12} />
+          </CardContent>
+        </Card>
       </BlurFade>
 
       <BlurFade delay={0.25}>

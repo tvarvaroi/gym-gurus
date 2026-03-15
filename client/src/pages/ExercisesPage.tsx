@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, memo } from 'react';
+import { Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ import {
   Target,
   ChevronRight,
   ChevronLeft,
+  TrendingUp,
 } from 'lucide-react';
 import ExerciseDetailModal from '@/components/exercises/ExerciseDetailModal';
 import { useToast } from '@/hooks/use-toast';
@@ -230,7 +232,9 @@ const ExercisesPage = memo(() => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div className="space-y-2">
-            <h1 className="text-4xl font-light tracking-tight">Exercise Library</h1>
+            <h1 className="text-4xl font-light tracking-tight font-['Playfair_Display']">
+              Exercise Library
+            </h1>
             <p className="text-lg font-light text-muted-foreground">Loading exercises...</p>
           </div>
         </div>
@@ -261,7 +265,7 @@ const ExercisesPage = memo(() => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
-          <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-extralight tracking-tight font-['Playfair_Display']">
             <span className="text-foreground">Exercise </span>
             <span className="text-[hsl(var(--color-guru))]">Library</span>
           </h1>
@@ -655,19 +659,31 @@ const ExercisesPage = memo(() => {
                     </div>
                   )}
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDetailExercise(exercise);
-                    }}
-                    data-testid={`button-view-details-${exercise.id}`}
-                  >
-                    <ChevronRight className="mr-2 h-4 w-4" />
-                    View Details
-                  </Button>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDetailExercise(exercise);
+                      }}
+                      data-testid={`button-view-details-${exercise.id}`}
+                    >
+                      <ChevronRight className="mr-2 h-4 w-4" />
+                      Details
+                    </Button>
+                    <Link href={`/solo/exercises/${exercise.id}/history`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-primary border-primary/30"
+                      >
+                        <TrendingUp className="mr-1 h-3.5 w-3.5" />
+                        History
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             </StaggerItem>
