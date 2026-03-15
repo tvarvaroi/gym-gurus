@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { AnimatedCircularProgressBar } from '@/components/ui/animated-circular-progress-bar';
 
 interface RestTimerOverlayProps {
   restTimeLeft: number;
@@ -32,9 +33,8 @@ export function RestTimerOverlay({
 
   if (!isVisible) return null;
 
-  const circumference = 2 * Math.PI * 74;
-  const progress = restDuration > 0 ? restTimeLeft / restDuration : 0;
-  const strokeColor = restTimeLeft === 0 ? '#22c55e' : '#c9a855';
+  const progress = restDuration > 0 ? (restTimeLeft / restDuration) * 100 : 0;
+  const isReady = restTimeLeft === 0;
 
   return (
     <motion.div
@@ -46,44 +46,31 @@ export function RestTimerOverlay({
     >
       {/* REST label */}
       <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500 mb-6">
-        {restTimeLeft === 0 ? 'ready' : 'rest'}
+        {isReady ? 'ready' : 'rest'}
       </p>
 
-      {/* Ring timer — 200px on mobile for better visibility */}
+      {/* Ring timer — AnimatedCircularProgressBar */}
       <div className="relative w-[200px] h-[200px] mb-6">
-        <svg className="w-[200px] h-[200px] -rotate-90" viewBox="0 0 200 200">
-          <circle
-            cx="100"
-            cy="100"
-            r="90"
-            fill="none"
-            stroke="rgba(255,255,255,0.06)"
-            strokeWidth={6}
-          />
-          <circle
-            cx="100"
-            cy="100"
-            r="90"
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth={6}
-            strokeLinecap="round"
-            strokeDasharray={2 * Math.PI * 90}
-            strokeDashoffset={2 * Math.PI * 90 * (1 - progress)}
-            style={{ transition: 'stroke-dashoffset 1s linear' }}
-          />
-        </svg>
+        <AnimatedCircularProgressBar
+          value={isReady ? 100 : progress}
+          max={100}
+          min={0}
+          gaugePrimaryColor={isReady ? '#22c55e' : 'hsl(var(--primary))'}
+          gaugeSecondaryColor="rgba(255,255,255,0.06)"
+          className="size-[200px] !text-transparent"
+        />
+        {/* Time overlay */}
         <span
           className={`absolute inset-0 flex items-center justify-center font-mono text-5xl font-bold tabular-nums ${
-            restTimeLeft === 0 ? 'text-green-400' : 'text-white'
+            isReady ? 'text-green-400' : 'text-white'
           }`}
           style={
-            restTimeLeft === 0 && !prefersReducedMotion
+            isReady && !prefersReducedMotion
               ? { animation: 'pulse-primary 1.5s ease-in-out infinite' }
               : undefined
           }
         >
-          {restTimeLeft === 0 ? 'GO!' : formatTime(restTimeLeft)}
+          {isReady ? 'GO!' : formatTime(restTimeLeft)}
         </span>
       </div>
 
@@ -119,7 +106,7 @@ export function RestTimerOverlay({
         </button>
         <button
           onClick={onSkip}
-          className="h-14 px-10 rounded-xl bg-[#c9a855] text-black text-base font-bold hover:bg-[#b89745] transition-colors flex items-center gap-2 active:scale-95"
+          className="h-14 px-10 rounded-xl bg-primary text-primary-foreground text-base font-bold transition-colors flex items-center gap-2 active:scale-95"
           aria-label="Skip rest period"
         >
           Skip <ChevronRight className="w-5 h-5" />
