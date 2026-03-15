@@ -17,6 +17,7 @@ import {
   Info,
   Loader2,
 } from 'lucide-react';
+import { MuscleAnatomyDiagram } from '@/components/redesign/charts/MuscleAnatomyDiagram';
 
 interface MuscleFatigue {
   muscleGroup: string;
@@ -296,6 +297,31 @@ export default function Recovery() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Anatomy Diagram */}
+      {fatigueData.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-light flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                Muscle Map
+              </CardTitle>
+              <CardDescription>Visual overview of your muscle recovery status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MuscleAnatomyDiagram
+                fatigueData={fatigueData}
+                onMuscleClick={(muscle) => setSelectedMuscle(muscle)}
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Main Content */}
       <div className="grid lg:grid-cols-3 gap-6">
