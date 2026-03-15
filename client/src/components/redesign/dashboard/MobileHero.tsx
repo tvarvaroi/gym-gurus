@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Loader2, Play } from 'lucide-react';
+import { Camera, Loader2, Play, Shield } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -72,6 +72,45 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
     retry: false,
     staleTime: 60 * 1000,
   });
+
+  // Recovery data — same queryKey as useSoloDashboardData, so React Query deduplicates (no extra fetch)
+  const { data: fatigueData } = useQuery<any[]>({
+    queryKey: ['/api/recovery/fatigue'],
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const readiness = useMemo(() => {
+    if (!fatigueData || fatigueData.length === 0) return null;
+    const score = Math.round(
+      fatigueData.reduce((acc: number, m: any) => acc + (100 - (m.fatigueLevel || 0)), 0) /
+        fatigueData.length
+    );
+    const status = score >= 75 ? 'high' : score >= 50 ? 'moderate' : 'low';
+    return {
+      score,
+      status,
+      label: score >= 75 ? 'Ready to Train' : score >= 50 ? 'Moderate Recovery' : 'Needs Rest',
+      stripeColor:
+        score >= 75
+          ? 'from-green-500 to-emerald-400'
+          : score >= 50
+            ? 'from-amber-500 to-yellow-400'
+            : 'from-red-500 to-rose-400',
+      glowColor:
+        score >= 75
+          ? 'rgba(34, 197, 94, 0.08)'
+          : score >= 50
+            ? 'rgba(245, 158, 11, 0.08)'
+            : 'rgba(239, 68, 68, 0.08)',
+      badgeClasses:
+        score >= 75
+          ? 'bg-green-500/15 text-green-400 border-green-500/30'
+          : score >= 50
+            ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+            : 'bg-red-500/15 text-red-400 border-red-500/30',
+    };
+  }, [fatigueData]);
 
   const greeting = getGreeting();
   const subtitle = getMotivationalSubtitle(gamification, fitnessProfile);
@@ -196,11 +235,34 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
       </div>
 
       {/* Desktop: elevated card with photo anchored bottom-right */}
-      <div className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg overflow-hidden min-h-[300px] lg:min-h-[320px]">
+      <div
+        className="hidden md:block relative rounded-2xl border border-border/20 bg-card shadow-lg overflow-hidden min-h-[300px] lg:min-h-[320px]"
+        style={
+          readiness
+            ? {
+                background: `linear-gradient(135deg, ${readiness.glowColor} 0%, transparent 60%), hsl(var(--card))`,
+              }
+            : undefined
+        }
+      >
+        {/* Status stripe — thin colored bar at top */}
+        {readiness && (
+          <div className={`h-[3px] w-full bg-gradient-to-r ${readiness.stripeColor}`} />
+        )}
         {/* Card content — right padding reserves space for photo */}
         <div className={`p-6 lg:p-8 ${hasPhoto ? 'pr-[44%] lg:pr-[48%]' : ''}`}>
-          {/* Greeting */}
-          <p className="text-xs tracking-[0.2em] uppercase text-white/40 mb-2">{greeting}</p>
+          {/* Greeting + Readiness Badge */}
+          <div className="flex items-center gap-3 mb-2">
+            <p className="text-xs tracking-[0.2em] uppercase text-white/40">{greeting}</p>
+            {readiness && (
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${readiness.badgeClasses}`}
+              >
+                <Shield className="w-3 h-3" />
+                {readiness.score}% — {readiness.label}
+              </span>
+            )}
+          </div>
 
           {/* Name */}
           <h1 className="text-5xl lg:text-6xl font-bold font-['Playfair_Display'] leading-tight mb-2">

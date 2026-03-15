@@ -182,7 +182,34 @@ export default function Recovery() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card className="border-border/50 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden">
+        <Card
+          className={`border-border/50 backdrop-blur-sm overflow-hidden ${
+            overallRecovery >= 75
+              ? 'border-green-500/20'
+              : overallRecovery >= 50
+                ? 'border-amber-500/20'
+                : 'border-red-500/20'
+          }`}
+          style={{
+            background: `linear-gradient(135deg, ${
+              overallRecovery >= 75
+                ? 'rgba(34, 197, 94, 0.06)'
+                : overallRecovery >= 50
+                  ? 'rgba(245, 158, 11, 0.06)'
+                  : 'rgba(239, 68, 68, 0.06)'
+            } 0%, transparent 60%), hsl(var(--card) / 0.8)`,
+          }}
+        >
+          {/* Status stripe */}
+          <div
+            className={`h-[3px] w-full bg-gradient-to-r ${
+              overallRecovery >= 75
+                ? 'from-green-500 to-emerald-400'
+                : overallRecovery >= 50
+                  ? 'from-amber-500 to-yellow-400'
+                  : 'from-red-500 to-rose-400'
+            }`}
+          />
           <CardContent className="p-4 md:p-6">
             <div className="flex flex-row items-center gap-4 md:gap-6">
               {/* Score Circle */}
@@ -221,11 +248,23 @@ export default function Recovery() {
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.5 }}
-                    className="text-2xl md:text-4xl font-light"
+                    className={`text-2xl md:text-4xl font-light ${
+                      overallRecovery >= 75
+                        ? 'text-green-400'
+                        : overallRecovery >= 50
+                          ? 'text-amber-400'
+                          : 'text-red-400'
+                    }`}
                   >
                     {overallRecovery}%
                   </motion.span>
-                  <span className="text-sm text-muted-foreground">Recovery</span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                    {overallRecovery >= 75
+                      ? 'Ready'
+                      : overallRecovery >= 50
+                        ? 'Moderate'
+                        : 'Fatigued'}
+                  </span>
                 </div>
               </div>
 
