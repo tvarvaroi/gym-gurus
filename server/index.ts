@@ -71,7 +71,17 @@ app.use(
             directives: {
               defaultSrc: ["'self'"],
               scriptSrc: ["'self'", (_req: any, res: any) => `'nonce-${res.locals.cspNonce}'`],
-              styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+              // nonce covers <style nonce="..."> tags (e.g. chart.tsx ChartStyle).
+              // unsafe-inline removed — no inline <style> tags without a nonce allowed.
+              styleSrc: [
+                "'self'",
+                (_req: any, res: any) => `'nonce-${res.locals.cspNonce}'`,
+                'https://fonts.googleapis.com',
+              ],
+              // React renders style="" attributes on DOM elements; these are distinct from
+              // <style> tags and require their own directive. unsafe-inline here is safe
+              // because style attributes cannot execute JavaScript.
+              styleSrcAttr: ["'unsafe-inline'"],
               imgSrc: ["'self'", 'data:', 'https:'],
               connectSrc: ["'self'", 'wss:'],
               fontSrc: ["'self'", 'https://fonts.gstatic.com'],

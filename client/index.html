@@ -76,6 +76,10 @@
     </script>
   </head>
   <body>
+    <!-- CSP nonce exposed for client-side components (e.g. chart.tsx style injection).
+         The placeholder is replaced server-side with the per-request nonce. -->
+    <meta name="csp-nonce" content="{{NONCE}}" />
+
     <!-- Blocking role-class script: runs synchronously before React hydrates.
          Reads last-known role from localStorage and applies the CSS class to
          <html> immediately, eliminating the role colour flash on load (§ UX-3).
