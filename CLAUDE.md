@@ -35,6 +35,23 @@ Claude Code automatically loads installed plugins. Reference them explicitly in 
 
 ---
 
+## Sprint History
+
+| Sprint               | Focus                                                                                    | Status     | Date       |
+| -------------------- | ---------------------------------------------------------------------------------------- | ---------- | ---------- |
+| Sprint 1             | Foundation — Disciple login, Stripe Checkout, CSP nonce                                  | ✅ Done    | 2026-03-15 |
+| Sprint 2             | Design system — Playfair Display, role accent consistency, Phase 1 Magic UI              | ✅ Done    | 2026-03-15 |
+| Sprint 3             | Visual language — full-bleed execution, zone-band charts, status hero, muscle anatomy    | ✅ Done    | 2026-03-18 |
+| Sprint 4             | Core features — ACWR readiness, equipment SVG chips, ExerciseDetailPage, streak calendar | ✅ Done    | 2026-03-18 |
+| Sprint 5             | Architecture debt — routes split, framer-motion cleanup, volume type fix, schema sync    | ✅ Done    | 2026-03-18 |
+| Sprint 6             | Platform reliability — CI/CD, SLOs, error monitoring, Stripe webhook reliability         | ✅ Done    | 2026-03-18 |
+| Visual pass          | Ronin deep audit — 135 screenshots, 47 issues, 14 fixes applied                          | ✅ Done    | 2026-03-18 |
+| Guru visual pass     | Guru role deep audit                                                                     | 🔜 Next    | —          |
+| Disciple visual pass | Disciple role deep audit                                                                 | 🔜 Next    | —          |
+| Q2                   | Apple Health, sleep logging, body metrics, program builder                               | 📋 Planned | —          |
+
+---
+
 ## Second Brain — Obsidian Knowledge System
 
 This project uses `_brain/` as a shared knowledge base between Obsidian and Claude Code.
@@ -82,7 +99,7 @@ This project uses `_brain/` as a shared knowledge base between Obsidian and Clau
      Marketing skills live in `C:/Users/tvarv/.claude/skills/marketing-skill/`
      C-Level advisory in `C:/Users/tvarv/.claude/skills/c-level-advisor/`
      GSD project management in `C:/Users/tvarv/.claude/get-shit-done/workflows/`
-3. MAP skills to the task — identify ALL relevant skills across ALL categories from ALL FOUR locations.
+3. MAP skills to the task — identify ALL relevant skills across ALL categories from ALL FIVE locations.
    A landing page task needs ui-ux-pro-max + marketing/seo + cro + psychology, not just senior-frontend.
    A DB task may need observability + runbook skills too.
    Report which skills you loaded from which location and what each contributes BEFORE acting.
@@ -94,7 +111,7 @@ This project uses `_brain/` as a shared knowledge base between Obsidian and Clau
 
 **This is non-negotiable. Every task. Every time. No exceptions.**
 
-**The core principle:** You have 139+ skills across engineering, GSD project management, marketing (42 skills/7 pods), C-level advisory (28 roles), RA/QM compliance, finance, design, and more — spread across FOUR locations. The right skills for any task are rarely just the obvious ones. Always inventory all four locations. Always report what you loaded.
+**The core principle:** You have 139+ skills across engineering, GSD project management, marketing (42 skills/7 pods), C-level advisory (28 roles), RA/QM compliance, finance, design, and more — spread across FIVE locations. The right skills for any task are rarely just the obvious ones. Always inventory all five locations. Always report what you loaded.
 
 ---
 
@@ -431,7 +448,7 @@ When Claude Code opens a file in this repo, activate these skills:
 ```
 gym-gurus/
 ├── client/src/
-│   ├── App.tsx                    ← 1,105-line God component  → § FE-1
+│   ├── App.tsx                    ← entry point ~21 lines (split Sprint 5) → RouterConfig + AuthGuard + AppShell
 │   ├── components/
 │   │   ├── redesign/              ← mobile-first component set — production code, actively maintained
 │   │   ├── ui/                    ← shadcn/ui — do not edit
@@ -440,14 +457,13 @@ gym-gurus/
 │   ├── hooks/                     ← useUser() is the correct hook
 │   └── pages/
 ├── server/
-│   ├── routes.ts                  ← 2,252-line monolith       → § BE-3
-│   ├── mockData.ts                ← DELETE IMMEDIATELY        → § SEC-1
-│   ├── env.ts                     ← DUPLICATE — delete        → § BE-4
+│   ├── routes.ts                  ← 306 lines (was 2,252 — Sprint 5) → imports + app.use() mounts
 │   ├── config/env.ts              ← canonical env (KEEP)
 │   ├── middleware/
 │   │   ├── auth.ts                ← DO NOT TOUCH
 │   │   └── csrf.ts                ← DO NOT TOUCH
-│   └── routes/
+│   └── routes/                    ← 12 files: auth, solo, payments, settings, onboarding, dashboard,
+│       │                             clients, exercises, workoutsRouter, assignments, progress, schedule
 │       └── webhooks.ts            ← DO NOT TOUCH
 ├── shared/schema.ts               ← DO NOT TOUCH w/o migration
 ├── scripts/                       ← debug scripts live here, NOT server/
@@ -456,11 +472,11 @@ gym-gurus/
 
 **Roles** — use consistently everywhere:
 
-| DB value  | UI name  | Login                                             |
-| --------- | -------- | ------------------------------------------------- |
-| `trainer` | Guru     | `/auth/login` role: Guru                          |
-| `solo`    | Ronin    | `/auth/login` role: Ronin                         |
-| `client`  | Disciple | `/disciple-login` — **currently broken** → § VA-1 |
+| DB value  | UI name  | Login                                          |
+| --------- | -------- | ---------------------------------------------- |
+| `trainer` | Guru     | `/auth/login` role: Guru                       |
+| `solo`    | Ronin    | `/auth/login` role: Ronin                      |
+| `client`  | Disciple | `/disciple-login` ← fixed Sprint 1 (§ VA-1 ✅) |
 
 **Plan display names** — never show raw IDs:
 
@@ -480,7 +496,7 @@ gym-gurus/
 | -------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | Frontend | React 18, Vite, TypeScript, Tailwind, shadcn/ui, wouter, TanStack Query, framer-motion | `senior-frontend`, `frontend-design`                         |
 | Backend  | Express.js, TypeScript, Drizzle ORM                                                    | `senior-backend`, `senior-architect`                         |
-| Database | PostgreSQL (Neon)                                                                      | `database-designer`, `database-schema-designer`              |
+| Database | PostgreSQL (Railway managed)                                                           | `database-designer`, `database-schema-designer`              |
 | Payments | Stripe                                                                                 | `stripe-integration-expert`                                  |
 | AI       | Anthropic Claude API                                                                   | `rag-architect`, `prompt-engineer-toolkit`, `agent-designer` |
 | Hosting  | Railway                                                                                | `runbook-generator`, `ci-cd-pipeline-builder`                |
@@ -603,29 +619,15 @@ rm server/mockData.ts
 
 ---
 
-### § SEC-2 — CRITICAL: Silent MemoryStorage fallback
+### § SEC-2 — ✅ RESOLVED (2026-03-18): Silent MemoryStorage fallback
 
-**Skill:** `incident-commander` (this is an invisible data-loss incident waiting to happen)
-
-DB failure → silent in-memory fallback → no 503 → data lost on restart.
-
-```ts
-if (process.env.NODE_ENV === 'production') {
-  throw new Error('DB unavailable — refusing memory storage fallback');
-}
-```
+Sprint 6: `process.exit(1)` on startup DB failure. `memoryStorage.ts` constructor throws in production. `/api/health` endpoint returns 503 if DB unavailable. Railway health check auto-restarts on 3 failures.
 
 ---
 
-### § SEC-3 — CRITICAL: CSP `unsafe-inline`
+### § SEC-3 — ✅ RESOLVED (2026-03-15): CSP `unsafe-inline`
 
-**Skill:** `skill-security-auditor` + `env-secrets-manager`
-
-`server/index.ts` helmet config: `scriptSrc: ["'self'", "'unsafe-inline'"]` — XSS protection completely negated.
-
-```ts
-scriptSrc: ["'self'", `'nonce-${generateNonce()}'`],
-```
+Sprint 1: Nonce-based CSP. `scriptSrc` and `styleSrc` both use per-request nonce. `styleSrcAttr: ["'unsafe-inline'"]` covers React `style=""` attributes (safe — no code execution). See § SEC-5 for full implementation details.
 
 ---
 
@@ -641,16 +643,9 @@ scriptSrc: ["'self'", `'nonce-${generateNonce()}'`],
 
 ---
 
-### § SEC-4 — HIGH: Debug routes in production
+### § SEC-4 — ⚠️ STATUS UNKNOWN: Debug routes in production
 
-**Skill:** `skill-security-auditor`
-
-`/test-login`, `/login2`, `/test-auth-login`, `/preview-login` accessible with no env guard. `TestLoginPage` bundled for ALL users (non-lazy import).
-
-```ts
-if (process.env.NODE_ENV !== 'production') { app.get('/test-login', …); }
-if (import.meta.env.DEV) { /* client-side debug routes */ }
-```
+Verify debug routes (`/test-login`, `/login2`, `/test-auth-login`, `/preview-login`) are removed or gated behind `import.meta.env.DEV` before launch. Check `TestLoginPage` is not bundled in production builds.
 
 ---
 
@@ -688,43 +683,21 @@ Dashboard shows a personal birthday photo and "QA18 Set Count Test" workout. Pur
 
 ---
 
-### § FE-1 — HIGH: App.tsx is a 1,105-line God component
+### § FE-1 — ✅ RESOLVED (2026-03-18): App.tsx God component split
 
-**Skills:** `code-reviewer` (large file flag) + `senior-architect` (mixed concerns) + `brainstorming` (design the split first)
-
-```bash
-python scripts/project_architect.py ./client/src --check layers
-# Will flag: MIXED CONCERNS in App.tsx — routing + auth + video + CSS injection + layout
-```
-
-Extract to: `RouterConfig.tsx` · `AuthGuard.tsx` · `AppShell.tsx` · App.tsx → ~30 lines.
+Sprint 5: `App.tsx` split into `RouterConfig.tsx` + `AuthGuard.tsx` + `AppShell.tsx`. `App.tsx` now ~21 lines (providers + dark mode + router mount only).
 
 ---
 
-### § FE-2 — HIGH: 26 copy-pasted Suspense wrappers
+### § FE-2 — ✅ RESOLVED (2026-03-18): 26 copy-pasted Suspense wrappers
 
-**Skill:** `code-reviewer` (duplicate code detector — >3 similar blocks = flag)
-
-```ts
-const lazyRoute = (C: React.LazyExoticComponent<any>) => () => (
-  <Suspense fallback={<PageLoader />}><PageTransition><C /></PageTransition></Suspense>
-);
-```
+Sprint 5: `lazyRoute()` + `protectedRoute()` factories in `RouterConfig.tsx` replace all 26 copy-pasted Suspense wrappers.
 
 ---
 
-### § BE-3 — HIGH: `server/routes.ts` is 2,252 lines
+### § BE-3 — ✅ RESOLVED (2026-03-18): `server/routes.ts` monolith split
 
-**Skills:** `senior-architect` + `tech-debt-tracker` (highest interest rate item) + `code-reviewer`
-
-Use **Strangler Fig** pattern (`tech-debt-tracker` refactoring strategies): extract one feature router per PR, never all at once.
-
-```
-server/routes/clients.ts    server/routes/workouts.ts
-server/routes/progress.ts   server/routes/dashboard.ts
-server/routes/assignments.ts server/routes/payments.ts
-server/routes/schedule.ts   server/routes/calculators.ts
-```
+Sprint 5: `routes.ts` reduced from 2,252 → 306 lines (87% reduction). 10 new route files extracted: `onboarding.ts`, `dashboard.ts`, `clients.ts`, `exercises.ts`, `workoutsRouter.ts`, `assignments.ts`, `progress.ts`, `schedule.ts` (plus existing `auth.ts`, `solo.ts`, `payments.ts`, `settings.ts`). All middleware preserved. Zero route path changes.
 
 ---
 
@@ -756,15 +729,9 @@ All three orphaned chart components deleted (325 lines total):
 
 ---
 
-### § FE-5 — MEDIUM: 17 `as any` casts
+### § FE-5 — ✅ RESOLVED (2026-03-18): `as any` casts removed
 
-**Skill:** `code-reviewer` (auto-detects TypeScript `any`) + `senior-frontend`
-
-```bash
-python scripts/pr_analyzer.py . --json | grep '"any_types"'
-```
-
-Define `AuthUser` in `client/src/types/auth.ts`, replace all `as any`.
+Sprint 5: 40+ `as any` casts removed via `server/types/express.d.ts` Express type augmentation. `req.user!.id` replaces `(req.user as any).id` everywhere.
 
 ---
 
@@ -776,7 +743,7 @@ Delete all standalone `useQuery({ queryKey: ['/api/user'] })`. Use `useUser()` e
 
 ---
 
-### § FE-7 — ✅ PARTIALLY RESOLVED (2026-03-10): framer-motion reduced from 116 files
+### § FE-7 — ✅ PARTIALLY RESOLVED (2026-03-18): framer-motion reduced from 94 → 72 files
 
 **Skill:** `performance-profiler` (bundle analysis) + `senior-frontend`
 
@@ -848,15 +815,9 @@ Rename `add_onboarding_table.ts` → `005_add_onboarding_table.ts`. Commit to `.
 
 ---
 
-### § DB-5 — HIGH: 20 DB tables have no Drizzle schema definition
+### § DB-5 — ✅ RESOLVED (2026-03-18): 20 unmanaged tables added to Drizzle schema
 
-**Skill:** `database-designer` + `database-schema-designer`
-
-The database (via `migrations/0000_burly_yellow_claw.sql`) has 33+ tables. `shared/schema.ts` only defines 13 of them. The 20 unmanaged tables:
-
-`achievements`, `ai_chat_conversations`, `ai_chat_messages`, `ai_generated_workouts`, `ai_usage`, `client_access_codes`, `client_intake`, `notifications`, `payment_plans`, `payments`, `personal_record_history`, `personal_records`, `saved_meal_plans`, `user_achievements`, `user_fitness_profile`, `user_gamification`, `user_muscle_fatigue`, `user_muscle_volume`, `user_strength_standards`, `workout_recovery_log`, `workout_sessions`, `workout_set_logs`, `xp_transactions`
-
-Consequence: `$onUpdate`, soft deletes, and future schema changes cannot be applied to these tables via Drizzle. `drizzle-kit generate` will also produce incorrect diffs (tries to DROP tables it doesn't know about). Reverse-engineer all 20 into schema.ts and run `npx drizzle-kit generate` to re-sync.
+Sprint 5: All 20 previously unmanaged tables confirmed resolved. All tables now have Drizzle schema definitions in `shared/schema.ts`. `drizzle-kit generate` produces clean diffs.
 
 ---
 
@@ -873,11 +834,9 @@ Post-launch: section reorder A/B test + scroll-depth audit documented in `docs/p
 
 ---
 
-### § UX-2 — HIGH: Login buried / Disciple login broken
+### § UX-2 — ✅ RESOLVED (2026-03-15): Login buried / Disciple login broken
 
-**Skill:** `ux-researcher-designer` + `playwright-pro` (`/pw:generate` login flow tests)
-
-Add Login button to `LandingHeader.tsx`. Fix `/disciple-login` route (§ VA-1).
+Sprint 1: `/disciple-login` fixed (3 root causes). See § VA-1 for details. Login button added to `LandingHeader.tsx` during § UX-1 carousel→scroll conversion.
 
 ---
 
@@ -990,64 +949,68 @@ Implemented per `docs/plans/2026-03-09-ux5b-empty-states-guru-disciple.md`.
 
 **Skill:** `senior-pm` Monte Carlo + `tech-debt-tracker` WSJF = (Business Value + Time Criticality + Risk Reduction) / Effort
 
-| Issue                          | BV  | TC  | RR  | Effort | WSJF     | Sprint   |
-| ------------------------------ | --- | --- | --- | ------ | -------- | -------- |
-| § BE-7 Guru dashboard broken   | 10  | 10  | 10  | 1      | **30**   | Now      |
-| § VA-1 disciple login broken   | 10  | 10  | 8   | 1      | **28**   | ✅ Done  |
-| § VA-6/7 personal data in prod | 8   | 10  | 7   | 1      | **25**   | Now      |
-| § SEC-1 mock data in prod      | 9   | 10  | 10  | 2      | **14.5** | Now      |
-| § SEC-5 CSP inline violation   | 5   | 8   | 9   | 3      | **7.3**  | Sprint 1 |
-| § VA-4 raw plan ID in UI       | 7   | 6   | 3   | 1      | **16**   | Sprint 1 |
-| § VA-4b raw role in Settings   | 5   | 5   | 5   | 1      | **15**   | Sprint 1 |
-| § VA-2 404 = landing page      | 6   | 8   | 5   | 2      | **9.5**  | Sprint 1 |
-| § SEC-3 CSP unsafe-inline      | 5   | 7   | 10  | 2      | **11**   | Sprint 1 |
-| § SEC-4 debug routes in prod   | 6   | 8   | 8   | 2      | **11**   | Sprint 1 |
-| § FE-1 App.tsx God component   | 7   | 5   | 6   | 5      | **3.6**  | Sprint 2 |
-| § BE-3 routes monolith         | 6   | 4   | 5   | 10     | **1.5**  | Quarter  |
-| § UX-1 carousel landing        | 8   | 5   | 3   | 8      | **2**    | Quarter  |
+| Issue                          | BV  | TC  | RR  | Effort | WSJF     | Sprint           |
+| ------------------------------ | --- | --- | --- | ------ | -------- | ---------------- |
+| § BE-7 Guru dashboard broken   | 10  | 10  | 10  | 1      | **30**   | ✅ Done          |
+| § VA-1 disciple login broken   | 10  | 10  | 8   | 1      | **28**   | ✅ Done          |
+| § VA-6/7 personal data in prod | 8   | 10  | 7   | 1      | **25**   | Now              |
+| § SEC-1 mock data in prod      | 9   | 10  | 10  | 2      | **14.5** | Now              |
+| § SEC-5 CSP inline violation   | 5   | 8   | 9   | 3      | **7.3**  | ✅ Done          |
+| § VA-4 raw plan ID in UI       | 7   | 6   | 3   | 1      | **16**   | Sprint 1         |
+| § VA-4b raw role in Settings   | 5   | 5   | 5   | 1      | **15**   | ✅ Done          |
+| § VA-2 404 = landing page      | 6   | 8   | 5   | 2      | **9.5**  | Sprint 1         |
+| § SEC-3 CSP unsafe-inline      | 5   | 7   | 10  | 2      | **11**   | ✅ Done Sprint 1 |
+| § SEC-2 memoryStorage fallback | 5   | 7   | 10  | 2      | **11**   | ✅ Done Sprint 6 |
+| § SEC-4 debug routes in prod   | 6   | 8   | 8   | 2      | **11**   | ⚠️ Verify        |
+| § FE-1 App.tsx God component   | 7   | 5   | 6   | 5      | **3.6**  | ✅ Done Sprint 5 |
+| § BE-3 routes monolith         | 6   | 4   | 5   | 10     | **1.5**  | ✅ Done Sprint 5 |
+| § UX-1 carousel landing        | 8   | 5   | 3   | 8      | **2**    | ✅ Done          |
 
 **Recommended allocation** (`tech-debt-tracker`): 30% debt / 70% features this sprint.
 
 ---
 
-## Observability Checklist
+## Observability
 
 **Skill:** `observability-designer`
 
-GymGurus currently has NO SLIs, SLOs, or alerting defined. Before next public launch:
+✅ SLOs defined in `docs/slos.md` (Sprint 6):
 
-```
-SLIs to define:
-  - API error rate (target: <1% 5xx over 5min window)
-  - Auth latency p99 (target: <500ms)
-  - Stripe webhook processing (target: 100% idempotent delivery)
-  - AI Coach response time (target: <3s p95)
+- Availability: 99.5% (≤3.6h downtime/month)
+- P95 API response: <500ms
+- P99 API response: <2000ms
+- Error rate: <1% 5xx over any 24h window
+- Recovery time: <15min detect + respond
 
-Golden signals to instrument:
-  - Latency, Traffic, Errors, Saturation — on Express middleware
-  - DB connection pool utilisation
-  - Anthropic API quota consumption
-```
+Monitoring in place:
+
+- `server/middleware/performanceMonitor.ts` — endpoint hit counts + slow request history
+- `server/middleware/requestLogger.ts` — structured JSON, request IDs, Sentry integration
+- `server/middleware/errorHandler.ts` — all 5xx logged with userId + path + stack
+- `/api/health` — DB health check, returns 503 if DB unavailable
+- `/api/admin/performance` — dev/staging only, top endpoints + slow requests
+- Railway health check on /api/health every 30s — auto-restart on 3 failures
 
 ---
 
-## CI/CD Checklist
+## CI/CD
 
 **Skill:** `ci-cd-pipeline-builder`
 
-No CI/CD pipeline exists beyond Railway auto-deploy from main. Generate with:
+✅ Pipelines active (Sprint 6):
 
-```bash
-python scripts/pipeline_builder.py . --platform github-actions --stages lint,test,build,deploy
-```
+- `.github/workflows/ci.yml` — lint + type check + test + build on every push to main
+- `.github/workflows/security.yml` — TruffleHog secret scan + npm audit weekly (Mondays 9am)
+- Bundle size reported in GitHub Step Summary on every build
+- Railway auto-deploys from main after CI passes
 
-Minimum pipeline should include:
+Pipeline gates:
 
-- TypeScript compilation check
-- `code-reviewer` PR Analyzer (block `as any` additions, `console.log` in client)
-- `dependency-auditor` CVE scan
-- `playwright-pro` smoke tests
-- `env-secrets-manager` secret leak check
+- TypeScript compilation check (130 pre-existing errors, zero new tolerated)
+- ESLint with --max-warnings 0
+- 160/175 tests pass (15 pre-existing aiService failures excluded)
+- npm audit --audit-level=high
+- TruffleHog secret detection
 
 ---
 
@@ -1101,14 +1064,15 @@ Current manual process:
 
 ## Open Questions
 
-- [ ] Is `/disciple-login` intentionally separate from main login? It's broken — fix before any client uses it (§ VA-1)
-- [ ] Is `redesign/` an active migration or abandoned? Document the decision as an ADR (`doc-coauthoring`)
+- [x] Is `/disciple-login` intentionally separate from main login? → RESOLVED Sprint 1 — separate by design, fixed (§ VA-1)
+- [x] Is `redesign/` an active migration or abandoned? → RESOLVED — active production code, 5 dead files deleted (§ FE-3)
 - [ ] `shopping.ts` — ship or delete? Run RICE scoring (`product-manager-toolkit`)
-- [ ] Is `STRIPE_WEBHOOK_SECRET` set in Railway? Check `env-secrets-manager`
+- [x] Is `STRIPE_WEBHOOK_SECRET` set in Railway? → CONFIRMED — Sprint 6 webhook reliability verified
 - [ ] Is Capacitor/mobile actively in development? If not, remove
-- [ ] Trainer and Client roles not visually audited — provide credentials to complete visual audit
-- [ ] No runbooks exist — generate with `runbook-generator` before next on-call rotation
-- [ ] No SLOs defined — design with `observability-designer` before launch
+- [ ] Guru visual pass — pending
+- [ ] Disciple visual pass — pending
+- [x] No runbooks exist → Sprint 6 — `docs/slos.md` created, deployment runbook in CLAUDE.md
+- [x] No SLOs defined → RESOLVED Sprint 6 — see `docs/slos.md`
 
 ---
 
@@ -1307,6 +1271,48 @@ Every page in the app uses the same layout: full-width container, padding 24px, 
 - Schedule page — "The path is empty. For now."
 
 GuruIcon deployed in Guru empty states (Clients, Payments) — see § UX-5b ✅. DiscipleIcon not used per design decision (Disciple empty states are waiting states, not motivational).
+
+---
+
+## Visual Quality Pass — Findings
+
+### Ronin role (2026-03-18) — 135 screenshots, 47 issues
+
+**Fixes applied (14):**
+
+1. Loading state — branded loading screen replacing blank black spinner
+2. Skeleton loading states — Dashboard, Progress, WorkoutPlans, Recovery
+3. AI counter 999/999 — hidden when at maximum
+4. Recovery data logic — renamed "Training Readiness", separated from muscle recovery
+5. Recovery ring color — dynamic green/amber/red matching status
+6. Tab bar clipping mobile — AchievementsPage + AICoach horizontally scrollable with fade gradient
+7. Chart Y-axis identical values — ZoneBandChart generates meaningful scale from single data point
+8. Mobile chart Y-axis — hidden <450px, hero number shown instead
+9. Schedule desktop calendar — workout dot indicators added to day cells
+10. Nutrition green icon — text-green-400 → text-primary
+11. Workout card descriptions — exercise count + muscle groups replaces generic placeholder
+12. Settings plan tab — spacing tightened, reduced dead space
+13. Volume double unit — formatVolume() fix, no more "45.1k kg"
+14. Avg Duration em-dash — "No data yet" in muted text
+
+**Deferred (correct decisions):**
+
+- Workout execution error on empty workouts — needs backend validation (Sprint 7)
+- Collapsed sidebar tooltips — nice-to-have §VA-12
+- XP caching difference between viewports — race condition not visual bug
+- Calculator category badge colors — intentional categorical differentiation
+
+**New layout rules learned:**
+
+- Tab bars: always `overflow-x-auto scrollbar-hide` with `w-max` on inner flex + right fade gradient
+- Chart Y-axis: never derive ticks from single data point — generate from [0, max*0.5, max*1.5]
+- Loading states: dark spinner on dark background = invisible — always use branded loading screen or skeleton
+- formatVolume() already includes unit — never append "kg" separately
+- Training Readiness ≠ Muscle Recovery — two different metrics, must be visually distinct
+
+### Guru role — pending
+
+### Disciple role — pending
 
 ---
 
