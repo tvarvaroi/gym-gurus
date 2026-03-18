@@ -30,6 +30,10 @@
 - [[notes/design-upgrade-plan]]
 - [[notes/magicui-integration]] — installation guide + component inventory (Phase 1 complete)
 
+## Quality Passes
+
+- [[notes/design-upgrade-plan]] — visual quality pass Ronin role complete (2026-03-18)
+
 ## Resources
 
 - [[maps/resources-index]]

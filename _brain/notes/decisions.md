@@ -136,6 +136,22 @@ Key architectural decisions made during the audit and refactor. Each entry expla
 
 ---
 
+## Recovery page data separation (2026-03-18)
+
+**Decided**: Renamed hero score from "Recovery" to "Training Readiness" with subtitle "Based on your 28-day training load". Muscle diagram section labeled separately as "Muscle Recovery Status".
+**Rejected**: Keep single "Recovery" label for both metrics.
+**Why**: 50% readiness score with 16/16 recovered muscles is not contradictory — they measure different things. The ACWR score measures training load stress. The muscle diagram measures per-muscle fatigue. Both are valid and useful. They must be visually and semantically distinct.
+
+---
+
+## Dynamic ring color on recovery metrics (2026-03-18)
+
+**Decided**: `AnimatedCircularProgressBar` ring color matches status: optimal (>=75%) green `#22c55e`, moderate (50-74%) amber `#f59e0b`, low (<50%) red `#ef4444`.
+**Rejected**: Always use role accent color (purple for Ronin).
+**Why**: Ring and badge showing different colors (purple ring vs amber badge) breaks the status signal. The ring IS the status indicator — it must match the severity level, not the role.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]

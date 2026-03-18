@@ -190,6 +190,31 @@ The request ID is stored in a `WeakMap` keyed by the request object. Use `getReq
 
 ---
 
+## Visual Quality / UI
+
+**Loading screen is in AuthGuard.tsx, not a standalone component.**
+The auth loading state (shown on every page load) is rendered inside `AuthGuard.tsx` (lines 78-120), not in `LoadingFallback.tsx`. `LoadingFallback` is only for Suspense/lazy-load chunk fetching. To change the branded loading screen, edit AuthGuard.
+
+**`AnimatedCircularProgressBar` color is set via SVG `linearGradient` stops, not a prop.**
+The component in `animated-circular-progress-bar.tsx` uses an inline SVG gradient. To make the ring color dynamic, modify the gradient stop colors in the consuming component's render, not via a `gaugePrimaryColor` prop (which doesn't exist). Recovery.tsx passes dynamic `ringColor` into the gradient stops.
+
+**ZoneBandChart Y-axis needs a "nice numbers" algorithm for single data points.**
+When min≈max, the default tick range produces identical Y-axis labels. The fix (Sprint 7) uses magnitude-based rounding to generate clean tick steps (multiples of 1, 2, 5, 10). Minimum 3 distinct ticks always. Falls back to [0, 100, 200] when all values are zero.
+
+**Mobile tab bars must use `overflow-x-auto` with `w-max` inner container.**
+At 390px, 4+ tab buttons clip at the viewport edge. Pattern: outer `overflow-x-auto scrollbar-hide`, inner `flex gap-2 w-max`, plus a right-side fade gradient (`bg-gradient-to-l from-background`) to indicate scrollability. Applied to Achievements tabs and AI Coach topic chips.
+
+**`formatVolume()` already includes unit suffix — never append "kg" separately.**
+`formatVolume()` returns "45.1k" for large values (includes the "k"). Adding "kg" after creates "45.1kkg". Pattern: `{formatVolume(value)}` alone. Use `volumeHasAbbreviation()` to check if the formatted string already has a suffix.
+
+**Recovery vs Training Readiness — two different metrics.**
+Training Readiness = ACWR training load score (28-day rolling window from `/api/solo/readiness`). Muscle Recovery = per-muscle-group recovery status from `react-body-highlighter`. These must be clearly labeled separately. Showing one score for both concepts confuses users (50% readiness with 16/16 recovered muscles looks contradictory but isn't).
+
+**All loading states need brand presence — never show a blank screen.**
+Dark purple spinner on near-black background is effectively invisible. The auth loading screen (AuthGuard.tsx) uses a branded "GG" logo with pulsing ring. Page-level loading should use skeleton loaders matching the page layout shape. Users think the app crashed if they see blank.
+
+---
+
 ## Related Notes
 
 - [[decisions]]

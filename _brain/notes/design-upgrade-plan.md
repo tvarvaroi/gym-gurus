@@ -609,6 +609,40 @@ Pre-existing: DB-based idempotency check (queries `payments` table for existing 
 
 ---
 
+## Visual Quality Pass — Ronin Role (2026-03-18)
+
+### Deep Playwright Audit
+
+- 135 screenshots captured across 11 pages + loading states + nav states
+- 47 issues found, categorized by severity
+- 14 fixes applied
+
+### Fixes Applied
+
+1. Loading state redesign — branded loading screen replacing blank black spinner
+2. Skeleton loading states — added to Dashboard, Progress, WorkoutPlans, Recovery
+3. AI counter 999/999 — hidden when at maximum, removed confusing display
+4. Recovery data logic — renamed to "Training Readiness", labeled separately from muscle recovery
+5. Recovery ring color — dynamic: green=optimal, amber=moderate, red=low
+6. Tab bar clipping (mobile) — AchievementsPage + AICoach tabs now horizontally scrollable with fade gradient
+7. Chart Y-axis identical values — ZoneBandChart generates meaningful scale from single data point
+8. Mobile chart Y-axis — hidden on mobile <450px, hero number shown above chart instead
+9. Schedule desktop calendar — workout dot indicators added to day cells
+10. Nutrition green icon — text-green-400 → text-primary
+11. Workout card descriptions — generic "AI-generated" placeholder replaced with exercise count + duration
+12. Settings plan tab — spacing tightened, reduced dead space
+13. Volume double unit — formatVolume() fix, no more "45.1k kg"
+14. Avg Duration em-dash — replaced with "No data" in muted text
+
+### Issues Deferred (with reasons)
+
+- Workout execution error on empty workouts — needs backend validation (disable start button if no exercises)
+- Collapsed sidebar tooltips — nice-to-have, §VA-12
+- XP caching difference between viewports — race condition, not visual bug
+- Calculator category badge colors — intentional categorical differentiation
+
+---
+
 ## PART 4 — RESOURCES
 
 - [[resources/magicui-components]] — full Magic UI component list
