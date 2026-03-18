@@ -1,6 +1,37 @@
 # CLAUDE.md — GymGurus Developer Reference
 
-> Last updated: 2026-03-13 | Full skills inventory — 139+ skills across 5 locations including frontend-design plugin + ui-ux-pro-max
+> Last updated: 2026-03-18 | Full skills inventory — 139+ skills across 5 locations including frontend-design plugin + ui-ux-pro-max
+
+---
+
+## Plugins — always active
+
+These plugins are installed at user scope and must be used on every relevant task:
+
+- **frontend-design** — use on ANY task involving UI, components, pages, styling, or visual work. Read the skill before writing any frontend code.
+- **code-review** — use on every PR, every significant new file, and every refactor. Run a review pass before marking any task complete.
+- **context7** — use when working with any external library (Drizzle, TanStack Query, Stripe SDK, framer-motion, shadcn/ui, etc). Fetch current docs before implementing — never rely on training data alone for library APIs.
+- **superpowers** — available for enhanced tasks.
+
+### When to invoke each
+
+| Situation                                        | Plugin to use   |
+| ------------------------------------------------ | --------------- |
+| Building or modifying any React component        | frontend-design |
+| Adding a new page or redesigning an existing one | frontend-design |
+| Writing a new API route or service               | code-review     |
+| Refactoring existing code                        | code-review     |
+| Using any npm library                            | context7        |
+| Implementing Stripe, OpenAI, Drizzle, shadcn     | context7        |
+| Any task marked as complex or high-risk          | superpowers     |
+
+### How to invoke
+
+Claude Code automatically loads installed plugins. Reference them explicitly in your thinking:
+
+- "Using frontend-design skill for this component..."
+- "Running code-review pass before completing..."
+- "Fetching context7 docs for [library]..."
 
 ---
 

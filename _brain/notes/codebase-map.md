@@ -842,3 +842,15 @@ Recovery status classification:
 ### Hooks Inventoried
 
 - `client/src/hooks/` (full directory listing — 15 hooks)
+
+---
+
+## Claude Code plugins (user scope)
+
+- frontend-design@claude-plugins-official — UI/component design skill
+- code-review@claude-plugins-official — code quality review
+- context7@claude-plugins-official — live library documentation fetching
+- superpowers@claude-plugins-official — enhanced capabilities
+
+All installed at user scope — available in every project automatically.
+CLAUDE.md instructs Claude Code to use them on every relevant task.
