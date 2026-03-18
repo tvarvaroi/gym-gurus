@@ -1,29 +1,17 @@
 import { Home, Dumbbell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
 import { useUser } from '@/contexts/UserContext';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 export default function NotFound() {
-  const prefersReducedMotion = useReducedMotion();
   const { user } = useUser();
   const homeUrl = user ? '/dashboard' : '/';
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4">
-      <motion.div
-        className="text-center space-y-6 max-w-md"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div
-          className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center"
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
-        >
+      <div className="text-center space-y-6 max-w-md animate-in fade-in slide-in-from-bottom-3 duration-500">
+        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center animate-pulse">
           <Dumbbell className="h-10 w-10 text-primary/60" />
-        </motion.div>
+        </div>
 
         <div className="space-y-2">
           <h1 className="text-5xl font-bold text-foreground">404</h1>
@@ -37,7 +25,7 @@ export default function NotFound() {
           <Home className="w-4 h-4 mr-2" />
           Back to Home
         </Button>
-      </motion.div>
+      </div>
     </div>
   );
 }

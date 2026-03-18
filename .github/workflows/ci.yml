@@ -68,5 +68,10 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run build
+      - name: Check bundle size
+        run: |
+          BUILD_SIZE=$(du -sh dist/ | cut -f1)
+          echo "Bundle size: $BUILD_SIZE"
+          echo "### Bundle Size: $BUILD_SIZE" >> "$GITHUB_STEP_SUMMARY"
       - run: npm audit --audit-level=high
         continue-on-error: true

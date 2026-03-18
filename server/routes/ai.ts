@@ -106,7 +106,7 @@ function sendLimitError(res: Response, reason: string, remaining: number, limit:
  */
 router.get('/usage', async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
+    const user = req.user;
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     const summary = await getUsageSummary(user);
     res.json(summary);
@@ -124,7 +124,7 @@ router.get('/usage', async (req: Request, res: Response) => {
  * Uses Vercel AI SDK with Anthropic Claude, falls back to template responses
  */
 router.post('/chat', async (req: Request, res: Response) => {
-  const user = (req as any).user;
+  const user = req.user;
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   if (!requireApiKey(res)) return;
 
@@ -222,7 +222,7 @@ router.post('/chat', async (req: Request, res: Response) => {
  * Streams AI response token-by-token via SSE
  */
 router.post('/chat/stream', async (req: Request, res: Response) => {
-  const user = (req as any).user;
+  const user = req.user;
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   if (!requireApiKey(res)) return;
 
@@ -345,7 +345,7 @@ router.post('/chat/stream', async (req: Request, res: Response) => {
  * POST /api/ai/generate-workout
  */
 router.post('/generate-workout', async (req: Request, res: Response) => {
-  const user = (req as any).user;
+  const user = req.user;
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   if (!requireApiKey(res)) return;
 
@@ -413,7 +413,7 @@ router.post('/generate-workout', async (req: Request, res: Response) => {
  * POST /api/ai/generate-meal-plan
  */
 router.post('/generate-meal-plan', async (req: Request, res: Response) => {
-  const user = (req as any).user;
+  const user = req.user;
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   if (!requireApiKey(res)) return;
 
@@ -526,7 +526,7 @@ router.post('/analyze-form', async (req: Request, res: Response) => {
  * POST /api/ai/progress-insights
  */
 router.post('/progress-insights', async (req: Request, res: Response) => {
-  const user = (req as any).user;
+  const user = req.user;
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   if (!requireApiKey(res)) return;
 
@@ -603,7 +603,7 @@ router.get('/conversations/:conversationId', async (req: Request, res: Response)
  */
 router.get('/conversations', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

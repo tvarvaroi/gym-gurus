@@ -23,6 +23,8 @@ import { useUser } from '@/contexts/UserContext';
 import { LuxuryCard } from '@/components/LuxuryCard';
 import { useQuery } from '@tanstack/react-query';
 import { useSEO } from '@/lib/seo';
+import { BlurFade } from '@/components/ui/blur-fade';
+import { NumberTicker } from '@/components/ui/number-ticker';
 
 const calculators: {
   id: string;
@@ -158,155 +160,179 @@ export default function PremiumCalculatorsHub() {
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
       {/* Hero Section */}
-      <div>
-        <PageHeader
-          icon={<Calculator className="h-full w-full" />}
-          title="Fitness"
-          titleAccent="Calculators"
-          subtitle="Track your progress with saved results and personalized insights"
-        />
-      </div>
+      <BlurFade delay={0.05}>
+        <div>
+          <PageHeader
+            icon={<Calculator className="h-full w-full" />}
+            title="Fitness"
+            titleAccent="Calculators"
+            subtitle="Track your progress with saved results and personalized insights"
+          />
+        </div>
+      </BlurFade>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-zinc-900/80 rounded-2xl border border-border/20 p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground/60 font-medium">Total Calculations</p>
-            <Calculator className="w-4 h-4 text-primary/40" />
+      <BlurFade delay={0.1}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-zinc-900/80 rounded-2xl border border-border/20 p-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground/60 font-medium">Total Calculations</p>
+              <Calculator className="w-4 h-4 text-primary/40" />
+            </div>
+            <p className="text-3xl font-bold tabular-nums">
+              <NumberTicker value={allResults.length} />
+            </p>
           </div>
-          <p className="text-3xl font-bold tabular-nums">{allResults.length}</p>
-        </div>
 
-        <div className="bg-zinc-900/80 rounded-2xl border border-border/20 p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground/60 font-medium">Favorites</p>
-            <Star className="w-4 h-4 text-primary/40" />
+          <div className="bg-zinc-900/80 rounded-2xl border border-border/20 p-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground/60 font-medium">Favorites</p>
+              <Star className="w-4 h-4 text-primary/40" />
+            </div>
+            <p className="text-3xl font-bold tabular-nums">
+              <NumberTicker value={favoriteResults.length} />
+            </p>
           </div>
-          <p className="text-3xl font-bold tabular-nums">{favoriteResults.length}</p>
-        </div>
 
-        <div className="bg-zinc-900/80 rounded-2xl border border-border/20 p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground/60 font-medium">This Week</p>
-            <TrendingUp className="w-4 h-4 text-primary/40" />
+          <div className="bg-zinc-900/80 rounded-2xl border border-border/20 p-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground/60 font-medium">This Week</p>
+              <TrendingUp className="w-4 h-4 text-primary/40" />
+            </div>
+            <p className="text-3xl font-bold tabular-nums">
+              <NumberTicker
+                value={
+                  allResults.filter((r: any) => {
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return new Date(r.createdAt) > weekAgo;
+                  }).length
+                }
+              />
+            </p>
           </div>
-          <p className="text-3xl font-bold tabular-nums">
-            {
-              allResults.filter((r: any) => {
-                const weekAgo = new Date();
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                return new Date(r.createdAt) > weekAgo;
-              }).length
-            }
-          </p>
         </div>
-      </div>
+      </BlurFade>
 
       {/* Recent Results & Favorites */}
-      {(recentResults.length > 0 || favoriteResults.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Results */}
-          {recentResults.length > 0 && (
-            <div>
-              <LuxuryCard title="Recent Results" icon={<Clock className="w-5 h-5" />} hover={false}>
-                <div className="space-y-3 mt-4">
-                  {recentResults.map((result: any) => (
-                    <Link key={result.id} href={`/dashboard/calculators/${result.calculatorType}`}>
-                      <div className="p-3 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">
-                              {calculatorDisplayNames[result.calculatorType] ||
-                                result.calculatorType.replace(/_/g, ' ')}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(result.createdAt).toLocaleDateString()}
-                            </p>
+      <BlurFade delay={0.2}>
+        {(recentResults.length > 0 || favoriteResults.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Results */}
+            {recentResults.length > 0 && (
+              <div>
+                <LuxuryCard
+                  title="Recent Results"
+                  icon={<Clock className="w-5 h-5" />}
+                  hover={false}
+                >
+                  <div className="space-y-3 mt-4">
+                    {recentResults.map((result: any) => (
+                      <Link
+                        key={result.id}
+                        href={`/dashboard/calculators/${result.calculatorType}`}
+                      >
+                        <div className="p-3 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors cursor-pointer">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">
+                                {calculatorDisplayNames[result.calculatorType] ||
+                                  result.calculatorType.replace(/_/g, ' ')}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(result.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Activity className="w-4 h-4 text-primary" />
                           </div>
-                          <Activity className="w-4 h-4 text-primary" />
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </LuxuryCard>
-            </div>
-          )}
+                      </Link>
+                    ))}
+                  </div>
+                </LuxuryCard>
+              </div>
+            )}
 
-          {/* Favorites */}
-          {favoriteResults.length > 0 && (
-            <div>
-              <LuxuryCard
-                title="Favorite Calculators"
-                icon={<Star className="w-5 h-5" />}
-                hover={false}
-              >
-                <div className="space-y-3 mt-4">
-                  {favoriteResults.slice(0, 5).map((result: any) => (
-                    <Link key={result.id} href={`/dashboard/calculators/${result.calculatorType}`}>
-                      <div className="p-3 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium capitalize flex items-center gap-2">
-                              <Star className="w-3 h-3 fill-primary text-primary" />
-                              {result.calculatorType.replace(/_/g, ' ')}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Last used: {new Date(result.createdAt).toLocaleDateString()}
-                            </p>
+            {/* Favorites */}
+            {favoriteResults.length > 0 && (
+              <div>
+                <LuxuryCard
+                  title="Favorite Calculators"
+                  icon={<Star className="w-5 h-5" />}
+                  hover={false}
+                >
+                  <div className="space-y-3 mt-4">
+                    {favoriteResults.slice(0, 5).map((result: any) => (
+                      <Link
+                        key={result.id}
+                        href={`/dashboard/calculators/${result.calculatorType}`}
+                      >
+                        <div className="p-3 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors cursor-pointer">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium capitalize flex items-center gap-2">
+                                <Star className="w-3 h-3 fill-primary text-primary" />
+                                {result.calculatorType.replace(/_/g, ' ')}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Last used: {new Date(result.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </LuxuryCard>
-            </div>
-          )}
-        </div>
-      )}
+                      </Link>
+                    ))}
+                  </div>
+                </LuxuryCard>
+              </div>
+            )}
+          </div>
+        )}
+      </BlurFade>
 
       {/* Calculator Grid */}
-      <div>
-        <h2 className="text-2xl font-['Playfair_Display'] font-light mb-6">All Calculators</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {calculators.map((calc, index) => (
-            <Link key={calc.id} href={`/dashboard/calculators/${calc.id}`}>
-              <div
-                className={`p-6 rounded-xl cursor-pointer premium-card relative overflow-hidden group`}
-              >
-                {/* Background gradient */}
+      <BlurFade delay={0.3}>
+        <div>
+          <h2 className="text-2xl font-['Playfair_Display'] font-light mb-6">All Calculators</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {calculators.map((calc, index) => (
+              <Link key={calc.id} href={`/dashboard/calculators/${calc.id}`}>
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br ${calc.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-                />
+                  className={`p-6 rounded-xl cursor-pointer premium-card relative overflow-hidden group`}
+                >
+                  {/* Background gradient */}
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${calc.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                  />
 
-                <div className="relative">
-                  <div className="p-3 bg-primary/10 rounded-xl w-fit mb-3">
-                    <calc.Icon className="w-7 h-7 text-primary" />
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-                      {calc.category}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-lg mb-1">{calc.name}</h3>
-                  <p className="text-sm text-muted-foreground">{calc.description}</p>
-
-                  {/* Show if user has saved results for this calculator */}
-                  {allResults.some((r: any) => r.calculatorType === calc.id) && (
-                    <div className="flex items-center gap-1 mt-3 text-xs text-primary">
-                      <TrendingUp className="w-3 h-3" />
-                      <span>
-                        {allResults.filter((r: any) => r.calculatorType === calc.id).length} saved
+                  <div className="relative">
+                    <div className="p-3 bg-primary/10 rounded-xl w-fit mb-3">
+                      <calc.Icon className="w-7 h-7 text-primary" />
+                    </div>
+                    <div className="mb-2">
+                      <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
+                        {calc.category}
                       </span>
                     </div>
-                  )}
+                    <h3 className="font-semibold text-lg mb-1">{calc.name}</h3>
+                    <p className="text-sm text-muted-foreground">{calc.description}</p>
+
+                    {/* Show if user has saved results for this calculator */}
+                    {allResults.some((r: any) => r.calculatorType === calc.id) && (
+                      <div className="flex items-center gap-1 mt-3 text-xs text-primary">
+                        <TrendingUp className="w-3 h-3" />
+                        <span>
+                          {allResults.filter((r: any) => r.calculatorType === calc.id).length} saved
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      </BlurFade>
     </div>
   );
 }

@@ -45,7 +45,7 @@ declare global {
  * Check if user is authenticated via session
  */
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
-  const userId = (req as any).session?.userId;
+  const userId = req.session?.userId;
 
   if (!userId) {
     return res.status(401).json({
@@ -63,7 +63,7 @@ export function isAuthenticated(req: Request, res: Response, next: NextFunction)
  */
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = (req as any).session?.userId;
+    const userId = req.session?.userId;
 
     if (!userId) {
       return res.status(401).json({
@@ -77,7 +77,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
     if (!user) {
       // Session exists but user doesn't - clear session
-      (req as any).session.destroy();
+      req.session?.destroy();
       return res.status(401).json({
         error: 'Invalid authentication',
         message: 'User not found',

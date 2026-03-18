@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { motion } from 'framer-motion';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueryClient } from '@tanstack/react-query';
@@ -37,12 +36,7 @@ export default function PaymentSuccess() {
         }}
       />
 
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-        className="w-full max-w-md relative z-10 px-4 py-10"
-      >
+      <div className="w-full max-w-md relative z-10 px-4 py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div
           className="relative rounded-3xl overflow-hidden p-8 text-center"
           style={{
@@ -62,20 +56,11 @@ export default function PaymentSuccess() {
           </div>
 
           {/* Check icon */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 15 }}
-            className="flex justify-center mb-5"
-          >
+          <div className="flex justify-center mb-5 animate-in zoom-in duration-300 delay-200">
             <CheckCircle2 className="w-16 h-16" style={{ color: 'hsl(var(--color-guru))' }} />
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.4 }}
-          >
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-300 delay-300">
             <h1
               className="text-3xl font-light mb-2"
               style={{ fontFamily: "'Playfair Display', serif", color: '#f2f2f2' }}
@@ -110,9 +95,9 @@ export default function PaymentSuccess() {
               Go to Dashboard
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

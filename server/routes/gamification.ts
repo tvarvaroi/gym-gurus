@@ -21,7 +21,7 @@ const router = Router();
 // Get user's gamification profile
 router.get('/profile', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -52,7 +52,7 @@ router.get('/profile', async (req: Request, res: Response) => {
 // Initialize gamification for user (called on first login)
 router.post('/initialize', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -69,7 +69,7 @@ router.post('/initialize', async (req: Request, res: Response) => {
 // Get XP transaction history
 router.get('/xp/history', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -86,7 +86,7 @@ router.get('/xp/history', async (req: Request, res: Response) => {
 // Get all achievements with progress
 router.get('/achievements', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -109,7 +109,7 @@ router.get('/achievements', async (req: Request, res: Response) => {
 // Get earned achievements only
 router.get('/achievements/earned', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -125,7 +125,7 @@ router.get('/achievements/earned', async (req: Request, res: Response) => {
 // Get achievement statistics
 router.get('/achievements/stats', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -141,7 +141,7 @@ router.get('/achievements/stats', async (req: Request, res: Response) => {
 // Update streak (called after workout completion)
 router.post('/streak/update', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -157,7 +157,7 @@ router.post('/streak/update', async (req: Request, res: Response) => {
 // Check achievements after workout (internal use)
 router.post('/achievements/check', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -197,7 +197,7 @@ router.get('/leaderboard/:type', async (req: Request, res: Response) => {
 // POST /weekly-summary - Generate and send weekly summary notification
 router.post('/weekly-summary', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

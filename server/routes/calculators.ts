@@ -197,18 +197,11 @@ router.post('/bodyfat', async (req: Request, res: Response) => {
     if (gender === 'male') {
       // Male formula
       bodyFat =
-        495 /
-          (1.0324 -
-            0.19077 * Math.log10(waist - neck) +
-            0.15456 * Math.log10(height)) -
-        450;
+        495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(height)) - 450;
     } else {
       // Female formula
       bodyFat =
-        495 /
-          (1.29579 -
-            0.35004 * Math.log10(waist + hip - neck) +
-            0.221 * Math.log10(height)) -
+        495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.221 * Math.log10(height)) -
         450;
     }
 
@@ -353,7 +346,7 @@ router.post('/plates', async (req: Request, res: Response) => {
 
 router.post('/save-to-profile', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

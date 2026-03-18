@@ -1161,11 +1161,11 @@ The `frontend-design` skill is explicit: _"Commit to a cohesive aesthetic. Domin
 
 3. **Public calculators: light mode only.** ✅ RESOLVED (2026-03-10) — (H-6) Rewrote `CalculatorsHub.tsx` (`/calculators`): added `dark min-h-screen bg-[#0a0a0a]` wrapper to force landing-page dark context regardless of auth state. Replaced all 12 rainbow icon badge colors (`bg-blue-100 dark:bg-blue-900/30` etc.) with uniform gold treatment (`bg-[rgba(201,168,76,0.10)]`, `text-[#c9a84c]`). Pro Tip card headings (`text-green-400`, `text-blue-400`) → `color: #c9a84c`. Gold gradient on page heading `span`. Cards use `rgba(255,255,255,0.04)` dark glass with gold hover border.
 
+4. **Nutrition Planner green.** ✅ RESOLVED (2026-03-15) — Sprint 2. Replaced 3 structural green instances in `NutritionPlanner.tsx` with `text-primary`/`bg-primary/10`/`text-primary/50`. Loading spinner icon, empty state circle, and empty state icon now inherit the Ronin role accent (purple). Macro data colors (red-400=protein, yellow-400=carbs, blue-400=fat) correctly preserved as data series differentiation.
+
 **Remaining §DS-1 work (not yet resolved):**
 
-4. **Nutrition Planner green.** Active states in the Nutrition Planner use a bright `#22c55e` green — completely unrelated to either the gold or the purple. Needs replacement with `var(--primary)`.
-
-5. **Full design system tokens.** The CSS variable consolidation (`--color-brand-gold`, `--color-accent` per role, etc.) is the long-term fix. Low-effort structural changes (H-5, H-6, H-7) addressed now; token refactor is a Sprint 2 task.
+5. **Full design system tokens.** The CSS variable consolidation (`--color-brand-gold`, `--color-accent` per role, etc.) is the long-term fix. Low-effort structural changes (H-5, H-6, H-7, Sprint 2) addressed; token refactor is a future sprint task.
 
 **Fix — define the design system properly:**
 
@@ -1204,34 +1204,24 @@ The `frontend-design` skill is explicit: _"Commit to a cohesive aesthetic. Domin
 }
 ```
 
-The Nutrition Planner green must either become `var(--color-accent)` or be removed. It has no design justification.
+~~The Nutrition Planner green must either become `var(--color-accent)` or be removed.~~ ✅ Done — Sprint 2 (2026-03-15).
 
 The public calculators must adopt the dark background + gold accent to match the landing. They are a marketing page — they must look like they belong to the same premium product.
 
 ---
 
-### § DS-2 — HIGH: Typography is strong on landing, invisible in app
+### § DS-2 — ✅ RESOLVED (2026-03-15): Typography — Playfair Display inside app
 
-**`frontend-design` verdict:** _"Choose fonts that are beautiful, unique, and interesting. Pair a distinctive display font with a refined body font."_
+**Sprint 2 fix.** `PageHeader` component (`client/src/components/ui/premium/PageHeader.tsx`) already uses `font-['Playfair_Display']` on its h1 — covers 10 pages: Progress, Workouts, Schedule, NutritionPlanner, Recovery, WorkoutGenerator, AICoach, PremiumCalculatorsHub, Settings, Achievements.
 
-**Landing:** Uses a large-weight serif (appears to be Cormorant Garamond or similar) for "Run Your Fitness Business Like a Pro". Looks intentional. The brand guide in `.claude/gymgurus-brand-guide.md` confirms: Playfair Display (headings), Cormorant Garamond (accents), Inter (body).
+Added `font-['Playfair_Display']` to 4 remaining pages with custom h1 elements:
 
-**App interior:** The display serif disappears entirely. Page titles like "Achievements", "Nutrition Planner", "Dashboard" all render in a regular sans-serif weight with no visual hierarchy beyond size. The heading font that defines the brand identity is only used on one page out of the entire product.
+- `ClientsPage.tsx` — 2 h1 elements (loading + data state)
+- `PaymentsPage.tsx` — "Payments" h1
+- `ExercisesPage.tsx` — 2 h1 elements (loading + data state)
+- `ClientDetailsPage.tsx` — client name h1
 
-**Fix:** Apply Playfair Display (or Cormorant Garamond) to all primary page headings inside the app. The `h1` and page-level section titles should carry the brand. Body text and data labels stay in Inter. This is a CSS change, not a redesign:
-
-```css
-/* In global styles */
-h1,
-.page-title {
-  font-family: 'Playfair Display', serif;
-}
-.section-label {
-  font-family: 'Cormorant Garamond', serif;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-```
+All app-interior page titles now use Playfair Display. Not applied to: data labels, stat numbers, body copy, nav items, buttons, text < 20px. Empty state headings (e.g. "Your story starts here.") already used Playfair via inline `style={{ fontFamily: 'Playfair Display, serif' }}`.
 
 ---
 

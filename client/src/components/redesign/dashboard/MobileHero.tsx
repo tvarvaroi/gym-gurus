@@ -1,11 +1,9 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { Camera, Loader2, Play, Shield } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useToast } from '@/hooks/use-toast';
-import { formatVolume } from '@/lib/format';
+import { formatVolume, volumeHasAbbreviation } from '@/lib/format';
 import { NumberTicker } from '@/components/ui/number-ticker';
 
 interface MobileHeroProps {
@@ -56,7 +54,6 @@ async function resizeImage(file: File, maxSize = 1024): Promise<Blob> {
 }
 
 export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroProps) {
-  const prefersReducedMotion = useReducedMotion();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
@@ -135,14 +132,6 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
       : '/solo/generate';
   const workoutLabel = workout && !isCompleted ? "Start Today's Workout" : 'Generate Workout';
 
-  const animProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: -8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3 },
-      };
-
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -188,7 +177,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
       numericValue: null as number | null,
       displayValue: formatVolume(weeklyVolume),
       label: 'THIS WEEK',
-      suffix: 'kg',
+      suffix: volumeHasAbbreviation(weeklyVolume) ? '' : 'kg',
     },
     {
       numericValue: null as number | null,
@@ -199,7 +188,7 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
   ];
 
   return (
-    <motion.div {...animProps} className="pt-3 md:pt-0 relative z-10">
+    <div className="pt-3 md:pt-0 relative z-10 animate-in fade-in duration-300">
       {/* Mobile: compact inline avatar + greeting — unchanged */}
       <div className="flex items-center gap-4 md:hidden">
         <label className="relative cursor-pointer group flex-shrink-0">
@@ -367,6 +356,6 @@ export function MobileHero({ user, gamification, fitnessProfile }: MobileHeroPro
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

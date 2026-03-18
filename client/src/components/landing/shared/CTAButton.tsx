@@ -1,6 +1,5 @@
 import { memo } from 'react';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 
 interface CTAButtonProps {
@@ -44,11 +43,7 @@ const CTAButton = memo(
     };
 
     return (
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ duration: 0.2 }}
-      >
+      <div className="transition-transform duration-200 hover:scale-105 active:scale-95">
         <Button
           onClick={handleClick}
           className={`
@@ -67,13 +62,13 @@ const CTAButton = memo(
           <span className="relative flex items-center gap-2">
             {children}
             {showArrow && (
-              <motion.span initial={{ x: 0 }} whileHover={{ x: 5 }} transition={{ duration: 0.3 }}>
+              <span className="transition-transform duration-300 group-hover:translate-x-1">
                 <ArrowRight className="w-5 h-5" />
-              </motion.span>
+              </span>
             )}
           </span>
         </Button>
-      </motion.div>
+      </div>
     );
   }
 );

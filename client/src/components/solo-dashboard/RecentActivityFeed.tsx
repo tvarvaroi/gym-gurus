@@ -1,7 +1,5 @@
-import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { ChevronRight } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface RecentActivityFeedProps {
   progress: any;
@@ -62,8 +60,6 @@ export function RecentActivityFeed({
   mealPlans,
   loading,
 }: RecentActivityFeedProps) {
-  const prefersReducedMotion = useReducedMotion();
-
   if (loading) return <ActivityFeedSkeleton />;
 
   // Merge activities from multiple sources
@@ -124,16 +120,8 @@ export function RecentActivityFeed({
     }
   }
 
-  const animProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { delay: 0.2 },
-      };
-
   return (
-    <motion.div {...animProps}>
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
       <div className="flex items-center justify-between mb-4">
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
           Recent Activity
@@ -193,6 +181,6 @@ export function RecentActivityFeed({
           ))}
         </div>
       )}
-    </motion.div>
+    </div>
   );
 }

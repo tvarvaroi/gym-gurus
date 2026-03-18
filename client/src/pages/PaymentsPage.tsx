@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import {
   CreditCard,
   Plus,
@@ -218,7 +217,7 @@ export default function PaymentsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Payments</h1>
+            <h1 className="text-2xl font-bold text-white font-['Playfair_Display']">Payments</h1>
             <p className="text-sm text-white/60">Manage billing, plans, and payment history</p>
           </div>
           <div className="flex gap-2">
@@ -324,11 +323,7 @@ export default function PaymentsPage() {
         )}
 
         {plans.length === 0 && paymentHistory.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-20 space-y-6 text-center"
-          >
+          <div className="flex flex-col items-center justify-center py-20 space-y-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
             <GuruIcon size={128} variant="default" />
             <div className="space-y-3">
               <h2
@@ -345,7 +340,7 @@ export default function PaymentsPage() {
               <Plus className="mr-2 h-4 w-4" />
               Create a Plan
             </Button>
-          </motion.div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Payment Plans */}

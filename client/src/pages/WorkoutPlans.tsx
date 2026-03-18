@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import WorkoutFormModal from '../components/WorkoutFormModal';
 import SearchInput from '@/components/SearchInput';
+import { BlurFade } from '@/components/ui/blur-fade';
 import { StaggerItem } from '@/components/AnimationComponents';
 import { exportWorkoutsToCSV } from '@/lib/exportUtils';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -112,12 +113,14 @@ const TrainerWorkoutCard = memo(
 
           <CardHeader className="relative space-y-4 pb-4">
             <div className="flex items-start justify-between">
-              <div className="space-y-2 flex-1">
-                <CardTitle className="text-xl font-extralight tracking-tight leading-snug line-clamp-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text group-hover:from-primary group-hover:to-primary/70 transition-all duration-300">
+              <div className="space-y-2 flex-1 min-w-0">
+                <CardTitle className="text-lg font-extralight tracking-tight leading-snug line-clamp-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text group-hover:from-primary group-hover:to-primary/70 transition-all duration-300">
                   {workout.title}
                 </CardTitle>
                 <CardDescription className="text-sm font-light leading-relaxed">
-                  {workout.description}
+                  {workout.description && !workout.description.startsWith('AI-generated')
+                    ? workout.description
+                    : `${workout.exercises?.length || 0} exercises · ${workout.duration || 45} min`}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -258,9 +261,9 @@ const ClientWorkoutCard = memo(
 
             <CardHeader className="relative space-y-4 pb-4">
               <div className="flex items-start justify-between">
-                <div className="space-y-2 flex-1">
+                <div className="space-y-2 flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-xl font-extralight tracking-tight leading-snug line-clamp-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text group-hover:from-cyan-500 group-hover:to-cyan-400 transition-all duration-300">
+                    <CardTitle className="text-lg font-extralight tracking-tight leading-snug line-clamp-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text group-hover:from-cyan-500 group-hover:to-cyan-400 transition-all duration-300">
                       {workout.title}
                     </CardTitle>
                     {isCompleted && (
@@ -274,7 +277,9 @@ const ClientWorkoutCard = memo(
                     )}
                   </div>
                   <CardDescription className="text-sm font-light leading-relaxed">
-                    {workout.description}
+                    {workout.description && !workout.description.startsWith('AI-generated')
+                      ? workout.description
+                      : `${workout.exercises?.length || 0} exercises · ${workout.duration || 45} min`}
                   </CardDescription>
                 </div>
                 <Badge
@@ -349,7 +354,7 @@ const CompactWorkoutRow = memo(
     >
       {/* Left: info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{workout.title}</p>
+        <p className="text-sm font-medium line-clamp-2 leading-tight">{workout.title}</p>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <Clock className="h-3 w-3" />
@@ -711,265 +716,267 @@ const WorkoutPlans = memo(() => {
     <PageTransition>
       <div className="space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-3 md:gap-6">
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 md:gap-6">
-            <PageHeader
-              icon={<Dumbbell className="h-full w-full" />}
-              title="My"
-              titleAccent="Workouts"
-              subtitle={
-                isSolo
-                  ? 'Your saved workouts — generate new ones with AI or build from scratch'
-                  : isClient
-                    ? 'Your personalized workout plans from your trainer'
-                    : 'Create and manage personalized workout routines'
-              }
-            />
-            {/* Role-specific actions */}
-            {isSolo && (
-              <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-light w-full sm:w-auto transition-all duration-300"
-                  onClick={() => (window.location.href = '/solo/generate')}
-                >
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  <span className="text-xs sm:text-sm">Generate with AI</span>
-                </Button>
-              </motion.div>
-            )}
-            {isTrainer && (
-              <div className="flex flex-col sm:flex-row gap-3">
+        <BlurFade delay={0.05}>
+          <div className="flex flex-col gap-3 md:gap-6">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 md:gap-6">
+              <PageHeader
+                icon={<Dumbbell className="h-full w-full" />}
+                title="My"
+                titleAccent="Workouts"
+                subtitle={
+                  isSolo
+                    ? 'Your saved workouts — generate new ones with AI or build from scratch'
+                    : isClient
+                      ? 'Your personalized workout plans from your trainer'
+                      : 'Create and manage personalized workout routines'
+                }
+              />
+              {/* Role-specific actions */}
+              {isSolo && (
                 <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
                   <Button
-                    variant="outline"
-                    onClick={() => setShowTemplates(!showTemplates)}
-                    data-testid="button-templates"
-                    className="w-full sm:w-auto border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 backdrop-blur-sm"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-light w-full sm:w-auto transition-all duration-300"
+                    onClick={() => (window.location.href = '/solo/generate')}
                   >
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    <span className="text-xs sm:text-sm font-light">
-                      {showTemplates ? 'Hide Templates' : 'Use Template'}
-                    </span>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    <span className="text-xs sm:text-sm">Generate with AI</span>
                   </Button>
                 </motion.div>
-                <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    variant="outline"
-                    onClick={handleExport}
-                    disabled={!workouts?.length}
-                    data-testid="button-export-workouts"
-                    className="w-full sm:w-auto border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 backdrop-blur-sm"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    <span className="text-xs sm:text-sm font-light">Export</span>
-                  </Button>
-                </motion.div>
-                <WorkoutFormModal
-                  mode="create"
-                  trainerId={user?.id || currentUser?.id}
-                  trigger={
-                    <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
-                      <Button
-                        className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/20 font-light w-full sm:w-auto transition-all duration-300"
-                        data-testid="button-create-workout"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        <span className="text-xs sm:text-sm">New Workout Plan</span>
-                      </Button>
-                    </motion.div>
-                  }
-                />
-              </div>
-            )}
+              )}
+              {isTrainer && (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowTemplates(!showTemplates)}
+                      data-testid="button-templates"
+                      className="w-full sm:w-auto border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 backdrop-blur-sm"
+                    >
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      <span className="text-xs sm:text-sm font-light">
+                        {showTemplates ? 'Hide Templates' : 'Use Template'}
+                      </span>
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant="outline"
+                      onClick={handleExport}
+                      disabled={!workouts?.length}
+                      data-testid="button-export-workouts"
+                      className="w-full sm:w-auto border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 backdrop-blur-sm"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      <span className="text-xs sm:text-sm font-light">Export</span>
+                    </Button>
+                  </motion.div>
+                  <WorkoutFormModal
+                    mode="create"
+                    trainerId={user?.id || currentUser?.id}
+                    trigger={
+                      <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/20 font-light w-full sm:w-auto transition-all duration-300"
+                          data-testid="button-create-workout"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          <span className="text-xs sm:text-sm">New Workout Plan</span>
+                        </Button>
+                      </motion.div>
+                    }
+                  />
+                </div>
+              )}
+            </div>
+            <div className="w-full md:w-96">
+              <SearchInput
+                placeholder={
+                  isClient
+                    ? 'Search your workouts...'
+                    : 'Search workouts by title, category, difficulty...'
+                }
+                value={searchQuery}
+                onChange={setSearchQuery}
+                className="w-full backdrop-blur-sm"
+                focusColor={isClient ? 'cyan' : 'default'}
+              />
+            </div>
           </div>
-          <div className="w-full md:w-96">
-            <SearchInput
-              placeholder={
-                isClient
-                  ? 'Search your workouts...'
-                  : 'Search workouts by title, category, difficulty...'
-              }
-              value={searchQuery}
-              onChange={setSearchQuery}
-              className="w-full backdrop-blur-sm"
-              focusColor={isClient ? 'cyan' : 'default'}
-            />
-          </div>
-        </div>
+        </BlurFade>
 
         {/* Category Filter Chips — horizontal scroll on mobile */}
         {!isClient && availableCategories.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-3 px-3 py-1 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
-            {availableCategories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveFilter(cat)}
-                className={`snap-start flex-shrink-0 px-4 py-2 min-h-[36px] rounded-full text-xs font-medium transition-all duration-200 ${
-                  activeFilter === cat
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+          <BlurFade delay={0.1}>
+            <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-3 px-3 py-1 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
+              {availableCategories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveFilter(cat)}
+                  className={`snap-start flex-shrink-0 px-4 py-2 min-h-[36px] rounded-full text-xs font-medium transition-all duration-200 ${
+                    activeFilter === cat
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </BlurFade>
         )}
 
         {/* Templates Section */}
-        {showTemplates && templates && (
-          <motion.div
-            className="space-y-6"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <h2 className="text-2xl sm:text-3xl font-extralight tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Quick Start Templates
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {templates.map((template: any, index: number) => (
-                <motion.div
-                  key={template.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -4 }}
-                >
-                  <Card className="cursor-pointer overflow-hidden border border-border/30 bg-background/40 backdrop-blur-xl hover:border-primary/40 hover:shadow-premium transition-all duration-500 group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <CardContent className="relative p-5">
-                      <h3 className="font-light text-lg mb-2 group-hover:text-primary transition-colors">
-                        {template.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground/80 font-light mb-4 leading-relaxed">
-                        {template.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="text-xs font-light">
-                            {template.difficulty}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs font-light">
-                            {template.duration} min
-                          </Badge>
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() => handleUseTemplate(template)}
-                          className="hover:bg-primary/90 transition-all duration-300"
-                        >
-                          Use
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Client: Weekly Workout View | Trainer: Workout Cards Grid */}
-        {isClient ? (
-          <WeeklyWorkoutView />
-        ) : filteredWorkouts.length === 0 ? (
-          <motion.div
-            className="flex flex-col items-center justify-center py-20 space-y-8"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 20 }}
-          >
+        <BlurFade delay={0.15}>
+          {showTemplates && templates && (
             <motion.div
-              className="relative"
-              whileHover={{ opacity: 0.8 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              className="space-y-6"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
             >
-              <div
-                className={`absolute inset-0 ${isSolo ? 'bg-purple-500/20' : 'bg-primary/20'} blur-2xl rounded-full`}
-              />
-              <div
-                className={`relative w-20 h-20 rounded-full bg-gradient-to-br ${isSolo ? 'from-purple-500/20 to-indigo-500/5 border-purple-500/20' : 'from-primary/20 to-primary/5 border-primary/20'} backdrop-blur-sm border flex items-center justify-center`}
-              >
-                {isSolo ? (
-                  <Dumbbell className="w-10 h-10 text-purple-400" />
-                ) : (
-                  <Target className="w-10 h-10 text-primary" />
-                )}
+              <h2 className="text-2xl sm:text-3xl font-extralight tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Quick Start Templates
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {templates.map((template: any, index: number) => (
+                  <motion.div
+                    key={template.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ y: -4 }}
+                  >
+                    <Card className="cursor-pointer overflow-hidden border border-border/30 bg-background/40 backdrop-blur-xl hover:border-primary/40 hover:shadow-premium transition-all duration-500 group">
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <CardContent className="relative p-5">
+                        <h3 className="font-light text-lg mb-2 group-hover:text-primary transition-colors">
+                          {template.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground/80 font-light mb-4 leading-relaxed">
+                          {template.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex gap-2">
+                            <Badge variant="outline" className="text-xs font-light">
+                              {template.difficulty}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs font-light">
+                              {template.duration} min
+                            </Badge>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => handleUseTemplate(template)}
+                            className="hover:bg-primary/90 transition-all duration-300"
+                          >
+                            Use
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
-            <div className="text-center space-y-3">
-              <h3 className="text-2xl font-light tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                {searchQuery ? 'No matching workouts' : 'No workouts yet'}
-              </h3>
-              <p className="text-muted-foreground/80 font-light max-w-md leading-relaxed">
-                {searchQuery
-                  ? 'No workouts found matching your search. Try a different term.'
-                  : isSolo
-                    ? 'No workouts saved yet. Generate your first AI-powered workout to get started.'
-                    : 'Create your first workout plan to start building personalized routines for your clients'}
-              </p>
-            </div>
-            {!searchQuery &&
-              (isSolo ? (
-                <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-light transition-all duration-300"
-                    onClick={() => (window.location.href = '/solo/generate')}
-                  >
-                    <Dumbbell className="mr-2 h-4 w-4" />
-                    Generate a Workout
-                  </Button>
-                </motion.div>
-              ) : (
-                <WorkoutFormModal
-                  mode="create"
-                  trainerId={user?.id}
-                  trigger={
-                    <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.95 }}>
-                      <Button className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/20 font-light transition-all duration-300">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Workout Plan
-                      </Button>
-                    </motion.div>
-                  }
-                />
-              ))}
-          </motion.div>
-        ) : (
-          <>
-            {/* Mobile: compact list rows */}
-            <div className="flex flex-col gap-2 md:hidden">
-              {filteredWorkouts.map((workout: any, index: number) => (
-                <CompactWorkoutRow
-                  key={workout.id}
-                  workout={workout}
-                  index={index}
-                  onDuplicate={handleDuplicate}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
-                  isPendingDuplicate={duplicateWorkoutMutation.isPending}
-                  isPendingDelete={deleteWorkoutMutation.isPending}
-                />
-              ))}
-            </div>
-            {/* Desktop: grid cards */}
-            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredWorkouts.map((workout: any, index: number) => (
-                <TrainerWorkoutCard
-                  key={workout.id}
-                  workout={workout}
-                  index={index}
-                  onDuplicate={handleDuplicate}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
-                  isPendingDuplicate={duplicateWorkoutMutation.isPending}
-                  isPendingDelete={deleteWorkoutMutation.isPending}
-                />
-              ))}
-            </div>
-          </>
-        )}
+          )}
+
+          {/* Client: Weekly Workout View | Trainer: Workout Cards Grid */}
+          {isClient ? (
+            <WeeklyWorkoutView />
+          ) : filteredWorkouts.length === 0 ? (
+            <motion.div
+              className="flex flex-col items-center justify-center py-20 space-y-8"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 20 }}
+            >
+              <motion.div
+                className="relative"
+                whileHover={{ opacity: 0.8 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              >
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20 backdrop-blur-sm border flex items-center justify-center">
+                  {isSolo ? (
+                    <Dumbbell className="w-10 h-10 text-primary" />
+                  ) : (
+                    <Target className="w-10 h-10 text-primary" />
+                  )}
+                </div>
+              </motion.div>
+              <div className="text-center space-y-3">
+                <h3 className="text-2xl font-light tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  {searchQuery ? 'No matching workouts' : 'No workouts yet'}
+                </h3>
+                <p className="text-muted-foreground/80 font-light max-w-md leading-relaxed">
+                  {searchQuery
+                    ? 'No workouts found matching your search. Try a different term.'
+                    : isSolo
+                      ? 'No workouts saved yet. Generate your first AI-powered workout to get started.'
+                      : 'Create your first workout plan to start building personalized routines for your clients'}
+                </p>
+              </div>
+              {!searchQuery &&
+                (isSolo ? (
+                  <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-light transition-all duration-300"
+                      onClick={() => (window.location.href = '/solo/generate')}
+                    >
+                      <Dumbbell className="mr-2 h-4 w-4" />
+                      Generate a Workout
+                    </Button>
+                  </motion.div>
+                ) : (
+                  <WorkoutFormModal
+                    mode="create"
+                    trainerId={user?.id}
+                    trigger={
+                      <motion.div whileHover={{ opacity: 0.8 }} whileTap={{ scale: 0.95 }}>
+                        <Button className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:shadow-lg hover:shadow-primary/20 font-light transition-all duration-300">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Workout Plan
+                        </Button>
+                      </motion.div>
+                    }
+                  />
+                ))}
+            </motion.div>
+          ) : (
+            <>
+              {/* Mobile: compact list rows */}
+              <div className="flex flex-col gap-2 md:hidden">
+                {filteredWorkouts.map((workout: any, index: number) => (
+                  <CompactWorkoutRow
+                    key={workout.id}
+                    workout={workout}
+                    index={index}
+                    onDuplicate={handleDuplicate}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                    isPendingDuplicate={duplicateWorkoutMutation.isPending}
+                    isPendingDelete={deleteWorkoutMutation.isPending}
+                  />
+                ))}
+              </div>
+              {/* Desktop: grid cards */}
+              <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredWorkouts.map((workout: any, index: number) => (
+                  <TrainerWorkoutCard
+                    key={workout.id}
+                    workout={workout}
+                    index={index}
+                    onDuplicate={handleDuplicate}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                    isPendingDuplicate={duplicateWorkoutMutation.isPending}
+                    isPendingDelete={deleteWorkoutMutation.isPending}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </BlurFade>
 
         {/* Edit Modal */}
         {editingWorkout && (

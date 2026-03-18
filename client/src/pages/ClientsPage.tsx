@@ -85,7 +85,7 @@ const ClientsPageContent = memo(() => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-extralight tracking-tight font-['Playfair_Display']">
                 My{' '}
                 <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
                   Clients
@@ -160,7 +160,7 @@ const ClientsPageContent = memo(() => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
               >
-                <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
+                <h1 className="text-4xl md:text-5xl font-extralight tracking-tight font-['Playfair_Display']">
                   My{' '}
                   <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
                     Clients

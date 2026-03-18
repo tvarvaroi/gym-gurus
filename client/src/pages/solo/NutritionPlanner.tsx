@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BlurFade } from '@/components/ui/blur-fade';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -319,557 +320,569 @@ export default function NutritionPlanner() {
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto">
       {/* Header */}
-      <PageHeader
-        icon={<Apple className="h-full w-full" />}
-        title="Nutrition"
-        titleAccent="Planner"
-        subtitle="AI-generated meal plans tailored to your goals"
-        actions={
-          <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary">
-            <Sparkles className="h-3 w-3 mr-1" />
-            AI Powered
-          </Badge>
-        }
-      />
+      <BlurFade delay={0.05}>
+        <PageHeader
+          icon={<Apple className="h-full w-full" />}
+          title="Nutrition"
+          titleAccent="Planner"
+          subtitle="AI-generated meal plans tailored to your goals"
+          actions={
+            <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary">
+              <Sparkles className="h-3 w-3 mr-1" />
+              AI Powered
+            </Badge>
+          }
+        />
+      </BlurFade>
 
-      <div className="grid lg:grid-cols-[3fr_2fr] gap-6">
-        {/* Configuration Panel */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-light flex items-center gap-2">
-                <Settings2 className="h-5 w-5 text-primary" />
-                Nutrition Preferences
-              </CardTitle>
-              <CardDescription>Tell us about your dietary goals and needs</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {/* Nutrition Goal */}
-              <div className="space-y-2">
-                <Label>Goal</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {goalOptions.map((opt) => (
-                    <Button
-                      key={opt.value}
-                      variant={nutritionGoal === opt.value ? 'default' : 'outline'}
-                      size="default"
-                      onClick={() => setNutritionGoal(opt.value)}
-                      className={
-                        nutritionGoal === opt.value
-                          ? 'bg-primary text-primary-foreground'
-                          : 'border-border/50'
-                      }
-                    >
-                      {opt.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Calories + Protein */}
-              <div className="grid grid-cols-2 gap-4">
+      <BlurFade delay={0.1}>
+        <div className="grid lg:grid-cols-[3fr_2fr] gap-6">
+          {/* Configuration Panel */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-light flex items-center gap-2">
+                  <Settings2 className="h-5 w-5 text-primary" />
+                  Nutrition Preferences
+                </CardTitle>
+                <CardDescription>Tell us about your dietary goals and needs</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {/* Nutrition Goal */}
                 <div className="space-y-2">
-                  <Label htmlFor="calories">Target Calories</Label>
-                  <Input
-                    id="calories"
-                    type="number"
-                    value={targetCalories}
-                    onChange={(e) => setTargetCalories(e.target.value)}
-                    placeholder="2200"
-                    min="1000"
-                    max="6000"
-                  />
+                  <Label>Goal</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {goalOptions.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        variant={nutritionGoal === opt.value ? 'default' : 'outline'}
+                        size="default"
+                        onClick={() => setNutritionGoal(opt.value)}
+                        className={
+                          nutritionGoal === opt.value
+                            ? 'bg-primary text-primary-foreground'
+                            : 'border-border/50'
+                        }
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Calories + Protein */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="calories">Target Calories</Label>
+                    <Input
+                      id="calories"
+                      type="number"
+                      value={targetCalories}
+                      onChange={(e) => setTargetCalories(e.target.value)}
+                      placeholder="2200"
+                      min="1000"
+                      max="6000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="protein">Protein Target (g)</Label>
+                    <Input
+                      id="protein"
+                      type="number"
+                      value={proteinTarget}
+                      onChange={(e) => setProteinTarget(e.target.value)}
+                      placeholder="160"
+                      min="50"
+                      max="400"
+                    />
+                  </div>
+                </div>
+
+                {/* Meals Per Day */}
                 <div className="space-y-2">
-                  <Label htmlFor="protein">Protein Target (g)</Label>
-                  <Input
-                    id="protein"
-                    type="number"
-                    value={proteinTarget}
-                    onChange={(e) => setProteinTarget(e.target.value)}
-                    placeholder="160"
-                    min="50"
-                    max="400"
-                  />
-                </div>
-              </div>
-
-              {/* Meals Per Day */}
-              <div className="space-y-2">
-                <Label>Meals Per Day</Label>
-                <div className="flex gap-2">
-                  {mealsPerDayOptions.map((n) => (
-                    <Button
-                      key={n}
-                      variant={mealsPerDay === n ? 'default' : 'outline'}
-                      size="default"
-                      onClick={() => setMealsPerDay(n)}
-                      className={`flex-1 ${
-                        mealsPerDay === n
-                          ? 'bg-primary text-primary-foreground'
-                          : 'border-border/50'
-                      }`}
-                    >
-                      {n}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Dietary Restrictions */}
-              <div className="space-y-2">
-                <Label>Dietary Restrictions</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {dietaryOptions.map((opt) => {
-                    const active = dietaryRestrictions.includes(opt);
-                    return (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => toggleDietary(opt)}
-                        className={`px-2 py-2 min-h-[36px] inline-flex items-center justify-center text-xs rounded-full border transition-colors ${
-                          active
-                            ? 'bg-primary/20 border-primary/50 text-primary'
-                            : 'bg-transparent border-border/50 text-muted-foreground hover:border-primary/30'
+                  <Label>Meals Per Day</Label>
+                  <div className="flex gap-2">
+                    {mealsPerDayOptions.map((n) => (
+                      <Button
+                        key={n}
+                        variant={mealsPerDay === n ? 'default' : 'outline'}
+                        size="default"
+                        onClick={() => setMealsPerDay(n)}
+                        className={`flex-1 ${
+                          mealsPerDay === n
+                            ? 'bg-primary text-primary-foreground'
+                            : 'border-border/50'
                         }`}
                       >
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Budget */}
-              <div className="space-y-2">
-                <Label>Budget</Label>
-                <div className="flex gap-2">
-                  {[
-                    { value: 'budget', label: 'Budget-friendly' },
-                    { value: 'moderate', label: 'Moderate' },
-                    { value: 'premium', label: 'No limit' },
-                  ].map((opt) => (
-                    <Button
-                      key={opt.value}
-                      variant={budget === opt.value ? 'default' : 'outline'}
-                      size="default"
-                      onClick={() => setBudget(opt.value)}
-                      className={`flex-1 text-xs ${
-                        budget === opt.value
-                          ? 'bg-primary text-primary-foreground'
-                          : 'border-border/50'
-                      }`}
-                    >
-                      {opt.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Cooking Skill */}
-              <div className="space-y-2">
-                <Label>Cooking Skill</Label>
-                <Select value={cookingSkill} onValueChange={setCookingSkill}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="minimal">Minimal — microwave / no-cook meals</SelectItem>
-                    <SelectItem value="basic">Basic — simple recipes, 15–20 min</SelectItem>
-                    <SelectItem value="intermediate">Intermediate — meal prep friendly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Generate Button */}
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Meal Plan
-                  </>
-                )}
-              </Button>
-
-              {limitReached && (
-                <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <div className="flex items-center gap-2 text-amber-400">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm font-medium">Daily AI limit reached</span>
+                        {n}
+                      </Button>
+                    ))}
                   </div>
-                  <a
-                    href="/pricing"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium"
-                  >
-                    <Crown className="h-3 w-3" />
-                    Upgrade Plan
-                  </a>
                 </div>
-              )}
-              {generateError && !limitReached && (
-                <p className="text-sm text-red-400 text-center">{generateError}</p>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
 
-        {/* Generated Meal Plan */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <AnimatePresence mode="wait">
-            {isGenerating ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full min-h-[500px] flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{
-                        duration: 2,
-                        repeat: prefersReducedMotion ? 0 : Infinity,
-                        ease: 'linear',
-                      }}
-                    >
-                      <Apple className="h-16 w-16 text-green-400 mx-auto" />
-                    </motion.div>
-                    <p className="text-lg font-light">Crafting your meal plan...</p>
-                    <p className="text-sm text-muted-foreground">
-                      Balancing macros and preferences
-                    </p>
+                {/* Dietary Restrictions */}
+                <div className="space-y-2">
+                  <Label>Dietary Restrictions</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {dietaryOptions.map((opt) => {
+                      const active = dietaryRestrictions.includes(opt);
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => toggleDietary(opt)}
+                          className={`px-2 py-2 min-h-[36px] inline-flex items-center justify-center text-xs rounded-full border transition-colors ${
+                            active
+                              ? 'bg-primary/20 border-primary/50 text-primary'
+                              : 'bg-transparent border-border/50 text-muted-foreground hover:border-primary/30'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
                   </div>
-                </Card>
-              </motion.div>
-            ) : mealPlan ? (
-              <motion.div
-                key="plan"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="space-y-4"
-              >
-                {/* Daily Totals */}
-                <Card className="border-primary/30 bg-primary/5">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-light flex items-center gap-2">
-                      <Flame className="h-4 w-4 text-primary" />
-                      Daily Totals
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-4 gap-3 text-center">
-                      <div>
-                        <p className="text-2xl font-light text-primary">
-                          {mealPlan.totalCalories}
-                        </p>
-                        <p className="text-xs text-muted-foreground">kcal</p>
-                      </div>
-                      {totalMacros && (
-                        <>
-                          <div>
-                            <p className="text-2xl font-light text-red-400">
-                              {totalMacros.protein}g
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center justify-center gap-0.5">
-                              <Beef className="h-3 w-3" /> protein
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-2xl font-light text-yellow-400">
-                              {totalMacros.carbs}g
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center justify-center gap-0.5">
-                              <Wheat className="h-3 w-3" /> carbs
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-2xl font-light text-blue-400">{totalMacros.fat}g</p>
-                            <p className="text-xs text-muted-foreground flex items-center justify-center gap-0.5">
-                              <Droplets className="h-3 w-3" /> fat
-                            </p>
-                          </div>
-                        </>
-                      )}
+                </div>
+
+                {/* Budget */}
+                <div className="space-y-2">
+                  <Label>Budget</Label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: 'budget', label: 'Budget-friendly' },
+                      { value: 'moderate', label: 'Moderate' },
+                      { value: 'premium', label: 'No limit' },
+                    ].map((opt) => (
+                      <Button
+                        key={opt.value}
+                        variant={budget === opt.value ? 'default' : 'outline'}
+                        size="default"
+                        onClick={() => setBudget(opt.value)}
+                        className={`flex-1 text-xs ${
+                          budget === opt.value
+                            ? 'bg-primary text-primary-foreground'
+                            : 'border-border/50'
+                        }`}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cooking Skill */}
+                <div className="space-y-2">
+                  <Label>Cooking Skill</Label>
+                  <Select value={cookingSkill} onValueChange={setCookingSkill}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minimal">Minimal — microwave / no-cook meals</SelectItem>
+                      <SelectItem value="basic">Basic — simple recipes, 15–20 min</SelectItem>
+                      <SelectItem value="intermediate">
+                        Intermediate — meal prep friendly
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Generate Button */}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Meal Plan
+                    </>
+                  )}
+                </Button>
+
+                {limitReached && (
+                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <div className="flex items-center gap-2 text-amber-400">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Daily AI limit reached</span>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Meals */}
-                <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
-                  {mealPlan.meals.map((meal, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.08 }}
+                    <a
+                      href="/pricing"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium"
                     >
-                      <Card className="border-border/40">
-                        <CardHeader className="pb-2 pt-4">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-medium flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs text-primary font-semibold">
-                                {i + 1}
-                              </div>
-                              {meal.name}
-                              {meal.time && (
-                                <span className="text-xs text-muted-foreground font-normal">
-                                  {meal.time}
-                                </span>
-                              )}
-                            </CardTitle>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              <span>{meal.totalCalories} kcal</span>
-                              {meal.prepTime > 0 && (
-                                <span className="flex items-center gap-0.5">
-                                  <Clock className="h-3 w-3" />
-                                  {meal.prepTime}m
-                                </span>
-                              )}
+                      <Crown className="h-3 w-3" />
+                      Upgrade Plan
+                    </a>
+                  </div>
+                )}
+                {generateError && !limitReached && (
+                  <p className="text-sm text-red-400 text-center">{generateError}</p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Generated Meal Plan */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <AnimatePresence mode="wait">
+              {isGenerating ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full min-h-[500px] flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 2,
+                          repeat: prefersReducedMotion ? 0 : Infinity,
+                          ease: 'linear',
+                        }}
+                      >
+                        <Apple className="h-16 w-16 text-primary mx-auto" />
+                      </motion.div>
+                      <p className="text-lg font-light">Crafting your meal plan...</p>
+                      <p className="text-sm text-muted-foreground">
+                        Balancing macros and preferences
+                      </p>
+                    </div>
+                  </Card>
+                </motion.div>
+              ) : mealPlan ? (
+                <motion.div
+                  key="plan"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="space-y-4"
+                >
+                  {/* Daily Totals */}
+                  <Card className="border-primary/30 bg-primary/5">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-light flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-primary" />
+                        Daily Totals
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-4 gap-3 text-center">
+                        <div>
+                          <p className="text-2xl font-light text-primary">
+                            {mealPlan.totalCalories}
+                          </p>
+                          <p className="text-xs text-muted-foreground">kcal</p>
+                        </div>
+                        {totalMacros && (
+                          <>
+                            <div>
+                              <p className="text-2xl font-light text-red-400">
+                                {totalMacros.protein}g
+                              </p>
+                              <p className="text-xs text-muted-foreground flex items-center justify-center gap-0.5">
+                                <Beef className="h-3 w-3" /> protein
+                              </p>
                             </div>
-                          </div>
+                            <div>
+                              <p className="text-2xl font-light text-yellow-400">
+                                {totalMacros.carbs}g
+                              </p>
+                              <p className="text-xs text-muted-foreground flex items-center justify-center gap-0.5">
+                                <Wheat className="h-3 w-3" /> carbs
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-2xl font-light text-blue-400">
+                                {totalMacros.fat}g
+                              </p>
+                              <p className="text-xs text-muted-foreground flex items-center justify-center gap-0.5">
+                                <Droplets className="h-3 w-3" /> fat
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Meals */}
+                  <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
+                    {mealPlan.meals.map((meal, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.08 }}
+                      >
+                        <Card className="border-border/40">
+                          <CardHeader className="pb-2 pt-4">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs text-primary font-semibold">
+                                  {i + 1}
+                                </div>
+                                {meal.name}
+                                {meal.time && (
+                                  <span className="text-xs text-muted-foreground font-normal">
+                                    {meal.time}
+                                  </span>
+                                )}
+                              </CardTitle>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span>{meal.totalCalories} kcal</span>
+                                {meal.prepTime > 0 && (
+                                  <span className="flex items-center gap-0.5">
+                                    <Clock className="h-3 w-3" />
+                                    {meal.prepTime}m
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pb-3">
+                            <ul className="space-y-1.5">
+                              {(meal.foods || []).map((food, j) => (
+                                <li key={j} className="flex items-center justify-between text-xs">
+                                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                                    <ChevronRight className="h-3 w-3 shrink-0" />
+                                    <span>
+                                      {food.name}
+                                      {food.amount && (
+                                        <span className="text-muted-foreground/70">
+                                          {' '}
+                                          — {food.amount}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </span>
+                                  <div className="flex items-center gap-2 shrink-0 text-muted-foreground/70">
+                                    {food.protein > 0 && <span>{food.protein}g P</span>}
+                                    {food.calories > 0 && <span>{food.calories} kcal</span>}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                            {/* Per-meal macros */}
+                            <div className="flex gap-3 mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                              <span className="text-red-400">{meal.totalProtein}g protein</span>
+                              <span className="text-yellow-400">{meal.totalCarbs}g carbs</span>
+                              <span className="text-blue-400">{meal.totalFat}g fat</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+
+                    {/* Grocery List */}
+                    {mealPlan.groceryList && mealPlan.groceryList.length > 0 && (
+                      <Card className="border-border/40 bg-muted/20">
+                        <CardHeader className="pb-2 pt-4">
+                          <CardTitle className="text-sm font-medium flex items-center gap-2">
+                            <ShoppingCart className="h-4 w-4 text-primary" />
+                            Grocery List
+                          </CardTitle>
                         </CardHeader>
                         <CardContent className="pb-3">
-                          <ul className="space-y-1.5">
-                            {(meal.foods || []).map((food, j) => (
-                              <li key={j} className="flex items-center justify-between text-xs">
-                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                  <ChevronRight className="h-3 w-3 shrink-0" />
-                                  <span>
-                                    {food.name}
-                                    {food.amount && (
-                                      <span className="text-muted-foreground/70">
-                                        {' '}
-                                        — {food.amount}
-                                      </span>
-                                    )}
-                                  </span>
-                                </span>
-                                <div className="flex items-center gap-2 shrink-0 text-muted-foreground/70">
-                                  {food.protein > 0 && <span>{food.protein}g P</span>}
-                                  {food.calories > 0 && <span>{food.calories} kcal</span>}
-                                </div>
-                              </li>
+                          <div className="flex flex-wrap gap-1.5">
+                            {mealPlan.groceryList.map((item, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">
+                                {item}
+                              </Badge>
                             ))}
-                          </ul>
-                          {/* Per-meal macros */}
-                          <div className="flex gap-3 mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
-                            <span className="text-red-400">{meal.totalProtein}g protein</span>
-                            <span className="text-yellow-400">{meal.totalCarbs}g carbs</span>
-                            <span className="text-blue-400">{meal.totalFat}g fat</span>
                           </div>
                         </CardContent>
                       </Card>
-                    </motion.div>
-                  ))}
-
-                  {/* Grocery List */}
-                  {mealPlan.groceryList && mealPlan.groceryList.length > 0 && (
-                    <Card className="border-border/40 bg-muted/20">
-                      <CardHeader className="pb-2 pt-4">
-                        <CardTitle className="text-sm font-medium flex items-center gap-2">
-                          <ShoppingCart className="h-4 w-4 text-primary" />
-                          Grocery List
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pb-3">
-                        <div className="flex flex-wrap gap-1.5">
-                          {mealPlan.groceryList.map((item, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              {item}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-
-                {/* Save + Regenerate */}
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 border-border/50"
-                    onClick={handleGenerate}
-                    disabled={isGenerating}
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Regenerate
-                  </Button>
-                  <Button
-                    onClick={handleSavePlan}
-                    disabled={isSaving || isSaved}
-                    className={`flex-1 ${
-                      isSaved
-                        ? 'bg-primary/20 text-primary border border-primary/30'
-                        : 'bg-primary text-primary-foreground'
-                    }`}
-                    variant={isSaved ? 'outline' : 'default'}
-                  >
-                    {isSaving ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : isSaved ? (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Saved!
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Plan
-                      </>
                     )}
-                  </Button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full min-h-[500px] flex items-center justify-center">
-                  <div className="text-center space-y-4 p-8">
-                    <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
-                      <Apple className="h-10 w-10 text-green-400/50" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-light">Ready to Plan</h3>
-                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        Set your nutrition goals and click "Generate Meal Plan" to get a
-                        personalised daily plan
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      <Badge variant="outline" className="border-border/50">
-                        <Flame className="h-3 w-3 mr-1" />
-                        Macro-balanced
-                      </Badge>
-                      <Badge variant="outline" className="border-border/50">
-                        <ShoppingCart className="h-3 w-3 mr-1" />
-                        Grocery list included
-                      </Badge>
-                    </div>
                   </div>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
+
+                  {/* Save + Regenerate */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-border/50"
+                      onClick={handleGenerate}
+                      disabled={isGenerating}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Regenerate
+                    </Button>
+                    <Button
+                      onClick={handleSavePlan}
+                      disabled={isSaving || isSaved}
+                      className={`flex-1 ${
+                        isSaved
+                          ? 'bg-primary/20 text-primary border border-primary/30'
+                          : 'bg-primary text-primary-foreground'
+                      }`}
+                      variant={isSaved ? 'outline' : 'default'}
+                    >
+                      {isSaving ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : isSaved ? (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Saved!
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Plan
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full min-h-[500px] flex items-center justify-center">
+                    <div className="text-center space-y-4 p-8">
+                      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                        <Apple className="h-10 w-10 text-primary/50" />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-light">Ready to Plan</h3>
+                        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                          Set your nutrition goals and click "Generate Meal Plan" to get a
+                          personalised daily plan
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <Badge variant="outline" className="border-border/50">
+                          <Flame className="h-3 w-3 mr-1" />
+                          Macro-balanced
+                        </Badge>
+                        <Badge variant="outline" className="border-border/50">
+                          <ShoppingCart className="h-3 w-3 mr-1" />
+                          Grocery list included
+                        </Badge>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </div>
+      </BlurFade>
 
       {/* Saved Meal Plans History (F5) */}
       {savedPlans.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-light flex items-center gap-2">
-                <History className="h-5 w-5 text-primary" />
-                My Saved Plans
-              </CardTitle>
-              <CardDescription>
-                {savedPlans.length} saved meal plan{savedPlans.length !== 1 ? 's' : ''}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {savedPlans.map((plan: any) => (
-                  <div
-                    key={plan.id}
-                    className="p-3 rounded-xl border border-border/40 bg-card/30 hover:border-primary/30 transition-colors group"
-                  >
-                    <div className="flex items-center justify-between mb-2 gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{plan.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {plan.targetCalories ? `${plan.targetCalories} kcal` : 'No calories set'}
-                        </p>
+        <BlurFade delay={0.15}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-light flex items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  My Saved Plans
+                </CardTitle>
+                <CardDescription>
+                  {savedPlans.length} saved meal plan{savedPlans.length !== 1 ? 's' : ''}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {savedPlans.map((plan: any) => (
+                    <div
+                      key={plan.id}
+                      className="p-3 rounded-xl border border-border/40 bg-card/30 hover:border-primary/30 transition-colors group"
+                    >
+                      <div className="flex items-center justify-between mb-2 gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{plan.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {plan.targetCalories
+                              ? `${plan.targetCalories} kcal`
+                              : 'No calories set'}
+                          </p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] shrink-0 ml-2 ${
+                            plan.source === 'ai_chat'
+                              ? 'border-purple-500/30 text-purple-400'
+                              : 'border-primary/30 text-primary'
+                          }`}
+                        >
+                          {plan.source === 'ai_chat' ? 'AI Chat' : 'Generated'}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] shrink-0 ml-2 ${
-                          plan.source === 'ai_chat'
-                            ? 'border-purple-500/30 text-purple-400'
-                            : 'border-primary/30 text-primary'
-                        }`}
-                      >
-                        {plan.source === 'ai_chat' ? 'AI Chat' : 'Generated'}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      {new Date(plan.createdAt).toLocaleDateString()}
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 text-xs h-9 border-primary/20 text-primary hover:bg-primary/10"
-                        onClick={() => handleLoadPlan(plan.id)}
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        Load
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-9 w-9 p-0 text-muted-foreground hover:text-red-400"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete meal plan?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete "{plan.name}".
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <div className="flex justify-end gap-3">
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeletePlan(plan.id)}
-                              className="bg-destructive text-destructive-foreground"
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {new Date(plan.createdAt).toLocaleDateString()}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs h-9 border-primary/20 text-primary hover:bg-primary/10"
+                          onClick={() => handleLoadPlan(plan.id)}
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          Load
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-red-400"
                             >
-                              Delete
-                            </AlertDialogAction>
-                          </div>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete meal plan?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete "{plan.name}".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="flex justify-end gap-3">
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeletePlan(plan.id)}
+                                className="bg-destructive text-destructive-foreground"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </div>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </BlurFade>
       )}
     </div>
   );

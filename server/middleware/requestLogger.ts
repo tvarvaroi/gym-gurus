@@ -123,7 +123,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
       path: req.originalUrl || req.path,
       statusCode: res.statusCode,
       duration: Math.round(duration),
-      userId: (req as any).user?.id || req.session?.userId,
+      userId: req.user?.id || req.session?.userId,
       userAgent: req.get('user-agent'),
       ip: req.ip,
       contentLength: res.get('content-length'),

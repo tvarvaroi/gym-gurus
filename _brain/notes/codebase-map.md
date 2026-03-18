@@ -1,7 +1,7 @@
 # GymGurus — Codebase Map
 
 > Comprehensive read-only audit. Accuracy-first. Written for future Claude Code sessions.
-> Last updated: 2026-03-14
+> Last updated: 2026-03-15
 
 ## Repository
 
@@ -28,6 +28,8 @@
 | `client/src/pages/DiscipleLoginPage.tsx`       | `/disciple-login`        | Disciple (client) login via access code                                                              |
 | `client/src/pages/auth/TestAuthLogin.tsx`      | `/test-login` (DEV only) | Debug login                                                                                          |
 | `client/src/pages/auth/TestMinimalLogin.tsx`   | `/login2` (DEV only)     | Debug login 2                                                                                        |
+| `client/src/pages/PaymentSuccess.tsx`          | `/payment-success`       | Stripe post-checkout success — reads `?tier=` param, invalidates auth cache, shows plan name         |
+| `client/src/pages/PaymentCancelled.tsx`        | `/payment-cancelled`     | Stripe post-checkout cancel — "No worries. Nothing was charged." + back-to-pricing CTA               |
 
 **Public calculators** (no auth required, routes mounted under `/calculators`):
 
@@ -41,21 +43,22 @@
 
 ### Ronin (Solo) Pages — role: `solo`
 
-| File                                         | Route                   | Purpose                                                                                                                                                       |
-| -------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `client/src/pages/solo/SoloDashboard.tsx`    | `/solo/dashboard`       | Main dashboard (MobileHero, ActionZone, QuickStats, WeekStrip, WeeklyOverview, RecoveryBodyStatus, BodyIntelligencePanel, WidgetScroller, RecentActivityFeed) |
-| `client/src/pages/solo/SoloOnboarding.tsx`   | `/solo/onboarding`      | Fitness profile setup wizard                                                                                                                                  |
-| `client/src/pages/solo/AICoach.tsx`          | `/solo/coach`           | Full AI chat interface with workout/meal plan extraction                                                                                                      |
-| `client/src/pages/solo/NutritionPlanner.tsx` | `/solo/nutrition`       | AI meal plan generation + history                                                                                                                             |
-| `client/src/pages/solo/WorkoutGenerator.tsx` | `/solo/generate`        | AI workout generation with focus/goal/style options                                                                                                           |
-| `client/src/pages/solo/Achievements.tsx`     | `/solo/achievements`    | XP, rank, achievement cards with animated ring                                                                                                                |
-| `client/src/pages/solo/Recovery.tsx`         | `/solo/recovery`        | Muscle fatigue tracking + recovery recommendations                                                                                                            |
-| `client/src/pages/WorkoutPlans.tsx`          | `/solo/workouts`        | Saved workout plans (Ronin view)                                                                                                                              |
-| `client/src/pages/WorkoutExecution.tsx`      | `/workout/:id`          | Active workout session with set logging, rest timer                                                                                                           |
-| `client/src/pages/WorkoutBuilder.tsx`        | `/solo/workout-builder` | Custom workout builder                                                                                                                                        |
-| `client/src/pages/ProgressPage.tsx`          | `/progress`             | Recharts-based progress charts (multi-role)                                                                                                                   |
-| `client/src/pages/SchedulePage.tsx`          | `/schedule`             | Calendar + event list (multi-role)                                                                                                                            |
-| `client/src/pages/SettingsPage.tsx`          | `/settings`             | Profile, security, billing, notifications tabs                                                                                                                |
+| File                                           | Route                         | Purpose                                                                                                                                                       |
+| ---------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client/src/pages/solo/SoloDashboard.tsx`      | `/solo/dashboard`             | Main dashboard (MobileHero, ActionZone, QuickStats, WeekStrip, WeeklyOverview, RecoveryBodyStatus, BodyIntelligencePanel, WidgetScroller, RecentActivityFeed) |
+| `client/src/pages/solo/SoloOnboarding.tsx`     | `/solo/onboarding`            | Fitness profile setup wizard                                                                                                                                  |
+| `client/src/pages/solo/AICoach.tsx`            | `/solo/coach`                 | Full AI chat interface with workout/meal plan extraction                                                                                                      |
+| `client/src/pages/solo/NutritionPlanner.tsx`   | `/solo/nutrition`             | AI meal plan generation + history                                                                                                                             |
+| `client/src/pages/solo/WorkoutGenerator.tsx`   | `/solo/generate`              | AI workout generation with focus/goal/style options                                                                                                           |
+| `client/src/pages/solo/Achievements.tsx`       | `/solo/achievements`          | XP, rank, achievement cards with animated ring                                                                                                                |
+| `client/src/pages/solo/Recovery.tsx`           | `/solo/recovery`              | Muscle fatigue tracking + ACWR readiness + recovery recommendations                                                                                           |
+| `client/src/pages/solo/ExerciseDetailPage.tsx` | `/solo/exercises/:id/history` | Per-exercise performance: 1RM trend chart, PR badge, session history, Epley formula                                                                           |
+| `client/src/pages/WorkoutPlans.tsx`            | `/solo/workouts`              | Saved workout plans (Ronin view)                                                                                                                              |
+| `client/src/pages/WorkoutExecution.tsx`        | `/workout/:id`                | Active workout session with set logging, rest timer                                                                                                           |
+| `client/src/pages/WorkoutBuilder.tsx`          | `/solo/workout-builder`       | Custom workout builder                                                                                                                                        |
+| `client/src/pages/ProgressPage.tsx`            | `/progress`                   | Recharts-based progress charts (multi-role)                                                                                                                   |
+| `client/src/pages/SchedulePage.tsx`            | `/schedule`                   | Calendar + event list (multi-role)                                                                                                                            |
+| `client/src/pages/SettingsPage.tsx`            | `/settings`                   | Profile, security, billing, notifications tabs                                                                                                                |
 
 ---
 

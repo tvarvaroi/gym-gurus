@@ -9,7 +9,7 @@ const router = Router();
 // GET /api/intake/:clientId - Get client's intake form
 router.get('/:clientId', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -37,7 +37,7 @@ router.get('/:clientId', async (req: Request, res: Response) => {
 // POST /api/intake/:clientId - Submit client intake form
 router.post('/:clientId', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -96,10 +96,7 @@ router.post('/:clientId', async (req: Request, res: Response) => {
       res.json(result[0]);
     } else {
       // Create new
-      const result = await database
-        .insert(clientIntake)
-        .values(intakeData)
-        .returning();
+      const result = await database.insert(clientIntake).values(intakeData).returning();
       res.status(201).json(result[0]);
     }
   } catch (error) {

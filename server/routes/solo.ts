@@ -107,7 +107,7 @@ router.get('/today-workout', async (req: Request, res: Response) => {
               const reps = log.log.reps || 0;
               return sum + weight * reps;
             }, 0)
-          : Number(session.totalVolumeKg) || 0;
+          : session.totalVolumeKg || 0;
       const exercises_done =
         setLogs.length > 0 ? Array.from(new Set(setLogs.map((log: any) => log.exercise.name))) : [];
       const muscleGroups =
@@ -288,7 +288,7 @@ router.get('/weekly-activity', async (req: Request, res: Response) => {
 
     sessions.forEach((session) => {
       const dateKey = format(session.startedAt, 'yyyy-MM-dd');
-      const vol = session.totalVolumeKg ? parseFloat(String(session.totalVolumeKg)) : 0;
+      const vol = session.totalVolumeKg || 0;
 
       const detail: SessionDetail = {
         workoutName: session.workoutName || null,
@@ -536,7 +536,7 @@ router.patch('/sessions/:sessionId/complete', async (req: Request, res: Response
         actualDurationMinutes: durationMinutes,
         totalSets,
         totalReps,
-        totalVolumeKg: String(totalVolume),
+        totalVolumeKg: totalVolume,
         perceivedExertion,
         notes,
         isActive: false,
@@ -1034,7 +1034,7 @@ router.put('/workouts/:id/complete-solo', async (req: Request, res: Response) =>
           plannedDurationMinutes: workout.duration || duration,
           totalSets,
           totalReps,
-          totalVolumeKg: String(totalVolume),
+          totalVolumeKg: totalVolume,
           notes: notes || null,
         })
         .returning();
@@ -1153,10 +1153,7 @@ router.get('/progress', async (req: Request, res: Response) => {
 
     // Summary stats
     const totalWorkouts = completedSessions.length;
-    const totalVolume = completedSessions.reduce(
-      (sum, s) => sum + (Number(s.totalVolumeKg) || 0),
-      0
-    );
+    const totalVolume = completedSessions.reduce((sum, s) => sum + (s.totalVolumeKg || 0), 0);
     const totalDuration = completedSessions.reduce(
       (sum, s) => sum + (s.actualDurationMinutes || 0),
       0
@@ -1178,9 +1175,7 @@ router.get('/progress', async (req: Request, res: Response) => {
       const weekSessions = recentSessions.filter((s) => s.startedAt >= ws && s.startedAt < we);
       weeklyData.push({
         week: format(ws, 'MMM d'),
-        volume: Math.round(
-          weekSessions.reduce((sum, s) => sum + (Number(s.totalVolumeKg) || 0), 0)
-        ),
+        volume: Math.round(weekSessions.reduce((sum, s) => sum + (s.totalVolumeKg || 0), 0)),
         workouts: weekSessions.length,
       });
     }
@@ -1191,7 +1186,7 @@ router.get('/progress', async (req: Request, res: Response) => {
       name: s.workoutName || 'Workout',
       date: s.startedAt.toISOString(),
       duration: s.actualDurationMinutes || 0,
-      volume: Math.round(Number(s.totalVolumeKg) || 0),
+      volume: Math.round(s.totalVolumeKg || 0),
       sets: s.totalSets || 0,
       reps: s.totalReps || 0,
     }));
@@ -1240,7 +1235,7 @@ router.get('/stats', async (req: Request, res: Response) => {
 
     // Calculate total volume this week
     const weeklyVolume = weekSessions.reduce((sum, session) => {
-      return sum + Number(session.totalVolumeKg || 0);
+      return sum + (session.totalVolumeKg || 0);
     }, 0);
 
     res.json({
@@ -1334,7 +1329,7 @@ router.get('/schedule', async (req: Request, res: Response) => {
         type: 'completed',
         status: 'completed',
         duration,
-        volume: Math.round(Number(session.totalVolumeKg) || 0),
+        volume: Math.round(session.totalVolumeKg || 0),
       });
     }
 
@@ -1822,7 +1817,7 @@ router.get('/readiness', async (req: Request, res: Response) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const acuteLoad = sessions
       .filter((s) => s.startedAt >= sevenDaysAgo)
-      .reduce((sum, s) => sum + (Number(s.totalVolumeKg) || 0), 0);
+      .reduce((sum, s) => sum + (s.totalVolumeKg || 0), 0);
 
     // Chronic load (CTL): average weekly volume over last 28 days
     // Group sessions into 4 weeks and average
@@ -1830,7 +1825,7 @@ router.get('/readiness', async (req: Request, res: Response) => {
     for (const s of sessions) {
       const daysAgo = Math.floor((now.getTime() - s.startedAt.getTime()) / 86400000);
       const weekIndex = Math.min(3, Math.floor(daysAgo / 7));
-      weeklyVolumes[weekIndex] += Number(s.totalVolumeKg) || 0;
+      weeklyVolumes[weekIndex] += s.totalVolumeKg || 0;
     }
     const weeksWithData = weeklyVolumes.filter((v) => v > 0).length || 1;
     const chronicLoad = weeklyVolumes.reduce((s, v) => s + v, 0) / Math.max(weeksWithData, 1);
@@ -2053,7 +2048,7 @@ router.get('/workout-sessions', async (req: Request, res: Response) => {
         id: s.id,
         workoutName: s.workoutName || 'Workout',
         date: s.startedAt.toISOString(),
-        totalVolumeKg: Number(s.totalVolumeKg) || 0,
+        totalVolumeKg: s.totalVolumeKg || 0,
         workoutType: s.workoutType || null,
       }))
     );

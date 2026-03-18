@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'wouter';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,12 +65,7 @@ export function ForgotPasswordPage() {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md relative z-10"
-      >
+      <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-3 duration-500">
         {/* Card */}
         <div className="bg-card border border-border rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
           {/* Logo */}
@@ -171,7 +165,7 @@ export function ForgotPasswordPage() {
         <p className="text-center text-xs text-muted-foreground mt-6">
           For security, reset links expire after 1 hour
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }

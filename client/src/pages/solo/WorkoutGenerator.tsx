@@ -40,6 +40,7 @@ import {
   Heart,
 } from 'lucide-react';
 import { EquipmentSelector } from '@/components/ui/equipment-selector';
+import { BlurFade } from '@/components/ui/blur-fade';
 
 // Workout focus options
 const workoutFocusOptions = [
@@ -496,527 +497,542 @@ export default function WorkoutGenerator() {
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto">
       {/* Header */}
-      <PageHeader
-        icon={<Brain className="h-full w-full" />}
-        title="AI Workout"
-        titleAccent="Generator"
-        subtitle="Create personalized workouts powered by AI"
-        actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            {clientId && clientData?.name && (
-              <Badge variant="outline" className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400">
-                For {clientData.name}
+      <BlurFade delay={0.05}>
+        <PageHeader
+          icon={<Brain className="h-full w-full" />}
+          title="AI Workout"
+          titleAccent="Generator"
+          subtitle="Create personalized workouts powered by AI"
+          actions={
+            <div className="flex items-center gap-2 flex-wrap">
+              {clientId && clientData?.name && (
+                <Badge
+                  variant="outline"
+                  className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
+                >
+                  For {clientData.name}
+                </Badge>
+              )}
+              <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary">
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI Powered
               </Badge>
-            )}
-            <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary">
-              <Sparkles className="h-3 w-3 mr-1" />
-              AI Powered
-            </Badge>
-          </div>
-        }
-      />
+            </div>
+          }
+        />
+      </BlurFade>
 
       <div className="grid lg:grid-cols-[3fr_2fr] gap-6">
         {/* Configuration Panel */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-light flex items-center gap-2">
-                <Settings2 className="h-5 w-5 text-purple-400" />
-                Workout Preferences
-              </CardTitle>
-              <CardDescription>Customize your AI-generated workout</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Recovery-Aware Suggestion Banner */}
-              {recoveryRecs && !clientId && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 rounded-lg bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/20"
-                >
-                  <div className="flex items-start gap-2">
-                    <Heart className="h-4 w-4 text-teal-400 mt-0.5 shrink-0" />
-                    <div className="text-sm">
-                      <p className="font-medium text-teal-400">
-                        Suggested:{' '}
-                        {recoveryRecs.suggestedWorkout === 'rest'
-                          ? recoveryRecs.needsRest.length > 0
-                            ? 'Rest Day — some muscles still recovering'
-                            : 'Rest Day — all muscles fully recovered'
-                          : `${recoveryRecs.suggestedWorkout.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} Day`}
-                      </p>
-                      {recoveryRecs.needsRest.length > 0 && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Recovering:{' '}
-                          {recoveryRecs.needsRest
-                            .slice(0, 4)
-                            .map(
-                              (m) =>
-                                `${m.muscleGroup} (${Math.round(100 - m.recoveryProgress)}% fatigued)`
-                            )
-                            .join(', ')}
-                        </p>
-                      )}
-                      {recoveryRecs.readyToTrain.length > 0 && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Ready: {recoveryRecs.readyToTrain.slice(0, 5).join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Workout Focus */}
-              <div className="space-y-2">
-                <Label>Workout Focus</Label>
-                <Select value={workoutFocus} onValueChange={setWorkoutFocus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {workoutFocusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex flex-col">
-                          <span>{option.label}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {option.description}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Goal Selection */}
-              <div className="space-y-2">
-                <Label>Primary Goal</Label>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                  {goalOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      variant={goal === option.value ? 'default' : 'outline'}
-                      size="default"
-                      onClick={() => setGoal(option.value)}
-                      className={
-                        goal === option.value
-                          ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
-                          : 'border-border/50'
-                      }
-                    >
-                      <option.icon className="h-4 w-4 mr-2" />
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Inspired By */}
-              <div className="space-y-2">
-                <Label>Training Style</Label>
-                <Select value={inspiredBy} onValueChange={setInspiredBy}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {inspiredByOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex flex-col">
-                          <span>{option.label}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {option.description}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Duration */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label>Duration</Label>
-                  <span className="text-sm text-muted-foreground">{duration[0]} minutes</span>
-                </div>
-                <Slider
-                  value={duration}
-                  onValueChange={setDuration}
-                  min={15}
-                  max={90}
-                  step={5}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>15 min</span>
-                  <span>90 min</span>
-                </div>
-              </div>
-
-              {/* Equipment — SVG illustration grid, multi-select */}
-              <div className="space-y-2">
-                <Label>Available Equipment</Label>
-                <p className="text-xs text-muted-foreground -mt-1">
-                  Tap to select — choose all that apply
-                </p>
-                <EquipmentSelector selected={equipment} onChange={setEquipment} />
-              </div>
-
-              {/* Difficulty */}
-              <div className="space-y-2">
-                <Label>Difficulty Level</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['beginner', 'intermediate', 'advanced'].map((level) => (
-                    <Button
-                      key={level}
-                      variant={difficulty === level ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setDifficulty(level)}
-                      className={`capitalize text-xs sm:text-sm ${
-                        difficulty === level
-                          ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
-                          : 'border-border/50'
-                      }`}
-                    >
-                      {level}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-4 pt-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="warmup" className="font-normal">
-                    Include Warm-up
-                  </Label>
-                  <Switch id="warmup" checked={includeWarmup} onCheckedChange={setIncludeWarmup} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="cooldown" className="font-normal">
-                    Include Cool-down
-                  </Label>
-                  <Switch
-                    id="cooldown"
-                    checked={includeCooldown}
-                    onCheckedChange={setIncludeCooldown}
-                  />
-                </div>
-              </div>
-
-              {/* Generate Button */}
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="w-full h-12 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
-              >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Workout
-                  </>
-                )}
-              </Button>
-
-              {limitReached && (
-                <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <div className="flex items-center gap-2 text-amber-400">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm font-medium">Daily AI limit reached</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Upgrade your plan for more daily AI requests.
-                  </p>
-                  <a
-                    href="/pricing"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-medium hover:from-purple-600 hover:to-indigo-600 transition-all"
+        <BlurFade delay={0.1}>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-light flex items-center gap-2">
+                  <Settings2 className="h-5 w-5 text-purple-400" />
+                  Workout Preferences
+                </CardTitle>
+                <CardDescription>Customize your AI-generated workout</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Recovery-Aware Suggestion Banner */}
+                {recoveryRecs && !clientId && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 rounded-lg bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/20"
                   >
-                    <Crown className="h-3 w-3" />
-                    Upgrade Plan
-                  </a>
+                    <div className="flex items-start gap-2">
+                      <Heart className="h-4 w-4 text-teal-400 mt-0.5 shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-medium text-teal-400">
+                          Suggested:{' '}
+                          {recoveryRecs.suggestedWorkout === 'rest'
+                            ? recoveryRecs.needsRest.length > 0
+                              ? 'Rest Day — some muscles still recovering'
+                              : 'Rest Day — all muscles fully recovered'
+                            : `${recoveryRecs.suggestedWorkout.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} Day`}
+                        </p>
+                        {recoveryRecs.needsRest.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Recovering:{' '}
+                            {recoveryRecs.needsRest
+                              .slice(0, 4)
+                              .map(
+                                (m) =>
+                                  `${m.muscleGroup} (${Math.round(100 - m.recoveryProgress)}% fatigued)`
+                              )
+                              .join(', ')}
+                          </p>
+                        )}
+                        {recoveryRecs.readyToTrain.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Ready: {recoveryRecs.readyToTrain.slice(0, 5).join(', ')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Workout Focus */}
+                <div className="space-y-2">
+                  <Label>Workout Focus</Label>
+                  <Select value={workoutFocus} onValueChange={setWorkoutFocus}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workoutFocusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex flex-col">
+                            <span>{option.label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {option.description}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-              {generateError && !limitReached && (
-                <p className="text-sm text-red-400 text-center">{generateError}</p>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+
+                {/* Goal Selection */}
+                <div className="space-y-2">
+                  <Label>Primary Goal</Label>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                    {goalOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        variant={goal === option.value ? 'default' : 'outline'}
+                        size="default"
+                        onClick={() => setGoal(option.value)}
+                        className={
+                          goal === option.value
+                            ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
+                            : 'border-border/50'
+                        }
+                      >
+                        <option.icon className="h-4 w-4 mr-2" />
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Inspired By */}
+                <div className="space-y-2">
+                  <Label>Training Style</Label>
+                  <Select value={inspiredBy} onValueChange={setInspiredBy}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {inspiredByOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex flex-col">
+                            <span>{option.label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {option.description}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Duration */}
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Duration</Label>
+                    <span className="text-sm text-muted-foreground">{duration[0]} minutes</span>
+                  </div>
+                  <Slider
+                    value={duration}
+                    onValueChange={setDuration}
+                    min={15}
+                    max={90}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>15 min</span>
+                    <span>90 min</span>
+                  </div>
+                </div>
+
+                {/* Equipment — SVG illustration grid, multi-select */}
+                <div className="space-y-2">
+                  <Label>Available Equipment</Label>
+                  <p className="text-xs text-muted-foreground -mt-1">
+                    Tap to select — choose all that apply
+                  </p>
+                  <EquipmentSelector selected={equipment} onChange={setEquipment} />
+                </div>
+
+                {/* Difficulty */}
+                <div className="space-y-2">
+                  <Label>Difficulty Level</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['beginner', 'intermediate', 'advanced'].map((level) => (
+                      <Button
+                        key={level}
+                        variant={difficulty === level ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDifficulty(level)}
+                        className={`capitalize text-xs sm:text-sm ${
+                          difficulty === level
+                            ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
+                            : 'border-border/50'
+                        }`}
+                      >
+                        {level}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Options */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="warmup" className="font-normal">
+                      Include Warm-up
+                    </Label>
+                    <Switch
+                      id="warmup"
+                      checked={includeWarmup}
+                      onCheckedChange={setIncludeWarmup}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="cooldown" className="font-normal">
+                      Include Cool-down
+                    </Label>
+                    <Switch
+                      id="cooldown"
+                      checked={includeCooldown}
+                      onCheckedChange={setIncludeCooldown}
+                    />
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  className="w-full h-12 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
+                >
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Workout
+                    </>
+                  )}
+                </Button>
+
+                {limitReached && (
+                  <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <div className="flex items-center gap-2 text-amber-400">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Daily AI limit reached</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Upgrade your plan for more daily AI requests.
+                    </p>
+                    <a
+                      href="/pricing"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-medium hover:from-purple-600 hover:to-indigo-600 transition-all"
+                    >
+                      <Crown className="h-3 w-3" />
+                      Upgrade Plan
+                    </a>
+                  </div>
+                )}
+                {generateError && !limitReached && (
+                  <p className="text-sm text-red-400 text-center">{generateError}</p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </BlurFade>
 
         {/* Generated Workout Preview */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <AnimatePresence mode="wait">
-            {isGenerating ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full min-h-[500px] flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{
-                        duration: 2,
-                        repeat: prefersReducedMotion ? 0 : Infinity,
-                        ease: 'linear',
-                      }}
-                    >
-                      <Brain className="h-16 w-16 text-purple-400 mx-auto" />
-                    </motion.div>
-                    <div className="space-y-2">
-                      <p className="text-lg font-light">AI is crafting your workout...</p>
-                      <p className="text-sm text-muted-foreground">Analyzing your preferences</p>
-                    </div>
-                    <div className="flex justify-center gap-1">
+        <BlurFade delay={0.2}>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <AnimatePresence mode="wait">
+              {isGenerating ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full min-h-[500px] flex items-center justify-center">
+                    <div className="text-center space-y-4">
                       <motion.div
-                        className="w-2 h-2 rounded-full bg-purple-400"
-                        animate={{ scale: [1, 1.3, 1] }}
+                        animate={{ rotate: 360 }}
                         transition={{
-                          duration: 0.6,
+                          duration: 2,
                           repeat: prefersReducedMotion ? 0 : Infinity,
-                          delay: 0,
+                          ease: 'linear',
                         }}
-                      />
-                      <motion.div
-                        className="w-2 h-2 rounded-full bg-purple-400"
-                        animate={{ scale: [1, 1.3, 1] }}
-                        transition={{
-                          duration: 0.6,
-                          repeat: prefersReducedMotion ? 0 : Infinity,
-                          delay: 0.2,
-                        }}
-                      />
-                      <motion.div
-                        className="w-2 h-2 rounded-full bg-purple-400"
-                        animate={{ scale: [1, 1.3, 1] }}
-                        transition={{
-                          duration: 0.6,
-                          repeat: prefersReducedMotion ? 0 : Infinity,
-                          delay: 0.4,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            ) : generatedWorkout ? (
-              <motion.div
-                key="workout"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-              >
-                <Card className="border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 backdrop-blur-sm">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-xl font-light flex items-center gap-2">
-                          <Zap className="h-5 w-5 text-purple-400" />
-                          {generatedWorkout.name}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-4 mt-2">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {generatedWorkout.duration} min
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Dumbbell className="h-3 w-3" />
-                            {generatedWorkout.exercises.length} exercises
-                          </span>
-                        </CardDescription>
+                      >
+                        <Brain className="h-16 w-16 text-purple-400 mx-auto" />
+                      </motion.div>
+                      <div className="space-y-2">
+                        <p className="text-lg font-light">AI is crafting your workout...</p>
+                        <p className="text-sm text-muted-foreground">Analyzing your preferences</p>
                       </div>
-                      <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-                        AI Generated
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Warm-up */}
-                    {includeWarmup && (
-                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                        <h4 className="text-sm font-medium text-amber-400 mb-2">Warm-up</h4>
-                        <ul className="text-sm text-muted-foreground space-y-1">
-                          {generatedWorkout.warmup.map((item, i) => (
-                            <li key={i} className="flex items-center gap-2">
-                              <ChevronRight className="h-3 w-3" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="flex justify-center gap-1">
+                        <motion.div
+                          className="w-2 h-2 rounded-full bg-purple-400"
+                          animate={{ scale: [1, 1.3, 1] }}
+                          transition={{
+                            duration: 0.6,
+                            repeat: prefersReducedMotion ? 0 : Infinity,
+                            delay: 0,
+                          }}
+                        />
+                        <motion.div
+                          className="w-2 h-2 rounded-full bg-purple-400"
+                          animate={{ scale: [1, 1.3, 1] }}
+                          transition={{
+                            duration: 0.6,
+                            repeat: prefersReducedMotion ? 0 : Infinity,
+                            delay: 0.2,
+                          }}
+                        />
+                        <motion.div
+                          className="w-2 h-2 rounded-full bg-purple-400"
+                          animate={{ scale: [1, 1.3, 1] }}
+                          transition={{
+                            duration: 0.6,
+                            repeat: prefersReducedMotion ? 0 : Infinity,
+                            delay: 0.4,
+                          }}
+                        />
                       </div>
-                    )}
+                    </div>
+                  </Card>
+                </motion.div>
+              ) : generatedWorkout ? (
+                <motion.div
+                  key="workout"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                >
+                  <Card className="border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 backdrop-blur-sm">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-xl font-light flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-purple-400" />
+                            {generatedWorkout.name}
+                          </CardTitle>
+                          <CardDescription className="flex items-center gap-4 mt-2">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {generatedWorkout.duration} min
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Dumbbell className="h-3 w-3" />
+                              {generatedWorkout.exercises.length} exercises
+                            </span>
+                          </CardDescription>
+                        </div>
+                        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                          AI Generated
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Warm-up */}
+                      {includeWarmup && (
+                        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                          <h4 className="text-sm font-medium text-amber-400 mb-2">Warm-up</h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
+                            {generatedWorkout.warmup.map((item, i) => (
+                              <li key={i} className="flex items-center gap-2">
+                                <ChevronRight className="h-3 w-3" />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
 
-                    {/* Exercises */}
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Exercises</h4>
-                      {generatedWorkout.exercises.map((exercise, index) => {
-                        const libEx = libraryByName.get(exercise.name.toLowerCase());
-                        return (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="p-3 rounded-lg bg-muted/30 border border-border/50 flex items-center justify-between"
-                          >
-                            <div className="flex items-center gap-3">
-                              {libEx?.thumbnailUrl ? (
-                                <img
-                                  src={libEx.thumbnailUrl}
-                                  alt={exercise.name}
-                                  className="w-10 h-10 rounded-lg object-cover bg-muted/50 flex-shrink-0"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-sm font-medium text-purple-400 flex-shrink-0">
-                                  {index + 1}
+                      {/* Exercises */}
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium">Exercises</h4>
+                        {generatedWorkout.exercises.map((exercise, index) => {
+                          const libEx = libraryByName.get(exercise.name.toLowerCase());
+                          return (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className="p-3 rounded-lg bg-muted/30 border border-border/50 flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-3">
+                                {libEx?.thumbnailUrl ? (
+                                  <img
+                                    src={libEx.thumbnailUrl}
+                                    alt={exercise.name}
+                                    className="w-10 h-10 rounded-lg object-cover bg-muted/50 flex-shrink-0"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-sm font-medium text-purple-400 flex-shrink-0">
+                                    {index + 1}
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-medium text-sm">{exercise.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {exercise.muscleGroup}
+                                  </p>
                                 </div>
-                              )}
-                              <div>
-                                <p className="font-medium text-sm">{exercise.name}</p>
+                              </div>
+                              <div className="text-right text-sm">
+                                <p className="font-medium">
+                                  {exercise.sets} × {exercise.reps}
+                                </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {exercise.muscleGroup}
+                                  {exercise.rest}s rest
                                 </p>
                               </div>
-                            </div>
-                            <div className="text-right text-sm">
-                              <p className="font-medium">
-                                {exercise.sets} × {exercise.reps}
-                              </p>
-                              <p className="text-xs text-muted-foreground">{exercise.rest}s rest</p>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
 
-                    {/* Cool-down */}
-                    {includeCooldown && (
-                      <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
-                        <h4 className="text-sm font-medium text-cyan-400 mb-2">Cool-down</h4>
+                      {/* Cool-down */}
+                      {includeCooldown && (
+                        <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                          <h4 className="text-sm font-medium text-cyan-400 mb-2">Cool-down</h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
+                            {generatedWorkout.cooldown.map((item, i) => (
+                              <li key={i} className="flex items-center gap-2">
+                                <ChevronRight className="h-3 w-3" />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Tips */}
+                      <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                        <h4 className="text-sm font-medium text-purple-400 mb-2">Pro Tips</h4>
                         <ul className="text-sm text-muted-foreground space-y-1">
-                          {generatedWorkout.cooldown.map((item, i) => (
-                            <li key={i} className="flex items-center gap-2">
-                              <ChevronRight className="h-3 w-3" />
-                              {item}
+                          {generatedWorkout.tips.map((tip, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <CheckCircle2 className="h-3 w-3 mt-1 text-purple-400" />
+                              {tip}
                             </li>
                           ))}
                         </ul>
                       </div>
-                    )}
 
-                    {/* Tips */}
-                    <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                      <h4 className="text-sm font-medium text-purple-400 mb-2">Pro Tips</h4>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        {generatedWorkout.tips.map((tip, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <CheckCircle2 className="h-3 w-3 mt-1 text-purple-400" />
-                            {tip}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-2">
+                      {/* Action Buttons */}
+                      <div className="flex gap-3 pt-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1 border-border/50"
+                          onClick={handleRegenerate}
+                          disabled={isSaving}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Regenerate
+                        </Button>
+                        <Button
+                          className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
+                          onClick={handleStartWorkout}
+                          disabled={isSaving}
+                        >
+                          {isSaving ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4 mr-2" />
+                              Start Workout
+                            </>
+                          )}
+                        </Button>
+                      </div>
                       <Button
-                        variant="outline"
-                        className="flex-1 border-border/50"
-                        onClick={handleRegenerate}
+                        variant="ghost"
+                        className="w-full text-muted-foreground"
+                        onClick={handleSaveWorkout}
                         disabled={isSaving}
                       >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Regenerate
+                        <Save className="h-4 w-4 mr-2" />
+                        {isSaving ? 'Saving...' : 'Save to My Workouts'}
                       </Button>
-                      <Button
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
-                        onClick={handleStartWorkout}
-                        disabled={isSaving}
-                      >
-                        {isSaving ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4 mr-2" />
-                            Start Workout
-                          </>
-                        )}
-                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full min-h-[500px] flex items-center justify-center">
+                    <div className="text-center space-y-4 p-8">
+                      <div className="w-20 h-20 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto">
+                        <Dumbbell className="h-10 w-10 text-purple-400/50" />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-light">Ready to Generate</h3>
+                        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                          Configure your preferences and click "Generate Workout" to create a
+                          personalized routine
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <Badge variant="outline" className="border-border/50">
+                          <Target className="h-3 w-3 mr-1" />
+                          Goal-focused
+                        </Badge>
+                        <Badge variant="outline" className="border-border/50">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Time-optimized
+                        </Badge>
+                        <Badge variant="outline" className="border-border/50">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          AI-powered
+                        </Badge>
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      className="w-full text-muted-foreground"
-                      onClick={handleSaveWorkout}
-                      disabled={isSaving}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      {isSaving ? 'Saving...' : 'Save to My Workouts'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full min-h-[500px] flex items-center justify-center">
-                  <div className="text-center space-y-4 p-8">
-                    <div className="w-20 h-20 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto">
-                      <Dumbbell className="h-10 w-10 text-purple-400/50" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-light">Ready to Generate</h3>
-                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        Configure your preferences and click "Generate Workout" to create a
-                        personalized routine
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      <Badge variant="outline" className="border-border/50">
-                        <Target className="h-3 w-3 mr-1" />
-                        Goal-focused
-                      </Badge>
-                      <Badge variant="outline" className="border-border/50">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Time-optimized
-                      </Badge>
-                      <Badge variant="outline" className="border-border/50">
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        AI-powered
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </BlurFade>
       </div>
     </div>
   );

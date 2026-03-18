@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
+import { BlurFade } from '@/components/ui/blur-fade';
 import { useLocation } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
@@ -686,10 +687,10 @@ function SubscriptionTab() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Current plan */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             {isActive ? (
               <Crown className="h-5 w-5 text-primary" />
@@ -763,12 +764,12 @@ function SubscriptionTab() {
 
       {/* Usage stats */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle>Account Statistics</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
               <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-2xl font-semibold">{stats?.daysSinceJoining ?? '—'}</p>
@@ -778,7 +779,7 @@ function SubscriptionTab() {
             {user?.role !== 'client' && (
               <>
                 {user?.role === 'trainer' && (
-                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <Users className="h-5 w-5 text-muted-foreground shrink-0" />
                     <div>
                       <p className="text-2xl font-semibold">{stats?.clientCount ?? '—'}</p>
@@ -786,7 +787,7 @@ function SubscriptionTab() {
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                   <Dumbbell className="h-5 w-5 text-muted-foreground shrink-0" />
                   <div>
                     <p className="text-2xl font-semibold">{stats?.workoutCount ?? '—'}</p>
@@ -1033,58 +1034,62 @@ function DangerZoneTab() {
 export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto py-2">
-      <div className="mb-4 md:mb-6">
-        <PageHeader
-          icon={<Settings className="h-full w-full" />}
-          title="Account"
-          titleAccent="Settings"
-          subtitle="Manage your account, security, and preferences."
-        />
-      </div>
+      <BlurFade delay={0.05}>
+        <div className="mb-4 md:mb-6">
+          <PageHeader
+            icon={<Settings className="h-full w-full" />}
+            title="Account"
+            titleAccent="Settings"
+            subtitle="Manage your account, security, and preferences."
+          />
+        </div>
+      </BlurFade>
 
-      <Tabs defaultValue="profile">
-        <TabsList className="mb-6 grid w-full grid-cols-5 h-11">
-          <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm min-h-[44px]">
-            <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Profile</span>
-          </TabsTrigger>
-          <TabsTrigger value="security" className="gap-1 text-xs sm:text-sm min-h-[44px]">
-            <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Security</span>
-          </TabsTrigger>
-          <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm min-h-[44px]">
-            <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Plan</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-1 text-xs sm:text-sm min-h-[44px]">
-            <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Alerts</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="danger"
-            className="gap-1 text-xs sm:text-sm min-h-[44px] text-destructive data-[state=active]:text-destructive"
-          >
-            <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Danger</span>
-          </TabsTrigger>
-        </TabsList>
+      <BlurFade delay={0.1}>
+        <Tabs defaultValue="profile">
+          <TabsList className="mb-6 grid w-full grid-cols-5 h-11">
+            <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm min-h-[44px]">
+              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Profile</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="gap-1 text-xs sm:text-sm min-h-[44px]">
+              <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Security</span>
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm min-h-[44px]">
+              <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Plan</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-1 text-xs sm:text-sm min-h-[44px]">
+              <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Alerts</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="danger"
+              className="gap-1 text-xs sm:text-sm min-h-[44px] text-destructive data-[state=active]:text-destructive"
+            >
+              <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Danger</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="profile">
-          <ProfileTab />
-        </TabsContent>
-        <TabsContent value="security">
-          <SecurityTab />
-        </TabsContent>
-        <TabsContent value="subscription">
-          <SubscriptionTab />
-        </TabsContent>
-        <TabsContent value="notifications">
-          <NotificationsTab />
-        </TabsContent>
-        <TabsContent value="danger">
-          <DangerZoneTab />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="profile">
+            <ProfileTab />
+          </TabsContent>
+          <TabsContent value="security">
+            <SecurityTab />
+          </TabsContent>
+          <TabsContent value="subscription">
+            <SubscriptionTab />
+          </TabsContent>
+          <TabsContent value="notifications">
+            <NotificationsTab />
+          </TabsContent>
+          <TabsContent value="danger">
+            <DangerZoneTab />
+          </TabsContent>
+        </Tabs>
+      </BlurFade>
     </div>
   );
 }

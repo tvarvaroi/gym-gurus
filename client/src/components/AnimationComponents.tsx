@@ -1,64 +1,47 @@
-import { motion } from "framer-motion";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { memo } from "react";
+import { memo } from 'react';
 
 // Shared page transition component
 export const PageTransition = memo(({ children }: { children: React.ReactNode }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 0.2 }}
-    style={{ willChange: 'opacity' }}
-  >
-    {children}
-  </motion.div>
+  <div className="animate-in fade-in duration-200">{children}</div>
 ));
 PageTransition.displayName = 'PageTransition';
 
 // Shared stagger container component
-export const StaggerContainer = memo(({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) => {
-  const prefersReducedMotion = useReducedMotion();
-
-  if (prefersReducedMotion) {
-    return <div className={className}>{children}</div>;
+export const StaggerContainer = memo(
+  ({
+    children,
+    delay = 0,
+    className,
+  }: {
+    children: React.ReactNode;
+    delay?: number;
+    className?: string;
+  }) => {
+    return (
+      <div
+        className={`animate-in fade-in duration-200 ${className || ''}`}
+        style={delay ? { animationDelay: `${delay * 1000}ms` } : undefined}
+      >
+        {children}
+      </div>
+    );
   }
-
-  return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{
-        delay,
-        staggerChildren: 0.05,
-        delayChildren: 0.1 + delay
-      }}
-      style={{ willChange: 'opacity' }}
-    >
-      {children}
-    </motion.div>
-  );
-});
+);
 StaggerContainer.displayName = 'StaggerContainer';
 
 // Shared stagger item component
-export const StaggerItem = memo(({ children, index = 0 }: { children: React.ReactNode; index?: number }) => {
-  const prefersReducedMotion = useReducedMotion();
-  
-  if (prefersReducedMotion) {
-    return <div>{children}</div>;
+export const StaggerItem = memo(
+  ({ children, index = 0 }: { children: React.ReactNode; index?: number }) => {
+    return (
+      <div
+        className="animate-in fade-in duration-200"
+        style={
+          index ? { animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' } : undefined
+        }
+      >
+        {children}
+      </div>
+    );
   }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: index * 0.05, duration: 0.2 }}
-      style={{ willChange: 'opacity' }}
-    >
-      {children}
-    </motion.div>
-  );
-});
+);
 StaggerItem.displayName = 'StaggerItem';

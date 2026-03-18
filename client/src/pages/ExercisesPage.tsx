@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, memo } from 'react';
 import { Link } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,7 +43,6 @@ import {
 import ExerciseDetailModal from '@/components/exercises/ExerciseDetailModal';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { TruncatedText } from '@/components/TruncatedText';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -91,7 +89,6 @@ const ExercisesPage = memo(() => {
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
-  const prefersReducedMotion = useReducedMotion();
 
   // Fetch exercises
   const {
@@ -208,22 +205,15 @@ const ExercisesPage = memo(() => {
   };
 
   const StaggerItem = ({ children, index = 0 }: { children: React.ReactNode; index?: number }) => {
-    if (prefersReducedMotion) {
-      return <div>{children}</div>;
-    }
-
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{
-          delay: index * 0.05,
-          duration: 0.3,
-          ease: 'easeOut',
-        }}
+      <div
+        className="animate-in fade-in slide-in-from-bottom-3 duration-300"
+        style={
+          index ? { animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' } : undefined
+        }
       >
         {children}
-      </motion.div>
+      </div>
     );
   };
 

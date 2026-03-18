@@ -1,8 +1,6 @@
-import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { ChevronRight } from 'lucide-react';
 import { formatNum } from '@/lib/format';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface BodyIntelligencePanelProps {
   data: any;
@@ -45,8 +43,6 @@ export function BodyIntelligencePanel({
   fitnessProfile,
   loading,
 }: BodyIntelligencePanelProps) {
-  const prefersReducedMotion = useReducedMotion();
-
   if (loading) return <BodyIntelligenceSkeleton />;
 
   const computed = data?.computed;
@@ -158,19 +154,8 @@ export function BodyIntelligencePanel({
   // Nothing to show if no metrics computed
   if (metrics.length === 0) return null;
 
-  const animProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3, delay: 0.1 },
-      };
-
   return (
-    <motion.div
-      {...animProps}
-      className="bg-card rounded-2xl border border-border/20 p-4 sm:p-6 md:p-8"
-    >
+    <div className="bg-card rounded-2xl border border-border/20 p-4 sm:p-6 md:p-8 animate-in fade-in slide-in-from-bottom-1 duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground/50 font-medium">
@@ -248,9 +233,7 @@ export function BodyIntelligencePanel({
               <span className="text-[11px] text-primary/70">
                 P {computed.macros.protein.percent}%
               </span>
-              <span className="text-[11px] text-amber-400">
-                F {computed.macros.fat.percent}%
-              </span>
+              <span className="text-[11px] text-amber-400">F {computed.macros.fat.percent}%</span>
               <span className="text-[11px] text-blue-500/70">
                 C {computed.macros.carbs.percent}%
               </span>
@@ -258,6 +241,6 @@ export function BodyIntelligencePanel({
           </div>
         </Link>
       )}
-    </motion.div>
+    </div>
   );
 }

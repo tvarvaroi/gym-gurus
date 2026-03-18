@@ -280,7 +280,7 @@ async function buildUserContext(userId?: string, context?: UserContext): Promise
               : null;
           let sessionLine = `- ${s.workoutName || 'Workout'} on ${new Date(s.startedAt).toLocaleDateString()}${duration ? ` (${duration} min)` : ''}`;
           if (s.totalVolumeKg)
-            sessionLine += ` — ${Math.round(Number(s.totalVolumeKg))}kg total volume`;
+            sessionLine += ` — ${Math.round(s.totalVolumeKg || 0)}kg total volume`;
           parts.push(sessionLine);
 
           // Fetch set logs for this session (exercise details)

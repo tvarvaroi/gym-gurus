@@ -30,7 +30,7 @@ export function createRateLimiter(options: RateLimitOptions) {
 
   return (req: Request, res: Response, next: NextFunction) => {
     // Get identifier (use user ID if authenticated, otherwise IP)
-    const identifier = (req as any).user?.id || req.ip || 'anonymous';
+    const identifier = req.user?.id || req.ip || 'anonymous';
     const key = `${req.path}_${identifier}`;
     const now = Date.now();
 

@@ -13,7 +13,7 @@ const router = Router();
 // Get user's notifications (paginated)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -31,7 +31,7 @@ router.get('/', async (req: Request, res: Response) => {
 // Get unread count
 router.get('/unread-count', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -47,7 +47,7 @@ router.get('/unread-count', async (req: Request, res: Response) => {
 // Mark a notification as read
 router.put('/:id/read', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -63,7 +63,7 @@ router.put('/:id/read', async (req: Request, res: Response) => {
 // Mark all notifications as read
 router.put('/read-all', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -79,7 +79,7 @@ router.put('/read-all', async (req: Request, res: Response) => {
 // Clear all notifications
 router.delete('/clear-all', async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

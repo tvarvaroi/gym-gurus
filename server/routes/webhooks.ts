@@ -41,9 +41,20 @@ router.post('/stripe', async (req: Request, res: Response) => {
     // req.body is raw Buffer because this route uses express.raw()
     event = stripeClient.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
+    console.error('[Stripe] Webhook signature verification failed:', err.message);
     return res.status(400).json({ error: 'Invalid signature' });
   }
+
+  // Structured log for every webhook event received
+  console.warn(
+    JSON.stringify({
+      event: '[Stripe Webhook]',
+      type: event.type,
+      id: event.id,
+      customerId: (event.data.object as any).customer || null,
+      timestamp: new Date().toISOString(),
+    })
+  );
 
   // Idempotency check — prevent processing the same event twice
   const eventId = event.id;
@@ -55,11 +66,11 @@ router.post('/stripe', async (req: Request, res: Response) => {
       .where(eq(payments.stripePaymentIntentId, eventId))
       .limit(1);
     if (existing.length > 0) {
-      // Already processed
+      console.warn(`[Stripe] Duplicate webhook ignored: ${eventId}`);
       return res.json({ received: true, duplicate: true });
     }
   } catch {
-    // Continue even if idempotency check fails
+    // Continue even if idempotency check fails — better to double-process than miss
   }
 
   // Route events to handlers
@@ -98,10 +109,15 @@ router.post('/stripe', async (req: Request, res: Response) => {
         console.log(`Unhandled webhook event type: ${event.type}`);
     }
 
+    console.warn(`[Stripe] Webhook ${event.type} processed successfully (${eventId})`);
     res.json({ received: true });
   } catch (error) {
-    console.error(`Error processing webhook ${event.type}:`, error);
-    res.status(500).json({ error: 'Webhook processing failed' });
+    // Return 500 so Stripe retries the webhook automatically
+    console.error(
+      `[Stripe] CRITICAL: Webhook processing failed for ${event.type} (${eventId}):`,
+      error
+    );
+    res.status(500).json({ error: 'Webhook processing failed — will retry' });
   }
 });
 
@@ -115,15 +131,21 @@ async function handleCheckoutCompleted(session: any) {
     const { userId, tier } = session.metadata;
     // The subscription.updated event will fire shortly and set full details,
     // but we can eagerly update status here for responsiveness.
-    await database
-      .update(users)
-      .set({
-        stripeCustomerId: session.customer,
-        subscriptionId: session.subscription,
-        subscriptionStatus: 'active',
-        subscriptionTier: tier ?? null,
-      })
-      .where(eq(users.id, userId));
+    try {
+      await database
+        .update(users)
+        .set({
+          stripeCustomerId: session.customer,
+          subscriptionId: session.subscription,
+          subscriptionStatus: 'active',
+          subscriptionTier: tier ?? null,
+        })
+        .where(eq(users.id, userId));
+      console.warn(`[Stripe] Plan activated: userId=${userId} tier=${tier}`);
+    } catch (dbError) {
+      console.error(`[Stripe] CRITICAL: Plan activation failed for userId=${userId}`, dbError);
+      throw dbError; // Bubble up so the webhook returns 500 and Stripe retries
+    }
     return;
   }
 

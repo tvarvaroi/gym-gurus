@@ -1,9 +1,7 @@
-import { motion } from "framer-motion";
-import { LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { LucideIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -32,27 +30,18 @@ export function EmptyState({
   className,
   animated = true,
 }: EmptyStateProps) {
-  const prefersReducedMotion = useReducedMotion();
   return (
-    <Card className={cn("border-dashed border-border/50 glass-strong shadow-premium", className)}>
+    <Card className={cn('border-dashed border-border/50 glass-strong shadow-premium', className)}>
       <CardContent className="flex flex-col items-center justify-center py-16 space-y-6">
         {/* Icon with Glow */}
         <div className="relative inline-block">
-          <motion.div
-            initial={animated ? { scale: 0 } : undefined}
-            animate={animated ? { scale: 1 } : undefined}
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-          >
+          <div className={animated ? 'animate-in zoom-in duration-300' : ''}>
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <Icon className="w-8 h-8 text-primary" />
             </div>
-          </motion.div>
+          </div>
           {animated && (
-            <motion.div
-              className="absolute inset-0 rounded-full bg-primary/20 blur-xl"
-              animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
-            />
+            <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" />
           )}
         </div>
 
@@ -66,23 +55,17 @@ export function EmptyState({
         {(action || secondaryAction) && (
           <div className="flex flex-col sm:flex-row items-center gap-3">
             {action && (
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+              <div className="transition-transform hover:scale-105 active:scale-95">
                 <Button
                   onClick={action.onClick}
                   className="shadow-premium hover:shadow-premium-lg transition-all duration-300"
                 >
                   {action.label}
                 </Button>
-              </motion.div>
+              </div>
             )}
             {secondaryAction && (
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+              <div className="transition-transform hover:scale-105 active:scale-95">
                 <Button
                   variant="outline"
                   onClick={secondaryAction.onClick}
@@ -90,7 +73,7 @@ export function EmptyState({
                 >
                   {secondaryAction.label}
                 </Button>
-              </motion.div>
+              </div>
             )}
           </div>
         )}

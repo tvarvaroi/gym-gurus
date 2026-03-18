@@ -579,7 +579,7 @@ export default function ClientDetailsPage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3, duration: 0.6 }}
                   >
-                    <h1 className="text-4xl font-light tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    <h1 className="text-4xl font-light tracking-tight font-['Playfair_Display'] bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                       {client.name}
                     </h1>
                     <div className="flex items-center gap-3">

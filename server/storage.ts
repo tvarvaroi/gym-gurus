@@ -1635,5 +1635,17 @@ export const storage: IStorage = new Proxy({} as IStorage, {
   },
 });
 
-// Check database availability on startup
-checkDatabaseAvailability().catch(console.error);
+// Check database availability on startup — fail hard in production if DB is unreachable
+checkDatabaseAvailability()
+  .then((available) => {
+    if (!available && process.env.NODE_ENV === 'production') {
+      console.error('[FATAL] Database unavailable in production. Refusing to start.');
+      process.exit(1);
+    }
+  })
+  .catch((err) => {
+    console.error('[FATAL] Database availability check failed:', err);
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
+  });

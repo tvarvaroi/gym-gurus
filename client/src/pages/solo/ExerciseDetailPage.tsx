@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRoute, Link } from 'wouter';
-import { motion } from 'framer-motion';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -123,11 +122,7 @@ export default function ExerciseDetailPage() {
   const { exercise, history, personalRecord } = data;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-4 md:space-y-6"
-    >
+    <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
       {/* Back link */}
       <Link
         href="/exercises"
@@ -154,12 +149,7 @@ export default function ExerciseDetailPage() {
 
         {/* PR Badge */}
         {personalRecord && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex-shrink-0"
-          >
+          <div className="flex-shrink-0 animate-in fade-in zoom-in-95 duration-300">
             <div className="relative rounded-xl border border-[#c9a84c]/30 bg-gradient-to-br from-[#c9a84c]/10 to-transparent p-4 min-w-[160px]">
               <div className="flex items-center gap-2 mb-2">
                 <Trophy className="w-5 h-5 text-[#c9a84c]" />
@@ -187,18 +177,13 @@ export default function ExerciseDetailPage() {
                 })}
               </p>
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
 
       {/* Last Time vs Best Time */}
       {comparison && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 gap-3"
-        >
+        <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-3 duration-300">
           <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -240,16 +225,12 @@ export default function ExerciseDetailPage() {
               </p>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       )}
 
       {/* Estimated 1RM Trend Chart */}
       {filteredTrend.length >= 2 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
+        <div className="animate-in fade-in slide-in-from-bottom-3 duration-300">
           <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -287,15 +268,11 @@ export default function ExerciseDetailPage() {
               />
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       )}
 
       {/* Session History List */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
+      <div className="animate-in fade-in slide-in-from-bottom-3 duration-300">
         <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
           <CardHeader>
             <CardTitle className="text-lg font-light flex items-center gap-2">
@@ -357,7 +334,7 @@ export default function ExerciseDetailPage() {
             )}
           </CardContent>
         </Card>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }

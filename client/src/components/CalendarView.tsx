@@ -273,16 +273,31 @@ const CalendarView = memo(({ events = [] }: CalendarViewProps) => {
 
                       {/* Day header */}
                       <div className="relative flex items-center justify-between mb-4">
-                        <span
-                          className={cn(
-                            'text-lg font-light tracking-wide',
-                            isToday && 'text-primary font-normal',
-                            !isToday && 'text-primary/70',
-                            isSelected && 'text-primary'
+                        <div className="flex flex-col items-start">
+                          <span
+                            className={cn(
+                              'text-lg font-light tracking-wide',
+                              isToday && 'text-primary font-normal',
+                              !isToday && 'text-primary/70',
+                              isSelected && 'text-primary'
+                            )}
+                          >
+                            {day}
+                          </span>
+                          {hasEvents && (
+                            <div className="flex gap-0.5 mt-0.5">
+                              {dayEvents.slice(0, 3).map((evt, i) => (
+                                <div
+                                  key={i}
+                                  className={cn(
+                                    'w-1.5 h-1.5 rounded-full',
+                                    typeConfig[evt.type]?.dot || 'bg-primary'
+                                  )}
+                                />
+                              ))}
+                            </div>
                           )}
-                        >
-                          {day}
-                        </span>
+                        </div>
                         {hasEvents && (
                           <motion.div
                             initial={{ scale: 0 }}

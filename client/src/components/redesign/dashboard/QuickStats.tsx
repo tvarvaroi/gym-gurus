@@ -1,7 +1,5 @@
-import { motion } from 'framer-motion';
 import { Link } from 'wouter';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { formatVolume } from '@/lib/format';
+import { formatVolume, volumeHasAbbreviation } from '@/lib/format';
 import { NumberTicker } from '@/components/ui/number-ticker';
 
 interface QuickStatsProps {
@@ -11,8 +9,6 @@ interface QuickStatsProps {
 }
 
 export function QuickStats({ stats, strengthSummary, gamification }: QuickStatsProps) {
-  const prefersReducedMotion = useReducedMotion();
-
   const workoutsThisWeek = stats?.workoutsThisWeek || 0;
   const weeklyVolume = stats?.weeklyVolumeKg || 0;
   const streak = gamification?.currentStreakDays || 0;
@@ -30,7 +26,7 @@ export function QuickStats({ stats, strengthSummary, gamification }: QuickStatsP
       numericValue: null,
       displayValue: formatVolume(weeklyVolume),
       label: 'Volume',
-      sub: 'kg',
+      sub: volumeHasAbbreviation(weeklyVolume) ? '' : 'kg',
       href: '/progress',
     },
     {
@@ -49,16 +45,8 @@ export function QuickStats({ stats, strengthSummary, gamification }: QuickStatsP
     },
   ];
 
-  const animProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3, delay: 0.05 },
-      };
-
   return (
-    <motion.div {...animProps}>
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
       {/* Mobile: horizontal scroll strip with fade hint */}
       <div className="relative md:hidden">
         <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
@@ -105,6 +93,6 @@ export function QuickStats({ stats, strengthSummary, gamification }: QuickStatsP
           </Link>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }

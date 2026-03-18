@@ -1,5 +1,4 @@
 import { useLocation } from 'wouter';
-import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logoImage from '@assets/Sophisticated Logo with Japanese Influences (3)_1757605872884.png';
@@ -23,12 +22,7 @@ export default function PaymentCancelled() {
         }}
       />
 
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-        className="w-full max-w-md relative z-10 px-4 py-10"
-      >
+      <div className="w-full max-w-md relative z-10 px-4 py-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div
           className="relative rounded-3xl overflow-hidden p-8 text-center"
           style={{
@@ -47,11 +41,7 @@ export default function PaymentCancelled() {
             />
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.4 }}
-          >
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-300 delay-150">
             <h1
               className="text-3xl font-light mb-3"
               style={{ fontFamily: "'Playfair Display', serif", color: '#f2f2f2' }}
@@ -96,9 +86,9 @@ export default function PaymentCancelled() {
                 Back to Dashboard
               </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

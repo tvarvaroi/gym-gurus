@@ -1,5 +1,4 @@
 import { forwardRef } from 'react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface PremiumCardProps {
@@ -30,14 +29,16 @@ export const PremiumCard = forwardRef<HTMLDivElement, PremiumCardProps>(
 
     if (onPress) {
       return (
-        <motion.button
+        <button
           ref={ref as React.Ref<HTMLButtonElement>}
-          whileTap={{ scale: 0.98 }}
           onClick={onPress}
-          className={cn(classes, 'min-h-[44px] w-full text-left cursor-pointer transition-colors hover:border-primary/30')}
+          className={cn(
+            classes,
+            'min-h-[44px] w-full text-left cursor-pointer transition-all hover:border-primary/30 active:scale-[0.98]'
+          )}
         >
           {children}
-        </motion.button>
+        </button>
       );
     }
 
@@ -46,7 +47,7 @@ export const PremiumCard = forwardRef<HTMLDivElement, PremiumCardProps>(
         {children}
       </div>
     );
-  },
+  }
 );
 
 PremiumCard.displayName = 'PremiumCard';

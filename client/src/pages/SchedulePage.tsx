@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BlurFade } from '@/components/ui/blur-fade';
+import { NumberTicker } from '@/components/ui/number-ticker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -293,7 +295,9 @@ function SoloScheduleView() {
               <CheckCircle2 className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold tabular-nums">{completedCount}</p>
+              <p className="text-2xl font-bold tabular-nums">
+                <NumberTicker value={completedCount} />
+              </p>
               <p className="text-xs text-muted-foreground">
                 {completedCount === 0
                   ? 'Completed this month'
@@ -308,7 +312,9 @@ function SoloScheduleView() {
               <CalendarIcon className="w-5 h-5 text-blue-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold tabular-nums">{plannedCount}</p>
+              <p className="text-2xl font-bold tabular-nums">
+                <NumberTicker value={plannedCount} />
+              </p>
               <p className="text-xs text-muted-foreground">
                 {plannedCount === 0 && completedCount === 0
                   ? 'Set workout frequency in settings'
@@ -807,427 +813,134 @@ function TrainerClientSchedule() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Enhanced Header */}
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 md:gap-6">
-        <motion.div
-          className="space-y-1 md:space-y-3"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-        >
-          <h1 className="text-xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
-            {isClient ? 'My ' : 'Your '}
-            <span
-              className={`font-light bg-gradient-to-r ${isClient ? 'from-cyan-500 via-teal-500 to-cyan-400' : 'from-primary via-primary/80 to-primary/60'} bg-clip-text text-transparent`}
-            >
-              Schedule
-            </span>
-          </h1>
-          <p className="hidden md:block text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
-            {isClient
-              ? 'View your upcoming training sessions and appointments'
-              : 'Manage appointments and training sessions with precision'}
-          </p>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="flex flex-col sm:flex-row gap-3"
-        >
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
-            <TabsList className="backdrop-blur-xl bg-background/80 border border-border/30 shadow-premium">
-              <TabsTrigger
-                value="day"
-                className={`transition-all duration-300 font-light ${
-                  isClient
-                    ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
-                    : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
-                }`}
+      <BlurFade delay={0.05}>
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 md:gap-6">
+          <motion.div
+            className="space-y-1 md:space-y-3"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <h1 className="text-xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
+              {isClient ? 'My ' : 'Your '}
+              <span
+                className={`font-light bg-gradient-to-r ${isClient ? 'from-cyan-500 via-teal-500 to-cyan-400' : 'from-primary via-primary/80 to-primary/60'} bg-clip-text text-transparent`}
               >
-                Day
-              </TabsTrigger>
-              <TabsTrigger
-                value="week"
-                className={`transition-all duration-300 font-light ${
-                  isClient
-                    ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
-                    : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
-                }`}
-              >
-                Week
-              </TabsTrigger>
-              <TabsTrigger
-                value="calendar"
-                className={`transition-all duration-300 font-light ${
-                  isClient
-                    ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
-                    : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
-                }`}
-              >
-                Month
-              </TabsTrigger>
-              <TabsTrigger
-                value="list"
-                className={`transition-all duration-300 font-light ${
-                  isClient
-                    ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
-                    : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
-                }`}
-              >
-                <List className="h-4 w-4 mr-1" />
-                List
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          {isTrainer && (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Dialog
-                open={showAddModal}
-                onOpenChange={(open) => {
-                  setShowAddModal(open);
-                  if (!open) {
-                    setEditingAppointment(null);
-                    form.reset();
-                  }
-                }}
-              >
-                <DialogTrigger asChild>
-                  <motion.div whileTap={{ scale: 0.95 }}>
-                    <Button
-                      className="relative bg-gradient-to-r from-primary to-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 w-full sm:w-auto overflow-hidden group border-0"
-                      data-testid="button-add-appointment"
-                    >
-                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                      <CalendarIcon className="mr-2 h-4 w-4 relative z-10" />
-                      <span className="relative z-10 font-light">New Appointment</span>
-                    </Button>
-                  </motion.div>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingAppointment ? 'Edit' : 'Schedule'} Appointment
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingAppointment
-                        ? 'Update appointment details'
-                        : 'Create a new appointment with a client'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="clientId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              Client<span className="text-destructive ml-0.5">*</span>
-                            </FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger data-testid="select-client">
-                                  <SelectValue placeholder="Select a client" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {clients.map((client: any) => (
-                                  <SelectItem key={client.id} value={client.id}>
-                                    {client.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              Title<span className="text-destructive ml-0.5">*</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="e.g., Personal Training Session"
-                                {...field}
-                                data-testid="input-title"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description (Optional)</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Additional notes or session plan"
-                                {...field}
-                                data-testid="input-description"
-                                className="resize-none"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                Schedule
+              </span>
+            </h1>
+            <p className="hidden md:block text-base md:text-lg font-light text-muted-foreground/80 leading-relaxed">
+              {isClient
+                ? 'View your upcoming training sessions and appointments'
+                : 'Manage appointments and training sessions with precision'}
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="flex flex-col sm:flex-row gap-3"
+          >
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
+              <TabsList className="backdrop-blur-xl bg-background/80 border border-border/30 shadow-premium">
+                <TabsTrigger
+                  value="day"
+                  className={`transition-all duration-300 font-light ${
+                    isClient
+                      ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
+                      : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
+                  }`}
+                >
+                  Day
+                </TabsTrigger>
+                <TabsTrigger
+                  value="week"
+                  className={`transition-all duration-300 font-light ${
+                    isClient
+                      ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
+                      : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
+                  }`}
+                >
+                  Week
+                </TabsTrigger>
+                <TabsTrigger
+                  value="calendar"
+                  className={`transition-all duration-300 font-light ${
+                    isClient
+                      ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
+                      : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
+                  }`}
+                >
+                  Month
+                </TabsTrigger>
+                <TabsTrigger
+                  value="list"
+                  className={`transition-all duration-300 font-light ${
+                    isClient
+                      ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
+                      : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
+                  }`}
+                >
+                  <List className="h-4 w-4 mr-1" />
+                  List
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {isTrainer && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Dialog
+                  open={showAddModal}
+                  onOpenChange={(open) => {
+                    setShowAddModal(open);
+                    if (!open) {
+                      setEditingAppointment(null);
+                      form.reset();
+                    }
+                  }}
+                >
+                  <DialogTrigger asChild>
+                    <motion.div whileTap={{ scale: 0.95 }}>
+                      <Button
+                        className="relative bg-gradient-to-r from-primary to-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 w-full sm:w-auto overflow-hidden group border-0"
+                        data-testid="button-add-appointment"
+                      >
+                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                        <CalendarIcon className="mr-2 h-4 w-4 relative z-10" />
+                        <span className="relative z-10 font-light">New Appointment</span>
+                      </Button>
+                    </motion.div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingAppointment ? 'Edit' : 'Schedule'} Appointment
+                      </DialogTitle>
+                      <DialogDescription>
+                        {editingAppointment
+                          ? 'Update appointment details'
+                          : 'Create a new appointment with a client'}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                         <FormField
                           control={form.control}
-                          name="date"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                              <FormLabel>
-                                Date<span className="text-destructive ml-0.5">*</span>
-                              </FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant="outline"
-                                      className={cn(
-                                        'w-full pl-3 text-left font-normal',
-                                        !field.value && 'text-muted-foreground'
-                                      )}
-                                      data-testid="button-select-date"
-                                    >
-                                      {field.value ? (
-                                        format(field.value, 'PPP')
-                                      ) : (
-                                        <span>Pick a date</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) =>
-                                      date < new Date(new Date().setHours(0, 0, 0, 0))
-                                    }
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="type"
+                          name="clientId"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>
-                                Type<span className="text-destructive ml-0.5">*</span>
+                                Client<span className="text-destructive ml-0.5">*</span>
                               </FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger data-testid="select-type">
-                                    <SelectValue placeholder="Select type" />
+                                  <SelectTrigger data-testid="select-client">
+                                    <SelectValue placeholder="Select a client" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="training">Training Session</SelectItem>
-                                  <SelectItem value="consultation">Consultation</SelectItem>
-                                  <SelectItem value="assessment">Assessment</SelectItem>
-                                  <SelectItem value="online">Online Session</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="startTime"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                Start Time<span className="text-destructive ml-0.5">*</span>
-                              </FormLabel>
-                              <FormControl>
-                                <Input type="time" {...field} data-testid="input-start-time" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="endTime"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                End Time<span className="text-destructive ml-0.5">*</span>
-                              </FormLabel>
-                              <FormControl>
-                                <Input type="time" {...field} data-testid="input-end-time" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <FormField
-                        control={form.control}
-                        name="location"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Location (Optional)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="e.g., Gym Floor, Studio A, Client's Home"
-                                {...field}
-                                data-testid="input-location"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="meetingUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Meeting URL (For Online Sessions)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="https://zoom.us/j/..."
-                                {...field}
-                                data-testid="input-meeting-url"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Recurring Session Section */}
-                      <div className="border-t pt-4 mt-6">
-                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                          <Repeat className="h-4 w-4" />
-                          Recurring Session (Optional)
-                        </h3>
-
-                        <FormField
-                          control={form.control}
-                          name="recurrencePattern"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Repeat</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="No repeat" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="none">Does not repeat</SelectItem>
-                                  <SelectItem value="weekly">Weekly</SelectItem>
-                                  <SelectItem value="biweekly">Every 2 weeks</SelectItem>
-                                  <SelectItem value="monthly">Monthly</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {form.watch('recurrencePattern') !== 'none' && (
-                          <FormField
-                            control={form.control}
-                            name="recurrenceEndDate"
-                            render={({ field }) => (
-                              <FormItem className="mt-3">
-                                <FormLabel>Repeat Until</FormLabel>
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <FormControl>
-                                      <Button
-                                        variant="outline"
-                                        className={cn(
-                                          'w-full pl-3 text-left font-normal',
-                                          !field.value && 'text-muted-foreground'
-                                        )}
-                                      >
-                                        {field.value
-                                          ? format(field.value, 'PPP')
-                                          : 'Select end date (max 12 weeks)'}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                      </Button>
-                                    </FormControl>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                      mode="single"
-                                      selected={field.value}
-                                      onSelect={field.onChange}
-                                      disabled={(date) =>
-                                        date < new Date() || date > addDays(new Date(), 84)
-                                      }
-                                      initialFocus
-                                    />
-                                  </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
-                      </div>
-
-                      {/* Optional Workout Assignment Section */}
-                      <div className="border-t pt-4 mt-6">
-                        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                          <Dumbbell className="h-4 w-4" />
-                          Assign Workout (Optional)
-                        </h3>
-                        <p className="text-xs text-muted-foreground mb-4">
-                          Optionally assign a workout to this appointment
-                        </p>
-
-                        <FormField
-                          control={form.control}
-                          name="workoutId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Workout Template</FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value || undefined}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a workout (optional)" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {workouts.map((workout: any) => (
-                                    <SelectItem key={workout.id} value={workout.id}>
-                                      {workout.title} ({workout.duration} min)
+                                  {clients.map((client: any) => (
+                                    <SelectItem key={client.id} value={client.id}>
+                                      {client.name}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -1239,15 +952,17 @@ function TrainerClientSchedule() {
 
                         <FormField
                           control={form.control}
-                          name="workoutDuration"
+                          name="title"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Workout Duration (minutes)</FormLabel>
+                              <FormLabel>
+                                Title<span className="text-destructive ml-0.5">*</span>
+                              </FormLabel>
                               <FormControl>
                                 <Input
-                                  type="number"
+                                  placeholder="e.g., Personal Training Session"
                                   {...field}
-                                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                  data-testid="input-title"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -1257,173 +972,595 @@ function TrainerClientSchedule() {
 
                         <FormField
                           control={form.control}
-                          name="workoutCustomTitle"
+                          name="description"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Custom Workout Title (Optional)</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g., Upper Body Focus" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="workoutCustomNotes"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Workout Notes (Optional)</FormLabel>
+                              <FormLabel>Description (Optional)</FormLabel>
                               <FormControl>
                                 <Textarea
-                                  placeholder="Special instructions for this workout..."
+                                  placeholder="Additional notes or session plan"
                                   {...field}
+                                  data-testid="input-description"
+                                  className="resize-none"
                                 />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      </div>
 
-                      <div className="flex justify-end gap-4 pt-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setShowAddModal(false);
-                            setEditingAppointment(null);
-                            form.reset();
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="submit"
-                          disabled={
-                            createAppointmentMutation.isPending ||
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="date"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-col">
+                                <FormLabel>
+                                  Date<span className="text-destructive ml-0.5">*</span>
+                                </FormLabel>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <FormControl>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          'w-full pl-3 text-left font-normal',
+                                          !field.value && 'text-muted-foreground'
+                                        )}
+                                        data-testid="button-select-date"
+                                      >
+                                        {field.value ? (
+                                          format(field.value, 'PPP')
+                                        ) : (
+                                          <span>Pick a date</span>
+                                        )}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                      </Button>
+                                    </FormControl>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                      mode="single"
+                                      selected={field.value}
+                                      onSelect={field.onChange}
+                                      disabled={(date) =>
+                                        date < new Date(new Date().setHours(0, 0, 0, 0))
+                                      }
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="type"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Type<span className="text-destructive ml-0.5">*</span>
+                                </FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-type">
+                                      <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="training">Training Session</SelectItem>
+                                    <SelectItem value="consultation">Consultation</SelectItem>
+                                    <SelectItem value="assessment">Assessment</SelectItem>
+                                    <SelectItem value="online">Online Session</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="startTime"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Start Time<span className="text-destructive ml-0.5">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <Input type="time" {...field} data-testid="input-start-time" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="endTime"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  End Time<span className="text-destructive ml-0.5">*</span>
+                                </FormLabel>
+                                <FormControl>
+                                  <Input type="time" {...field} data-testid="input-end-time" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="location"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Location (Optional)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="e.g., Gym Floor, Studio A, Client's Home"
+                                  {...field}
+                                  data-testid="input-location"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="meetingUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Meeting URL (For Online Sessions)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="https://zoom.us/j/..."
+                                  {...field}
+                                  data-testid="input-meeting-url"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Recurring Session Section */}
+                        <div className="border-t pt-4 mt-6">
+                          <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                            <Repeat className="h-4 w-4" />
+                            Recurring Session (Optional)
+                          </h3>
+
+                          <FormField
+                            control={form.control}
+                            name="recurrencePattern"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Repeat</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="No repeat" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="none">Does not repeat</SelectItem>
+                                    <SelectItem value="weekly">Weekly</SelectItem>
+                                    <SelectItem value="biweekly">Every 2 weeks</SelectItem>
+                                    <SelectItem value="monthly">Monthly</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          {form.watch('recurrencePattern') !== 'none' && (
+                            <FormField
+                              control={form.control}
+                              name="recurrenceEndDate"
+                              render={({ field }) => (
+                                <FormItem className="mt-3">
+                                  <FormLabel>Repeat Until</FormLabel>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <FormControl>
+                                        <Button
+                                          variant="outline"
+                                          className={cn(
+                                            'w-full pl-3 text-left font-normal',
+                                            !field.value && 'text-muted-foreground'
+                                          )}
+                                        >
+                                          {field.value
+                                            ? format(field.value, 'PPP')
+                                            : 'Select end date (max 12 weeks)'}
+                                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                      </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                      <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={field.onChange}
+                                        disabled={(date) =>
+                                          date < new Date() || date > addDays(new Date(), 84)
+                                        }
+                                        initialFocus
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+
+                        {/* Optional Workout Assignment Section */}
+                        <div className="border-t pt-4 mt-6">
+                          <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                            <Dumbbell className="h-4 w-4" />
+                            Assign Workout (Optional)
+                          </h3>
+                          <p className="text-xs text-muted-foreground mb-4">
+                            Optionally assign a workout to this appointment
+                          </p>
+
+                          <FormField
+                            control={form.control}
+                            name="workoutId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Workout Template</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value || undefined}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select a workout (optional)" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {workouts.map((workout: any) => (
+                                      <SelectItem key={workout.id} value={workout.id}>
+                                        {workout.title} ({workout.duration} min)
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="workoutDuration"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Workout Duration (minutes)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    {...field}
+                                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="workoutCustomTitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Custom Workout Title (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., Upper Body Focus" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="workoutCustomNotes"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Workout Notes (Optional)</FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder="Special instructions for this workout..."
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-4 pt-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setShowAddModal(false);
+                              setEditingAppointment(null);
+                              form.reset();
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={
+                              createAppointmentMutation.isPending ||
+                              updateAppointmentMutation.isPending
+                            }
+                            data-testid="button-submit-appointment"
+                          >
+                            {createAppointmentMutation.isPending ||
                             updateAppointmentMutation.isPending
-                          }
-                          data-testid="button-submit-appointment"
-                        >
-                          {createAppointmentMutation.isPending ||
-                          updateAppointmentMutation.isPending
-                            ? 'Saving...'
-                            : editingAppointment
-                              ? 'Update'
-                              : 'Schedule'}
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
-        </motion.div>
-      </div>
+                              ? 'Saving...'
+                              : editingAppointment
+                                ? 'Update'
+                                : 'Schedule'}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </BlurFade>
 
       {/* Calendar Navigation */}
-      {viewMode !== 'calendar' && viewMode !== 'list' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <Card className="glass-strong border-border/50 shadow-premium">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <motion.div whileTap={{ scale: 0.9 }}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-primary/10 transition-all duration-300"
-                    onClick={() => {
-                      const newDate =
-                        viewMode === 'week' ? addDays(selectedDate, -7) : addDays(selectedDate, -1);
-                      setSelectedDate(newDate);
-                    }}
-                    data-testid="button-prev"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                </motion.div>
-                <h2 className="text-lg font-light tracking-wide">
-                  {viewMode === 'week'
-                    ? `${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
-                    : format(selectedDate, 'EEEE, MMMM d, yyyy')}
-                </h2>
-                <motion.div whileTap={{ scale: 0.9 }}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-primary/10 transition-all duration-300"
-                    onClick={() => {
-                      const newDate =
-                        viewMode === 'week' ? addDays(selectedDate, 7) : addDays(selectedDate, 1);
-                      setSelectedDate(newDate);
-                    }}
-                    data-testid="button-next"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </motion.div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+      <BlurFade delay={0.1}>
+        {viewMode !== 'calendar' && viewMode !== 'list' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
+            <Card className="glass-strong border-border/50 shadow-premium">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <motion.div whileTap={{ scale: 0.9 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hover:bg-primary/10 transition-all duration-300"
+                      onClick={() => {
+                        const newDate =
+                          viewMode === 'week'
+                            ? addDays(selectedDate, -7)
+                            : addDays(selectedDate, -1);
+                        setSelectedDate(newDate);
+                      }}
+                      data-testid="button-prev"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                  </motion.div>
+                  <h2 className="text-lg font-light tracking-wide">
+                    {viewMode === 'week'
+                      ? `${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
+                      : format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                  </h2>
+                  <motion.div whileTap={{ scale: 0.9 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hover:bg-primary/10 transition-all duration-300"
+                      onClick={() => {
+                        const newDate =
+                          viewMode === 'week' ? addDays(selectedDate, 7) : addDays(selectedDate, 1);
+                        setSelectedDate(newDate);
+                      }}
+                      data-testid="button-next"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  </motion.div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-      {/* Full-page empty state when no appointments */}
-      {appointments.length === 0 && !isLoading ? (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center justify-center py-20 space-y-6 text-center"
-        >
-          <CalendarIcon className="h-12 w-12 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            {isClient
-              ? 'No sessions scheduled yet. Your trainer will add appointments when you\u2019re ready to start.'
-              : 'No appointments scheduled this week. Add a session to start planning.'}
-          </p>
-          {isTrainer && <Button onClick={() => setShowAddModal(true)}>New Appointment</Button>}
-        </motion.div>
-      ) : null}
+        {/* Full-page empty state when no appointments */}
+        {appointments.length === 0 && !isLoading ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-20 space-y-6 text-center"
+          >
+            <CalendarIcon className="h-12 w-12 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+              {isClient
+                ? 'No sessions scheduled yet. Your trainer will add appointments when you\u2019re ready to start.'
+                : 'No appointments scheduled this week. Add a session to start planning.'}
+            </p>
+            {isTrainer && <Button onClick={() => setShowAddModal(true)}>New Appointment</Button>}
+          </motion.div>
+        ) : null}
 
-      {/* Calendar View */}
-      {appointments.length > 0 &&
-        (viewMode === 'calendar' ? (
-          <CalendarView
-            events={appointments.map((apt) => ({
-              id: apt.id,
-              title: apt.title,
-              client: apt.client?.name || 'Unknown Client',
-              time: apt.startTime,
-              type:
-                apt.type === 'training'
-                  ? 'session'
-                  : apt.type === 'consultation'
-                    ? 'consultation'
-                    : 'check-in',
-              status:
-                apt.status === 'scheduled'
-                  ? 'confirmed'
-                  : apt.status === 'completed'
-                    ? 'completed'
-                    : 'pending',
-              date: apt.date, // Pass the date so CalendarView can filter by date
-            }))}
-          />
-        ) : viewMode === 'week' ? (
-          <div className="overflow-x-auto -mx-4 px-4">
+        {/* Calendar View */}
+        {appointments.length > 0 &&
+          (viewMode === 'calendar' ? (
+            <CalendarView
+              events={appointments.map((apt) => ({
+                id: apt.id,
+                title: apt.title,
+                client: apt.client?.name || 'Unknown Client',
+                time: apt.startTime,
+                type:
+                  apt.type === 'training'
+                    ? 'session'
+                    : apt.type === 'consultation'
+                      ? 'consultation'
+                      : 'check-in',
+                status:
+                  apt.status === 'scheduled'
+                    ? 'confirmed'
+                    : apt.status === 'completed'
+                      ? 'completed'
+                      : 'pending',
+                date: apt.date, // Pass the date so CalendarView can filter by date
+              }))}
+            />
+          ) : viewMode === 'week' ? (
+            <div className="overflow-x-auto -mx-4 px-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="grid grid-cols-7 gap-4"
+              >
+                {getWeekDays().map((day, dayIndex) => {
+                  const dayAppointments = getAppointmentsForDate(day);
+                  const isToday = isSameDay(day, new Date());
+
+                  return (
+                    <motion.div
+                      key={day.toISOString()}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: dayIndex * 0.05 }}
+                    >
+                      <Card
+                        className={cn(
+                          'min-h-[280px] min-w-[80px] glass-strong border-border/50 transition-all duration-300 hover:shadow-premium-lg hover:-translate-y-1 group',
+                          isToday && 'ring-2 ring-primary/50 shadow-premium'
+                        )}
+                      >
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">
+                            {format(day, 'EEE')}
+                          </CardTitle>
+                          <CardDescription
+                            className={cn('text-2xl font-bold', isToday && 'text-primary')}
+                          >
+                            {format(day, 'd')}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <AnimatePresence>
+                            {dayAppointments.length === 0 ? (
+                              <motion.p
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="text-xs text-muted-foreground text-center py-8"
+                              >
+                                No appointments
+                              </motion.p>
+                            ) : (
+                              dayAppointments.map((apt, index) => {
+                                const config = typeConfig[apt.type];
+                                const Icon = config.icon;
+
+                                return (
+                                  <motion.div
+                                    key={apt.id}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    whileHover={{ y: -2 }}
+                                    className={cn(
+                                      'p-3 rounded-lg backdrop-blur-sm transition-all border',
+                                      config.bg,
+                                      config.border,
+                                      'hover:shadow-md',
+                                      isTrainer && 'cursor-pointer'
+                                    )}
+                                    onClick={isTrainer ? () => handleEdit(apt) : undefined}
+                                    data-testid={`appointment-${apt.id}`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Icon className={cn('h-3 w-3', config.text)} />
+                                      <div className={cn('text-xs font-semibold', config.text)}>
+                                        {apt.startTime}
+                                      </div>
+                                    </div>
+                                    <TruncatedText
+                                      as="div"
+                                      text={apt.client?.name || ''}
+                                      className="text-xs font-medium"
+                                    />
+                                    <TruncatedText
+                                      as="div"
+                                      text={apt.title}
+                                      className="text-xs text-muted-foreground"
+                                    />
+                                  </motion.div>
+                                );
+                              })
+                            )}
+                          </AnimatePresence>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </div>
+          ) : viewMode === 'list' ? (
+            // List View — mobile-friendly chronological week
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="grid grid-cols-7 gap-4"
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="space-y-2"
             >
+              {/* List view week navigation */}
+              <Card className="glass-strong border-border/50 shadow-premium">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hover:bg-primary/10"
+                      onClick={() => setSelectedDate(addDays(selectedDate, -7))}
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <h2 className="text-lg font-light tracking-wide">
+                      {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} -{' '}
+                      {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="hover:bg-primary/10"
+                      onClick={() => setSelectedDate(addDays(selectedDate, 7))}
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Day-by-day list */}
               {getWeekDays().map((day, dayIndex) => {
                 const dayAppointments = getAppointmentsForDate(day);
                 const isToday = isSameDay(day, new Date());
@@ -1431,409 +1568,292 @@ function TrainerClientSchedule() {
                 return (
                   <motion.div
                     key={day.toISOString()}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: dayIndex * 0.05 }}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: dayIndex * 0.04 }}
                   >
                     <Card
                       className={cn(
-                        'min-h-[280px] min-w-[80px] glass-strong border-border/50 transition-all duration-300 hover:shadow-premium-lg hover:-translate-y-1 group',
-                        isToday && 'ring-2 ring-primary/50 shadow-premium'
+                        'transition-all duration-200 border-border/50',
+                        isToday && 'border-l-4 border-l-primary shadow-sm'
                       )}
                     >
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                          {format(day, 'EEE')}
-                        </CardTitle>
-                        <CardDescription
-                          className={cn('text-2xl font-bold', isToday && 'text-primary')}
-                        >
-                          {format(day, 'd')}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <AnimatePresence>
-                          {dayAppointments.length === 0 ? (
-                            <motion.p
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              className="text-xs text-muted-foreground text-center py-8"
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          {/* Date column */}
+                          <div
+                            className={cn('text-center min-w-[48px]', isToday && 'text-primary')}
+                          >
+                            <p className="text-xs font-medium text-muted-foreground uppercase">
+                              {format(day, 'EEE')}
+                            </p>
+                            <p
+                              className={cn(
+                                'text-2xl font-light',
+                                isToday && 'text-primary font-medium'
+                              )}
                             >
-                              No appointments
-                            </motion.p>
-                          ) : (
-                            dayAppointments.map((apt, index) => {
-                              const config = typeConfig[apt.type];
-                              const Icon = config.icon;
+                              {format(day, 'd')}
+                            </p>
+                          </div>
 
-                              return (
-                                <motion.div
-                                  key={apt.id}
-                                  initial={{ opacity: 0, scale: 0.9 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.9 }}
-                                  transition={{ delay: index * 0.05 }}
-                                  whileHover={{ y: -2 }}
-                                  className={cn(
-                                    'p-3 rounded-lg backdrop-blur-sm transition-all border',
-                                    config.bg,
-                                    config.border,
-                                    'hover:shadow-md',
-                                    isTrainer && 'cursor-pointer'
-                                  )}
-                                  onClick={isTrainer ? () => handleEdit(apt) : undefined}
-                                  data-testid={`appointment-${apt.id}`}
-                                >
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <Icon className={cn('h-3 w-3', config.text)} />
-                                    <div className={cn('text-xs font-semibold', config.text)}>
-                                      {apt.startTime}
+                          {/* Events column */}
+                          <div className="flex-1 space-y-2">
+                            {dayAppointments.length === 0 ? (
+                              <div className="flex items-center gap-2 py-2">
+                                <Moon className="h-4 w-4 text-muted-foreground/40" />
+                                <span className="text-sm text-muted-foreground/60 font-light">
+                                  No appointments
+                                </span>
+                              </div>
+                            ) : (
+                              dayAppointments.map((apt) => {
+                                const config = typeConfig[apt.type];
+                                const Icon = config?.icon || Dumbbell;
+                                const textColor = config?.text || 'text-foreground';
+                                const bgColor = config?.bg || 'bg-muted/10';
+                                return (
+                                  <div
+                                    key={apt.id}
+                                    className={cn(
+                                      'flex items-center gap-3 p-2.5 rounded-lg',
+                                      bgColor,
+                                      isTrainer && 'cursor-pointer hover:brightness-110'
+                                    )}
+                                    onClick={isTrainer ? () => handleEdit(apt) : undefined}
+                                  >
+                                    <Icon className={cn('h-4 w-4 shrink-0', textColor)} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">{apt.title}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {apt.startTime}
+                                        {apt.endTime ? ` - ${apt.endTime}` : ''}
+                                        {apt.client?.name ? ` · ${apt.client.name}` : ''}
+                                      </p>
                                     </div>
+                                    {apt.status === 'completed' && (
+                                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                                    )}
                                   </div>
-                                  <TruncatedText
-                                    as="div"
-                                    text={apt.client?.name || ''}
-                                    className="text-xs font-medium"
-                                  />
-                                  <TruncatedText
-                                    as="div"
-                                    text={apt.title}
-                                    className="text-xs text-muted-foreground"
-                                  />
-                                </motion.div>
-                              );
-                            })
-                          )}
-                        </AnimatePresence>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>
                 );
               })}
             </motion.div>
-          </div>
-        ) : viewMode === 'list' ? (
-          // List View — mobile-friendly chronological week
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="space-y-2"
-          >
-            {/* List view week navigation */}
-            <Card className="glass-strong border-border/50 shadow-premium">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-primary/10"
-                    onClick={() => setSelectedDate(addDays(selectedDate, -7))}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <h2 className="text-lg font-light tracking-wide">
-                    {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d')} -{' '}
-                    {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}
-                  </h2>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:bg-primary/10"
-                    onClick={() => setSelectedDate(addDays(selectedDate, 7))}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Day-by-day list */}
-            {getWeekDays().map((day, dayIndex) => {
-              const dayAppointments = getAppointmentsForDate(day);
-              const isToday = isSameDay(day, new Date());
-
-              return (
-                <motion.div
-                  key={day.toISOString()}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: dayIndex * 0.04 }}
-                >
-                  <Card
-                    className={cn(
-                      'transition-all duration-200 border-border/50',
-                      isToday && 'border-l-4 border-l-primary shadow-sm'
-                    )}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-4">
-                        {/* Date column */}
-                        <div className={cn('text-center min-w-[48px]', isToday && 'text-primary')}>
-                          <p className="text-xs font-medium text-muted-foreground uppercase">
-                            {format(day, 'EEE')}
-                          </p>
-                          <p
-                            className={cn(
-                              'text-2xl font-light',
-                              isToday && 'text-primary font-medium'
-                            )}
-                          >
-                            {format(day, 'd')}
-                          </p>
-                        </div>
-
-                        {/* Events column */}
-                        <div className="flex-1 space-y-2">
-                          {dayAppointments.length === 0 ? (
-                            <div className="flex items-center gap-2 py-2">
-                              <Moon className="h-4 w-4 text-muted-foreground/40" />
-                              <span className="text-sm text-muted-foreground/60 font-light">
-                                No appointments
-                              </span>
-                            </div>
-                          ) : (
-                            dayAppointments.map((apt) => {
-                              const config = typeConfig[apt.type];
-                              const Icon = config?.icon || Dumbbell;
-                              const textColor = config?.text || 'text-foreground';
-                              const bgColor = config?.bg || 'bg-muted/10';
-                              return (
-                                <div
-                                  key={apt.id}
-                                  className={cn(
-                                    'flex items-center gap-3 p-2.5 rounded-lg',
-                                    bgColor,
-                                    isTrainer && 'cursor-pointer hover:brightness-110'
-                                  )}
-                                  onClick={isTrainer ? () => handleEdit(apt) : undefined}
-                                >
-                                  <Icon className={cn('h-4 w-4 shrink-0', textColor)} />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{apt.title}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {apt.startTime}
-                                      {apt.endTime ? ` - ${apt.endTime}` : ''}
-                                      {apt.client?.name ? ` · ${apt.client.name}` : ''}
-                                    </p>
-                                  </div>
-                                  {apt.status === 'completed' && (
-                                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                                  )}
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
+          ) : (
+            // Day View
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+            >
+              <Card className="glass-strong border-border/50 shadow-premium">
+                <CardContent className="p-6">
+                  {getAppointmentsForDate(selectedDate).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 space-y-6">
+                      <div className="relative inline-block">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                        >
+                          <CalendarIcon className="h-20 w-20 text-muted-foreground/40" />
+                        </motion.div>
+                        <motion.div
+                          className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
+                          animate={{ opacity: [0.3, 0.6, 0.3] }}
+                          transition={{
+                            duration: 2,
+                            repeat: prefersReducedMotion ? 0 : Infinity,
+                            ease: 'easeInOut',
+                          }}
+                        />
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        ) : (
-          // Day View
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
-          >
-            <Card className="glass-strong border-border/50 shadow-premium">
-              <CardContent className="p-6">
-                {getAppointmentsForDate(selectedDate).length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 space-y-6">
-                    <div className="relative inline-block">
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                      >
-                        <CalendarIcon className="h-20 w-20 text-muted-foreground/40" />
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 rounded-full bg-gradient-to-br from-muted-foreground/10 to-transparent blur-xl"
-                        animate={{ opacity: [0.3, 0.6, 0.3] }}
-                        transition={{
-                          duration: 2,
-                          repeat: prefersReducedMotion ? 0 : Infinity,
-                          ease: 'easeInOut',
-                        }}
-                      />
+                      <div className="space-y-2 text-center">
+                        <h3 className="font-light text-xl">No appointments scheduled</h3>
+                        <p className="text-sm font-light text-muted-foreground/80">
+                          Click "New Appointment" to schedule a session
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-2 text-center">
-                      <h3 className="font-light text-xl">No appointments scheduled</h3>
-                      <p className="text-sm font-light text-muted-foreground/80">
-                        Click "New Appointment" to schedule a session
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <AnimatePresence>
-                      {getAppointmentsForDate(selectedDate).map((appointment, index) => {
-                        const config = typeConfig[appointment.type];
-                        const Icon = config.icon;
+                  ) : (
+                    <div className="space-y-4">
+                      <AnimatePresence>
+                        {getAppointmentsForDate(selectedDate).map((appointment, index) => {
+                          const config = typeConfig[appointment.type];
+                          const Icon = config.icon;
 
-                        return (
-                          <motion.div
-                            key={appointment.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            transition={{ delay: index * 0.05 }}
-                          >
-                            <Card className="glass-strong border-border/50 hover:shadow-premium-lg transition-all duration-300 hover:-translate-y-1 group">
-                              <CardContent className="p-5">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex items-start gap-4 flex-1">
-                                    <div
-                                      className={cn(
-                                        'w-1 h-full rounded-full bg-gradient-to-b',
-                                        config.color
-                                      )}
-                                    />
-                                    <div className="space-y-3 flex-1">
-                                      <div className="flex items-center gap-3 flex-wrap">
-                                        <div
-                                          className={cn(
-                                            'flex items-center gap-2 px-3 py-1.5 rounded-full',
-                                            config.bg,
-                                            config.border,
-                                            'border'
-                                          )}
-                                        >
-                                          <Icon className={cn('h-4 w-4', config.text)} />
-                                          <span className={cn('text-sm font-medium', config.text)}>
-                                            {config.label}
-                                          </span>
-                                        </div>
-                                        <h4 className="font-semibold text-lg">
-                                          {appointment.title}
-                                        </h4>
-                                        {appointment.status === 'cancelled' && (
-                                          <Badge variant="destructive" className="text-xs">
-                                            Cancelled
-                                          </Badge>
+                          return (
+                            <motion.div
+                              key={appointment.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 20 }}
+                              transition={{ delay: index * 0.05 }}
+                            >
+                              <Card className="glass-strong border-border/50 hover:shadow-premium-lg transition-all duration-300 hover:-translate-y-1 group">
+                                <CardContent className="p-5">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex items-start gap-4 flex-1">
+                                      <div
+                                        className={cn(
+                                          'w-1 h-full rounded-full bg-gradient-to-b',
+                                          config.color
                                         )}
-                                        {appointment.recurrencePattern &&
-                                          appointment.recurrencePattern !== 'none' && (
-                                            <Badge variant="outline" className="text-xs gap-1">
-                                              <Repeat className="h-3 w-3" />
-                                              {appointment.recurrencePattern === 'weekly'
-                                                ? 'Weekly'
-                                                : appointment.recurrencePattern === 'biweekly'
-                                                  ? 'Biweekly'
-                                                  : 'Monthly'}
+                                      />
+                                      <div className="space-y-3 flex-1">
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                          <div
+                                            className={cn(
+                                              'flex items-center gap-2 px-3 py-1.5 rounded-full',
+                                              config.bg,
+                                              config.border,
+                                              'border'
+                                            )}
+                                          >
+                                            <Icon className={cn('h-4 w-4', config.text)} />
+                                            <span
+                                              className={cn('text-sm font-medium', config.text)}
+                                            >
+                                              {config.label}
+                                            </span>
+                                          </div>
+                                          <h4 className="font-semibold text-lg">
+                                            {appointment.title}
+                                          </h4>
+                                          {appointment.status === 'cancelled' && (
+                                            <Badge variant="destructive" className="text-xs">
+                                              Cancelled
                                             </Badge>
                                           )}
-                                      </div>
-                                      <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
-                                        <div className="flex items-center gap-2">
-                                          <Clock className="h-4 w-4" />
-                                          <span className="font-medium">
-                                            {appointment.startTime} - {appointment.endTime}
-                                          </span>
+                                          {appointment.recurrencePattern &&
+                                            appointment.recurrencePattern !== 'none' && (
+                                              <Badge variant="outline" className="text-xs gap-1">
+                                                <Repeat className="h-3 w-3" />
+                                                {appointment.recurrencePattern === 'weekly'
+                                                  ? 'Weekly'
+                                                  : appointment.recurrencePattern === 'biweekly'
+                                                    ? 'Biweekly'
+                                                    : 'Monthly'}
+                                              </Badge>
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                          <User className="h-4 w-4" />
-                                          <span>{appointment.client?.name}</span>
+                                        <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
+                                          <div className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4" />
+                                            <span className="font-medium">
+                                              {appointment.startTime} - {appointment.endTime}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <User className="h-4 w-4" />
+                                            <span>{appointment.client?.name}</span>
+                                          </div>
+                                          {appointment.location && (
+                                            <div className="flex items-center gap-2">
+                                              <MapPin className="h-4 w-4" />
+                                              <span>{appointment.location}</span>
+                                            </div>
+                                          )}
+                                          {appointment.meetingUrl && (
+                                            <div className="flex items-center gap-2">
+                                              <Video className="h-4 w-4" />
+                                              <a
+                                                href={appointment.meetingUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="hover:underline text-primary hover:text-primary/80"
+                                              >
+                                                Join Online
+                                              </a>
+                                            </div>
+                                          )}
                                         </div>
-                                        {appointment.location && (
-                                          <div className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4" />
-                                            <span>{appointment.location}</span>
-                                          </div>
-                                        )}
-                                        {appointment.meetingUrl && (
-                                          <div className="flex items-center gap-2">
-                                            <Video className="h-4 w-4" />
-                                            <a
-                                              href={appointment.meetingUrl}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="hover:underline text-primary hover:text-primary/80"
-                                            >
-                                              Join Online
-                                            </a>
-                                          </div>
+                                        {appointment.description && (
+                                          <p className="text-sm text-muted-foreground leading-relaxed">
+                                            {appointment.description}
+                                          </p>
                                         )}
                                       </div>
-                                      {appointment.description && (
-                                        <p className="text-sm text-muted-foreground leading-relaxed">
-                                          {appointment.description}
-                                        </p>
-                                      )}
                                     </div>
-                                  </div>
-                                  {isTrainer && (
-                                    <div className="flex gap-2">
-                                      <motion.div
-                                        whileHover={{ opacity: 0.8 }}
-                                        whileTap={{ scale: 0.9 }}
-                                      >
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="hover:bg-primary/10"
-                                          onClick={() => handleEdit(appointment)}
-                                          data-testid={`button-edit-${appointment.id}`}
+                                    {isTrainer && (
+                                      <div className="flex gap-2">
+                                        <motion.div
+                                          whileHover={{ opacity: 0.8 }}
+                                          whileTap={{ scale: 0.9 }}
                                         >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                      </motion.div>
-                                      <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                          <motion.div
-                                            whileHover={{ opacity: 0.8 }}
-                                            whileTap={{ scale: 0.9 }}
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="hover:bg-primary/10"
+                                            onClick={() => handleEdit(appointment)}
+                                            data-testid={`button-edit-${appointment.id}`}
                                           >
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="hover:bg-destructive/10"
-                                              data-testid={`button-delete-${appointment.id}`}
+                                            <Edit className="h-4 w-4" />
+                                          </Button>
+                                        </motion.div>
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <motion.div
+                                              whileHover={{ opacity: 0.8 }}
+                                              whileTap={{ scale: 0.9 }}
                                             >
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                          </motion.div>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>Cancel Appointment?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              This will cancel the appointment with{' '}
-                                              {appointment.client?.name}. This action cannot be
-                                              undone.
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <div className="flex justify-end gap-4">
-                                            <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
-                                            <AlertDialogAction
-                                              onClick={() => handleDelete(appointment.id)}
-                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                            >
-                                              Cancel Appointment
-                                            </AlertDialogAction>
-                                          </div>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                    </div>
-                                  )}
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="hover:bg-destructive/10"
+                                                data-testid={`button-delete-${appointment.id}`}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </motion.div>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>
+                                                Cancel Appointment?
+                                              </AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                This will cancel the appointment with{' '}
+                                                {appointment.client?.name}. This action cannot be
+                                                undone.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <div className="flex justify-end gap-4">
+                                              <AlertDialogCancel>
+                                                Keep Appointment
+                                              </AlertDialogCancel>
+                                              <AlertDialogAction
+                                                onClick={() => handleDelete(appointment.id)}
+                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                              >
+                                                Cancel Appointment
+                                              </AlertDialogAction>
+                                            </div>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+      </BlurFade>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 
 interface DataPoint {
   label: string;
@@ -58,6 +58,23 @@ export function ZoneBandChart({
     value: number;
     label: string;
   } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(600);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    setContainerWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  const showYAxis = containerWidth >= 450;
 
   const width = 600; // SVG viewBox width — responsive via CSS
 
@@ -91,10 +108,39 @@ export function ZoneBandChart({
       label: d.label,
     }));
 
-    // Generate ~4 y-axis ticks
+    // Generate distinct y-axis ticks
+    // When min ≈ max (single data point or flat line), widen range to 0..max*1.5
+    let tickMin = yMin;
+    let tickMax = yMax;
+    if (tickMax - tickMin < 1) {
+      tickMin = 0;
+      tickMax = rawMax > 0 ? rawMax * 1.5 : 200;
+    }
+    if (tickMax === 0) {
+      // All values are 0
+      tickMin = 0;
+      tickMax = 200;
+    }
+
     const tickCount = 4;
-    const step = (yMax - yMin) / tickCount;
-    const ticks = Array.from({ length: tickCount + 1 }, (_, i) => yMin + step * i);
+    const rawStep = (tickMax - tickMin) / tickCount;
+    // Round step to a clean number (1, 2, 5, 10, 20, 50, 100, ...)
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+    const residual = rawStep / magnitude;
+    const niceResidual = residual <= 1.5 ? 1 : residual <= 3.5 ? 2 : residual <= 7.5 ? 5 : 10;
+    const niceStep = niceResidual * magnitude;
+
+    const niceMin = Math.floor(tickMin / niceStep) * niceStep;
+    const ticks: number[] = [];
+    for (let v = niceMin; v <= tickMax + niceStep * 0.5; v += niceStep) {
+      ticks.push(Math.round(v * 1e6) / 1e6); // avoid floating point drift
+      if (ticks.length >= 6) break; // safety cap
+    }
+    // Ensure at least 3 distinct ticks
+    if (ticks.length < 3) {
+      const fallbackStep = tickMax > 0 ? tickMax / 2 : 100;
+      return { yMin, yMax: tickMax, avg, points: pts, yTicks: [0, fallbackStep, fallbackStep * 2] };
+    }
 
     return { yMin, yMax, avg, points: pts, yTicks: ticks };
   }, [data, chartArea]);
@@ -151,7 +197,7 @@ export function ZoneBandChart({
       : data.filter((_, i) => i % Math.ceil(data.length / 6) === 0 || i === data.length - 1);
 
   return (
-    <div className={className}>
+    <div ref={containerRef} className={className}>
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="w-full"
@@ -229,16 +275,18 @@ export function ZoneBandChart({
                 stroke="currentColor"
                 strokeOpacity={0.06}
               />
-              <text
-                x={chartArea.x - 6}
-                y={y + 3}
-                textAnchor="end"
-                fill="currentColor"
-                opacity={0.35}
-                className="text-[10px]"
-              >
-                {tick >= 1000 ? `${(tick / 1000).toFixed(1)}k` : Math.round(tick)}
-              </text>
+              {showYAxis && (
+                <text
+                  x={chartArea.x - 6}
+                  y={y + 3}
+                  textAnchor="end"
+                  fill="currentColor"
+                  opacity={0.35}
+                  className="text-[10px]"
+                >
+                  {tick >= 1000 ? `${(tick / 1000).toFixed(1)}k` : Math.round(tick)}
+                </text>
+              )}
             </g>
           );
         })}

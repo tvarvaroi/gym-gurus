@@ -1,14 +1,5 @@
-import { motion } from 'framer-motion';
 import { Link } from 'wouter';
-import {
-  MessageSquare,
-  Zap,
-  Dumbbell,
-  Apple,
-  TrendingUp,
-  Calculator,
-} from 'lucide-react';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { MessageSquare, Zap, Dumbbell, Apple, TrendingUp, Calculator } from 'lucide-react';
 
 const WIDGETS = [
   { icon: MessageSquare, label: 'AI Coach', href: '/solo/coach', color: 'text-purple-400' },
@@ -16,18 +7,17 @@ const WIDGETS = [
   { icon: Dumbbell, label: 'Workouts', href: '/workouts', color: 'text-blue-400' },
   { icon: Apple, label: 'Nutrition', href: '/solo/nutrition', color: 'text-green-400' },
   { icon: TrendingUp, label: 'Progress', href: '/progress', color: 'text-teal-400' },
-  { icon: Calculator, label: 'Calculators', href: '/dashboard/calculators', color: 'text-orange-400' },
+  {
+    icon: Calculator,
+    label: 'Calculators',
+    href: '/dashboard/calculators',
+    color: 'text-orange-400',
+  },
 ] as const;
 
 export function WidgetScroller() {
-  const prefersReducedMotion = useReducedMotion();
-
-  const animProps = prefersReducedMotion
-    ? {}
-    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3, delay: 0.15 } };
-
   return (
-    <motion.div {...animProps}>
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
       <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground/50 font-medium">
           Quick Access
@@ -56,7 +46,9 @@ export function WidgetScroller() {
           return (
             <Link key={widget.label} href={widget.href}>
               <div className="bg-card rounded-2xl border border-border/20 p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary/30 group transition-colors">
-                <Icon className={`w-6 h-6 ${widget.color} group-hover:scale-110 transition-transform`} />
+                <Icon
+                  className={`w-6 h-6 ${widget.color} group-hover:scale-110 transition-transform`}
+                />
                 <span className="text-xs text-muted-foreground/60 group-hover:text-foreground transition-colors font-medium">
                   {widget.label}
                 </span>
@@ -65,6 +57,6 @@ export function WidgetScroller() {
           );
         })}
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { motion } from 'framer-motion';
+import { BlurFade } from '@/components/ui/blur-fade';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,6 +19,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { MuscleAnatomyDiagram } from '@/components/redesign/charts/MuscleAnatomyDiagram';
+import { NumberTicker } from '@/components/ui/number-ticker';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MuscleFatigue {
   muscleGroup: string;
@@ -131,6 +134,12 @@ export default function Recovery() {
         )
       : 100;
 
+  // Ring color reflects readiness status: green (ready), amber (moderate), red (fatigued)
+  const ringColor =
+    overallRecovery >= 75 ? '#22c55e' : overallRecovery >= 50 ? '#f59e0b' : '#ef4444';
+  const ringColorFaded =
+    overallRecovery >= 75 ? '#16a34a' : overallRecovery >= 50 ? '#d97706' : '#dc2626';
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'recovered':
@@ -165,11 +174,75 @@ export default function Recovery() {
 
   if (fatigueLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-rose-400 mx-auto" />
-          <p className="text-muted-foreground font-light">Loading recovery data...</p>
+      <div className="space-y-4 md:space-y-6">
+        {/* PageHeader skeleton */}
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-56" />
+          <Skeleton className="h-5 w-80" />
         </div>
+
+        {/* Overall Recovery Score card skeleton */}
+        <Card className="border-border/50 backdrop-blur-sm overflow-hidden">
+          <div className="h-[3px] w-full bg-muted/30" />
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-row items-center gap-4 md:gap-6">
+              {/* Score circle placeholder */}
+              <Skeleton className="w-28 h-28 md:w-40 md:h-40 rounded-full flex-shrink-0" />
+              {/* Stats grid */}
+              <div className="flex-1 grid grid-cols-3 gap-2 md:gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-8 w-10" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Muscle Map skeleton */}
+        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-64 mt-1" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-96 w-full rounded-xl" />
+          </CardContent>
+        </Card>
+
+        {/* Muscle cards + tips grid skeleton */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-56 mt-1" />
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[...Array(8)].map((_, i) => (
+                    <Skeleton key={i} className="h-[110px] rounded-2xl" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-xl" />
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recommendations skeleton */}
+        <Skeleton className="h-32 rounded-xl" />
       </div>
     );
   }
@@ -184,372 +257,392 @@ export default function Recovery() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <PageHeader
-        icon={<Heart className="h-full w-full" />}
-        title="Recovery"
-        titleAccent="Status"
-        subtitle="Track your muscle recovery and optimize rest days"
-      />
+      <BlurFade delay={0.05}>
+        <PageHeader
+          icon={<Heart className="h-full w-full" />}
+          title="Training"
+          titleAccent="Readiness"
+          subtitle="Based on your 28-day training load"
+        />
+      </BlurFade>
 
       {/* Overall Recovery Score */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <Card
-          className={`border-border/50 backdrop-blur-sm overflow-hidden ${
-            overallRecovery >= 75
-              ? 'border-green-500/20'
-              : overallRecovery >= 50
-                ? 'border-amber-500/20'
-                : 'border-red-500/20'
-          }`}
-          style={{
-            background: `linear-gradient(135deg, ${
-              overallRecovery >= 75
-                ? 'rgba(34, 197, 94, 0.06)'
-                : overallRecovery >= 50
-                  ? 'rgba(245, 158, 11, 0.06)'
-                  : 'rgba(239, 68, 68, 0.06)'
-            } 0%, transparent 60%), hsl(var(--card) / 0.8)`,
-          }}
+      <BlurFade delay={0.1}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
         >
-          {/* Status stripe */}
-          <div
-            className={`h-[3px] w-full bg-gradient-to-r ${
+          <Card
+            className={`border-border/50 backdrop-blur-sm overflow-hidden ${
               overallRecovery >= 75
-                ? 'from-green-500 to-emerald-400'
+                ? 'border-green-500/20'
                 : overallRecovery >= 50
-                  ? 'from-amber-500 to-yellow-400'
-                  : 'from-red-500 to-rose-400'
+                  ? 'border-amber-500/20'
+                  : 'border-red-500/20'
             }`}
-          />
-          <CardContent className="p-4 md:p-6">
-            <div className="flex flex-row items-center gap-4 md:gap-6">
-              {/* Score Circle */}
-              <div className="relative w-28 h-28 md:w-40 md:h-40 flex-shrink-0">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="70"
-                    stroke="currentColor"
-                    strokeWidth="12"
-                    fill="none"
-                    className="text-muted/20"
-                  />
-                  <motion.circle
-                    cx="80"
-                    cy="80"
-                    r="70"
-                    stroke="url(#recoveryGradient)"
-                    strokeWidth="12"
-                    fill="none"
-                    strokeLinecap="round"
-                    initial={{ strokeDasharray: '0 440' }}
-                    animate={{ strokeDasharray: `${overallRecovery * 4.4} 440` }}
-                    transition={{ duration: 1.5, ease: 'easeOut' }}
-                  />
-                  <defs>
-                    <linearGradient id="recoveryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="hsl(var(--primary))" />
-                      <stop offset="100%" stopColor="hsl(var(--primary) / 0.7)" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <motion.span
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className={`text-2xl md:text-4xl font-light ${
-                      overallRecovery >= 75
-                        ? 'text-green-400'
+            style={{
+              background: `linear-gradient(135deg, ${
+                overallRecovery >= 75
+                  ? 'rgba(34, 197, 94, 0.06)'
+                  : overallRecovery >= 50
+                    ? 'rgba(245, 158, 11, 0.06)'
+                    : 'rgba(239, 68, 68, 0.06)'
+              } 0%, transparent 60%), hsl(var(--card) / 0.8)`,
+            }}
+          >
+            {/* Status stripe */}
+            <div
+              className={`h-[3px] w-full bg-gradient-to-r ${
+                overallRecovery >= 75
+                  ? 'from-green-500 to-emerald-400'
+                  : overallRecovery >= 50
+                    ? 'from-amber-500 to-yellow-400'
+                    : 'from-red-500 to-rose-400'
+              }`}
+            />
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-row items-center gap-4 md:gap-6">
+                {/* Score Circle */}
+                <div className="relative w-28 h-28 md:w-40 md:h-40 flex-shrink-0">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="70"
+                      stroke="currentColor"
+                      strokeWidth="12"
+                      fill="none"
+                      className="text-muted/20"
+                    />
+                    <motion.circle
+                      cx="80"
+                      cy="80"
+                      r="70"
+                      stroke="url(#recoveryGradient)"
+                      strokeWidth="12"
+                      fill="none"
+                      strokeLinecap="round"
+                      initial={{ strokeDasharray: '0 440' }}
+                      animate={{ strokeDasharray: `${overallRecovery * 4.4} 440` }}
+                      transition={{ duration: 1.5, ease: 'easeOut' }}
+                    />
+                    <defs>
+                      <linearGradient id="recoveryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor={ringColor} />
+                        <stop offset="100%" stopColor={ringColorFaded} />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.5 }}
+                      className={`text-2xl md:text-4xl font-light ${
+                        overallRecovery >= 75
+                          ? 'text-green-400'
+                          : overallRecovery >= 50
+                            ? 'text-amber-400'
+                            : 'text-red-400'
+                      }`}
+                    >
+                      <NumberTicker value={overallRecovery} />%
+                    </motion.span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                      {overallRecovery >= 75
+                        ? 'Ready'
                         : overallRecovery >= 50
-                          ? 'text-amber-400'
-                          : 'text-red-400'
-                    }`}
-                  >
-                    {overallRecovery}%
-                  </motion.span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                    {overallRecovery >= 75
-                      ? 'Ready'
-                      : overallRecovery >= 50
-                        ? 'Moderate'
-                        : 'Fatigued'}
-                  </span>
+                          ? 'Moderate'
+                          : 'Fatigued'}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Recovery Stats */}
-              <div className="flex-1 grid grid-cols-3 gap-2 md:gap-4">
-                <div className="text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-1 md:gap-2 mb-1">
-                    <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 text-emerald-400 shrink-0" />
-                    <span className="text-xs md:text-sm text-muted-foreground">Recovered</span>
+                {/* Recovery Stats */}
+                <div className="flex-1 grid grid-cols-3 gap-2 md:gap-4">
+                  <div className="text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-1 md:gap-2 mb-1">
+                      <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 text-emerald-400 shrink-0" />
+                      <span className="text-xs md:text-sm text-muted-foreground">Recovered</span>
+                    </div>
+                    <p className="text-2xl font-light text-emerald-400">
+                      <NumberTicker value={recoveredCount} />
+                    </p>
                   </div>
-                  <p className="text-2xl font-light text-emerald-400">{recoveredCount}</p>
-                </div>
-                <div className="text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-1 md:gap-2 mb-1">
-                    <Activity className="h-3 w-3 md:h-4 md:w-4 text-amber-400 shrink-0" />
-                    <span className="text-xs md:text-sm text-muted-foreground">Recovering</span>
+                  <div className="text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-1 md:gap-2 mb-1">
+                      <Activity className="h-3 w-3 md:h-4 md:w-4 text-amber-400 shrink-0" />
+                      <span className="text-xs md:text-sm text-muted-foreground">Recovering</span>
+                    </div>
+                    <p className="text-2xl font-light text-amber-400">
+                      <NumberTicker value={recoveringCount} />
+                    </p>
                   </div>
-                  <p className="text-2xl font-light text-amber-400">{recoveringCount}</p>
-                </div>
-                <div className="text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-1 md:gap-2 mb-1">
-                    <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-red-400 shrink-0" />
-                    <span className="text-xs md:text-sm text-muted-foreground">Fatigued</span>
+                  <div className="text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-1 md:gap-2 mb-1">
+                      <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-red-400 shrink-0" />
+                      <span className="text-xs md:text-sm text-muted-foreground">Fatigued</span>
+                    </div>
+                    <p className="text-2xl font-light text-red-400">
+                      <NumberTicker value={fatiguedCount} />
+                    </p>
                   </div>
-                  <p className="text-2xl font-light text-red-400">{fatiguedCount}</p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </BlurFade>
 
       {/* Anatomy Diagram */}
       {fatigueData.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-light flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                Muscle Map
-              </CardTitle>
-              <CardDescription>Visual overview of your muscle recovery status</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MuscleAnatomyDiagram
-                fatigueData={fatigueData}
-                onMuscleClick={(muscle) => setSelectedMuscle(muscle)}
-              />
-            </CardContent>
-          </Card>
-        </motion.div>
+        <BlurFade delay={0.15}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-light flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Muscle Recovery Status
+                </CardTitle>
+                <CardDescription>Visual overview of your muscle recovery status</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MuscleAnatomyDiagram
+                  fatigueData={fatigueData}
+                  onMuscleClick={(muscle) => setSelectedMuscle(muscle)}
+                />
+              </CardContent>
+            </Card>
+          </motion.div>
+        </BlurFade>
       )}
 
       {/* Main Content */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Muscle Recovery Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="lg:col-span-2"
-        >
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full">
-            <CardHeader>
-              <CardTitle className="text-lg font-light flex items-center gap-2">
-                <Activity className="h-5 w-5 text-rose-400" />
-                Muscle Group Recovery
-              </CardTitle>
-              <CardDescription>Click on a muscle group for details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {displayMuscles.map((muscle, index) => {
-                  const neverTrained = !muscle.lastTrainedAt && muscle.fatigueLevel === 0;
-                  return (
-                    <motion.button
-                      key={muscle.muscleGroup}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.1 + index * 0.05 }}
-                      onClick={() =>
-                        setSelectedMuscle(
-                          selectedMuscle === muscle.muscleGroup ? null : muscle.muscleGroup
-                        )
-                      }
-                      className={`p-3 md:p-4 rounded-2xl transition-all duration-300 text-left min-h-[90px] md:min-h-[110px] ${
-                        neverTrained
-                          ? 'border border-dashed border-border/30 bg-card/30 opacity-60'
-                          : selectedMuscle === muscle.muscleGroup
-                            ? 'border border-rose-500/50 bg-rose-500/10'
-                            : `border ${getStatusBg(muscle.recoveryStatus)}`
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-start gap-1 mb-2">
-                        <span className="font-medium text-sm flex-1 min-w-0">
-                          {formatMuscleGroupName(muscle.muscleGroup)}
-                        </span>
-                        {neverTrained ? (
-                          <Badge
-                            variant="outline"
-                            className="text-xs text-muted-foreground/50 border-border/30 flex-shrink-0"
-                          >
-                            Not trained
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${getStatusColor(muscle.recoveryStatus)} border-current/30 bg-current/10 flex-shrink-0`}
-                          >
-                            {muscle.recoveryStatus}
-                          </Badge>
-                        )}
-                      </div>
-                      {neverTrained ? (
-                        <p className="text-xs text-muted-foreground/50">Not trained yet</p>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Fatigue</span>
-                            <span>{muscle.fatigueLevel}%</span>
-                          </div>
-                          <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
-                            <motion.div
-                              className={`h-full ${getProgressColor(muscle.fatigueLevel)}`}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${muscle.fatigueLevel}%` }}
-                              transition={{ duration: 0.8, delay: 0.2 + index * 0.05 }}
-                            />
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {formatLastTrained(muscle.lastTrainedAt)}
-                          </p>
+      <BlurFade delay={0.2}>
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Muscle Recovery Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-2"
+          >
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full">
+              <CardHeader>
+                <CardTitle className="text-lg font-light flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-rose-400" />
+                  Muscle Group Recovery
+                </CardTitle>
+                <CardDescription>Click on a muscle group for details</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {displayMuscles.map((muscle, index) => {
+                    const neverTrained = !muscle.lastTrainedAt && muscle.fatigueLevel === 0;
+                    return (
+                      <motion.button
+                        key={muscle.muscleGroup}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1 + index * 0.05 }}
+                        onClick={() =>
+                          setSelectedMuscle(
+                            selectedMuscle === muscle.muscleGroup ? null : muscle.muscleGroup
+                          )
+                        }
+                        className={`p-3 md:p-4 rounded-2xl transition-all duration-300 text-left min-h-[90px] md:min-h-[110px] ${
+                          neverTrained
+                            ? 'border border-dashed border-border/30 bg-card/30 opacity-60'
+                            : selectedMuscle === muscle.muscleGroup
+                              ? 'border border-rose-500/50 bg-rose-500/10'
+                              : `border ${getStatusBg(muscle.recoveryStatus)}`
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-start gap-1 mb-2">
+                          <span className="font-medium text-sm flex-1 min-w-0">
+                            {formatMuscleGroupName(muscle.muscleGroup)}
+                          </span>
+                          {neverTrained ? (
+                            <Badge
+                              variant="outline"
+                              className="text-xs text-muted-foreground/50 border-border/30 flex-shrink-0"
+                            >
+                              Not trained
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${getStatusColor(muscle.recoveryStatus)} border-current/30 bg-current/10 flex-shrink-0`}
+                            >
+                              {muscle.recoveryStatus}
+                            </Badge>
+                          )}
                         </div>
-                      )}
-                    </motion.button>
-                  );
-                })}
-              </div>
+                        {neverTrained ? (
+                          <p className="text-xs text-muted-foreground/50">Not trained yet</p>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Fatigue</span>
+                              <span>
+                                <NumberTicker value={muscle.fatigueLevel} />%
+                              </span>
+                            </div>
+                            <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
+                              <motion.div
+                                className={`h-full ${getProgressColor(muscle.fatigueLevel)}`}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${muscle.fatigueLevel}%` }}
+                                transition={{ duration: 0.8, delay: 0.2 + index * 0.05 }}
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {formatLastTrained(muscle.lastTrainedAt)}
+                            </p>
+                          </div>
+                        )}
+                      </motion.button>
+                    );
+                  })}
+                </div>
 
-              {/* Selected Muscle Details */}
-              {selectedMuscle &&
-                (() => {
-                  const muscle = fatigueData.find((m) => m.muscleGroup === selectedMuscle);
-                  if (!muscle) return null;
-                  return (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 p-4 rounded-xl bg-muted/20 border border-border/50"
-                    >
-                      <h4 className="font-medium mb-2">
-                        {formatMuscleGroupName(selectedMuscle)} Recovery Details
-                      </h4>
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        <p>Fatigue level: {muscle.fatigueLevel}%</p>
-                        <p>Last trained: {formatLastTrained(muscle.lastTrainedAt)}</p>
-                        {muscle.setsLastSession > 0 && (
-                          <p>
-                            Last session: {muscle.setsLastSession} sets,{' '}
-                            {muscle.volumeLastSession.toFixed(0)} kg volume
-                          </p>
-                        )}
-                        {muscle.estimatedFullRecoveryAt && (
-                          <p>
-                            Full recovery by:{' '}
-                            {new Date(muscle.estimatedFullRecoveryAt).toLocaleString()}
-                          </p>
-                        )}
+                {/* Selected Muscle Details */}
+                {selectedMuscle &&
+                  (() => {
+                    const muscle = fatigueData.find((m) => m.muscleGroup === selectedMuscle);
+                    if (!muscle) return null;
+                    return (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-4 p-4 rounded-xl bg-muted/20 border border-border/50"
+                      >
+                        <h4 className="font-medium mb-2">
+                          {formatMuscleGroupName(selectedMuscle)} Recovery Details
+                        </h4>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>Fatigue level: {muscle.fatigueLevel}%</p>
+                          <p>Last trained: {formatLastTrained(muscle.lastTrainedAt)}</p>
+                          {muscle.setsLastSession > 0 && (
+                            <p>
+                              Last session: {muscle.setsLastSession} sets,{' '}
+                              {muscle.volumeLastSession.toFixed(0)} kg volume
+                            </p>
+                          )}
+                          {muscle.estimatedFullRecoveryAt && (
+                            <p>
+                              Full recovery by:{' '}
+                              {new Date(muscle.estimatedFullRecoveryAt).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })()}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Recovery Tips */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-light flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-400" />
+                  Recovery Tips
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recoveryTips.map((tip, index) => (
+                  <motion.div
+                    key={tip.title}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + index * 0.1 }}
+                    className="p-3 rounded-xl bg-muted/20 border border-border/50 hover:border-rose-500/30 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-lg bg-${tip.color}-500/10`}>
+                        <tip.icon className={`h-4 w-4 text-${tip.color}-400`} />
                       </div>
-                    </motion.div>
-                  );
-                })()}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Recovery Tips */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-light flex items-center gap-2">
-                <Zap className="h-5 w-5 text-amber-400" />
-                Recovery Tips
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {recoveryTips.map((tip, index) => (
-                <motion.div
-                  key={tip.title}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  className="p-3 rounded-xl bg-muted/20 border border-border/50 hover:border-rose-500/30 transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg bg-${tip.color}-500/10`}>
-                      <tip.icon className={`h-4 w-4 text-${tip.color}-400`} />
+                      <div>
+                        <h4 className="font-medium text-sm">{tip.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {tip.description}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium text-sm">{tip.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {tip.description}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+                  </motion.div>
+                ))}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </BlurFade>
 
       {/* Recommendations */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Card className="border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-pink-500/5 backdrop-blur-sm">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-start gap-3 md:gap-4">
-              <div className="p-2 md:p-3 rounded-xl bg-rose-500/20 flex-shrink-0">
-                <Info className="h-5 w-5 md:h-6 md:w-6 text-rose-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium mb-2">Today's Recommendation</h3>
-                {recommendations ? (
-                  <>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Based on your recovery status, we recommend:{' '}
-                      <strong>{getSuggestedWorkoutLabel(recommendations.suggestedWorkout)}</strong>
+      <BlurFade delay={0.25}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card className="border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-pink-500/5 backdrop-blur-sm">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex items-start gap-3 md:gap-4">
+                <div className="p-2 md:p-3 rounded-xl bg-rose-500/20 flex-shrink-0">
+                  <Info className="h-5 w-5 md:h-6 md:w-6 text-rose-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium mb-2">Today's Recommendation</h3>
+                  {recommendations ? (
+                    <>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Based on your recovery status, we recommend:{' '}
+                        <strong>
+                          {getSuggestedWorkoutLabel(recommendations.suggestedWorkout)}
+                        </strong>
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {recommendations.readyToTrain.slice(0, 6).map((muscle) => (
+                          <Badge
+                            key={muscle}
+                            className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                          >
+                            {formatMuscleGroupName(muscle)} - Ready
+                          </Badge>
+                        ))}
+                        {recommendations.needsRest.slice(0, 4).map((m) => (
+                          <Badge
+                            key={m.muscleGroup}
+                            className="bg-red-500/20 text-red-400 border-red-500/30"
+                          >
+                            {formatMuscleGroupName(m.muscleGroup)} - Rest
+                          </Badge>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Log your workouts to get personalized recovery recommendations.
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {recommendations.readyToTrain.slice(0, 6).map((muscle) => (
-                        <Badge
-                          key={muscle}
-                          className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                        >
-                          {formatMuscleGroupName(muscle)} - Ready
-                        </Badge>
-                      ))}
-                      {recommendations.needsRest.slice(0, 4).map((m) => (
-                        <Badge
-                          key={m.muscleGroup}
-                          className="bg-red-500/20 text-red-400 border-red-500/30"
-                        >
-                          {formatMuscleGroupName(m.muscleGroup)} - Rest
-                        </Badge>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Log your workouts to get personalized recovery recommendations.
-                  </p>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </BlurFade>
     </div>
   );
 }

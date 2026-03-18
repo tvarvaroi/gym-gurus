@@ -28,7 +28,7 @@ interface ErrorContext {
 function buildErrorContext(req: Request, statusCode: number, code?: string): ErrorContext {
   return {
     requestId: getRequestId(req),
-    userId: (req as any).user?.id || req.session?.userId,
+    userId: req.user?.id || req.session?.userId,
     method: req.method,
     path: req.originalUrl || req.path,
     statusCode,

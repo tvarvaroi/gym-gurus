@@ -19,6 +19,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { BlurFade } from '@/components/ui/blur-fade';
 import ProgressFormModal from '../components/ProgressFormModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/contexts/UserContext';
@@ -287,6 +288,65 @@ export default function ProgressPage() {
     return <QueryErrorState error={clientsError} onRetry={() => window.location.reload()} />;
   }
 
+  if (userLoading) {
+    return (
+      <div className="container mx-auto space-y-4 md:space-y-6">
+        {/* PageHeader skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-6">
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-5 w-72" />
+          </div>
+        </div>
+
+        {/* Stat cards skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="bg-card/50 backdrop-blur-sm border-border/50">
+              <CardContent className="p-4 md:p-6 space-y-3">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-3 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Chart area skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <CardHeader>
+              <Skeleton className="h-6 w-36" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </CardContent>
+          </Card>
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <CardHeader>
+              <Skeleton className="h-6 w-36" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Workout history skeleton */}
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -294,40 +354,42 @@ export default function ProgressPage() {
       className="container mx-auto space-y-4 md:space-y-6"
     >
       {/* Enhanced Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-6">
-        <PageHeader
-          icon={<TrendingUp className="h-full w-full" />}
-          title={isClient || isSolo ? 'My' : 'Progress'}
-          titleAccent={isClient || isSolo ? 'Progress' : 'Tracking'}
-          subtitle={
-            isSolo
-              ? 'Track your fitness progress and goals'
-              : isClient
-                ? 'View your fitness journey tracked by your trainer'
-                : 'Monitor client progress and track fitness goals with precision'
-          }
-        />
-        {/* Only trainers can add progress entries */}
-        {isTrainer && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1], delay: 0.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Button
-              onClick={() => setShowAddModal(true)}
-              className="relative bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-premium-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto overflow-hidden group border-0"
-              data-testid="button-add-progress"
-              disabled={!selectedClient}
+      <BlurFade delay={0.05}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-6">
+          <PageHeader
+            icon={<TrendingUp className="h-full w-full" />}
+            title={isClient || isSolo ? 'My' : 'Progress'}
+            titleAccent={isClient || isSolo ? 'Progress' : 'Tracking'}
+            subtitle={
+              isSolo
+                ? 'Track your fitness progress and goals'
+                : isClient
+                  ? 'View your fitness journey tracked by your trainer'
+                  : 'Monitor client progress and track fitness goals with precision'
+            }
+          />
+          {/* Only trainers can add progress entries */}
+          {isTrainer && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1], delay: 0.1 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-              <Plus className="w-4 h-4 mr-2 relative z-10" />
-              <span className="text-sm relative z-10 font-light">Add Progress Entry</span>
-            </Button>
-          </motion.div>
-        )}
-      </div>
+              <Button
+                onClick={() => setShowAddModal(true)}
+                className="relative bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-premium-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto overflow-hidden group border-0"
+                data-testid="button-add-progress"
+                disabled={!selectedClient}
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                <Plus className="w-4 h-4 mr-2 relative z-10" />
+                <span className="text-sm relative z-10 font-light">Add Progress Entry</span>
+              </Button>
+            </motion.div>
+          )}
+        </div>
+      </BlurFade>
 
       {/* Enhanced Client Selection - Trainers only */}
       {isTrainer && (
@@ -441,15 +503,30 @@ export default function ProgressPage() {
 
       {/* Solo users — show progress data or empty state */}
       {isSolo && loadingSoloProgress && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="bg-card/50 backdrop-blur-sm border-border/50">
-              <CardContent className="p-6 space-y-4">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-8 w-32" />
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-6">
+          {/* Stat cards skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="bg-card/50 backdrop-blur-sm border-border/50">
+                <CardContent className="p-4 md:p-6 space-y-3">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-8 w-20" />
+                  <Skeleton className="h-3 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Chart areas skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <Skeleton className="h-64 w-full rounded-xl" />
+            <Skeleton className="h-64 w-full rounded-xl" />
+          </div>
+          {/* Workout history skeleton */}
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            ))}
+          </div>
         </div>
       )}
 
@@ -480,537 +557,559 @@ export default function ProgressPage() {
       {isSolo && !loadingSoloProgress && soloProgress && soloProgress.totalWorkouts > 0 && (
         <div className="space-y-6">
           {/* Stats Cards */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
-          >
-            <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground font-light">Total Workouts</p>
-                <p className="text-2xl font-bold mt-1">
-                  <NumberTicker value={soloProgress.totalWorkouts} className="text-2xl font-bold" />
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-teal-500/20 bg-gradient-to-br from-teal-500/5 to-transparent">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground font-light">Total Volume</p>
-                <p className="text-2xl font-bold mt-1">
-                  <NumberTicker value={soloProgress.totalVolumeKg} className="text-2xl font-bold" />
-                  <span className="text-sm font-light text-muted-foreground ml-1">kg</span>
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground font-light">Avg Duration</p>
-                {(() => {
-                  const avg =
-                    soloProgress.totalWorkouts > 1
-                      ? Math.round(soloProgress.totalDurationMinutes / soloProgress.totalWorkouts)
-                      : soloProgress.totalDurationMinutes;
-                  const isValid = avg >= 5;
-                  return (
-                    <p className="text-2xl font-bold mt-1">
-                      {isValid ? avg : '\u2014'}
-                      {isValid && (
-                        <span className="text-sm font-light text-muted-foreground ml-1">min</span>
-                      )}
-                    </p>
-                  );
-                })()}
-              </CardContent>
-            </Card>
-            <Card className="border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground font-light">Total Sets</p>
-                <p className="text-2xl font-bold mt-1">
-                  <NumberTicker value={soloProgress.totalSets} className="text-2xl font-bold" />
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Weekly Volume — Zone Band Chart */}
-          {soloProgress.weeklyData.some((w) => w.volume > 0) && (
+          <BlurFade delay={0.1}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
             >
-              <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg font-light flex items-center gap-2">
-                        <Weight className="w-5 h-5 text-primary" />
-                        Weekly Volume
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        Total volume lifted per week
-                      </CardDescription>
-                    </div>
-                    <PeriodToggle value={volumePeriod} onChange={setVolumePeriod} />
-                  </div>
-                  {/* Hero number */}
-                  <div className="mt-3">
-                    <span className="text-3xl font-bold text-foreground">
-                      <NumberTicker
-                        value={volumeChartData[volumeChartData.length - 1]?.value || 0}
-                        className="text-3xl font-bold"
-                      />
-                    </span>
-                    <span className="text-sm font-light text-muted-foreground ml-1">
-                      kg this week
-                    </span>
-                    {volumeChartData.length >= 2 &&
-                      (() => {
-                        const curr = volumeChartData[volumeChartData.length - 1]?.value || 0;
-                        const prev = volumeChartData[volumeChartData.length - 2]?.value || 0;
-                        if (prev === 0) return null;
-                        const pct = ((curr - prev) / prev) * 100;
-                        const isUp = pct > 0;
-                        return (
-                          <span
-                            className={`ml-2 text-xs font-medium ${isUp ? 'text-green-400' : 'text-red-400'}`}
-                          >
-                            {isUp ? (
-                              <TrendingUp className="w-3 h-3 inline mr-0.5" />
-                            ) : (
-                              <TrendingDown className="w-3 h-3 inline mr-0.5" />
-                            )}
-                            {Math.abs(pct).toFixed(0)}%
-                          </span>
-                        );
-                      })()}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <ZoneBandChart
-                    data={volumeChartData}
-                    zones={volumeZones}
-                    height={200}
-                    unit="kg"
-                    showAverage
-                  />
+              <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground font-light">Total Workouts</p>
+                  <p className="text-2xl font-bold mt-1">
+                    <NumberTicker
+                      value={soloProgress.totalWorkouts}
+                      className="text-2xl font-bold"
+                    />
+                  </p>
                 </CardContent>
               </Card>
-            </motion.div>
-          )}
-
-          {/* Volume Trend — Zone Band Chart */}
-          {soloProgress.history.length >= 3 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-            >
-              <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg font-light flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-primary" />
-                        Volume Trend
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        Per-session volume over time
-                      </CardDescription>
-                    </div>
-                    <PeriodToggle value={trendPeriod} onChange={setTrendPeriod} />
-                  </div>
-                  {/* Hero number */}
-                  <div className="mt-3">
-                    <span className="text-3xl font-bold text-foreground">
-                      <NumberTicker
-                        value={trendChartData[trendChartData.length - 1]?.value || 0}
-                        className="text-3xl font-bold"
-                      />
-                    </span>
-                    <span className="text-sm font-light text-muted-foreground ml-1">
-                      kg last session
-                    </span>
-                    {trendChartData.length >= 2 &&
-                      (() => {
-                        const curr = trendChartData[trendChartData.length - 1]?.value || 0;
-                        const prev = trendChartData[trendChartData.length - 2]?.value || 0;
-                        if (prev === 0) return null;
-                        const pct = ((curr - prev) / prev) * 100;
-                        const isUp = pct > 0;
-                        return (
-                          <span
-                            className={`ml-2 text-xs font-medium ${isUp ? 'text-green-400' : 'text-red-400'}`}
-                          >
-                            {isUp ? (
-                              <TrendingUp className="w-3 h-3 inline mr-0.5" />
-                            ) : (
-                              <TrendingDown className="w-3 h-3 inline mr-0.5" />
-                            )}
-                            {Math.abs(pct).toFixed(0)}%
-                          </span>
-                        );
-                      })()}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <ZoneBandChart
-                    data={trendChartData}
-                    zones={trendZones}
-                    height={200}
-                    unit="kg"
-                    showAverage
-                  />
+              <Card className="border-teal-500/20 bg-gradient-to-br from-teal-500/5 to-transparent">
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground font-light">Total Volume</p>
+                  <p className="text-2xl font-bold mt-1">
+                    <NumberTicker
+                      value={soloProgress.totalVolumeKg}
+                      className="text-2xl font-bold"
+                    />
+                    <span className="text-sm font-light text-muted-foreground ml-1">kg</span>
+                  </p>
                 </CardContent>
               </Card>
-            </motion.div>
-          )}
-
-          {/* Training Load Ratio + 4-Week Overview */}
-          {trainingLoadRatio && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.17 }}
-            >
-              <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-light flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-primary" />
-                    Training Load
-                  </CardTitle>
-                  <CardDescription>Acute:Chronic Workload Ratio (ACWR)</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {/* TLR Hero */}
-                  <div className="flex items-end gap-6 mb-4">
-                    <div>
-                      <span className="text-4xl font-bold text-foreground">
-                        <NumberTicker
-                          value={trainingLoadRatio.ratio}
-                          decimalPlaces={2}
-                          className="text-4xl font-bold"
-                        />
-                      </span>
-                      <span className={`ml-2 text-sm font-medium ${trainingLoadRatio.statusColor}`}>
-                        {trainingLoadRatio.statusLabel}
-                      </span>
-                    </div>
-                    {readinessData && (
-                      <div className="ml-auto text-right">
-                        <span className="text-xs text-muted-foreground block">Readiness</span>
-                        <span className={`text-2xl font-bold ${trainingLoadRatio.statusColor}`}>
-                          <NumberTicker
-                            value={readinessData.score}
-                            className={`text-2xl font-bold ${trainingLoadRatio.statusColor}`}
-                          />
-                          <span className="text-sm font-light">%</span>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  {/* Visual ratio bar */}
-                  <div className="space-y-3">
-                    <div className="relative h-3 bg-white/[0.04] rounded-full overflow-hidden">
-                      <div className="absolute left-[38%] top-0 h-full w-px bg-white/10" />
-                      <div className="absolute left-[62%] top-0 h-full w-px bg-white/10" />
-                      <div
-                        className={`absolute top-0 h-full rounded-full transition-all duration-700 ${trainingLoadRatio.barColor}`}
-                        style={{
-                          width: `${Math.min(100, trainingLoadRatio.ratio * 50)}%`,
-                          opacity: 0.8,
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>Detraining</span>
-                      <span>Sweet Spot (0.8–1.3)</span>
-                      <span>Overreaching</span>
-                    </div>
-                  </div>
-
-                  {/* 4-Week Overview Stat Cards */}
-                  <div className="grid grid-cols-3 gap-3 mt-5">
-                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                        Acute (7d)
-                      </p>
-                      <p className="text-lg font-bold">
-                        <NumberTicker
-                          value={trainingLoadRatio.currentWeek}
-                          className="text-lg font-bold"
-                        />
-                        <span className="text-xs font-light text-muted-foreground ml-0.5">kg</span>
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                        Chronic (28d avg)
-                      </p>
-                      <p className="text-lg font-bold">
-                        <NumberTicker
-                          value={trainingLoadRatio.avg4Week}
-                          className="text-lg font-bold"
-                        />
-                        <span className="text-xs font-light text-muted-foreground ml-0.5">kg</span>
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                        Ratio
-                      </p>
-                      <p className={`text-lg font-bold ${trainingLoadRatio.statusColor}`}>
-                        {trainingLoadRatio.ratio.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Recommendation */}
-                  {readinessData?.recommendation && (
-                    <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-                      {readinessData.recommendation}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Workout Frequency Heatmap — only show when enough data */}
-          {soloProgress.history.length >= 7 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
-                <CardHeader>
-                  <CardTitle className="text-lg font-light flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-primary" />
-                    Workout Frequency
-                  </CardTitle>
-                  <CardDescription>
-                    {soloProgress.history.length} workouts in the last 12 weeks
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+              <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground font-light">Avg Duration</p>
                   {(() => {
-                    // Build 12-week heatmap grid
-                    const today = new Date();
-                    const weeks = 12;
-                    const dayMs = 86400000;
-                    const startDate = new Date(today.getTime() - weeks * 7 * dayMs);
-
-                    // Count workouts per day
-                    const dayCounts: Record<string, number> = {};
-                    for (const w of soloProgress.history) {
-                      const key = new Date(w.date).toISOString().slice(0, 10);
-                      dayCounts[key] = (dayCounts[key] || 0) + 1;
-                    }
-
-                    // Build grid data: rows = days of week (0=Sun..6=Sat), cols = weeks
-                    const grid: { date: string; count: number }[][] = Array.from(
-                      { length: 7 },
-                      () => []
-                    );
-                    const cursor = new Date(startDate);
-                    // Align to start of week (Sunday)
-                    cursor.setDate(cursor.getDate() - cursor.getDay());
-
-                    while (cursor <= today) {
-                      const dayOfWeek = cursor.getDay();
-                      const key = cursor.toISOString().slice(0, 10);
-                      grid[dayOfWeek].push({ date: key, count: dayCounts[key] || 0 });
-                      cursor.setDate(cursor.getDate() + 1);
-                    }
-
-                    const maxCount = Math.max(1, ...Object.values(dayCounts));
-                    const dayLabels = ['Sun', '', 'Tue', '', 'Thu', '', 'Sat'];
-
+                    const avg =
+                      soloProgress.totalWorkouts > 1
+                        ? Math.round(soloProgress.totalDurationMinutes / soloProgress.totalWorkouts)
+                        : soloProgress.totalDurationMinutes;
+                    const isValid = avg >= 5;
                     return (
-                      <>
-                        <div className="flex gap-1">
-                          <div className="flex flex-col gap-1 mr-1 text-[10px] text-muted-foreground">
-                            {dayLabels.map((label, i) => (
-                              <div key={i} className="h-3 flex items-center">
-                                {label}
-                              </div>
-                            ))}
-                          </div>
-                          <div className="flex gap-1 overflow-x-auto">
-                            {Array.from({ length: grid[0]?.length || 0 }, (_, weekIdx) => (
-                              <div key={weekIdx} className="flex flex-col gap-1">
-                                {grid.map((row, dayIdx) => {
-                                  const cell = row[weekIdx];
-                                  if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
-                                  const intensity = cell.count / maxCount;
-                                  return (
-                                    <div
-                                      key={dayIdx}
-                                      className="w-3 h-3 rounded-sm"
-                                      style={{
-                                        backgroundColor:
-                                          cell.count === 0
-                                            ? 'hsl(var(--muted) / 0.3)'
-                                            : `hsl(var(--primary) / ${0.3 + intensity * 0.7})`,
-                                      }}
-                                      title={`${cell.date}: ${cell.count} workout${cell.count !== 1 ? 's' : ''}`}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        {/* Color legend */}
-                        <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
-                          <span>Less</span>
-                          <div className="flex gap-0.5">
-                            <div
-                              className="w-3 h-3 rounded-sm"
-                              style={{ backgroundColor: 'hsl(var(--muted) / 0.3)' }}
-                            />
-                            <div
-                              className="w-3 h-3 rounded-sm"
-                              style={{ backgroundColor: 'hsl(var(--primary) / 0.3)' }}
-                            />
-                            <div
-                              className="w-3 h-3 rounded-sm"
-                              style={{ backgroundColor: 'hsl(var(--primary) / 0.55)' }}
-                            />
-                            <div
-                              className="w-3 h-3 rounded-sm"
-                              style={{ backgroundColor: 'hsl(var(--primary) / 0.8)' }}
-                            />
-                            <div
-                              className="w-3 h-3 rounded-sm"
-                              style={{ backgroundColor: 'hsl(var(--primary) / 1)' }}
-                            />
-                          </div>
-                          <span>More</span>
-                        </div>
-                      </>
+                      <p className="text-2xl font-bold mt-1">
+                        {isValid ? (
+                          <>
+                            {avg}
+                            <span className="text-sm font-light text-muted-foreground ml-1">
+                              min
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-sm font-normal text-muted-foreground">No data</span>
+                        )}
+                      </p>
                     );
                   })()}
                 </CardContent>
               </Card>
-            </motion.div>
-          )}
-
-          {/* Personal Records Table */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
-            <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle className="text-lg font-light flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-primary" />
-                  Personal Records
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {personalRecords.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Complete workouts to set your first PR!
+              <Card className="border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground font-light">Total Sets</p>
+                  <p className="text-2xl font-bold mt-1">
+                    <NumberTicker value={soloProgress.totalSets} className="text-2xl font-bold" />
                   </p>
-                ) : (
-                  <div className="overflow-x-auto -mx-6 px-6">
-                    <table className="w-full text-sm min-w-[480px]">
-                      <thead>
-                        <tr className="border-b border-border/30">
-                          <th className="text-left py-2 text-muted-foreground font-medium min-w-[140px] pr-4">
-                            Exercise
-                          </th>
-                          <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
-                            Weight
-                          </th>
-                          <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
-                            Reps
-                          </th>
-                          <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
-                            Est. 1RM
-                          </th>
-                          <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
-                            Date
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {personalRecords.slice(0, 10).map((record, i) => (
-                          <tr key={i} className="border-b border-border/10">
-                            <td className="py-2 font-medium max-w-[200px] truncate">
-                              {record.exercise.name}
-                            </td>
-                            <td className="py-2 text-right">
-                              {parseFloat(record.pr.weightKg).toFixed(1)} kg
-                            </td>
-                            <td className="py-2 text-right">{record.pr.reps}</td>
-                            <td className="py-2 text-right text-primary font-medium">
-                              {parseFloat(record.pr.estimated1rm).toFixed(1)} kg
-                            </td>
-                            <td className="py-2 text-right text-muted-foreground">
-                              {new Date(record.pr.achievedAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </BlurFade>
 
-          {/* Recent Workout History */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
-              <CardHeader>
-                <CardTitle className="text-lg font-light">Recent Workouts</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {soloProgress.history.map((workout) => (
-                  <div
-                    key={workout.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border-l-4 border-primary border border-border/20 overflow-hidden"
-                  >
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <p className="text-sm font-medium truncate">{workout.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(workout.date).toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
+          {/* Weekly Volume — Zone Band Chart */}
+          <BlurFade delay={0.15}>
+            {soloProgress.weeklyData.some((w) => w.volume > 0) && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg font-light flex items-center gap-2">
+                          <Weight className="w-5 h-5 text-primary" />
+                          Weekly Volume
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          Total volume lifted per week
+                        </CardDescription>
+                      </div>
+                      <PeriodToggle value={volumePeriod} onChange={setVolumePeriod} />
+                    </div>
+                    {/* Hero number */}
+                    <div className="mt-3">
+                      <span className="text-3xl font-bold text-foreground">
+                        <NumberTicker
+                          value={volumeChartData[volumeChartData.length - 1]?.value || 0}
+                          className="text-3xl font-bold"
+                        />
+                      </span>
+                      <span className="text-sm font-light text-muted-foreground ml-1">
+                        kg this week
+                      </span>
+                      {volumeChartData.length >= 2 &&
+                        (() => {
+                          const curr = volumeChartData[volumeChartData.length - 1]?.value || 0;
+                          const prev = volumeChartData[volumeChartData.length - 2]?.value || 0;
+                          if (prev === 0) return null;
+                          const pct = ((curr - prev) / prev) * 100;
+                          const isUp = pct > 0;
+                          return (
+                            <span
+                              className={`ml-2 text-xs font-medium ${isUp ? 'text-green-400' : 'text-red-400'}`}
+                            >
+                              {isUp ? (
+                                <TrendingUp className="w-3 h-3 inline mr-0.5" />
+                              ) : (
+                                <TrendingDown className="w-3 h-3 inline mr-0.5" />
+                              )}
+                              {Math.abs(pct).toFixed(0)}%
+                            </span>
+                          );
+                        })()}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <ZoneBandChart
+                      data={volumeChartData}
+                      zones={volumeZones}
+                      height={200}
+                      unit="kg"
+                      showAverage
+                    />
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Volume Trend — Zone Band Chart */}
+            {soloProgress.history.length >= 3 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg font-light flex items-center gap-2">
+                          <TrendingUp className="w-5 h-5 text-primary" />
+                          Volume Trend
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          Per-session volume over time
+                        </CardDescription>
+                      </div>
+                      <PeriodToggle value={trendPeriod} onChange={setTrendPeriod} />
+                    </div>
+                    {/* Hero number */}
+                    <div className="mt-3">
+                      <span className="text-3xl font-bold text-foreground">
+                        <NumberTicker
+                          value={trendChartData[trendChartData.length - 1]?.value || 0}
+                          className="text-3xl font-bold"
+                        />
+                      </span>
+                      <span className="text-sm font-light text-muted-foreground ml-1">
+                        kg last session
+                      </span>
+                      {trendChartData.length >= 2 &&
+                        (() => {
+                          const curr = trendChartData[trendChartData.length - 1]?.value || 0;
+                          const prev = trendChartData[trendChartData.length - 2]?.value || 0;
+                          if (prev === 0) return null;
+                          const pct = ((curr - prev) / prev) * 100;
+                          const isUp = pct > 0;
+                          return (
+                            <span
+                              className={`ml-2 text-xs font-medium ${isUp ? 'text-green-400' : 'text-red-400'}`}
+                            >
+                              {isUp ? (
+                                <TrendingUp className="w-3 h-3 inline mr-0.5" />
+                              ) : (
+                                <TrendingDown className="w-3 h-3 inline mr-0.5" />
+                              )}
+                              {Math.abs(pct).toFixed(0)}%
+                            </span>
+                          );
+                        })()}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <ZoneBandChart
+                      data={trendChartData}
+                      zones={trendZones}
+                      height={200}
+                      unit="kg"
+                      showAverage
+                    />
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Training Load Ratio + 4-Week Overview */}
+            {trainingLoadRatio && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.17 }}
+              >
+                <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-light flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-primary" />
+                      Training Load
+                    </CardTitle>
+                    <CardDescription>Acute:Chronic Workload Ratio (ACWR)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {/* TLR Hero */}
+                    <div className="flex items-end gap-6 mb-4">
+                      <div>
+                        <span className="text-4xl font-bold text-foreground">
+                          <NumberTicker
+                            value={trainingLoadRatio.ratio}
+                            decimalPlaces={2}
+                            className="text-4xl font-bold"
+                          />
+                        </span>
+                        <span
+                          className={`ml-2 text-sm font-medium ${trainingLoadRatio.statusColor}`}
+                        >
+                          {trainingLoadRatio.statusLabel}
+                        </span>
+                      </div>
+                      {readinessData && (
+                        <div className="ml-auto text-right">
+                          <span className="text-xs text-muted-foreground block">Readiness</span>
+                          <span className={`text-2xl font-bold ${trainingLoadRatio.statusColor}`}>
+                            <NumberTicker
+                              value={readinessData.score}
+                              className={`text-2xl font-bold ${trainingLoadRatio.statusColor}`}
+                            />
+                            <span className="text-sm font-light">%</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Visual ratio bar */}
+                    <div className="space-y-3">
+                      <div className="relative h-3 bg-white/[0.04] rounded-full overflow-hidden">
+                        <div className="absolute left-[38%] top-0 h-full w-px bg-white/10" />
+                        <div className="absolute left-[62%] top-0 h-full w-px bg-white/10" />
+                        <div
+                          className={`absolute top-0 h-full rounded-full transition-all duration-700 ${trainingLoadRatio.barColor}`}
+                          style={{
+                            width: `${Math.min(100, trainingLoadRatio.ratio * 50)}%`,
+                            opacity: 0.8,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>Detraining</span>
+                        <span>Sweet Spot (0.8–1.3)</span>
+                        <span>Overreaching</span>
+                      </div>
+                    </div>
+
+                    {/* 4-Week Overview Stat Cards */}
+                    <div className="grid grid-cols-3 gap-3 mt-5">
+                      <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                          Acute (7d)
+                        </p>
+                        <p className="text-lg font-bold">
+                          <NumberTicker
+                            value={trainingLoadRatio.currentWeek}
+                            className="text-lg font-bold"
+                          />
+                          <span className="text-xs font-light text-muted-foreground ml-0.5">
+                            kg
+                          </span>
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                          Chronic (28d avg)
+                        </p>
+                        <p className="text-lg font-bold">
+                          <NumberTicker
+                            value={trainingLoadRatio.avg4Week}
+                            className="text-lg font-bold"
+                          />
+                          <span className="text-xs font-light text-muted-foreground ml-0.5">
+                            kg
+                          </span>
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                          Ratio
+                        </p>
+                        <p className={`text-lg font-bold ${trainingLoadRatio.statusColor}`}>
+                          {trainingLoadRatio.ratio.toFixed(2)}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0 ml-2">
-                      <span>{workout.duration}min</span>
-                      {workout.volume > 0 && (
-                        <span className="hidden sm:inline">
-                          {workout.volume.toLocaleString()}kg
-                        </span>
-                      )}
-                      <span>
-                        {workout.sets} {workout.sets === 1 ? 'set' : 'sets'}
-                      </span>
+
+                    {/* Recommendation */}
+                    {readinessData?.recommendation && (
+                      <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
+                        {readinessData.recommendation}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Workout Frequency Heatmap — only show when enough data */}
+            {soloProgress.history.length >= 7 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-light flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-primary" />
+                      Workout Frequency
+                    </CardTitle>
+                    <CardDescription>
+                      {soloProgress.history.length} workouts in the last 12 weeks
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      // Build 12-week heatmap grid
+                      const today = new Date();
+                      const weeks = 12;
+                      const dayMs = 86400000;
+                      const startDate = new Date(today.getTime() - weeks * 7 * dayMs);
+
+                      // Count workouts per day
+                      const dayCounts: Record<string, number> = {};
+                      for (const w of soloProgress.history) {
+                        const key = new Date(w.date).toISOString().slice(0, 10);
+                        dayCounts[key] = (dayCounts[key] || 0) + 1;
+                      }
+
+                      // Build grid data: rows = days of week (0=Sun..6=Sat), cols = weeks
+                      const grid: { date: string; count: number }[][] = Array.from(
+                        { length: 7 },
+                        () => []
+                      );
+                      const cursor = new Date(startDate);
+                      // Align to start of week (Sunday)
+                      cursor.setDate(cursor.getDate() - cursor.getDay());
+
+                      while (cursor <= today) {
+                        const dayOfWeek = cursor.getDay();
+                        const key = cursor.toISOString().slice(0, 10);
+                        grid[dayOfWeek].push({ date: key, count: dayCounts[key] || 0 });
+                        cursor.setDate(cursor.getDate() + 1);
+                      }
+
+                      const maxCount = Math.max(1, ...Object.values(dayCounts));
+                      const dayLabels = ['Sun', '', 'Tue', '', 'Thu', '', 'Sat'];
+
+                      return (
+                        <>
+                          <div className="flex gap-1">
+                            <div className="flex flex-col gap-1 mr-1 text-[10px] text-muted-foreground">
+                              {dayLabels.map((label, i) => (
+                                <div key={i} className="h-3 flex items-center">
+                                  {label}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex gap-1 overflow-x-auto">
+                              {Array.from({ length: grid[0]?.length || 0 }, (_, weekIdx) => (
+                                <div key={weekIdx} className="flex flex-col gap-1">
+                                  {grid.map((row, dayIdx) => {
+                                    const cell = row[weekIdx];
+                                    if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
+                                    const intensity = cell.count / maxCount;
+                                    return (
+                                      <div
+                                        key={dayIdx}
+                                        className="w-3 h-3 rounded-sm"
+                                        style={{
+                                          backgroundColor:
+                                            cell.count === 0
+                                              ? 'hsl(var(--muted) / 0.3)'
+                                              : `hsl(var(--primary) / ${0.3 + intensity * 0.7})`,
+                                        }}
+                                        title={`${cell.date}: ${cell.count} workout${cell.count !== 1 ? 's' : ''}`}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Color legend */}
+                          <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
+                            <span>Less</span>
+                            <div className="flex gap-0.5">
+                              <div
+                                className="w-3 h-3 rounded-sm"
+                                style={{ backgroundColor: 'hsl(var(--muted) / 0.3)' }}
+                              />
+                              <div
+                                className="w-3 h-3 rounded-sm"
+                                style={{ backgroundColor: 'hsl(var(--primary) / 0.3)' }}
+                              />
+                              <div
+                                className="w-3 h-3 rounded-sm"
+                                style={{ backgroundColor: 'hsl(var(--primary) / 0.55)' }}
+                              />
+                              <div
+                                className="w-3 h-3 rounded-sm"
+                                style={{ backgroundColor: 'hsl(var(--primary) / 0.8)' }}
+                              />
+                              <div
+                                className="w-3 h-3 rounded-sm"
+                                style={{ backgroundColor: 'hsl(var(--primary) / 1)' }}
+                              />
+                            </div>
+                            <span>More</span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Personal Records Table */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+            >
+              <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
+                <CardHeader>
+                  <CardTitle className="text-lg font-light flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-primary" />
+                    Personal Records
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {personalRecords.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Complete workouts to set your first PR!
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto -mx-6 px-6">
+                      <table className="w-full text-sm min-w-[480px]">
+                        <thead>
+                          <tr className="border-b border-border/30">
+                            <th className="text-left py-2 text-muted-foreground font-medium min-w-[140px] pr-4">
+                              Exercise
+                            </th>
+                            <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
+                              Weight
+                            </th>
+                            <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
+                              Reps
+                            </th>
+                            <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
+                              Est. 1RM
+                            </th>
+                            <th className="text-right py-2 text-muted-foreground font-medium whitespace-nowrap">
+                              Date
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {personalRecords.slice(0, 10).map((record, i) => (
+                            <tr key={i} className="border-b border-border/10">
+                              <td className="py-2 font-medium max-w-[200px] truncate">
+                                {record.exercise.name}
+                              </td>
+                              <td className="py-2 text-right">
+                                {parseFloat(record.pr.weightKg).toFixed(1)} kg
+                              </td>
+                              <td className="py-2 text-right">{record.pr.reps}</td>
+                              <td className="py-2 text-right text-primary font-medium">
+                                {parseFloat(record.pr.estimated1rm).toFixed(1)} kg
+                              </td>
+                              <td className="py-2 text-right text-muted-foreground">
+                                {new Date(record.pr.achievedAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Recent Workout History */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card className="border-border/30 bg-background/40 backdrop-blur-xl">
+                <CardHeader>
+                  <CardTitle className="text-lg font-light">Recent Workouts</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {soloProgress.history.map((workout) => (
+                    <div
+                      key={workout.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border-l-4 border-primary border border-border/20 overflow-hidden"
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <p className="text-sm font-medium truncate">{workout.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(workout.date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0 ml-2">
+                        <span>{workout.duration}min</span>
+                        {workout.volume > 0 && (
+                          <span className="hidden sm:inline">
+                            {workout.volume.toLocaleString()}kg
+                          </span>
+                        )}
+                        <span>
+                          {workout.sets} {workout.sets === 1 ? 'set' : 'sets'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </BlurFade>
         </div>
       )}
 

@@ -1,8 +1,6 @@
-import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { Dumbbell, Play, ChevronRight } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { ActionButton } from '@/components/ui/premium';
 
 function getContextualSuggestion(ctx: {
@@ -89,8 +87,6 @@ function getContextualSuggestion(ctx: {
 }
 
 export function ActionZone() {
-  const prefersReducedMotion = useReducedMotion();
-
   const { data: todayWorkout, isLoading } = useQuery<any>({
     queryKey: ['/api/solo/today-workout'],
     retry: false,
@@ -112,22 +108,11 @@ export function ActionZone() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const animProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3 },
-      };
-
   if (isLoading) {
     return (
-      <motion.div
-        {...animProps}
-        className="bg-card rounded-2xl p-5 border border-border/20 flex items-center justify-center min-h-[100px]"
-      >
+      <div className="bg-card rounded-2xl p-5 border border-border/20 flex items-center justify-center min-h-[100px] animate-in fade-in duration-300">
         <Dumbbell className="w-5 h-5 text-muted-foreground animate-pulse" />
-      </motion.div>
+      </div>
     );
   }
 
@@ -151,7 +136,7 @@ export function ActionZone() {
   });
 
   return (
-    <motion.div {...animProps} className="space-y-2.5">
+    <div className="space-y-2.5 animate-in fade-in slide-in-from-bottom-1 duration-300">
       <div
         className={`rounded-2xl p-4 md:p-5 border ${isCompleted ? 'bg-green-500/5 border-green-500/20' : 'bg-card border-border/20'}`}
       >
@@ -240,6 +225,6 @@ export function ActionZone() {
           </div>
         </Link>
       </p>
-    </motion.div>
+    </div>
   );
 }

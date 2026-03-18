@@ -38,7 +38,9 @@ import { env, isDevelopment, isProduction } from './env';
 import { initSentry } from './sentry';
 import { csrfCookieSetter, csrfProtection } from './middleware/csrf';
 import { sanitizeInput } from './middleware/sanitize';
-import { globalErrorHandler } from './middleware/errors';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { requestLogger } from './middleware/requestLogger';
+import { performanceMonitor, getPerformanceStats } from './middleware/performanceMonitor';
 import webhookRoutes from './routes/webhooks';
 
 // Initialize Sentry error monitoring (production only)
@@ -169,35 +171,11 @@ app.use(
   )
 );
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+// Structured request logging — request IDs, timing, slow request detection
+app.use(requestLogger);
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    if (path.startsWith('/api')) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + '…';
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
+// Performance monitoring — tracks request counts and slow requests
+app.use(performanceMonitor);
 
 (async () => {
   // Ensure the session table and index exist before any requests are handled.
@@ -304,10 +282,20 @@ app.use((req, res, next) => {
     console.error('[Migration] Startup migration failed (non-fatal):', err);
   }
 
+  // Performance stats endpoint — dev/staging only
+  if (process.env.NODE_ENV !== 'production') {
+    app.get('/api/admin/performance', (_req: Request, res: Response) => {
+      res.json(getPerformanceStats());
+    });
+  }
+
   const server = await registerRoutes(app);
 
-  // Global error handler — structured error responses, DB error handling, env-aware
-  app.use(globalErrorHandler);
+  // API 404 handler — catches unmatched /api/* routes before the SPA catch-all
+  app.use('/api', notFoundHandler);
+
+  // Global error handler — structured error responses, Sentry integration, env-aware
+  app.use(errorHandler);
 
   // Serve static files from client/public in development too
   // This needs to be before setupVite to avoid catch-all route interference

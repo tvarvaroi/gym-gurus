@@ -1,9 +1,7 @@
-import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ChevronRight } from 'lucide-react';
 import { formatVolume, volumeHasAbbreviation } from '@/lib/format';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface WeeklyOverviewProps {
   stats: any;
@@ -26,15 +24,6 @@ function ConsolidatedStats({
   streak: number;
   totalPRs: number;
 }) {
-  const prefersReducedMotion = useReducedMotion();
-  const animProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3 },
-      };
-
   const stats = [
     {
       value: workoutsThisWeek,
@@ -63,10 +52,7 @@ function ConsolidatedStats({
   ];
 
   return (
-    <motion.div
-      {...animProps}
-      className="hidden md:block bg-card rounded-2xl border border-border/20 p-4 sm:p-6"
-    >
+    <div className="hidden md:block bg-card rounded-2xl border border-border/20 p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-1 duration-300">
       <div className="md:flex md:items-center md:justify-between md:gap-0">
         {stats.map((stat, index) => (
           <div key={stat.label} className="flex items-center gap-0 md:gap-8">
@@ -83,13 +69,12 @@ function ConsolidatedStats({
           </div>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 // Volume Chart — AreaChart with gradient fill
 function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
-  const prefersReducedMotion = useReducedMotion();
   if (!weeklyData || weeklyData.length === 0) return null;
 
   const chartData = weeklyData.slice(-8).map((w: any) => ({
@@ -100,20 +85,9 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
   const totalVolume = chartData.reduce((sum, d) => sum + d.volume, 0);
   const avg = Math.round(totalVolume / chartData.length);
 
-  const animProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3, delay: 0.05 },
-      };
-
   return (
     <Link href="/progress">
-      <motion.div
-        {...animProps}
-        className="block bg-card rounded-2xl p-4 border border-border/20 cursor-pointer group hover:border-primary/30 transition-colors"
-      >
+      <div className="block bg-card rounded-2xl p-4 border border-border/20 cursor-pointer group hover:border-primary/30 transition-colors animate-in fade-in slide-in-from-bottom-1 duration-300">
         <div className="flex items-center justify-between mb-1">
           <div>
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground/60 font-medium">
@@ -170,7 +144,7 @@ function VolumeChart({ weeklyData }: { weeklyData: any[] }) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </motion.div>
+      </div>
     </Link>
   );
 }
@@ -215,7 +189,6 @@ function formatCompactDuration(mins: number): string {
 
 // Weekly Training Log — full-height data-dense 7-column day cards
 function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
-  const prefersReducedMotion = useReducedMotion();
   const richDays: any[] = weeklyActivity?.richDays || [];
   const totalWorkouts = weeklyActivity?.totalWorkouts || 0;
   const weekSummary = weeklyActivity?.weekSummary;
@@ -238,19 +211,8 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
   const plannedCount = richDays.filter((d) => d?.status === 'planned').length;
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const animProps = prefersReducedMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.3, delay: 0.1 },
-      };
-
   return (
-    <motion.div
-      {...animProps}
-      className="bg-card rounded-2xl pt-5 px-4 pb-3 md:pt-6 md:px-5 md:pb-4 border border-border/20"
-    >
+    <div className="bg-card rounded-2xl pt-5 px-4 pb-3 md:pt-6 md:px-5 md:pb-4 border border-border/20 animate-in fade-in slide-in-from-bottom-1 duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="text-[11px] uppercase tracking-widest text-muted-foreground/50 font-medium">
@@ -437,7 +399,7 @@ function WeeklyTrainingLog({ weeklyActivity }: { weeklyActivity: any }) {
           </div>
         )
       )}
-    </motion.div>
+    </div>
   );
 }
 
