@@ -147,7 +147,7 @@ Five dedicated skills across 3 locations. Use ALL relevant ones for any UI/front
 
 ---
 
-## 🗺️ Complete Skill Directory — 139+ Skills Across 4 Locations
+## 🗺️ Complete Skill Directory — 139+ Skills Across 5 Locations
 
 ### LOCATION 1: `C:/Users/tvarv/.claude/skills/` — Workflow & Meta Skills
 
@@ -925,23 +925,23 @@ Implemented per `docs/plans/2026-03-09-ux5b-empty-states-guru-disciple.md`.
 
 > Solo/Ronin role only. Trainer/Client not captured — provide credentials to complete.
 
-| §     | Severity    | Finding                                                            | Screenshot                         |
-| ----- | ----------- | ------------------------------------------------------------------ | ---------------------------------- |
-| VA-1  | 🔴 CRITICAL | `/disciple-login` shows landing carousel — clients cannot log in   | `13-disciple-login.png`            |
-| VA-2  | 🟠 HIGH     | 404 page is the landing carousel — no error shown                  | `02-404-page.png`                  |
-| VA-3  | 🟡 MEDIUM   | Unauth redirect is silent — no toast                               | `03-unauth-dashboard-redirect.png` |
-| VA-4  | 🟠 HIGH     | Raw plan ID `Solo_ai` shown in pricing UI                          | `14-pricing-top.png`               |
-| VA-5  | 🟡 MEDIUM   | AI Coach shows `999/999` test counter, no tooltip                  | `03-ai-coach-top.png`              |
-| VA-6  | 🟠 HIGH     | Personal birthday photo in production dashboard                    | `02-dashboard-top.png`             |
-| VA-7  | 🟠 HIGH     | "QA18 Set Count Test" workout in production                        | `02-dashboard-top.png`             |
-| VA-8  | 🟡 MEDIUM   | Mobile dashboard missing PRs stat (cut off)                        | `mobile/02-dashboard-top.png`      |
-| VA-9  | 🟡 MEDIUM   | Workout card titles truncate mid-word, cards indistinguishable     | `06-workouts-top.png`              |
-| VA-10 | 🟡 MEDIUM   | Progress "Avg Duration" shows bare `—` with no unit/label          | `07-progress-top.png`              |
-| VA-11 | 🟡 MEDIUM   | Calculator hub is two completely different designs (public vs app) | `20-calculators-hub-top.png`       |
-| VA-12 | 🟡 MEDIUM   | Collapsed sidebar icons have no tooltips                           | `16-sidebar-collapsed.png`         |
-| VA-13 | 🟡 MEDIUM   | Mobile landing "See How It Works" button cut off                   | `mobile/01-landing-hero.png`       |
-| VA-14 | 🟡 MEDIUM   | Login page: no default role selected, fields appear active         | `10-auth-login-top.png`            |
-| VA-15 | 🟢 LOW      | Recovery "Not trained" cards give no onboarding prompt             | `08-recovery-top.png`              |
+| §     | Severity    | Finding                                                               | Screenshot                         |
+| ----- | ----------- | --------------------------------------------------------------------- | ---------------------------------- |
+| VA-1  | ✅ RESOLVED | `/disciple-login` fixed Sprint 1 — access code login working (§ VA-1) | `13-disciple-login.png`            |
+| VA-2  | 🟠 HIGH     | 404 page is the landing carousel — no error shown                     | `02-404-page.png`                  |
+| VA-3  | 🟡 MEDIUM   | Unauth redirect is silent — no toast                                  | `03-unauth-dashboard-redirect.png` |
+| VA-4  | 🟠 HIGH     | Raw plan ID `Solo_ai` shown in pricing UI                             | `14-pricing-top.png`               |
+| VA-5  | 🟡 MEDIUM   | AI Coach shows `999/999` test counter, no tooltip                     | `03-ai-coach-top.png`              |
+| VA-6  | 🟠 HIGH     | Personal birthday photo in production dashboard                       | `02-dashboard-top.png`             |
+| VA-7  | 🟠 HIGH     | "QA18 Set Count Test" workout in production                           | `02-dashboard-top.png`             |
+| VA-8  | 🟡 MEDIUM   | Mobile dashboard missing PRs stat (cut off)                           | `mobile/02-dashboard-top.png`      |
+| VA-9  | 🟡 MEDIUM   | Workout card titles truncate mid-word, cards indistinguishable        | `06-workouts-top.png`              |
+| VA-10 | 🟡 MEDIUM   | Progress "Avg Duration" shows bare `—` with no unit/label             | `07-progress-top.png`              |
+| VA-11 | 🟡 MEDIUM   | Calculator hub is two completely different designs (public vs app)    | `20-calculators-hub-top.png`       |
+| VA-12 | 🟡 MEDIUM   | Collapsed sidebar icons have no tooltips                              | `16-sidebar-collapsed.png`         |
+| VA-13 | 🟡 MEDIUM   | Mobile landing "See How It Works" button cut off                      | `mobile/01-landing-hero.png`       |
+| VA-14 | 🟡 MEDIUM   | Login page: no default role selected, fields appear active            | `10-auth-login-top.png`            |
+| VA-15 | 🟢 LOW      | Recovery "Not trained" cards give no onboarding prompt                | `08-recovery-top.png`              |
 
 ---
 
@@ -1348,7 +1348,7 @@ GuruIcon deployed in Guru empty states (Clients, Payments) — see § UX-5b ✅.
 - Archetype: `casual_user`
 - Primary goal: View assigned workouts, log completion, message trainer
 - Context: Primarily mobile, lower tech proficiency
-- Critical issue: **Cannot log in at all** (§ VA-1). This persona has zero usable journey.
+- Login fixed Sprint 1 — access code flow at /disciple-login working (§ VA-1 ✅). Primary concern now: lower tech proficiency means UX must be exceptionally simple.
 
 ---
 
@@ -1363,10 +1363,7 @@ STAGE 1: Awareness (Landing page)
 Actions:    Lands on homepage from search/social
 Touchpoints: Landing carousel, hero headline
 Emotions:   😐 Neutral → confused by locked scroll
-Pain Points: [PAIN] Cannot scroll freely. [PAIN] Login not visible on slide 1.
-             [PAIN] Slides 2–7 show identical content — broken carousel.
-Opportunity: Replace carousel with scrollable. Add Login to header nav.
-Score: Frequency(5) × Severity(4) × Solvability(4) = 80 — TOP PRIORITY
+Pain Points: ✅ RESOLVED (2026-03-09) — carousel replaced with scrollable landing page, Login added to header nav (§ UX-1). Current state: clean scrollable landing with anchor nav.
 
 STAGE 2: Evaluation (Calculators / Pricing)
 Actions:    Explores free calculators, checks pricing
@@ -1412,23 +1409,23 @@ Opportunity: Fix plan state. Fix date bug. Show "Most recent unlock" prominently
 
 ### Usability Issue Severity Ratings (UX Researcher Framework)
 
-| #     | Issue                                     | Severity         | Frequency | Solvability | Priority Score |
-| ----- | ----------------------------------------- | ---------------- | --------- | ----------- | -------------- |
-| VA-1  | Disciple cannot log in at all             | **4 — Critical** | 5         | 5           | **100**        |
-| UX-1  | Carousel blocks free scroll + hides login | **4 — Critical** | 5         | 4           | **80**         |
-| VA-7  | QA artifact "QA18" visible in production  | **3 — Major**    | 5         | 5           | **75**         |
-| VA-6  | Personal birthday photo in production     | **3 — Major**    | 5         | 5           | **75**         |
-| DS-1  | Brand split — gold landing / purple app   | **3 — Major**    | 5         | 3           | **45**         |
-| VA-3  | Silent redirect — no toast or message     | **2 — Minor**    | 4         | 5           | **40**         |
-| VA-4  | "Solo_ai" raw ID in pricing               | **2 — Minor**    | 4         | 5           | **40**         |
-| DS-2  | Brand serif font disappears inside app    | **2 — Minor**    | 5         | 4           | **40**         |
-| VA-9  | Workout card titles truncated             | **2 — Minor**    | 4         | 4           | **32**         |
-| UX-4  | Double nav on mobile                      | **2 — Minor**    | 4         | 4           | **32**         |
-| VA-14 | Login: no default role selected           | **2 — Minor**    | 5         | 5           | **50**         |
-| VA-8  | Mobile: PRs stat cut off                  | **2 — Minor**    | 4         | 4           | **32**         |
-| DS-3  | Pricing page colour noise                 | **1 — Cosmetic** | 4         | 5           | **20**         |
-| VA-12 | Collapsed sidebar: no tooltips            | **1 — Cosmetic** | 3         | 5           | **15**         |
-| VA-15 | Recovery: no onboarding prompt            | **1 — Cosmetic** | 3         | 3           | **9**          |
+| #     | Issue                                                | Severity         | Frequency | Solvability | Priority Score |
+| ----- | ---------------------------------------------------- | ---------------- | --------- | ----------- | -------------- |
+| VA-1  | ✅ Resolved Sprint 1 — Disciple login fixed          | **4 — Critical** | 5         | 5           | **100**        |
+| UX-1  | ✅ Resolved Sprint 1 — Carousel replaced with scroll | **4 — Critical** | 5         | 4           | **80**         |
+| VA-7  | QA artifact "QA18" visible in production             | **3 — Major**    | 5         | 5           | **75**         |
+| VA-6  | Personal birthday photo in production                | **3 — Major**    | 5         | 5           | **75**         |
+| DS-1  | Brand split — gold landing / purple app              | **3 — Major**    | 5         | 3           | **45**         |
+| VA-3  | Silent redirect — no toast or message                | **2 — Minor**    | 4         | 5           | **40**         |
+| VA-4  | "Solo_ai" raw ID in pricing                          | **2 — Minor**    | 4         | 5           | **40**         |
+| DS-2  | Brand serif font disappears inside app               | **2 — Minor**    | 5         | 4           | **40**         |
+| VA-9  | Workout card titles truncated                        | **2 — Minor**    | 4         | 4           | **32**         |
+| UX-4  | Double nav on mobile                                 | **2 — Minor**    | 4         | 4           | **32**         |
+| VA-14 | Login: no default role selected                      | **2 — Minor**    | 5         | 5           | **50**         |
+| VA-8  | Mobile: PRs stat cut off                             | **2 — Minor**    | 4         | 4           | **32**         |
+| DS-3  | Pricing page colour noise                            | **1 — Cosmetic** | 4         | 5           | **20**         |
+| VA-12 | Collapsed sidebar: no tooltips                       | **1 — Cosmetic** | 3         | 5           | **15**         |
+| VA-15 | Recovery: no onboarding prompt                       | **1 — Cosmetic** | 3         | 3           | **9**          |
 
 ---
 
@@ -1462,7 +1459,7 @@ Per `ux-researcher-designer` Workflow 3 — 5 participants, moderated remote, 45
 
 - Success: Client sees assigned plan in their Disciple dashboard
 - Time target: < 5 minutes
-- Note: Disciple login currently broken — this task will fail entirely (§ VA-1)
+- Note: Disciple login fixed Sprint 1 — this task is now completable end-to-end (§ VA-1 ✅)
 
 **Task 3 (Ronin):** "Find out how much total volume you've lifted this month."
 
