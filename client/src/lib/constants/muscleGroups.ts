@@ -19,7 +19,7 @@ export const MUSCLE_GROUPS = [
   'lats',
 ] as const;
 
-export type MuscleGroup = typeof MUSCLE_GROUPS[number];
+export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
 
 // Muscle group display names
 export const MUSCLE_GROUP_DISPLAY_NAMES: Record<MuscleGroup, string> = {
@@ -97,8 +97,16 @@ export const COMPOUND_EXERCISE_MUSCLES: Record<string, ExerciseMuscleMapping> = 
   cable_crossover: { primary: ['chest'], secondary: [] },
 
   // Back exercises
-  deadlift: { primary: ['back', 'hamstrings', 'glutes'], secondary: ['quads', 'forearms', 'traps'], tertiary: ['abs', 'lower_back'] },
-  barbell_row: { primary: ['back', 'lats'], secondary: ['biceps', 'traps'], tertiary: ['forearms'] },
+  deadlift: {
+    primary: ['back', 'hamstrings', 'glutes'],
+    secondary: ['quads', 'forearms', 'traps'],
+    tertiary: ['abs', 'lower_back'],
+  },
+  barbell_row: {
+    primary: ['back', 'lats'],
+    secondary: ['biceps', 'traps'],
+    tertiary: ['forearms'],
+  },
   pull_up: { primary: ['lats', 'back'], secondary: ['biceps'], tertiary: ['forearms', 'abs'] },
   chin_up: { primary: ['lats', 'biceps'], secondary: ['back'], tertiary: ['forearms'] },
   lat_pulldown: { primary: ['lats'], secondary: ['biceps', 'back'] },
@@ -115,7 +123,11 @@ export const COMPOUND_EXERCISE_MUSCLES: Record<string, ExerciseMuscleMapping> = 
   face_pull: { primary: ['shoulders', 'traps'], secondary: ['back'] },
 
   // Leg exercises
-  squat: { primary: ['quads', 'glutes'], secondary: ['hamstrings'], tertiary: ['abs', 'lower_back'] },
+  squat: {
+    primary: ['quads', 'glutes'],
+    secondary: ['hamstrings'],
+    tertiary: ['abs', 'lower_back'],
+  },
   front_squat: { primary: ['quads'], secondary: ['glutes'], tertiary: ['abs'] },
   leg_press: { primary: ['quads', 'glutes'], secondary: ['hamstrings'] },
   lunge: { primary: ['quads', 'glutes'], secondary: ['hamstrings'] },
@@ -145,7 +157,9 @@ export const COMPOUND_EXERCISE_MUSCLES: Record<string, ExerciseMuscleMapping> = 
 };
 
 // Get muscle groups for an exercise (returns all muscles with their importance weights)
-export function getExerciseMuscles(exerciseName: string): { muscle: MuscleGroup; weight: number }[] {
+export function getExerciseMuscles(
+  exerciseName: string
+): { muscle: MuscleGroup; weight: number }[] {
   const normalized = exerciseName.toLowerCase().replace(/[^a-z]/g, '_');
   const mapping = COMPOUND_EXERCISE_MUSCLES[normalized];
 
@@ -155,15 +169,15 @@ export function getExerciseMuscles(exerciseName: string): { muscle: MuscleGroup;
 
   const result: { muscle: MuscleGroup; weight: number }[] = [];
 
-  mapping.primary.forEach(muscle => {
+  mapping.primary.forEach((muscle) => {
     result.push({ muscle, weight: 1.0 });
   });
 
-  mapping.secondary.forEach(muscle => {
+  mapping.secondary.forEach((muscle) => {
     result.push({ muscle, weight: 0.5 });
   });
 
-  mapping.tertiary?.forEach(muscle => {
+  mapping.tertiary?.forEach((muscle) => {
     result.push({ muscle, weight: 0.25 });
   });
 
@@ -199,3 +213,82 @@ export const BODY_REGION_NAMES: Record<BodyRegion, string> = {
   core: 'Core',
   lower: 'Lower Body',
 };
+
+// ── Canonical muscle style helpers ──
+// Used across WorkoutExecution, CompletionSheet, ExercisesPage, etc.
+// DO NOT duplicate these — import from here.
+
+export function getMuscleStyleClass(muscle: string): string {
+  const m = muscle.toLowerCase().replace(/_/g, ' ');
+  if (m.includes('chest')) return 'bg-red-500/15 text-red-400 border border-red-500/20';
+  if (m.includes('back') || m.includes('lat'))
+    return 'bg-blue-500/15 text-blue-400 border border-blue-500/20';
+  if (m.includes('shoulder') || m.includes('delt') || m.includes('trap'))
+    return 'bg-orange-500/15 text-orange-400 border border-orange-500/20';
+  if (m.includes('quad') || m.includes('hamstring') || m.includes('calf') || m.includes('leg'))
+    return 'bg-green-500/15 text-green-400 border border-green-500/20';
+  if (m.includes('bicep')) return 'bg-purple-500/15 text-purple-400 border border-purple-500/20';
+  if (m.includes('tricep')) return 'bg-violet-500/15 text-violet-400 border border-violet-500/20';
+  if (m.includes('core') || m.includes('ab') || m.includes('oblique'))
+    return 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20';
+  if (m.includes('glute')) return 'bg-pink-500/15 text-pink-400 border border-pink-500/20';
+  return 'bg-white/10 text-neutral-400 border border-white/10';
+}
+
+export function getMuscleAccentClass(muscle: string): string {
+  const m = muscle.toLowerCase().replace(/_/g, ' ');
+  if (m.includes('chest')) return 'border-l-red-500';
+  if (m.includes('back') || m.includes('lat')) return 'border-l-blue-500';
+  if (m.includes('shoulder') || m.includes('delt') || m.includes('trap'))
+    return 'border-l-orange-500';
+  if (m.includes('quad') || m.includes('hamstring') || m.includes('calf') || m.includes('leg'))
+    return 'border-l-green-500';
+  if (m.includes('bicep')) return 'border-l-purple-500';
+  if (m.includes('tricep')) return 'border-l-violet-500';
+  if (m.includes('core') || m.includes('ab') || m.includes('oblique')) return 'border-l-yellow-500';
+  if (m.includes('glute')) return 'border-l-pink-500';
+  return 'border-l-neutral-500';
+}
+
+export function getMuscleColorClass(muscle: string): string {
+  const m = muscle.toLowerCase().replace(/_/g, ' ');
+  if (m.includes('chest')) return 'bg-red-500';
+  if (m.includes('back') || m.includes('lat')) return 'bg-blue-500';
+  if (m.includes('shoulder') || m.includes('delt') || m.includes('trap')) return 'bg-orange-500';
+  if (m.includes('quad') || m.includes('hamstring') || m.includes('calf') || m.includes('leg'))
+    return 'bg-green-500';
+  if (m.includes('bicep')) return 'bg-purple-500';
+  if (m.includes('tricep')) return 'bg-violet-500';
+  if (m.includes('core') || m.includes('ab') || m.includes('oblique')) return 'bg-yellow-500';
+  if (m.includes('glute')) return 'bg-pink-500';
+  return 'bg-neutral-500';
+}
+
+export function formatMuscleLabel(muscle: string): string {
+  return muscle.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Infer primary/secondary muscles from exercise name using COMPOUND_EXERCISE_MUSCLES map */
+export function inferMusclesFromName(
+  name: string,
+  muscleGroup: string
+): { primaryMuscles: string[]; secondaryMuscles: string[] } {
+  const normalized = name
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, '')
+    .trim();
+
+  // Try substring match against compound map
+  for (const [key, mapping] of Object.entries(COMPOUND_EXERCISE_MUSCLES)) {
+    const k = key.replace(/_/g, ' ');
+    if (normalized.includes(k) || k.includes(normalized)) {
+      return { primaryMuscles: mapping.primary, secondaryMuscles: mapping.secondary ?? [] };
+    }
+  }
+
+  // Fallback: use muscleGroup as primary
+  return {
+    primaryMuscles: muscleGroup ? [muscleGroup] : [],
+    secondaryMuscles: [],
+  };
+}

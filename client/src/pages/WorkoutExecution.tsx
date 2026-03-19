@@ -20,6 +20,14 @@ import { X, Check, ChevronRight, Dumbbell, Flame, ListChecks } from 'lucide-reac
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { RestTimerOverlay } from '@/components/redesign/execution/RestTimerOverlay';
 import { CompletionSheet } from '@/components/redesign/execution/CompletionSheet';
+import {
+  getMuscleStyleClass,
+  getMuscleAccentClass,
+  getMuscleColorClass,
+  formatMuscleLabel,
+  inferMusclesFromName,
+} from '@/lib/constants/muscleGroups';
+import { ExerciseMuscleDisplay } from '@/components/redesign/charts/ExerciseMuscleDisplay';
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -37,6 +45,9 @@ interface ExerciseSession {
   exerciseId: string;
   exerciseName: string;
   muscleGroup: string;
+  muscleGroups?: string[];
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
   targetSets: number;
   targetReps: string;
   sets: SetLog[];
@@ -104,54 +115,8 @@ function estimateCalories(durationMinutes: number, totalSets = 0): number {
   return Math.max(durationBased, setsBased);
 }
 
-function getMuscleStyle(muscle: string): string {
-  const m = muscle.toLowerCase().replace(/_/g, ' ');
-  if (m.includes('chest')) return 'bg-red-500/15 text-red-400 border border-red-500/20';
-  if (m.includes('back') || m.includes('lat'))
-    return 'bg-blue-500/15 text-blue-400 border border-blue-500/20';
-  if (m.includes('shoulder') || m.includes('delt'))
-    return 'bg-orange-500/15 text-orange-400 border border-orange-500/20';
-  if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('calf'))
-    return 'bg-green-500/15 text-green-400 border border-green-500/20';
-  if (m.includes('bicep')) return 'bg-purple-500/15 text-purple-400 border border-purple-500/20';
-  if (m.includes('tricep')) return 'bg-violet-500/15 text-violet-400 border border-violet-500/20';
-  if (m.includes('core') || m.includes('ab'))
-    return 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20';
-  if (m.includes('glute')) return 'bg-pink-500/15 text-pink-400 border border-pink-500/20';
-  return 'bg-white/10 text-neutral-400 border border-white/10';
-}
-
-function getMuscleAccent(muscle: string): string {
-  const m = muscle.toLowerCase().replace(/_/g, ' ');
-  if (m.includes('chest')) return 'border-l-red-500';
-  if (m.includes('back') || m.includes('lat')) return 'border-l-blue-500';
-  if (m.includes('shoulder') || m.includes('delt')) return 'border-l-orange-500';
-  if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('calf'))
-    return 'border-l-green-500';
-  if (m.includes('bicep')) return 'border-l-purple-500';
-  if (m.includes('tricep')) return 'border-l-violet-500';
-  if (m.includes('core') || m.includes('ab')) return 'border-l-yellow-500';
-  if (m.includes('glute')) return 'border-l-pink-500';
-  return 'border-l-neutral-500';
-}
-
-function getMuscleColor(muscle: string): string {
-  const m = muscle.toLowerCase().replace(/_/g, ' ');
-  if (m.includes('chest')) return 'bg-red-500';
-  if (m.includes('back') || m.includes('lat')) return 'bg-blue-500';
-  if (m.includes('shoulder') || m.includes('delt')) return 'bg-orange-500';
-  if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('calf'))
-    return 'bg-green-500';
-  if (m.includes('bicep')) return 'bg-purple-500';
-  if (m.includes('tricep')) return 'bg-violet-500';
-  if (m.includes('core') || m.includes('ab')) return 'bg-yellow-500';
-  if (m.includes('glute')) return 'bg-pink-500';
-  return 'bg-neutral-500';
-}
-
-function formatMuscleGroup(group: string): string {
-  return group.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
+// getMuscleStyleClass, getMuscleAccentClass, getMuscleColorClass, formatMuscleLabel
+// imported from @/lib/constants/muscleGroups (canonical location)
 
 function abbreviateExerciseName(name: string): string {
   return name
@@ -411,10 +376,26 @@ export default function WorkoutExecution() {
     const exercises: ExerciseSession[] = rawExercises.map((ex: any, index: number) => {
       const name = ex.name || ex.exerciseName || ex.title || 'Exercise';
       const numSets = Math.max(1, Number(ex.sets) || Number(ex.numSets) || 3);
+
+      // Backward-compat fallback chain for muscle data
+      let primary = ex.primaryMuscles?.length ? ex.primaryMuscles : [];
+      let secondary = ex.secondaryMuscles ?? [];
+      const mGroups = ex.muscleGroups ?? [];
+
+      // If no primaryMuscles from API, try client-side inference
+      if (primary.length === 0) {
+        const inferred = inferMusclesFromName(name, ex.muscleGroup || ex.targetMuscle || '');
+        primary = inferred.primaryMuscles;
+        secondary = inferred.secondaryMuscles;
+      }
+
       return {
         exerciseId: ex.exerciseId || ex.id || `exercise-${index}`,
         exerciseName: name,
         muscleGroup: ex.muscleGroup || ex.targetMuscle || ex.category || 'General',
+        muscleGroups: mGroups,
+        primaryMuscles: primary,
+        secondaryMuscles: secondary,
         targetSets: numSets,
         targetReps: String(ex.reps || ex.targetReps || '10'),
         restSeconds: getDefaultRest(name),
@@ -771,13 +752,13 @@ export default function WorkoutExecution() {
   // Unique muscles worked
   const musclesWorked = useMemo(() => {
     if (!session) return [];
-    return [
-      ...new Set(
+    return Array.from(
+      new Set(
         session.exercises
           .filter((e) => e.sets.some((s) => s.completed))
           .map((e) => e.muscleGroup.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
-      ),
-    ];
+      )
+    );
   }, [session]);
 
   // PR detection: compare current best weight per exercise vs previous performance
@@ -996,7 +977,7 @@ export default function WorkoutExecution() {
               {/* Muscle group pill */}
               <div className="flex flex-wrap gap-1.5 mb-2">
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/20">
-                  {formatMuscleGroup(currentExercise.muscleGroup)}
+                  {formatMuscleLabel(currentExercise.muscleGroup)}
                 </span>
               </div>
 
@@ -1009,22 +990,39 @@ export default function WorkoutExecution() {
                 &middot; {currentExercise.restSeconds}s rest
               </p>
 
-              {/* Exercise Illustration Zone */}
+              {/* Exercise Illustration Zone — anatomy diagram or Dumbbell fallback */}
               <div
-                className="mt-4 h-28 rounded-2xl relative overflow-hidden border border-white/[0.04]"
+                className="mt-4 rounded-2xl relative overflow-hidden border border-white/[0.04]"
                 style={{
                   background:
                     'linear-gradient(135deg, hsl(var(--primary) / 0.06) 0%, rgba(255,255,255,0.02) 100%)',
                 }}
               >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Dumbbell className="w-14 h-14 text-primary/15" />
-                </div>
+                {currentExercise.primaryMuscles?.length || currentExercise.muscleGroups?.length ? (
+                  <div className="flex items-center justify-center py-2">
+                    <ExerciseMuscleDisplay
+                      primaryMuscles={
+                        currentExercise.primaryMuscles?.length
+                          ? currentExercise.primaryMuscles
+                          : (currentExercise.muscleGroups ?? [])
+                      }
+                      secondaryMuscles={currentExercise.secondaryMuscles ?? []}
+                      mode="display"
+                      size="sm"
+                      showToggle={false}
+                      showLegend={false}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-28 flex items-center justify-center">
+                    <Dumbbell className="w-14 h-14 text-primary/15" />
+                  </div>
+                )}
                 <div className="absolute bottom-2.5 left-3 flex flex-wrap gap-1">
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${getMuscleStyle(currentExercise.muscleGroup)}`}
+                    className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${getMuscleStyleClass(currentExercise.muscleGroup)}`}
                   >
-                    {formatMuscleGroup(currentExercise.muscleGroup)}
+                    {formatMuscleLabel(currentExercise.muscleGroup)}
                   </span>
                 </div>
               </div>
@@ -1505,7 +1503,7 @@ export default function WorkoutExecution() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`w-2 h-2 rounded-full flex-none ${getMuscleColor(ex.muscleGroup)}`}
+                            className={`w-2 h-2 rounded-full flex-none ${getMuscleColorClass(ex.muscleGroup)}`}
                           />
                           <p
                             className={`text-sm font-medium truncate ${

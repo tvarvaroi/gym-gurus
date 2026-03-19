@@ -55,6 +55,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['quadriceps', 'glutes', 'hamstrings', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell', 'rack'],
         instructions: [
           'Stand with feet shoulder-width apart under the bar',
@@ -80,6 +82,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['back', 'glutes', 'hamstrings', 'core', 'forearms'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell'],
         instructions: [
           'Stand with feet hip-width apart, bar over mid-foot',
@@ -105,6 +109,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['chest', 'triceps', 'shoulders'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell', 'bench'],
         instructions: [
           'Lie on bench with eyes under the bar',
@@ -130,6 +136,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['shoulders', 'triceps', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell'],
         instructions: [
           'Stand with feet shoulder-width apart holding bar at shoulders',
@@ -155,6 +163,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['back', 'biceps', 'rear delts'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell'],
         instructions: [
           'Hinge forward at hips with slight knee bend',
@@ -181,6 +191,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['chest', 'shoulders', 'triceps'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbells', 'incline bench'],
         instructions: [
           'Set bench to 30-45 degree incline',
@@ -206,6 +218,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['chest'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbells', 'bench'],
         instructions: [
           'Lie on bench holding dumbbells above chest',
@@ -231,6 +245,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['chest', 'triceps', 'shoulders', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['bodyweight'],
         instructions: [
           'Start in plank position with hands shoulder-width apart',
@@ -256,6 +272,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['chest'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['cable machine'],
         instructions: [
           'Stand between cable stations with high pulleys',
@@ -282,6 +300,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['back', 'biceps', 'forearms'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['pull-up bar'],
         instructions: [
           'Hang from bar with overhand grip slightly wider than shoulders',
@@ -307,6 +327,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['back', 'biceps'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['cable machine'],
         instructions: [
           'Sit with thighs secured under pads',
@@ -332,6 +354,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['back', 'biceps', 'rear delts'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['cable machine'],
         instructions: [
           'Sit on the row machine with feet on platform',
@@ -357,6 +381,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['back', 'biceps'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbell', 'bench'],
         instructions: [
           'Place one knee and hand on bench for support',
@@ -383,6 +409,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['shoulders'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbells'],
         instructions: [
           'Stand with dumbbells at sides',
@@ -408,6 +436,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['rear delts', 'upper back', 'rotator cuff'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['cable machine', 'rope attachment'],
         instructions: [
           'Set cable to face height with rope attachment',
@@ -433,6 +463,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['shoulders', 'triceps'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbells'],
         instructions: [
           'Start with dumbbells at shoulder height, palms facing you',
@@ -459,6 +491,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['biceps'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell'],
         instructions: [
           'Stand holding barbell with underhand grip',
@@ -484,6 +518,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['biceps', 'forearms'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbells'],
         instructions: [
           'Hold dumbbells at sides with neutral grip (palms facing in)',
@@ -509,6 +545,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['triceps'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['cable machine'],
         instructions: [
           'Stand facing cable machine with rope or bar attachment',
@@ -534,6 +572,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['triceps'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbell'],
         instructions: [
           'Hold one dumbbell overhead with both hands',
@@ -559,6 +599,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['triceps', 'chest', 'shoulders'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dip bars'],
         instructions: [
           'Support yourself on parallel bars with arms straight',
@@ -585,6 +627,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'advanced',
         muscleGroups: ['quadriceps', 'glutes', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell', 'rack'],
         instructions: [
           'Rest barbell on front delts with clean grip or cross-arm grip',
@@ -610,6 +654,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['hamstrings', 'glutes', 'lower back'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell'],
         instructions: [
           'Stand holding barbell at hip level',
@@ -635,6 +681,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['quadriceps', 'glutes', 'hamstrings'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbells', 'bench'],
         instructions: [
           'Stand in a lunge position with rear foot on bench',
@@ -660,6 +708,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['quadriceps', 'glutes', 'hamstrings'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['leg press machine'],
         instructions: [
           'Sit in machine with feet shoulder-width on platform',
@@ -685,6 +735,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['hamstrings'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['leg curl machine'],
         instructions: [
           'Lie face down on the leg curl machine',
@@ -710,6 +762,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['quadriceps'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['leg extension machine'],
         instructions: [
           'Sit in machine with shins behind the pad',
@@ -735,6 +789,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['calves'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['calf raise machine'],
         instructions: [
           'Stand on platform with balls of feet on edge',
@@ -760,6 +816,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['quadriceps', 'glutes', 'hamstrings'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbells'],
         instructions: [
           'Hold dumbbells at sides',
@@ -785,6 +843,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['glutes', 'hamstrings'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell', 'bench'],
         instructions: [
           'Sit on floor with upper back against bench',
@@ -811,6 +871,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['core', 'shoulders'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['bodyweight'],
         instructions: [
           'Start in push-up position on forearms',
@@ -836,6 +898,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['core', 'hip flexors'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['pull-up bar'],
         instructions: [
           'Hang from a bar with arms extended',
@@ -861,6 +925,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['core', 'obliques'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['cable machine'],
         instructions: [
           'Set cable to high position',
@@ -886,6 +952,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'advanced',
         muscleGroups: ['core', 'shoulders'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['ab wheel'],
         instructions: [
           'Kneel on the floor holding the ab wheel',
@@ -911,6 +979,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['core', 'obliques'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['bodyweight'],
         instructions: [
           'Sit with knees bent, lean back slightly',
@@ -937,6 +1007,8 @@ export class MemoryStorage implements IStorage {
         category: 'cardio',
         difficulty: 'beginner',
         muscleGroups: ['quadriceps', 'hamstrings', 'calves', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['treadmill'],
         instructions: [
           'Set desired speed and incline',
@@ -962,6 +1034,8 @@ export class MemoryStorage implements IStorage {
         category: 'cardio',
         difficulty: 'beginner',
         muscleGroups: ['back', 'legs', 'arms', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['rowing machine'],
         instructions: [
           'Sit with feet strapped in, grab handle',
@@ -987,6 +1061,8 @@ export class MemoryStorage implements IStorage {
         category: 'cardio',
         difficulty: 'beginner',
         muscleGroups: ['calves', 'shoulders', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['jump rope'],
         instructions: [
           'Hold rope handles at hip height',
@@ -1012,6 +1088,8 @@ export class MemoryStorage implements IStorage {
         category: 'cardio',
         difficulty: 'intermediate',
         muscleGroups: ['shoulders', 'arms', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['battle ropes'],
         instructions: [
           'Stand with feet shoulder-width apart, slight squat',
@@ -1038,6 +1116,8 @@ export class MemoryStorage implements IStorage {
         category: 'cardio',
         difficulty: 'intermediate',
         muscleGroups: ['chest', 'quadriceps', 'shoulders', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['bodyweight'],
         instructions: [
           'Start standing, drop into a squat position',
@@ -1063,6 +1143,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['quadriceps', 'glutes', 'calves'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['plyo box'],
         instructions: [
           'Stand facing a box at knee to hip height',
@@ -1088,6 +1170,8 @@ export class MemoryStorage implements IStorage {
         category: 'cardio',
         difficulty: 'beginner',
         muscleGroups: ['core', 'shoulders', 'hip flexors'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['bodyweight'],
         instructions: [
           'Start in push-up position',
@@ -1113,6 +1197,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['glutes', 'hamstrings', 'core', 'shoulders'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['kettlebell'],
         instructions: [
           'Stand with feet wider than shoulder width',
@@ -1139,6 +1225,8 @@ export class MemoryStorage implements IStorage {
         category: 'flexibility',
         difficulty: 'beginner',
         muscleGroups: ['hip flexors', 'hamstrings', 'thoracic spine', 'shoulders'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['bodyweight'],
         instructions: [
           'Lunge forward with right foot',
@@ -1164,6 +1252,8 @@ export class MemoryStorage implements IStorage {
         category: 'flexibility',
         difficulty: 'beginner',
         muscleGroups: ['spine', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['bodyweight'],
         instructions: [
           'Start on all fours with hands under shoulders',
@@ -1189,6 +1279,8 @@ export class MemoryStorage implements IStorage {
         category: 'flexibility',
         difficulty: 'beginner',
         muscleGroups: ['glutes', 'hip flexors'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['bodyweight'],
         instructions: [
           'From all fours, bring right knee forward behind right wrist',
@@ -1214,6 +1306,8 @@ export class MemoryStorage implements IStorage {
         category: 'flexibility',
         difficulty: 'beginner',
         muscleGroups: ['quadriceps', 'IT band'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['foam roller'],
         instructions: [
           'Lie on side with foam roller under outer thigh',
@@ -1240,6 +1334,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'advanced',
         muscleGroups: ['core', 'shoulders', 'glutes', 'quadriceps'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['kettlebell'],
         instructions: [
           'Lie on back holding kettlebell with one arm extended',
@@ -1265,6 +1361,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['forearms', 'core', 'traps', 'legs'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbells'],
         instructions: [
           "Pick up heavy dumbbells or farmer's walk handles",
@@ -1290,6 +1388,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'beginner',
         muscleGroups: ['quadriceps', 'glutes', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['dumbbell'],
         instructions: [
           'Hold a dumbbell vertically at chest level',
@@ -1315,6 +1415,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'advanced',
         muscleGroups: ['shoulders', 'legs', 'back', 'core'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell'],
         instructions: [
           'Start with barbell on the floor, deadlift grip',
@@ -1340,6 +1442,8 @@ export class MemoryStorage implements IStorage {
         category: 'strength',
         difficulty: 'intermediate',
         muscleGroups: ['quadriceps', 'shoulders', 'core', 'glutes'],
+        primaryMuscles: [],
+        secondaryMuscles: [],
         equipment: ['barbell'],
         instructions: [
           'Hold barbell in front rack position',
@@ -1496,6 +1600,8 @@ export class MemoryStorage implements IStorage {
       category: insertExercise.category,
       difficulty: insertExercise.difficulty,
       muscleGroups: insertExercise.muscleGroups,
+      primaryMuscles: insertExercise.primaryMuscles ?? [],
+      secondaryMuscles: insertExercise.secondaryMuscles ?? [],
       equipment: insertExercise.equipment,
       instructions: insertExercise.instructions,
       youtubeUrl: insertExercise.youtubeUrl || null,

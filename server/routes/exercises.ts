@@ -27,9 +27,14 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/exercises - Create new exercise
+// POST /api/exercises - Create new exercise (trainer-only)
 router.post('/', strictRateLimit, async (req: Request, res: Response) => {
   try {
+    // SECURITY: Exercise creation is trainer-only
+    if (req.user!.role !== 'trainer') {
+      return res.status(403).json({ error: 'Only trainers can create exercises' });
+    }
+
     const validatedData = insertExerciseSchema.parse(req.body);
     const exercise = await storage.createExercise(validatedData);
     res.status(201).json(exercise);

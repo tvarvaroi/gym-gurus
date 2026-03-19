@@ -2,6 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Dumbbell, Target, ListOrdered, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ExerciseMuscleDisplay } from '@/components/redesign/charts/ExerciseMuscleDisplay';
+import { formatMuscleLabel } from '@/lib/constants/muscleGroups';
 
 interface Exercise {
   id: string;
@@ -10,10 +12,12 @@ interface Exercise {
   category: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   muscleGroups: string[];
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
   equipment: string[];
   instructions: string[];
   youtubeUrl?: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
   defaultSets?: number;
   defaultReps?: number;
 }
@@ -104,17 +108,36 @@ export default function ExerciseDetailModal({ exercise, onClose }: ExerciseDetai
             </div>
           ) : null}
 
-          {/* Muscle Groups */}
-          {exercise.muscleGroups.length > 0 && (
-            <div className="space-y-2">
+          {/* Target Muscles — anatomy diagram + text badges */}
+          {(exercise.primaryMuscles?.length || exercise.muscleGroups.length > 0) && (
+            <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Target className="w-4 h-4 text-primary" />
-                <span>Muscles Worked</span>
+                <span>Target Muscles</span>
               </div>
+              <ExerciseMuscleDisplay
+                primaryMuscles={
+                  exercise.primaryMuscles?.length ? exercise.primaryMuscles : exercise.muscleGroups
+                }
+                secondaryMuscles={exercise.secondaryMuscles ?? []}
+                mode="display"
+                size="md"
+                showToggle={true}
+                showLegend={true}
+              />
+              {/* Text badges for accessibility */}
               <div className="flex flex-wrap gap-1.5">
-                {exercise.muscleGroups.map((mg) => (
-                  <Badge key={mg} variant="secondary" className="text-xs">
-                    {mg}
+                {(exercise.primaryMuscles?.length
+                  ? exercise.primaryMuscles
+                  : exercise.muscleGroups
+                ).map((mg) => (
+                  <Badge key={mg} variant="secondary" className="text-xs capitalize">
+                    {formatMuscleLabel(mg)}
+                  </Badge>
+                ))}
+                {exercise.secondaryMuscles?.map((mg) => (
+                  <Badge key={mg} variant="outline" className="text-xs capitalize opacity-60">
+                    {formatMuscleLabel(mg)}
                   </Badge>
                 ))}
               </div>

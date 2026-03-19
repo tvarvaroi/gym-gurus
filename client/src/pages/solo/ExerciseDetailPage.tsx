@@ -14,6 +14,7 @@ import {
 } from '@/components/redesign/charts/ZoneBandChart';
 import { ArrowLeft, Trophy, TrendingUp, Dumbbell, Calendar, Weight, Activity } from 'lucide-react';
 import { useState } from 'react';
+import { ExerciseMuscleDisplay } from '@/components/redesign/charts/ExerciseMuscleDisplay';
 
 interface ExerciseHistory {
   exercise: {
@@ -180,6 +181,23 @@ export default function ExerciseDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Target Muscles — anatomy diagram */}
+      {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
+        <div className="space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+            Target Muscles
+          </h3>
+          <ExerciseMuscleDisplay
+            primaryMuscles={exercise.muscleGroups}
+            secondaryMuscles={[]}
+            mode="display"
+            size="md"
+            showToggle={true}
+            showLegend={false}
+          />
+        </div>
+      )}
 
       {/* Last Time vs Best Time */}
       {comparison && (

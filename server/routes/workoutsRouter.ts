@@ -48,13 +48,30 @@ router.get('/detail/:id', async (req: Request, res: Response) => {
             .select({
               name: exercises.name,
               muscleGroup: sql<string>`(${exercises.muscleGroups})[1]`,
+              muscleGroups: exercises.muscleGroups,
+              primaryMuscles: exercises.primaryMuscles,
+              secondaryMuscles: exercises.secondaryMuscles,
             })
             .from(exercises)
             .where(eq(exercises.id, we.exerciseId))
             .limit(1);
-          return { ...we, name: libEx?.name || null, muscleGroup: libEx?.muscleGroup || null };
+          return {
+            ...we,
+            name: libEx?.name ?? null,
+            muscleGroup: libEx?.muscleGroup ?? null,
+            muscleGroups: libEx?.muscleGroups ?? [],
+            primaryMuscles: libEx?.primaryMuscles ?? [],
+            secondaryMuscles: libEx?.secondaryMuscles ?? [],
+          };
         }
-        return { ...we, name: null, muscleGroup: null };
+        return {
+          ...we,
+          name: null,
+          muscleGroup: null,
+          muscleGroups: [],
+          primaryMuscles: [],
+          secondaryMuscles: [],
+        };
       })
     );
 

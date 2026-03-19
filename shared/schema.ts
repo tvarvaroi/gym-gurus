@@ -156,6 +156,17 @@ export const exercises = pgTable('exercises', {
   category: text('category').notNull(), // strength, cardio, flexibility, etc.
   difficulty: text('difficulty').notNull(), // beginner, intermediate, advanced
   muscleGroups: text('muscle_groups').array().notNull(),
+  // primaryMuscles: muscles that drive the movement (e.g. chest on bench press)
+  // secondaryMuscles: assisting/stabilising muscles (e.g. triceps on bench press)
+  // Kept separate from muscleGroups so recovery tracking is unaffected.
+  primaryMuscles: text('primary_muscles')
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
+  secondaryMuscles: text('secondary_muscles')
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
   equipment: text('equipment').array().notNull(),
   instructions: text('instructions').array().notNull(),
   youtubeUrl: text('youtube_url'), // YouTube video URL for demonstrations

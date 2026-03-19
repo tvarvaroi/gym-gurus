@@ -49,6 +49,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Skeleton } from '@/components/ui/skeleton';
 import LazyImage from '@/components/LazyImage';
+import { ExerciseMuscleDisplay } from '@/components/redesign/charts/ExerciseMuscleDisplay';
+import { formatMuscleLabel } from '@/lib/constants/muscleGroups';
 
 // Exercise form schema
 const exerciseFormSchema = z.object({
@@ -56,7 +58,9 @@ const exerciseFormSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   category: z.string().min(1, 'Category is required'),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
-  muscleGroups: z.string().min(1, 'At least one muscle group is required'),
+  muscleGroups: z.string().optional().default(''), // legacy — kept in sync
+  primaryMuscles: z.array(z.string()).min(1, 'Select at least one primary muscle'),
+  secondaryMuscles: z.array(z.string()).optional().default([]),
   equipment: z.string().optional(),
   instructions: z.string().min(1, 'Instructions are required'),
   youtubeUrl: z.string().url().optional().or(z.literal('')),
@@ -73,6 +77,8 @@ interface Exercise {
   category: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   muscleGroups: string[];
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
   equipment: string[];
   instructions: string[];
   youtubeUrl?: string;
@@ -162,6 +168,8 @@ const ExercisesPage = memo(() => {
       category: '',
       difficulty: 'beginner',
       muscleGroups: '',
+      primaryMuscles: [],
+      secondaryMuscles: [],
       equipment: '',
       instructions: '',
       youtubeUrl: '',
@@ -173,7 +181,10 @@ const ExercisesPage = memo(() => {
     mutationFn: async (data: ExerciseFormData) => {
       const formattedData = {
         ...data,
-        muscleGroups: data.muscleGroups.split(',').map((mg) => mg.trim()),
+        // Keep legacy muscleGroups in sync for recovery pipeline
+        muscleGroups: [...data.primaryMuscles, ...(data.secondaryMuscles ?? [])],
+        primaryMuscles: data.primaryMuscles,
+        secondaryMuscles: data.secondaryMuscles ?? [],
         equipment: data.equipment ? data.equipment.split(',').map((eq) => eq.trim()) : [],
         instructions: data.instructions
           .split('\n')
@@ -367,25 +378,46 @@ const ExercisesPage = memo(() => {
                   />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="muscleGroups"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Muscle Groups<span className="text-destructive ml-0.5">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Chest, Triceps, Shoulders (comma-separated)"
-                          {...field}
-                          data-testid="input-muscle-groups"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                {/* Target Muscles — visual picker (Peloton pattern) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">
+                      Target Muscles<span className="text-destructive ml-0.5">*</span>
+                    </label>
+                    {(form.watch('primaryMuscles')?.length ?? 0) > 0 && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
+                        {form.watch('primaryMuscles').length} primary
+                        {(form.watch('secondaryMuscles')?.length ?? 0) > 0 &&
+                          ` · ${form.watch('secondaryMuscles').length} secondary`}
+                      </span>
+                    )}
+                  </div>
+                  <ExerciseMuscleDisplay
+                    primaryMuscles={form.watch('primaryMuscles') ?? []}
+                    secondaryMuscles={form.watch('secondaryMuscles') ?? []}
+                    mode="interactive"
+                    size="md"
+                    onPrimaryChange={(muscles) => {
+                      form.setValue('primaryMuscles', muscles, { shouldValidate: true });
+                      form.setValue(
+                        'muscleGroups',
+                        [...muscles, ...(form.getValues('secondaryMuscles') ?? [])].join(', ')
+                      );
+                    }}
+                    onSecondaryChange={(muscles) => {
+                      form.setValue('secondaryMuscles', muscles, { shouldValidate: true });
+                      form.setValue(
+                        'muscleGroups',
+                        [...(form.getValues('primaryMuscles') ?? []), ...muscles].join(', ')
+                      );
+                    }}
+                  />
+                  {form.formState.errors.primaryMuscles && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.primaryMuscles.message}
+                    </p>
                   )}
-                />
+                </div>
 
                 <FormField
                   control={form.control}

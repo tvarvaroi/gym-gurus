@@ -1,10 +1,21 @@
 import { motion } from 'framer-motion';
 import { Trophy, Timer, Dumbbell, Check, Flame, Star, Share2 } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import {
+  getMuscleStyleClass,
+  getMuscleAccentClass,
+  formatMuscleLabel,
+} from '@/lib/constants/muscleGroups';
+import {
+  ExerciseMuscleDisplay,
+  aggregateWorkoutMuscles,
+} from '@/components/redesign/charts/ExerciseMuscleDisplay';
 
 interface ExerciseSummary {
   exerciseName: string;
   muscleGroup: string;
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
   sets: { weight: number; reps: number; completed: boolean }[];
 }
 
@@ -43,35 +54,17 @@ function estimateCalories(durationMinutes: number, totalSets = 0): number {
   return Math.max(durationBased, setsBased);
 }
 
-function getMuscleStyle(muscle: string): string {
-  const m = muscle.toLowerCase().replace(/_/g, ' ');
-  if (m.includes('chest')) return 'bg-red-500/15 text-red-400 border border-red-500/20';
-  if (m.includes('back') || m.includes('lat')) return 'bg-blue-500/15 text-blue-400 border border-blue-500/20';
-  if (m.includes('shoulder') || m.includes('delt')) return 'bg-orange-500/15 text-orange-400 border border-orange-500/20';
-  if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('calf')) return 'bg-green-500/15 text-green-400 border border-green-500/20';
-  if (m.includes('bicep')) return 'bg-purple-500/15 text-purple-400 border border-purple-500/20';
-  if (m.includes('tricep')) return 'bg-violet-500/15 text-violet-400 border border-violet-500/20';
-  if (m.includes('core') || m.includes('ab')) return 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20';
-  if (m.includes('glute')) return 'bg-pink-500/15 text-pink-400 border border-pink-500/20';
-  return 'bg-white/10 text-neutral-400 border border-white/10';
-}
-
-function getMuscleAccent(muscle: string): string {
-  const m = muscle.toLowerCase().replace(/_/g, ' ');
-  if (m.includes('chest')) return 'border-l-red-500';
-  if (m.includes('back') || m.includes('lat')) return 'border-l-blue-500';
-  if (m.includes('shoulder') || m.includes('delt')) return 'border-l-orange-500';
-  if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('calf')) return 'border-l-green-500';
-  if (m.includes('bicep')) return 'border-l-purple-500';
-  if (m.includes('tricep')) return 'border-l-violet-500';
-  if (m.includes('core') || m.includes('ab')) return 'border-l-yellow-500';
-  if (m.includes('glute')) return 'border-l-pink-500';
-  return 'border-l-neutral-500';
-}
+// getMuscleStyleClass, getMuscleAccentClass, formatMuscleLabel
+// imported from @/lib/constants/muscleGroups (canonical location)
 
 // Simple animated counter
 function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string }) {
-  return <>{value}{suffix}</>;
+  return (
+    <>
+      {value}
+      {suffix}
+    </>
+  );
 }
 
 export function CompletionSheet({
@@ -131,7 +124,9 @@ export function CompletionSheet({
             className="confetti-piece rounded-sm"
             style={{
               left: `${Math.random() * 100}%`,
-              backgroundColor: ['hsl(var(--primary))', '#22c55e', '#3b82f6', '#ef4444', '#a855f7'][i % 5],
+              backgroundColor: ['hsl(var(--primary))', '#22c55e', '#3b82f6', '#ef4444', '#a855f7'][
+                i % 5
+              ],
               animationDuration: `${2 + Math.random() * 3}s`,
               animationDelay: `${Math.random() * 2}s`,
               width: `${6 + Math.random() * 6}px`,
@@ -157,7 +152,8 @@ export function CompletionSheet({
             <div
               className="w-24 h-24 rounded-full flex items-center justify-center"
               style={{
-                background: 'radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)',
+                background:
+                  'radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)',
                 animation: prefersReducedMotion ? 'none' : 'pulse-primary 2s ease-in-out infinite',
               }}
             >
@@ -177,26 +173,42 @@ export function CompletionSheet({
           transition={{ delay: 0.3 }}
           className="grid grid-cols-2 gap-3"
         >
-          <div className="rounded-2xl p-5 text-center border border-white/[0.06]" style={statCardStyle}>
+          <div
+            className="rounded-2xl p-5 text-center border border-white/[0.06]"
+            style={statCardStyle}
+          >
             <Timer className="w-5 h-5 text-blue-400 mx-auto mb-2" />
             <p className="text-2xl font-bold tabular-nums">{formatTime(elapsedSeconds)}</p>
             <p className="text-xs text-neutral-500">Duration</p>
           </div>
-          <div className="rounded-2xl p-5 text-center border border-white/[0.06]" style={statCardStyle}>
+          <div
+            className="rounded-2xl p-5 text-center border border-white/[0.06]"
+            style={statCardStyle}
+          >
             <Dumbbell className="w-5 h-5 text-cyan-400 mx-auto mb-2" />
             <p className="text-2xl font-bold">
               <AnimatedNumber value={Math.round(totalVolume)} suffix={` ${weightUnit}`} />
             </p>
             <p className="text-xs text-neutral-500">Volume</p>
           </div>
-          <div className="rounded-2xl p-5 text-center border border-white/[0.06]" style={statCardStyle}>
+          <div
+            className="rounded-2xl p-5 text-center border border-white/[0.06]"
+            style={statCardStyle}
+          >
             <Check className="w-5 h-5 text-green-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{completedSets}/{totalSets}</p>
+            <p className="text-2xl font-bold">
+              {completedSets}/{totalSets}
+            </p>
             <p className="text-xs text-neutral-500">Sets</p>
           </div>
-          <div className="rounded-2xl p-5 text-center border border-white/[0.06]" style={statCardStyle}>
+          <div
+            className="rounded-2xl p-5 text-center border border-white/[0.06]"
+            style={statCardStyle}
+          >
             <Flame className="w-5 h-5 text-orange-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold"><AnimatedNumber value={cals} /></p>
+            <p className="text-2xl font-bold">
+              <AnimatedNumber value={cals} />
+            </p>
             <p className="text-xs text-neutral-500">Est. kcal</p>
           </div>
         </motion.div>
@@ -246,38 +258,59 @@ export function CompletionSheet({
             return (
               <div
                 key={i}
-                className={`rounded-lg px-4 py-3 border border-white/[0.06] border-l-4 ${getMuscleAccent(ex.muscleGroup)}`}
+                className={`rounded-lg px-4 py-3 border border-white/[0.06] border-l-4 ${getMuscleAccentClass(ex.muscleGroup)}`}
                 style={statCardStyle}
               >
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-sm">{ex.exerciseName}</span>
-                  <span className="text-xs text-neutral-500">{completed.length}/{ex.sets.length} sets</span>
+                  <span className="text-xs text-neutral-500">
+                    {completed.length}/{ex.sets.length} sets
+                  </span>
                 </div>
                 <p className="text-xs text-neutral-400 mt-1">
-                  {mainWeight}{weightUnit} x {reps.join(', ')}
+                  {mainWeight}
+                  {weightUnit} x {reps.join(', ')}
                 </p>
               </div>
             );
           })}
         </motion.div>
 
-        {/* Muscles worked */}
+        {/* Muscles Trained — anatomy heat-map or badge fallback */}
         {musclesWorked.length > 0 && (
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-2">
-              Muscles Worked
+            <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+              Muscles Trained
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {musclesWorked.map((m) => (
-                <span key={m} className={`px-3 py-1.5 rounded-full text-xs font-medium ${getMuscleStyle(m)}`}>
-                  {m}
-                </span>
-              ))}
-            </div>
+            {(() => {
+              const { primary, secondary } = aggregateWorkoutMuscles(exercises);
+              return primary.length > 0 ? (
+                <ExerciseMuscleDisplay
+                  primaryMuscles={primary}
+                  secondaryMuscles={secondary}
+                  mode="display"
+                  size="lg"
+                  showToggle={true}
+                  showLegend={true}
+                  className="py-2"
+                />
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {musclesWorked.map((m) => (
+                    <span
+                      key={m}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium ${getMuscleStyleClass(m)}`}
+                    >
+                      {formatMuscleLabel(m)}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
           </motion.div>
         )}
 
@@ -291,7 +324,8 @@ export function CompletionSheet({
           <div
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-primary/30"
             style={{
-              background: 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)',
+              background:
+                'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)',
               backgroundSize: '200% 100%',
               animation: prefersReducedMotion ? 'none' : 'shimmer 3s linear infinite',
             }}
