@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { NewClientButton, ClientFormModal } from './ClientFormModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useReducedMotion } from '../hooks/use-reduced-motion';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { memo, useState, useMemo, useCallback } from 'react';
 import { useLocation } from 'wouter';
@@ -26,13 +25,13 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { WelcomeModal } from './onboarding/WelcomeModal';
 import { SetupChecklist, type ChecklistItem } from './onboarding/SetupChecklist';
 import { useUser } from '@/contexts/UserContext';
-import { LoginPage } from './LoginPage';
 import { DashboardSkeleton } from './skeletons/DashboardSkeleton';
 import ClientDashboard from './dashboard/ClientDashboard';
 import DashboardHero from './dashboard/DashboardHero';
 import DashboardStatCards from './dashboard/DashboardStatCards';
 import DashboardQuickActions from './dashboard/DashboardQuickActions';
 import DashboardCharts from './dashboard/DashboardCharts';
+import { GuruWeekStrip } from './dashboard/GuruWeekStrip';
 
 // Needs Attention Card — shows clients requiring follow-up
 const NeedsAttentionCard = memo(() => {
@@ -101,27 +100,11 @@ const NeedsAttentionCard = memo(() => {
 NeedsAttentionCard.displayName = 'NeedsAttentionCard';
 
 const Dashboard = memo(() => {
-  const prefersReducedMotion = useReducedMotion();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isClient, isTrainer, user: currentUser } = useUser();
+  const { isClient, isTrainer, user } = useUser();
   const [showClientModal, setShowClientModal] = useState(false);
-
-  // Fetch authenticated user
-  const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['/api/auth/user'],
-    queryFn: async () => {
-      const response = await fetch('/api/auth/user', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch user');
-      return response.json();
-    },
-    retry: false,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-  });
 
   // Fetch onboarding progress
   const { data: onboardingProgress } = useQuery({
@@ -167,7 +150,7 @@ const Dashboard = memo(() => {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/onboarding/progress'] });
     } catch (error) {
-      console.error('Failed to dismiss checklist:', error);
+      console.warn('Failed to dismiss checklist:', error);
       toast({
         title: 'Error',
         description: 'Failed to dismiss checklist. Please try again.',
@@ -200,6 +183,7 @@ const Dashboard = memo(() => {
           case 'session_completed':
             queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
             queryClient.invalidateQueries({ queryKey: ['/api/dashboard/charts'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/dashboard/week-activity'] });
             break;
         }
       },
@@ -488,7 +472,6 @@ const Dashboard = memo(() => {
 
   // Early returns — must be after all hooks
   if (isClient) return <ClientDashboard />;
-  if (!userLoading && !user) return <LoginPage />;
   if (loadingStats || loadingClients) return <DashboardSkeleton />;
 
   if (clientsError || statsError) {
@@ -529,20 +512,19 @@ const Dashboard = memo(() => {
       />
 
       <DashboardHero
-        isTrainer={isTrainer}
-        prefersReducedMotion={prefersReducedMotion}
         user={user}
         isConnected={isConnected}
         greeting={greeting}
         activeClients={dashboardStats?.activeClients || 0}
+        completedSessionsThisWeek={dashboardStats?.completedSessionsThisWeek || 0}
+        upcomingSessions={dashboardStats?.upcomingSessions || 0}
         onNavigate={navigate}
+        onAddClient={() => setShowClientModal(true)}
       />
 
-      <DashboardStatCards
-        stats={stats}
-        prefersReducedMotion={prefersReducedMotion}
-        onNavigate={navigate}
-      />
+      <DashboardStatCards stats={stats} onNavigate={navigate} />
+
+      <GuruWeekStrip />
 
       <NeedsAttentionCard />
 

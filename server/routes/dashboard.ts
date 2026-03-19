@@ -4,8 +4,8 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db';
 import { storage } from '../storage';
-import { clients } from '@shared/schema';
-import { eq, and, isNull } from 'drizzle-orm';
+import { clients, appointments } from '@shared/schema';
+import { eq, and, isNull, gte, lte } from 'drizzle-orm';
 import { apiRateLimit } from '../middleware/rateLimiter';
 
 const router = Router();
@@ -110,6 +110,68 @@ router.get('/dashboard/needs-attention', apiRateLimit, async (req: Request, res:
   } catch (error) {
     console.warn('Error fetching needs-attention:', error);
     res.json({ alerts: [] });
+  }
+});
+
+// GET /api/dashboard/week-activity - Per-day session breakdown for current week (secured)
+router.get('/dashboard/week-activity', apiRateLimit, async (req: Request, res: Response) => {
+  try {
+    const trainerId = req.user!.id;
+    const database = await getDb();
+
+    // Calculate Monday–Sunday of current week
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+
+    // Format as YYYY-MM-DD strings to match appointments.date text column
+    const mondayStr = monday.toISOString().slice(0, 10);
+    const sundayDate = new Date(monday);
+    sundayDate.setDate(monday.getDate() + 6);
+    const sundayStr = sundayDate.toISOString().slice(0, 10);
+
+    // Fetch appointments for this trainer in this week range
+    const weekAppointments = await database
+      .select({
+        date: appointments.date,
+        status: appointments.status,
+      })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.trainerId, trainerId),
+          gte(appointments.date, mondayStr),
+          lte(appointments.date, sundayStr)
+        )
+      );
+
+    // Build 7-day array
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const dayAppts = weekAppointments.filter((a) => a.date === dateStr);
+      const completed = dayAppts.filter((a) => a.status === 'completed').length;
+      const scheduled = dayAppts.filter((a) => a.status === 'scheduled').length;
+
+      return {
+        date: dateStr,
+        dayName: dayNames[i],
+        dateNumber: d.getDate(),
+        completedSessions: completed,
+        scheduledSessions: scheduled,
+        totalSessions: completed + scheduled,
+      };
+    });
+
+    res.json({ days });
+  } catch (error) {
+    console.warn('Error fetching week activity:', error);
+    res.json({ days: [] });
   }
 });
 
