@@ -213,6 +213,31 @@ semantic stat card colours (purple/teal/amber/blue — intentional differentiati
 
 ---
 
+## Phase 4 execution upgrades (2026-03-20)
+
+WayToGoCard: new full-screen post-set celebration overlay. Role-aware gradient,
+Playfair Display italic title, auto-dismisses after 1.2s or tap. Rest timer
+starts AFTER card dismisses — rest duration captured at set-complete time and
+passed to dismiss handler via ref (no stale closure). Skipped on last set of
+last exercise (CompletionSheet is the celebration there). z-[80] — above
+RestTimerOverlay z-[60], below exit dialog z-[100].
+
+RestTimerOverlay "Up Next" upgraded from dim plain text to bordered card with
+ChevronRight icon + rest duration of next exercise. `restSeconds` added to
+`nextExerciseInfo` interface.
+
+framer-motion removed from RestTimerOverlay (1 motion.div wrapper) and
+CompletionSheet (8 motion.div → staggered CSS animate-in with animationDelay
+300–800ms + animationFillMode: backwards). AnimatePresence wrapper removed
+from WorkoutExecution.tsx around RestTimerOverlay.
+
+Confetti and shimmer/pulse-primary CSS animations always run — accessibility
+handled by `@media (prefers-reduced-motion: reduce)` at CSS level instead of
+JS `useReducedMotion` hook. framer-motion still used in WorkoutExecution for
+exercise content slide transitions and exercise list bottom sheet (not in scope).
+
+---
+
 ## Related Notes
 
 - [[gotchas]]

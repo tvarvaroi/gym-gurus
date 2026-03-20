@@ -17,9 +17,9 @@ import { apiRequest } from '@/lib/queryClient';
 import { formatVolume, volumeHasAbbreviation } from '@/lib/format';
 import { useUser } from '@/contexts/UserContext';
 import { X, Check, ChevronRight, Dumbbell, Flame, ListChecks } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { RestTimerOverlay } from '@/components/redesign/execution/RestTimerOverlay';
 import { CompletionSheet } from '@/components/redesign/execution/CompletionSheet';
+import { WayToGoCard } from '@/components/redesign/execution/WayToGoCard';
 import {
   getMuscleStyleClass,
   getMuscleAccentClass,
@@ -202,7 +202,18 @@ export default function WorkoutExecution() {
     null
   );
   const [showConfetti, setShowConfetti] = useState(true);
-  const prefersReducedMotion = useReducedMotion();
+  const [showWayToGo, setShowWayToGo] = useState(false);
+  const [wayToGoData, setWayToGoData] = useState<{
+    setNumber: number;
+    totalSets: number;
+    weight: number;
+    reps: number;
+    restSeconds: number;
+    willComplete: boolean;
+    exerciseIndex: number;
+  } | null>(null);
+  const wayToGoDataRef = useRef(wayToGoData);
+  wayToGoDataRef.current = wayToGoData;
 
   // ─── Refs ───
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -535,32 +546,23 @@ export default function WorkoutExecution() {
       const willComplete =
         updatedExercise.sets.filter((s) => s.completed).length === updatedExercise.sets.length - 1;
 
-      if (willComplete) {
-        // Last set of this exercise
-        if (exIdx < session.exercises.length - 1) {
-          toast({ title: 'Exercise Complete!', description: 'Moving to next exercise...' });
-          setTimeout(() => {
-            setCurrentExerciseIndex(exIdx + 1);
-            setSession((prev) => {
-              if (!prev) return prev;
-              const next = { ...prev, exercises: [...prev.exercises] };
-              if (next.exercises[exIdx + 1]) {
-                next.exercises[exIdx + 1] = { ...next.exercises[exIdx + 1], status: 'in_progress' };
-              }
-              return next;
-            });
-          }, 300);
-        } else {
-          // Last exercise complete — finish workout
-          setTimeout(() => finishWorkout(), 300);
-          return;
-        }
-      } else {
-        // Start rest timer
-        const restSec = session.exercises[exIdx].restSeconds;
-        setRestTimeLeft(restSec);
-        setRestDuration(restSec);
+      if (willComplete && exIdx >= session.exercises.length - 1) {
+        // Last set of last exercise — go straight to completion
+        setTimeout(() => finishWorkout(), 300);
+        return;
       }
+
+      // Show celebration card (mid-exercise or end-of-exercise)
+      setWayToGoData({
+        setNumber: setIdx + 1,
+        totalSets: updatedExercise.sets.length,
+        weight: set.weight,
+        reps: set.reps,
+        restSeconds: session.exercises[exIdx].restSeconds,
+        willComplete,
+        exerciseIndex: exIdx,
+      });
+      setShowWayToGo(true);
     },
     [session, toast] // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -578,6 +580,33 @@ export default function WorkoutExecution() {
   const addRestTime = useCallback(() => {
     setRestTimeLeft((p) => p + 30);
     setRestDuration((p) => p + 30);
+  }, []);
+
+  // ─── Way To Go dismiss → start rest or advance exercise ───
+  const handleWayToGoDismiss = useCallback(() => {
+    setShowWayToGo(false);
+    const data = wayToGoDataRef.current;
+    setWayToGoData(null);
+
+    if (!data) return;
+
+    if (data.willComplete) {
+      // Exercise complete — move to next exercise
+      const nextIdx = data.exerciseIndex + 1;
+      setCurrentExerciseIndex(nextIdx);
+      setSession((prev) => {
+        if (!prev) return prev;
+        const next = { ...prev, exercises: [...prev.exercises] };
+        if (next.exercises[nextIdx]) {
+          next.exercises[nextIdx] = { ...next.exercises[nextIdx], status: 'in_progress' };
+        }
+        return next;
+      });
+    } else if (data.restSeconds > 0) {
+      // Mid-exercise — start rest timer
+      setRestTimeLeft(data.restSeconds);
+      setRestDuration(data.restSeconds);
+    }
   }, []);
 
   // ─── Exercise navigation ───
@@ -1258,33 +1287,44 @@ export default function WorkoutExecution() {
       </div>
 
       {/* ── Rest Timer Overlay ── */}
-      <AnimatePresence>
-        <RestTimerOverlay
-          restTimeLeft={restTimeLeft}
-          restDuration={restDuration}
-          restJustFinished={restJustFinished}
-          nextSetInfo={
-            currentExercise &&
-            currentSetIndex >= 0 &&
-            currentSetIndex < currentExercise.sets.length - 1
-              ? { setNumber: currentSetIndex + 2, totalSets: currentExercise.sets.length }
-              : null
-          }
-          nextExerciseInfo={
-            currentExercise &&
-            (currentSetIndex < 0 || currentSetIndex >= currentExercise.sets.length - 1) &&
-            currentExerciseIndex < totalExercises - 1
-              ? {
-                  name: session.exercises[currentExerciseIndex + 1]?.exerciseName,
-                  sets: session.exercises[currentExerciseIndex + 1]?.sets.length,
-                  reps: session.exercises[currentExerciseIndex + 1]?.targetReps,
-                }
-              : null
-          }
-          onAddTime={addRestTime}
-          onSkip={skipRest}
+      <RestTimerOverlay
+        restTimeLeft={restTimeLeft}
+        restDuration={restDuration}
+        restJustFinished={restJustFinished}
+        nextSetInfo={
+          currentExercise &&
+          currentSetIndex >= 0 &&
+          currentSetIndex < currentExercise.sets.length - 1
+            ? { setNumber: currentSetIndex + 2, totalSets: currentExercise.sets.length }
+            : null
+        }
+        nextExerciseInfo={
+          currentExercise &&
+          (currentSetIndex < 0 || currentSetIndex >= currentExercise.sets.length - 1) &&
+          currentExerciseIndex < totalExercises - 1
+            ? {
+                name: session.exercises[currentExerciseIndex + 1]?.exerciseName,
+                sets: session.exercises[currentExerciseIndex + 1]?.sets.length,
+                reps: session.exercises[currentExerciseIndex + 1]?.targetReps,
+                restSeconds: session.exercises[currentExerciseIndex + 1]?.restSeconds,
+              }
+            : null
+        }
+        onAddTime={addRestTime}
+        onSkip={skipRest}
+      />
+
+      {/* ── Way To Go Celebration Card ── */}
+      {showWayToGo && wayToGoData && (
+        <WayToGoCard
+          setNumber={wayToGoData.setNumber}
+          totalSets={wayToGoData.totalSets}
+          weight={wayToGoData.weight}
+          reps={wayToGoData.reps}
+          weightUnit={weightUnit}
+          onDismiss={handleWayToGoDismiss}
         />
-      </AnimatePresence>
+      )}
 
       {/* ── Fixed Bottom: Log Set ── */}
       <div className="flex-none px-4 pb-4 pt-2 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] to-transparent z-30">

@@ -1,6 +1,4 @@
-import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { AnimatedCircularProgressBar } from '@/components/ui/animated-circular-progress-bar';
 
 interface RestTimerOverlayProps {
@@ -8,7 +6,12 @@ interface RestTimerOverlayProps {
   restDuration: number;
   restJustFinished: boolean;
   nextSetInfo?: { setNumber: number; totalSets: number } | null;
-  nextExerciseInfo?: { name: string; sets: number; reps: string } | null;
+  nextExerciseInfo?: {
+    name: string;
+    sets: number;
+    reps: string;
+    restSeconds?: number;
+  } | null;
   onAddTime: () => void;
   onSkip: () => void;
 }
@@ -28,7 +31,6 @@ export function RestTimerOverlay({
   onAddTime,
   onSkip,
 }: RestTimerOverlayProps) {
-  const prefersReducedMotion = useReducedMotion();
   const isVisible = restTimeLeft > 0 || restJustFinished;
 
   if (!isVisible) return null;
@@ -37,13 +39,7 @@ export function RestTimerOverlay({
   const isReady = restTimeLeft === 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="absolute inset-0 z-[60] bg-[#0A0A0A]/95 backdrop-blur-md flex flex-col items-center justify-center"
-    >
+    <div className="absolute inset-0 z-[60] bg-[#0A0A0A]/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
       {/* REST label */}
       <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500 mb-6">
         {isReady ? 'ready' : 'rest'}
@@ -64,34 +60,40 @@ export function RestTimerOverlay({
           className={`absolute inset-0 flex items-center justify-center font-mono text-5xl font-bold tabular-nums ${
             isReady ? 'text-green-400' : 'text-white'
           }`}
-          style={
-            isReady && !prefersReducedMotion
-              ? { animation: 'pulse-primary 1.5s ease-in-out infinite' }
-              : undefined
-          }
+          style={isReady ? { animation: 'pulse-primary 1.5s ease-in-out infinite' } : undefined}
         >
           {isReady ? 'GO!' : formatTime(restTimeLeft)}
         </span>
       </div>
 
-      {/* Up Next info — next set */}
+      {/* Up Next info — next set (card style) */}
       {nextSetInfo && (
-        <div className="text-center mb-8">
-          <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">Next Up</p>
-          <p className="text-sm text-neutral-300">
-            Set {nextSetInfo.setNumber} of {nextSetInfo.totalSets}
-          </p>
+        <div className="w-full max-w-xs mx-auto mb-8">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-4 text-center">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 mb-1">Up Next</p>
+            <p className="text-base font-medium text-white">
+              Set {nextSetInfo.setNumber} of {nextSetInfo.totalSets}
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Up Next info — next exercise */}
+      {/* Up Next info — next exercise (card style) */}
       {!nextSetInfo && nextExerciseInfo && (
-        <div className="text-center mb-8">
-          <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">Up Next</p>
-          <p className="text-sm text-neutral-300">{nextExerciseInfo.name}</p>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            {nextExerciseInfo.sets} sets &times; {nextExerciseInfo.reps} reps
-          </p>
+        <div className="w-full max-w-xs mx-auto mb-8">
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 mb-2">Up Next</p>
+            <div className="flex items-center gap-2">
+              <ChevronRight className="w-4 h-4 text-primary flex-shrink-0" />
+              <p className="text-base font-medium text-white leading-tight">
+                {nextExerciseInfo.name}
+              </p>
+            </div>
+            <p className="text-xs text-neutral-500 mt-1.5 ml-6">
+              {nextExerciseInfo.sets} sets &middot; {nextExerciseInfo.reps} reps
+              {nextExerciseInfo.restSeconds ? ` · ${nextExerciseInfo.restSeconds}s rest` : ''}
+            </p>
+          </div>
         </div>
       )}
 
@@ -112,6 +114,6 @@ export function RestTimerOverlay({
           Skip <ChevronRight className="w-5 h-5" />
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }

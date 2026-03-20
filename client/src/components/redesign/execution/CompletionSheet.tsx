@@ -1,6 +1,4 @@
-import { motion } from 'framer-motion';
 import { Trophy, Timer, Dumbbell, Check, Flame, Star, Share2 } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
   getMuscleStyleClass,
   getMuscleAccentClass,
@@ -54,19 +52,6 @@ function estimateCalories(durationMinutes: number, totalSets = 0): number {
   return Math.max(durationBased, setsBased);
 }
 
-// getMuscleStyleClass, getMuscleAccentClass, formatMuscleLabel
-// imported from @/lib/constants/muscleGroups (canonical location)
-
-// Simple animated counter
-function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string }) {
-  return (
-    <>
-      {value}
-      {suffix}
-    </>
-  );
-}
-
 export function CompletionSheet({
   workoutTitle,
   elapsedSeconds,
@@ -83,7 +68,6 @@ export function CompletionSheet({
   onSave,
   onShare,
 }: CompletionSheetProps) {
-  const prefersReducedMotion = useReducedMotion();
   const durationMin = Math.round(elapsedSeconds / 60) || 1;
   const cals = estimateCalories(durationMin, completedSets);
 
@@ -114,64 +98,57 @@ export function CompletionSheet({
           0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.3); }
           50% { box-shadow: 0 0 40px hsl(var(--primary) / 0.6); }
         }
+        @media (prefers-reduced-motion: reduce) {
+          .confetti-piece { animation: none !important; opacity: 0; }
+        }
       `}</style>
 
       {/* Confetti */}
-      {!prefersReducedMotion &&
-        Array.from({ length: 40 }).map((_, i) => (
-          <div
-            key={i}
-            className="confetti-piece rounded-sm"
-            style={{
-              left: `${Math.random() * 100}%`,
-              backgroundColor: ['hsl(var(--primary))', '#22c55e', '#3b82f6', '#ef4444', '#a855f7'][
-                i % 5
-              ],
-              animationDuration: `${2 + Math.random() * 3}s`,
-              animationDelay: `${Math.random() * 2}s`,
-              width: `${6 + Math.random() * 6}px`,
-              height: `${6 + Math.random() * 6}px`,
-            }}
-          />
-        ))}
+      {Array.from({ length: 40 }).map((_, i) => (
+        <div
+          key={i}
+          className="confetti-piece rounded-sm"
+          style={{
+            left: `${Math.random() * 100}%`,
+            backgroundColor: ['hsl(var(--primary))', '#22c55e', '#3b82f6', '#ef4444', '#a855f7'][
+              i % 5
+            ],
+            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDelay: `${Math.random() * 2}s`,
+            width: `${6 + Math.random() * 6}px`,
+            height: `${6 + Math.random() * 6}px`,
+          }}
+        />
+      ))}
 
       <div className="relative z-10 max-w-lg mx-auto px-4 py-8 space-y-8">
         {/* Header */}
-        <motion.div
-          initial={prefersReducedMotion ? undefined : { scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', damping: 15 }}
-          className="text-center pt-8"
-        >
-          <motion.div
-            initial={prefersReducedMotion ? undefined : { scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ delay: 0.2, type: 'spring', damping: 12 }}
-            className="mb-6 inline-block"
+        <div className="text-center pt-8 animate-in zoom-in-95 fade-in duration-300">
+          <div
+            className="mb-6 inline-block animate-in zoom-in-50 fade-in duration-500"
+            style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}
           >
             <div
               className="w-24 h-24 rounded-full flex items-center justify-center"
               style={{
                 background:
                   'radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)',
-                animation: prefersReducedMotion ? 'none' : 'pulse-primary 2s ease-in-out infinite',
+                animation: 'pulse-primary 2s ease-in-out infinite',
               }}
             >
               <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
                 <Trophy className="w-10 h-10 text-primary" />
               </div>
             </div>
-          </motion.div>
+          </div>
           <h1 className="text-3xl font-bold font-['Playfair_Display'] mb-1">Workout Complete</h1>
           <p className="text-neutral-400">{workoutTitle}</p>
-        </motion.div>
+        </div>
 
         {/* Stats grid */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="grid grid-cols-2 gap-3"
+        <div
+          className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
+          style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}
         >
           <div
             className="rounded-2xl p-5 text-center border border-white/[0.06]"
@@ -187,7 +164,7 @@ export function CompletionSheet({
           >
             <Dumbbell className="w-5 h-5 text-cyan-400 mx-auto mb-2" />
             <p className="text-2xl font-bold">
-              <AnimatedNumber value={Math.round(totalVolume)} suffix={` ${weightUnit}`} />
+              {Math.round(totalVolume)} {weightUnit}
             </p>
             <p className="text-xs text-neutral-500">Volume</p>
           </div>
@@ -206,20 +183,16 @@ export function CompletionSheet({
             style={statCardStyle}
           >
             <Flame className="w-5 h-5 text-orange-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold">
-              <AnimatedNumber value={cals} />
-            </p>
+            <p className="text-2xl font-bold">{cals}</p>
             <p className="text-xs text-neutral-500">Est. kcal</p>
           </div>
-        </motion.div>
+        </div>
 
         {/* Personal Records */}
         {personalRecords.length > 0 && (
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="rounded-xl border border-primary/30 bg-primary/5 p-4"
+          <div
+            className="rounded-xl border border-primary/30 bg-primary/5 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300"
+            style={{ animationDelay: '400ms', animationFillMode: 'backwards' }}
           >
             <div className="flex items-center gap-2 mb-3">
               <Trophy className="w-5 h-5 text-primary" />
@@ -232,20 +205,18 @@ export function CompletionSheet({
                 <div key={pr.exerciseName} className="flex items-center justify-between text-sm">
                   <span className="text-white/80">{pr.exerciseName}</span>
                   <span className="text-primary font-semibold">
-                    {pr.previousWeight} → {pr.newWeight} {weightUnit}
+                    {pr.previousWeight} &rarr; {pr.newWeight} {weightUnit}
                   </span>
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Exercise breakdown */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="space-y-2"
+        <div
+          className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300"
+          style={{ animationDelay: '500ms', animationFillMode: 'backwards' }}
         >
           <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">
             Exercise Breakdown
@@ -274,14 +245,13 @@ export function CompletionSheet({
               </div>
             );
           })}
-        </motion.div>
+        </div>
 
         {/* Muscles Trained — anatomy heat-map or badge fallback */}
         {musclesWorked.length > 0 && (
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
+          <div
+            className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            style={{ animationDelay: '600ms', animationFillMode: 'backwards' }}
           >
             <h3 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-3">
               Muscles Trained
@@ -311,15 +281,13 @@ export function CompletionSheet({
                 </div>
               );
             })()}
-          </motion.div>
+          </div>
         )}
 
         {/* XP earned */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.7, type: 'spring' }}
-          className="text-center py-4"
+        <div
+          className="text-center py-4 animate-in zoom-in-95 fade-in duration-300"
+          style={{ animationDelay: '700ms', animationFillMode: 'backwards' }}
         >
           <div
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-primary/30"
@@ -327,7 +295,7 @@ export function CompletionSheet({
               background:
                 'linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)',
               backgroundSize: '200% 100%',
-              animation: prefersReducedMotion ? 'none' : 'shimmer 3s linear infinite',
+              animation: 'shimmer 3s linear infinite',
             }}
           >
             <Star className="w-5 h-5 text-primary" />
@@ -335,14 +303,12 @@ export function CompletionSheet({
               {xpAwarded > 0 ? <>+{xpAwarded} XP</> : <>~{completedSets * 5} XP</>}
             </span>
           </div>
-        </motion.div>
+        </div>
 
         {/* Action buttons — 56px touch targets */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="space-y-3 pb-8"
+        <div
+          className="space-y-3 pb-8 animate-in fade-in slide-in-from-bottom-2 duration-300"
+          style={{ animationDelay: '800ms', animationFillMode: 'backwards' }}
         >
           <button
             onClick={onSave}
@@ -360,7 +326,7 @@ export function CompletionSheet({
             Share Results
           </button>
           {isSaved && <p className="text-center text-sm text-neutral-500">Redirecting...</p>}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
