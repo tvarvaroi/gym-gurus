@@ -103,7 +103,7 @@ const Dashboard = memo(() => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isClient, isTrainer, user } = useUser();
+  const { isClient, user } = useUser();
   const [showClientModal, setShowClientModal] = useState(false);
 
   // Fetch onboarding progress
