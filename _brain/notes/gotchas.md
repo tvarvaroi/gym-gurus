@@ -215,6 +215,28 @@ Dark purple spinner on near-black background is effectively invisible. The auth 
 
 ---
 
+## Muscle Anatomy (added 2026-03-19)
+
+**`memoryStorage.ts` must be updated whenever new columns are added to exercises.**
+When `primaryMuscles`/`secondaryMuscles` were added to the exercises table, the mock
+exercise objects in `memoryStorage.ts` also needed updating. Any new exercise columns
+must be reflected there too or dev/staging environments that fall back to memory storage
+will return incomplete data.
+
+**Both workout API routes were returning no muscle data.**
+`GET /api/workouts/detail/:id` was fetching only `muscleGroups[1]` (SQL array index —
+first element only). `GET /api/workout-assignments/:id` was referencing
+`ex.exercises?.muscleGroup` (singular — column doesn't exist). Always use
+`muscleGroups?.[0]` for the legacy single field, and explicitly select
+`primaryMuscles`/`secondaryMuscles` in any join that feeds WorkoutExecution.
+
+**POST /api/exercises had no trainer role guard.**
+`secureAuth` is any authenticated user. Trainer-only routes need an explicit inline
+check: `if (req.user!.role !== 'trainer') return res.status(403).json({...})`.
+No `requireRole` middleware exists — use the inline pattern.
+
+---
+
 ## Related Notes
 
 - [[decisions]]

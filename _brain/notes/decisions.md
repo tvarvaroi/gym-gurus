@@ -152,6 +152,67 @@ Key architectural decisions made during the audit and refactor. Each entry expla
 
 ---
 
+## Muscle anatomy primary/secondary split (2026-03-19)
+
+**Decided:** Add `primaryMuscles` + `secondaryMuscles` TEXT[] columns to exercises table
+alongside the existing flat `muscleGroups` array.
+**Why kept separate:** `muscleGroups` is read by the recovery pipeline
+(`userMuscleFatigue`, `userMuscleVolume`). Keeping it intact means zero risk to
+recovery tracking. New columns are always set as the union of both arrays on
+create/update.
+**Migration:** 009_add_primary_secondary_muscles.ts — GIN indexes on both columns.
+**Backfill:** server/scripts/backfill-muscle-split.ts — idempotent, uses
+COMPOUND_EXERCISE_MUSCLES map, skips exercises with no matching key.
+
+---
+
+## ExerciseMuscleDisplay component (2026-03-19)
+
+**Decided:** New component separate from MuscleAnatomyDiagram.
+**MuscleAnatomyDiagram** — recovery/fatigue context only (Recovery page). Color-coded
+by recovery status (green/amber/red).
+**ExerciseMuscleDisplay** — exercise and workout contexts. Color-coded by role accent
+(primary/secondary opacity). Two modes: display (read-only) and interactive (chip
+picker). Three sizes: sm (card thumbnail), md (modal), lg (completion screen).
+Both components use react-body-highlighter. Keep both — different purposes.
+
+---
+
+## DashboardHero combined version (2026-03-20)
+
+Combined the premium aesthetic from the original hero (gradient card, blur orbs,
+Playfair title, accent lines, Elite Trainer badge) with the Phase 2 data stats
+(3 NumberTicker stats: Active Clients / Sessions This Week / Upcoming Today).
+Hardcoded rgba(201,168,85) gold replaced with hsl(var(--primary)) — fully
+role-aware. Corner SVGs and noise texture removed. whileHover scale on outer
+card removed. Single entrance animation on content block only.
+
+---
+
+## Disciple visual pass (2026-03-20)
+
+ClientDashboard full rewrite — compact premium hero matching Guru aesthetic
+(gradient card, entrance-only blur orbs, Playfair title, 3 NumberTicker stats:
+Assigned Workouts / Completed / Streak). All 50+ hardcoded cyan-500/teal-500
+replaced with hsl(var(--primary)). framer-motion 20+ → 3 entrance-only.
+Cross-page: 31 isClient cyan ternaries removed from ProgressPage + SchedulePage.
+UX fixes: Coach tab hidden for Disciple, Access Denied shows "Disciple" not "client",
+Settings Plan tab shows trainer-managed copy, Body Stats references trainer not AI Coach,
+login link neutral colour, Cormorant Garamond → Playfair Display.
+
+---
+
+## Phase 3C Progress page cleanup (2026-03-20)
+
+Removed 106 framer-motion usages from ProgressPage — all motion.div entrance
+fades, whileHover, whileTap, repeat:Infinity → CSS animate-in, hover:-translate-y-1,
+animate-pulse. BlurFade wrappers removed (3 instances). useReducedMotion removed.
+Added "vs prev week" and "vs prev session" labels to delta badges on Volume charts.
+Preserved: ZoneBandChart zones, Training Load Ratio ACWR card, heatmap, PRs table,
+semantic stat card colours (purple/teal/amber/blue — intentional differentiation).
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
