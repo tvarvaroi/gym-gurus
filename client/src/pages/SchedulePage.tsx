@@ -823,9 +823,7 @@ function TrainerClientSchedule() {
           >
             <h1 className="text-xl md:text-6xl font-extralight tracking-tight font-['Playfair_Display']">
               {isClient ? 'My ' : 'Your '}
-              <span
-                className={`font-light bg-gradient-to-r ${isClient ? 'from-cyan-500 via-teal-500 to-cyan-400' : 'from-primary via-primary/80 to-primary/60'} bg-clip-text text-transparent`}
-              >
+              <span className="font-light bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
                 Schedule
               </span>
             </h1>
@@ -845,41 +843,25 @@ function TrainerClientSchedule() {
               <TabsList className="backdrop-blur-xl bg-background/80 border border-border/30 shadow-premium">
                 <TabsTrigger
                   value="day"
-                  className={`transition-all duration-300 font-light ${
-                    isClient
-                      ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
-                      : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
-                  }`}
+                  className={`transition-all duration-300 font-light ${'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'}`}
                 >
                   Day
                 </TabsTrigger>
                 <TabsTrigger
                   value="week"
-                  className={`transition-all duration-300 font-light ${
-                    isClient
-                      ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
-                      : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
-                  }`}
+                  className={`transition-all duration-300 font-light ${'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'}`}
                 >
                   Week
                 </TabsTrigger>
                 <TabsTrigger
                   value="calendar"
-                  className={`transition-all duration-300 font-light ${
-                    isClient
-                      ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
-                      : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
-                  }`}
+                  className={`transition-all duration-300 font-light ${'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'}`}
                 >
                   Month
                 </TabsTrigger>
                 <TabsTrigger
                   value="list"
-                  className={`transition-all duration-300 font-light ${
-                    isClient
-                      ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/10 data-[state=active]:to-teal-500/5 data-[state=active]:text-cyan-600'
-                      : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'
-                  }`}
+                  className={`transition-all duration-300 font-light ${'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/10 data-[state=active]:to-primary/5 data-[state=active]:text-primary'}`}
                 >
                   <List className="h-4 w-4 mr-1" />
                   List

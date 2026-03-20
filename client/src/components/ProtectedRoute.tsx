@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Redirect } from 'wouter';
 import { useUser, type Permission } from '@/contexts/UserContext';
+import { getRoleDisplayName, type InternalRole } from '@/lib/roles';
 import { motion } from 'framer-motion';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -174,7 +175,7 @@ function UnauthorizedAccess({
               <>
                 This page is only accessible to{' '}
                 <span className="font-medium text-foreground">
-                  {requiredRole === 'trainer' ? 'trainers' : 'clients'}
+                  {requiredRole === 'trainer' ? 'Gurus' : 'Disciples'}
                 </span>
                 .
               </>
@@ -195,7 +196,10 @@ function UnauthorizedAccess({
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            Current role: <span className="font-medium text-foreground">{userRole}</span>
+            Current role:{' '}
+            <span className="font-medium text-foreground">
+              {getRoleDisplayName(userRole as InternalRole)}
+            </span>
           </motion.p>
         </div>
 

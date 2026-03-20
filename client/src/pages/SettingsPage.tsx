@@ -85,6 +85,7 @@ const DEFAULT_PREFS = {
 // Body Stats Card
 // ─────────────────────────────────────────────
 function BodyStatsCard() {
+  const { user } = useUser();
   const { toast } = useToast();
   const [unit, setUnit] = useState<'metric' | 'imperial'>('metric');
   const [weight, setWeight] = useState('');
@@ -207,7 +208,9 @@ function BodyStatsCard() {
           Body Stats
         </CardTitle>
         <CardDescription>
-          Your physical measurements help the AI coach give personalised advice.
+          {user?.role === 'client'
+            ? 'Your physical measurements help your trainer track your progress.'
+            : 'Your physical measurements help the AI coach give personalised advice.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -747,6 +750,15 @@ function SubscriptionTab() {
                 </p>
               </div>
               <Button onClick={() => window.location.assign('/pricing')}>Subscribe</Button>
+            </div>
+          ) : user?.role === 'client' ? (
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Your access is managed by your trainer.
+              </p>
+              <p className="text-xs text-muted-foreground/60">
+                Contact your trainer if you have questions about your account.
+              </p>
             </div>
           ) : (
             <div className="flex items-center justify-between">

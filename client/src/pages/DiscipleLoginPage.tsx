@@ -164,7 +164,7 @@ export default function DiscipleLoginPage() {
               <p
                 className="text-sm text-center"
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "'Playfair Display', serif",
                   color: 'hsl(0 0% 60%)',
                   letterSpacing: '0.04em',
                 }}
@@ -268,8 +268,7 @@ export default function DiscipleLoginPage() {
               Are you a trainer?{' '}
               <Link
                 href="/auth/login"
-                className="font-medium hover:underline transition-colors"
-                style={{ color: 'hsl(var(--color-guru))' }}
+                className="font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
               >
                 Log in here →
               </Link>

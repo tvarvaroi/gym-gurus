@@ -1162,7 +1162,6 @@ export default function ProgressPage() {
               const data = groupedProgress[type];
               const trend = calculateTrend(data);
               const latest = data[data.length - 1];
-              const isClient = Boolean(selectedClient && !clients.length);
 
               return (
                 <motion.div
@@ -1172,37 +1171,25 @@ export default function ProgressPage() {
                   transition={{ delay: 0.4 + index * 0.1, duration: 0.4 }}
                   whileHover={{ y: -4 }}
                 >
-                  <Card
-                    className={`group relative overflow-hidden border ${isClient ? 'border-cyan-500/20 hover:border-cyan-500/40' : 'border-border/30 hover:border-primary/40'} bg-background/40 backdrop-blur-xl hover:shadow-premium-lg transition-all duration-500 h-full`}
-                  >
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-br ${isClient ? 'from-cyan-500/5' : 'from-primary/5'} via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-                    />
+                  <Card className="group relative overflow-hidden border border-border/30 hover:border-primary/40 bg-background/40 backdrop-blur-xl hover:shadow-premium-lg transition-all duration-500 h-full">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                     <CardHeader className="relative pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg capitalize flex items-center gap-2 font-light">
-                          {type === 'weight' && (
-                            <Weight
-                              className={`w-5 h-5 ${isClient ? 'text-cyan-500' : 'text-primary'}`}
-                            />
-                          )}
+                          {type === 'weight' && <Weight className="w-5 h-5 text-primary" />}
                           {type === 'workout_completion' && (
-                            <Activity
-                              className={`w-5 h-5 ${isClient ? 'text-cyan-500' : 'text-primary'}`}
-                            />
+                            <Activity className="w-5 h-5 text-primary" />
                           )}
                           {type !== 'weight' && type !== 'workout_completion' && (
-                            <TrendingUp
-                              className={`w-5 h-5 ${isClient ? 'text-cyan-500' : 'text-primary'}`}
-                            />
+                            <TrendingUp className="w-5 h-5 text-primary" />
                           )}
                           {type.replace('_', ' ')}
                         </CardTitle>
                         {trend && (
                           <Badge
                             variant={trend.isPositive ? 'default' : 'secondary'}
-                            className={`text-xs font-light shadow-sm ${trend.isPositive ? (isClient ? 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20' : 'bg-primary/10 text-primary border-primary/20') : ''}`}
+                            className={`text-xs font-light shadow-sm ${trend.isPositive ? 'bg-primary/10 text-primary border-primary/20' : ''}`}
                           >
                             {trend.isPositive ? (
                               <TrendingUp className="w-3 h-3 mr-1" />
@@ -1217,7 +1204,7 @@ export default function ProgressPage() {
                     <CardContent className="relative">
                       <div className="space-y-3">
                         <div
-                          className={`text-4xl font-extralight tracking-tight ${isClient ? 'text-cyan-500' : 'text-primary'}`}
+                          className="text-4xl font-extralight tracking-tight text-primary"
                           data-testid={`text-latest-${type}`}
                         >
                           {latest?.value}{' '}
@@ -1256,27 +1243,19 @@ export default function ProgressPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
                 >
-                  <Card
-                    className={`group relative overflow-hidden border ${isClient ? 'border-cyan-500/20' : 'border-border/30'} bg-background/40 backdrop-blur-xl shadow-premium-lg hover:shadow-premium-xl transition-all duration-500`}
-                  >
+                  <Card className="group relative overflow-hidden border border-border/30 bg-background/40 backdrop-blur-xl shadow-premium-lg hover:shadow-premium-xl transition-all duration-500">
                     {/* Premium gradient overlay */}
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-br ${isClient ? 'from-cyan-500/5' : 'from-primary/5'} via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-                    />
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                     {/* Shimmer effect */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <div
-                        className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent ${isClient ? 'via-cyan-400/30' : 'via-primary/30'} to-transparent`}
-                      />
+                      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                     </div>
 
                     <CardHeader className="relative">
                       <div className="flex items-start justify-between">
                         <div className="space-y-2">
-                          <CardTitle
-                            className={`capitalize font-extralight text-2xl tracking-tight bg-gradient-to-r ${isClient ? 'from-cyan-400 to-teal-400' : 'from-foreground to-foreground/70'} bg-clip-text text-transparent`}
-                          >
+                          <CardTitle className="capitalize font-extralight text-2xl tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                             {type.replace('_', ' ')} Progress
                           </CardTitle>
                           <CardDescription className="font-light text-base">
@@ -1293,9 +1272,7 @@ export default function ProgressPage() {
                               variant={trend.isPositive ? 'default' : 'secondary'}
                               className={`text-sm font-light shadow-lg ${
                                 trend.isPositive
-                                  ? isClient
-                                    ? 'bg-gradient-to-r from-cyan-500/20 to-teal-500/20 text-cyan-400 border-cyan-500/30'
-                                    : 'bg-primary/10 text-primary border-primary/20'
+                                  ? 'bg-primary/10 text-primary border-primary/20'
                                   : ''
                               }`}
                             >
@@ -1358,7 +1335,7 @@ export default function ProgressPage() {
                               <Tooltip
                                 contentStyle={{
                                   backgroundColor: 'hsl(var(--background))',
-                                  border: `1px solid ${isClient ? 'rgba(6, 182, 212, 0.3)' : 'hsl(var(--border))'}`,
+                                  border: '1px solid hsl(var(--border))',
                                   borderRadius: '12px',
                                   boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
                                   backdropFilter: 'blur(12px)',
@@ -1435,7 +1412,7 @@ export default function ProgressPage() {
                               <Tooltip
                                 contentStyle={{
                                   backgroundColor: 'hsl(var(--background))',
-                                  border: `1px solid ${isClient ? 'rgba(6, 182, 212, 0.3)' : 'hsl(var(--border))'}`,
+                                  border: '1px solid hsl(var(--border))',
                                   borderRadius: '12px',
                                   boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
                                   backdropFilter: 'blur(12px)',
@@ -1490,32 +1467,22 @@ export default function ProgressPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.4 }}
           >
-            <Card
-              className={`group relative overflow-hidden border ${isClient ? 'border-cyan-500/20' : 'border-border/30'} bg-background/40 backdrop-blur-xl shadow-premium-lg hover:shadow-premium-xl transition-all duration-500`}
-            >
+            <Card className="group relative overflow-hidden border border-border/30 bg-background/40 backdrop-blur-xl shadow-premium-lg hover:shadow-premium-xl transition-all duration-500">
               {/* Premium gradient overlay */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-br ${isClient ? 'from-cyan-500/5' : 'from-primary/5'} via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-              />
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
               {/* Shimmer effect */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                <div
-                  className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent ${isClient ? 'via-cyan-400/30' : 'via-primary/30'} to-transparent`}
-                />
+                <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
               </div>
 
               <CardHeader className="relative">
-                <CardTitle
-                  className={`font-extralight text-2xl tracking-tight bg-gradient-to-r ${isClient ? 'from-cyan-400 to-teal-400' : 'from-foreground to-foreground/70'} bg-clip-text text-transparent`}
-                >
+                <CardTitle className="font-extralight text-2xl tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   Recent Progress Entries
                 </CardTitle>
                 <CardDescription className="font-light text-base">
                   Latest progress updates for{' '}
-                  <span className={`font-medium ${isClient ? 'text-cyan-400' : 'text-primary'}`}>
-                    {selectedClientData?.name}
-                  </span>
+                  <span className="font-medium text-primary">{selectedClientData?.name}</span>
                 </CardDescription>
               </CardHeader>
               <CardContent className="relative">
@@ -1534,9 +1501,7 @@ export default function ProgressPage() {
                 ) : (progressData || []).length > 0 ? (
                   <div className="relative space-y-4">
                     {/* Timeline line */}
-                    <div
-                      className={`absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b ${isClient ? 'from-cyan-500/20 via-cyan-500/10' : 'from-primary/20 via-primary/10'} to-transparent`}
-                    />
+                    <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-primary/20 via-primary/10 to-transparent" />
 
                     {(progressData || [])
                       .slice(0, 10)
@@ -1558,36 +1523,30 @@ export default function ProgressPage() {
                           >
                             {/* Timeline dot */}
                             <motion.div
-                              className={`absolute left-4 top-6 w-5 h-5 rounded-full border-2 ${isClient ? 'border-cyan-500 bg-cyan-500/20' : 'border-primary bg-primary/20'} flex items-center justify-center`}
+                              className="absolute left-4 top-6 w-5 h-5 rounded-full border-2 border-primary bg-primary/20 flex items-center justify-center"
                               whileHover={{ opacity: 0.8 }}
                               transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                             >
-                              <div
-                                className={`w-2 h-2 rounded-full ${isClient ? 'bg-cyan-500' : 'bg-primary'}`}
-                              />
+                              <div className="w-2 h-2 rounded-full bg-primary" />
                             </motion.div>
 
                             <motion.div
                               whileHover={{ y: -2, x: 4 }}
                               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                              className={`group/card relative overflow-hidden rounded-xl border ${isClient ? 'border-cyan-500/20 hover:border-cyan-500/40' : 'border-border/30 hover:border-primary/40'} bg-background/60 backdrop-blur-sm p-5 hover:shadow-lg transition-all duration-300`}
+                              className="group/card relative overflow-hidden rounded-xl border border-border/30 hover:border-primary/40 bg-background/60 backdrop-blur-sm p-5 hover:shadow-lg transition-all duration-300"
                             >
                               {/* Card gradient overlay */}
-                              <div
-                                className={`absolute inset-0 bg-gradient-to-br ${isClient ? 'from-cyan-500/5' : 'from-primary/5'} via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300`}
-                              />
+                              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
 
                               <div className="relative flex items-start justify-between gap-4">
                                 <div className="flex items-start gap-4 flex-1">
                                   {/* Icon */}
                                   <motion.div
-                                    className={`p-3 rounded-lg ${isClient ? 'bg-gradient-to-br from-cyan-500/20 to-teal-500/10 border border-cyan-500/20' : 'bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20'}`}
+                                    className="p-3 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20"
                                     whileHover={{ rotate: 5 }}
                                     transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                                   >
-                                    <Icon
-                                      className={`w-5 h-5 ${isClient ? 'text-cyan-400' : 'text-primary'}`}
-                                    />
+                                    <Icon className="w-5 h-5 text-primary" />
                                   </motion.div>
 
                                   {/* Content */}
@@ -1595,11 +1554,7 @@ export default function ProgressPage() {
                                     <div className="flex items-center gap-2 flex-wrap">
                                       <Badge
                                         variant="outline"
-                                        className={`capitalize font-light ${
-                                          isClient
-                                            ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
-                                            : 'border-primary/30 bg-primary/10 text-primary'
-                                        }`}
+                                        className="capitalize font-light border-primary/30 bg-primary/10 text-primary"
                                       >
                                         {entry.type.replace('_', ' ')}
                                       </Badge>
@@ -1614,9 +1569,7 @@ export default function ProgressPage() {
                                       </span>
                                     </div>
 
-                                    <div
-                                      className={`text-2xl font-extralight tracking-tight ${isClient ? 'text-cyan-400' : 'text-primary'}`}
-                                    >
+                                    <div className="text-2xl font-extralight tracking-tight text-primary">
                                       {entry.value}
                                       <span className="text-base text-muted-foreground/70 ml-1.5">
                                         {entry.unit}
@@ -1653,9 +1606,7 @@ export default function ProgressPage() {
                                           }}
                                           className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
                                             isPositive
-                                              ? isClient
-                                                ? 'bg-cyan-500/10 text-cyan-400'
-                                                : 'bg-green-500/10 text-green-500'
+                                              ? 'bg-green-500/10 text-green-500'
                                               : 'bg-red-500/10 text-red-500'
                                           }`}
                                         >
@@ -1689,12 +1640,10 @@ export default function ProgressPage() {
                           ease: 'easeInOut',
                         }}
                       >
-                        <Activity
-                          className={`w-16 h-16 ${isClient ? 'text-cyan-500/40' : 'text-primary/40'} mx-auto`}
-                        />
+                        <Activity className="w-16 h-16 text-primary/40 mx-auto" />
                       </motion.div>
                       <motion.div
-                        className={`absolute inset-0 rounded-full bg-gradient-to-br ${isClient ? 'from-cyan-500/10' : 'from-primary/10'} to-transparent blur-2xl`}
+                        className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-2xl"
                         animate={{ opacity: [0.3, 0.6, 0.3] }}
                         transition={{
                           duration: 2,

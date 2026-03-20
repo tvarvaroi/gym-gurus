@@ -1,25 +1,35 @@
 import { useLocation } from 'wouter';
 import { Home, MessageSquare, Dumbbell, TrendingUp, Menu } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useUser } from '@/contexts/UserContext';
 
 const TABS = [
   { label: 'Home', icon: Home, href: '/solo', match: ['/solo', '/dashboard'] },
   { label: 'Coach', icon: MessageSquare, href: '/solo/coach', match: ['/solo/coach'] },
-  { label: 'Workout', icon: Dumbbell, href: '/solo/generate', match: ['/solo/generate', '/workouts'] },
+  {
+    label: 'Workout',
+    icon: Dumbbell,
+    href: '/solo/generate',
+    match: ['/solo/generate', '/workouts'],
+  },
   { label: 'Progress', icon: TrendingUp, href: '/progress', match: ['/progress'] },
 ] as const;
 
 export default function MobileBottomNav() {
   const [location, navigate] = useLocation();
   const { toggleSidebar } = useSidebar();
+  const { isClient } = useUser();
+
+  // Disciples cannot access AI Coach — hide the tab
+  const visibleTabs = isClient ? TABS.filter((tab) => tab.href !== '/solo/coach') : TABS;
 
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-lg border-t border-border/30"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="grid grid-cols-5 h-16">
-        {TABS.map((tab) => {
+      <div className={`grid h-16 ${isClient ? 'grid-cols-4' : 'grid-cols-5'}`}>
+        {visibleTabs.map((tab) => {
           const { label, icon: Icon, href } = tab;
           const isActive = tab.match.some((m) => location === m || location.startsWith(m + '/'));
           return (
