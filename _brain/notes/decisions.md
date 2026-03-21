@@ -238,6 +238,21 @@ exercise content slide transitions and exercise list bottom sheet (not in scope)
 
 ---
 
+## Phase 5 PR sunburst badges (2026-03-20)
+
+PRSunburstBadge: pure SVG, zero deps, memoized. Gold (rank 1) 8 rays + radial
+gradient + white highlight ring + drop shadow. Silver (rank 2) 6 rays muted.
+Bronze (rank 3) 6 rays warm brown. Props: rank 1|2|3, size (default 48).
+Wired into ProgressPage PRs table (rank column, badges rows 1-3, plain numbers 4+).
+Added Top Personal Records section to Achievements page between StreakCalendar
+and Category Tabs. Conditional on personalRecords.length > 0. Uses same
+queryKey as ProgressPage — TanStack deduplicates.
+Achievements framer-motion: 27 → 3. Kept AnimatePresence mode=popLayout +
+motion.div layout for filter transitions. Removed BlurFade ×4, entrance fades ×6,
+repeat:Infinity glow → animate-pulse.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]

@@ -237,6 +237,17 @@ No `requireRole` middleware exists — use the inline pattern.
 
 ---
 
+## CI / Build (added 2026-03-20)
+
+**Pre-existing lint failures block CI — not from recent work.**
+`npx eslint .` in CI fails on 3 files not touched in recent sprints:
+`AchievementBadge.tsx` (double quotes, formatting), `sw.js` (`clients` undefined, formatting),
+`_brain/scripts/fetch-resource.ts` (`console.log`). These were failing before Phase 4.
+Local `npx eslint --quiet` on changed files passes fine. Clean up in a dedicated
+lint-fix commit before next major release. Do not block feature work on these.
+
+---
+
 ## Related Notes
 
 - [[decisions]]

@@ -16,10 +16,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { BlurFade } from '@/components/ui/blur-fade';
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
+import { PRSunburstBadge } from '@/components/redesign/achievements/PRSunburstBadge';
 import {
   Trophy,
   Flame,
@@ -119,9 +119,9 @@ export default function Achievements() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(12);
-  const prefersReducedMotion = useReducedMotion();
   const { toast } = useToast();
   const toastsShownRef = useRef(false);
+  const [, navigate] = useLocation();
 
   const {
     data: achievements = [],
@@ -129,6 +129,16 @@ export default function Achievements() {
     error,
   } = useQuery<Achievement[]>({
     queryKey: ['/api/gamification/achievements'],
+  });
+
+  const { data: personalRecords = [] } = useQuery<
+    {
+      pr: { weightKg: string; reps: number; estimated1rm: string; achievedAt: string };
+      exercise: { id: string; name: string };
+    }[]
+  >({
+    queryKey: ['/api/strength/personal-records'],
+    staleTime: 5 * 60 * 1000,
   });
 
   // Show toasts for recently unlocked achievements (first load only)
@@ -212,281 +222,295 @@ export default function Achievements() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <BlurFade delay={0.05}>
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4"
-        >
-          <PageHeader
-            icon={<Trophy className="h-full w-full" />}
-            title=""
-            titleAccent="Achievements"
-            subtitle="Unlock achievements and earn XP rewards"
-          />
+      <div className="animate-in fade-in duration-300 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+        <PageHeader
+          icon={<Trophy className="h-full w-full" />}
+          title=""
+          titleAccent="Achievements"
+          subtitle="Unlock achievements and earn XP rewards"
+        />
 
-          {/* Stats — only show when achievements are defined */}
-          {mappedAchievements.length > 0 && (
-            <div className="flex items-center gap-4">
-              {/* Circular unlock progress */}
-              <div className="relative">
-                <AnimatedCircularProgressBar
-                  value={Math.round((earnedCount / mappedAchievements.length) * 100)}
-                  max={100}
-                  gaugePrimaryColor="hsl(var(--primary))"
-                  gaugeSecondaryColor="hsl(var(--muted))"
-                  className="size-20 text-sm"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[11px] font-bold leading-none">
-                    {earnedCount}/{mappedAchievements.length}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground mt-0.5">unlocked</span>
-                </div>
-              </div>
-              <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
-                <p className="text-2xl font-light text-amber-400 tabular-nums">
-                  <NumberTicker value={totalXP} className="text-2xl font-light text-amber-400" />
-                </p>
-                <p className="text-xs text-muted-foreground">XP Earned</p>
+        {/* Stats — only show when achievements are defined */}
+        {mappedAchievements.length > 0 && (
+          <div className="flex items-center gap-4">
+            {/* Circular unlock progress */}
+            <div className="relative">
+              <AnimatedCircularProgressBar
+                value={Math.round((earnedCount / mappedAchievements.length) * 100)}
+                max={100}
+                gaugePrimaryColor="hsl(var(--primary))"
+                gaugeSecondaryColor="hsl(var(--muted))"
+                className="size-20 text-sm"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[11px] font-bold leading-none">
+                  {earnedCount}/{mappedAchievements.length}
+                </span>
+                <span className="text-[9px] text-muted-foreground mt-0.5">unlocked</span>
               </div>
             </div>
-          )}
-        </motion.div>
-      </BlurFade>
+            <div className="text-center px-4 py-2 rounded-xl bg-card/50 border border-border/50">
+              <p className="text-2xl font-light text-amber-400 tabular-nums">
+                <NumberTicker value={totalXP} className="text-2xl font-light text-amber-400" />
+              </p>
+              <p className="text-xs text-muted-foreground">XP Earned</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Streak Calendar — consistency visualization */}
-      <BlurFade delay={0.1}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
+      <div
+        className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+        style={{ animationDelay: '80ms', animationFillMode: 'backwards' }}
+      >
+        <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
+          <CardContent className="pt-5 pb-4">
+            <StreakCalendar weeks={12} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Personal Records — top 3 with sunburst badges */}
+      {personalRecords.length > 0 && (
+        <div
+          className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+          style={{ animationDelay: '120ms', animationFillMode: 'backwards' }}
         >
-          <Card className="border-border/30 bg-background/40 backdrop-blur-xl overflow-hidden">
-            <CardContent className="pt-5 pb-4">
-              <StreakCalendar weeks={12} />
-            </CardContent>
-          </Card>
-        </motion.div>
-      </BlurFade>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Trophy className="w-4 h-4" />
+              Personal Records
+            </h2>
+            <button
+              onClick={() => navigate('/progress')}
+              className="text-xs text-primary hover:underline"
+            >
+              View all &rarr;
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {personalRecords.slice(0, 3).map((record, i) => (
+              <div
+                key={record.exercise.id ?? i}
+                className="rounded-2xl border border-border/20 bg-card/50 p-4 flex items-center gap-4"
+              >
+                <PRSunburstBadge rank={(i + 1) as 1 | 2 | 3} size={48} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{record.exercise.name}</p>
+                  <p className="text-xl font-bold tabular-nums mt-0.5">
+                    {parseFloat(record.pr.weightKg).toFixed(1)}
+                    <span className="text-xs font-normal text-muted-foreground ml-1">kg</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {record.pr.reps} rep{record.pr.reps !== 1 ? 's' : ''} &middot; Est. 1RM{' '}
+                    {parseFloat(record.pr.estimated1rm).toFixed(0)}kg
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Category Tabs */}
-      <BlurFade delay={0.2}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="relative">
-            <div className="overflow-x-auto scrollbar-hide -mx-3 px-3 sm:-mx-0 sm:px-0">
-              <div className="flex gap-2 w-max sm:w-auto sm:flex-wrap py-1">
-                {categories.map((category) => (
-                  <Button
-                    key={category.id}
-                    variant={selectedCategory === category.id ? 'default' : 'outline'}
-                    size="default"
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`flex-shrink-0 ${
-                      selectedCategory === category.id
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:from-amber-600 hover:to-yellow-600'
-                        : 'border-border/50 hover:border-amber-500/30 hover:bg-amber-500/10'
-                    }`}
-                  >
-                    <category.icon className="h-4 w-4 mr-2" />
-                    {category.label}
-                  </Button>
-                ))}
-              </div>
+      <div
+        className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+        style={{ animationDelay: '160ms', animationFillMode: 'backwards' }}
+      >
+        <div className="relative">
+          <div className="overflow-x-auto scrollbar-hide -mx-3 px-3 sm:-mx-0 sm:px-0">
+            <div className="flex gap-2 w-max sm:w-auto sm:flex-wrap py-1">
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.id ? 'default' : 'outline'}
+                  size="default"
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`flex-shrink-0 ${
+                    selectedCategory === category.id
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:from-amber-600 hover:to-yellow-600'
+                      : 'border-border/50 hover:border-amber-500/30 hover:bg-amber-500/10'
+                  }`}
+                >
+                  <category.icon className="h-4 w-4 mr-2" />
+                  {category.label}
+                </Button>
+              ))}
             </div>
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
           </div>
-        </motion.div>
-      </BlurFade>
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
+        </div>
+      </div>
 
       {/* Achievements Grid */}
-      <BlurFade delay={0.3}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {earnedCount === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="col-span-full flex flex-col items-center py-16 text-center space-y-6"
-            >
-              <RoninIcon size={128} variant="default" />
-              <div className="space-y-3">
-                <h2
-                  className="text-3xl font-medium text-foreground"
-                  style={{ fontFamily: 'Playfair Display, serif' }}
+      <div
+        className="animate-in fade-in duration-300 grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}
+      >
+        {earnedCount === 0 && (
+          <div className="col-span-full flex flex-col items-center py-16 text-center space-y-6 animate-in fade-in slide-in-from-bottom-1 duration-300">
+            <RoninIcon size={128} variant="default" />
+            <div className="space-y-3">
+              <h2
+                className="text-3xl font-medium text-foreground"
+                style={{ fontFamily: 'Playfair Display, serif' }}
+              >
+                Earn your first scar.
+              </h2>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                Train consistently and your achievements will reflect the work you put in.
+              </p>
+            </div>
+            <Button onClick={() => (window.location.href = '/solo/generate')}>
+              Start Training
+            </Button>
+          </div>
+        )}
+        <AnimatePresence mode="popLayout">
+          {filteredAchievements.slice(0, visibleCount).map((achievement, index) => {
+            const rarityKey = achievement.rarity || 'common';
+            const rarity = rarityColors[rarityKey] || rarityColors.common;
+            const AchIcon = getAchievementIcon(achievement.category, achievement.rarity);
+            return (
+              <motion.div
+                key={achievement.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Card
+                  className={`relative overflow-hidden cursor-pointer transition-all duration-300 md:min-h-[160px] ${
+                    achievement.earned
+                      ? `${rarity.bg} ${rarity.border} hover:shadow-lg ${rarity.glow}`
+                      : 'bg-card/30 border-border/30 opacity-60 hover:opacity-80'
+                  }`}
+                  onClick={() =>
+                    setSelectedAchievement(
+                      selectedAchievement === achievement.id ? null : achievement.id
+                    )
+                  }
                 >
-                  Earn your first scar.
-                </h2>
-                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                  Train consistently and your achievements will reflect the work you put in.
-                </p>
-              </div>
-              <Button onClick={() => (window.location.href = '/solo/generate')}>
-                Start Training
-              </Button>
-            </motion.div>
-          )}
-          <AnimatePresence mode="popLayout">
-            {filteredAchievements.slice(0, visibleCount).map((achievement, index) => {
-              const rarityKey = achievement.rarity || 'common';
-              const rarity = rarityColors[rarityKey] || rarityColors.common;
-              const AchIcon = getAchievementIcon(achievement.category, achievement.rarity);
-              return (
-                <motion.div
-                  key={achievement.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card
-                    className={`relative overflow-hidden cursor-pointer transition-all duration-300 md:min-h-[160px] ${
-                      achievement.earned
-                        ? `${rarity.bg} ${rarity.border} hover:shadow-lg ${rarity.glow}`
-                        : 'bg-card/30 border-border/30 opacity-60 hover:opacity-80'
-                    }`}
-                    onClick={() =>
-                      setSelectedAchievement(
-                        selectedAchievement === achievement.id ? null : achievement.id
-                      )
-                    }
-                  >
-                    {/* Rarity indicator */}
-                    {achievement.earned && (
-                      <div
-                        className={`absolute top-0 right-0 px-2 py-1 text-xs font-medium capitalize ${rarity.bg} ${rarity.text} rounded-bl-lg`}
-                      >
-                        {rarityKey}
-                      </div>
-                    )}
+                  {/* Rarity indicator */}
+                  {achievement.earned && (
+                    <div
+                      className={`absolute top-0 right-0 px-2 py-1 text-xs font-medium capitalize ${rarity.bg} ${rarity.text} rounded-bl-lg`}
+                    >
+                      {rarityKey}
+                    </div>
+                  )}
 
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-4">
-                        {/* Icon */}
-                        <div
-                          className={`relative p-3 rounded-xl ${
-                            achievement.earned ? rarity.bg : 'bg-muted/30'
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div
+                        className={`relative p-3 rounded-xl ${
+                          achievement.earned ? rarity.bg : 'bg-muted/30'
+                        }`}
+                      >
+                        {achievement.earned ? (
+                          <AchIcon className={`h-6 w-6 ${rarity.text}`} />
+                        ) : (
+                          <Lock className="h-6 w-6 text-muted-foreground" />
+                        )}
+                        {achievement.earned && (
+                          <div
+                            className="absolute inset-0 rounded-xl animate-pulse"
+                            style={{
+                              background: `radial-gradient(circle, ${
+                                rarityKey === 'legendary'
+                                  ? 'rgba(251, 191, 36, 0.3)'
+                                  : rarityKey === 'epic'
+                                    ? 'rgba(168, 85, 247, 0.3)'
+                                    : rarityKey === 'rare'
+                                      ? 'rgba(59, 130, 246, 0.3)'
+                                      : rarityKey === 'uncommon'
+                                        ? 'rgba(34, 197, 94, 0.3)'
+                                        : 'rgba(148, 163, 184, 0.3)'
+                              }, transparent 70%)`,
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className={`font-medium truncate ${
+                            achievement.earned ? 'text-foreground' : 'text-muted-foreground'
                           }`}
                         >
-                          {achievement.earned ? (
-                            <AchIcon className={`h-6 w-6 ${rarity.text}`} />
-                          ) : (
-                            <Lock className="h-6 w-6 text-muted-foreground" />
-                          )}
-                          {achievement.earned && (
-                            <motion.div
-                              className="absolute inset-0 rounded-xl"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: [0.3, 0.6, 0.3] }}
-                              transition={{
-                                duration: 2,
-                                repeat: prefersReducedMotion ? 0 : Infinity,
-                              }}
-                              style={{
-                                background: `radial-gradient(circle, ${
-                                  rarityKey === 'legendary'
-                                    ? 'rgba(251, 191, 36, 0.3)'
-                                    : rarityKey === 'epic'
-                                      ? 'rgba(168, 85, 247, 0.3)'
-                                      : rarityKey === 'rare'
-                                        ? 'rgba(59, 130, 246, 0.3)'
-                                        : rarityKey === 'uncommon'
-                                          ? 'rgba(34, 197, 94, 0.3)'
-                                          : 'rgba(148, 163, 184, 0.3)'
-                                }, transparent 70%)`,
-                              }}
-                            />
-                          )}
-                        </div>
+                          {achievement.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                          {achievement.description}
+                        </p>
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <h3
-                            className={`font-medium truncate ${
-                              achievement.earned ? 'text-foreground' : 'text-muted-foreground'
-                            }`}
-                          >
-                            {achievement.name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
-                            {achievement.description}
-                          </p>
-
-                          {/* Progress or Date */}
-                          {achievement.earned ? (
-                            <div className="flex items-center gap-2 mt-2 text-xs">
-                              <CheckCircle2 className={`h-3 w-3 ${rarity.text}`} />
-                              <span className="text-muted-foreground">
-                                Unlocked{' '}
-                                {achievement.earnedAt
-                                  ? new Date(achievement.earnedAt).toLocaleDateString()
-                                  : ''}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="mt-2 space-y-1">
-                              <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Progress</span>
-                                <span className="text-muted-foreground">
-                                  {achievement.progress}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 w-full rounded-full bg-muted/30 overflow-hidden">
-                                {achievement.progress > 0 && (
-                                  <div
-                                    className="h-full rounded-full bg-primary transition-all"
-                                    style={{ width: `${achievement.progress}%` }}
-                                  />
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* XP Reward */}
-                          <div className="flex items-center gap-1 mt-2">
-                            <Zap
-                              className={`h-3 w-3 ${achievement.earned ? 'text-amber-400' : 'text-muted-foreground'}`}
-                            />
-                            <span
-                              className={`text-xs font-medium ${
-                                achievement.earned ? 'text-amber-400' : 'text-muted-foreground'
-                              }`}
-                            >
-                              {(achievement.xpReward || 0).toLocaleString()} XP
+                        {/* Progress or Date */}
+                        {achievement.earned ? (
+                          <div className="flex items-center gap-2 mt-2 text-xs">
+                            <CheckCircle2 className={`h-3 w-3 ${rarity.text}`} />
+                            <span className="text-muted-foreground">
+                              Unlocked{' '}
+                              {achievement.earnedAt
+                                ? new Date(achievement.earnedAt).toLocaleDateString()
+                                : ''}
                             </span>
                           </div>
+                        ) : (
+                          <div className="mt-2 space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Progress</span>
+                              <span className="text-muted-foreground">{achievement.progress}%</span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-muted/30 overflow-hidden">
+                              {achievement.progress > 0 && (
+                                <div
+                                  className="h-full rounded-full bg-primary transition-all"
+                                  style={{ width: `${achievement.progress}%` }}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* XP Reward */}
+                        <div className="flex items-center gap-1 mt-2">
+                          <Zap
+                            className={`h-3 w-3 ${achievement.earned ? 'text-amber-400' : 'text-muted-foreground'}`}
+                          />
+                          <span
+                            className={`text-xs font-medium ${
+                              achievement.earned ? 'text-amber-400' : 'text-muted-foreground'
+                            }`}
+                          >
+                            {(achievement.xpReward || 0).toLocaleString()} XP
+                          </span>
                         </div>
                       </div>
+                    </div>
 
-                      {/* Inline expansion removed — uses Dialog instead */}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-          {filteredAchievements.length > visibleCount && (
-            <div className="col-span-full flex justify-center pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setVisibleCount((prev) => prev + 12)}
-                className="min-h-[44px]"
-              >
-                Show more ({filteredAchievements.length - visibleCount} remaining)
-              </Button>
-            </div>
-          )}
-        </motion.div>
-      </BlurFade>
+                    {/* Inline expansion removed — uses Dialog instead */}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+        {filteredAchievements.length > visibleCount && (
+          <div className="col-span-full flex justify-center pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setVisibleCount((prev) => prev + 12)}
+              className="min-h-[44px]"
+            >
+              Show more ({filteredAchievements.length - visibleCount} remaining)
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Achievement Detail Dialog */}
       <Dialog
