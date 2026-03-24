@@ -2,10 +2,8 @@ import { useEffect } from 'react';
 import { Redirect } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import type { User } from '@/contexts/UserContext';
-import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { ALL_ROLE_CSS_CLASSES, getRoleCssClass } from '@/lib/roles';
 import type { InternalRole } from '@/lib/roles';
 import { toast } from '@/hooks/use-toast';
@@ -19,8 +17,6 @@ import { toast } from '@/hooks/use-toast';
  * or any other presentation logic.
  */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const prefersReducedMotion = useReducedMotion();
-
   const {
     data: user,
     isLoading,
@@ -78,36 +74,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a]">
-        <motion.div
-          className="flex flex-col items-center gap-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-        >
+        <div className="flex flex-col items-center gap-8 animate-in fade-in duration-500">
           {/* Logo mark with pulsing ring */}
           <div className="relative flex items-center justify-center">
             {/* Pulsing ring — acts as the loading indicator */}
-            <motion.div
-              className="absolute w-24 h-24 rounded-full border-2 border-primary/40"
-              animate={
-                prefersReducedMotion ? {} : { scale: [1, 1.15, 1], opacity: [0.4, 0.8, 0.4] }
-              }
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
+            <div className="absolute w-24 h-24 rounded-full border-2 border-primary/40 animate-pulse" />
             {/* Inner glow */}
-            <motion.div
-              className="absolute w-20 h-20 rounded-full bg-primary/10 blur-xl"
-              animate={prefersReducedMotion ? {} : { opacity: [0.2, 0.5, 0.2] }}
-              transition={{
-                duration: 2.5,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
+            <div className="absolute w-20 h-20 rounded-full bg-primary/10 blur-xl animate-pulse" />
             {/* Logo text */}
             <span className="text-3xl font-bold tracking-wider text-foreground/90 select-none">
               GG
@@ -126,7 +99,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
               Elite Fitness
             </p>
           </div>
-        </motion.div>
+        </div>
       </div>
     );
   }
