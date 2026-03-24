@@ -23,6 +23,13 @@ const envSchema = z
 
     // Session Configuration
     SESSION_SECRET: z.string().min(32).default('dev-secret-key-change-in-production-min-32-chars'),
+
+    // Application
+    APP_URL: z.string().optional(),
+
+    // Email Service (Resend)
+    RESEND_API_KEY: z.string().optional(),
+    EMAIL_FROM: z.string().optional(),
   })
   .refine(
     (data) => {

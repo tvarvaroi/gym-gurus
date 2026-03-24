@@ -3,7 +3,7 @@
  * Handles sending transactional emails via Resend
  */
 
-import { envConfig as env, isDev as isDevelopment } from './config/env';
+import { env, isDevelopment } from './env';
 
 interface EmailOptions {
   to: string;
