@@ -29,7 +29,6 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import logoImage from '@assets/Sophisticated Logo with Japanese Influences (3)_1757605872884.png';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, memo } from 'react';
 import { useLocation } from 'wouter';
 import { useUser } from '@/contexts/UserContext';
@@ -208,58 +207,6 @@ const AppSidebar = memo(() => {
   const menuItems = isTrainer ? trainerMenuItems : isSolo ? soloMenuItems : clientMenuItems;
   const isCollapsed = state === 'collapsed';
 
-  // Premium animation variants
-  const logoVariants = {
-    initial: { scale: 1, rotate: 0 },
-    hover: {
-      scale: 1.05,
-      rotate: 1,
-      transition: {
-        type: 'spring',
-        damping: 15,
-        stiffness: 300,
-      },
-    },
-  };
-
-  const menuItemVariants = {
-    initial: {
-      x: 0,
-      scale: 1,
-    },
-    hover: {
-      x: 6,
-      scale: 1.02,
-      transition: {
-        type: 'spring',
-        damping: 20,
-        stiffness: 400,
-      },
-    },
-    active: {
-      x: 8,
-      scale: 1.02,
-      transition: {
-        type: 'spring',
-        damping: 20,
-        stiffness: 400,
-      },
-    },
-  };
-
-  const iconVariants = {
-    initial: { rotate: 0, scale: 1 },
-    hover: {
-      rotate: 5,
-      scale: 1.1,
-      transition: {
-        type: 'spring',
-        damping: 15,
-        stiffness: 300,
-      },
-    },
-  };
-
   const isActive = (url: string) => {
     if (url === '/dashboard' || url === '/solo') {
       // Dashboard routes use exact match to avoid false positives
@@ -289,11 +236,8 @@ const AppSidebar = memo(() => {
                   visibility: 'visible !important',
                 }}
               >
-                <motion.div
-                  className="rounded-xl cursor-pointer group"
-                  variants={logoVariants}
-                  initial="initial"
-                  whileHover="hover"
+                <div
+                  className="rounded-xl cursor-pointer group hover:scale-105 hover:rotate-1 transition-transform duration-300"
                   style={{
                     width: '82px',
                     height: '82px',
@@ -314,11 +258,8 @@ const AppSidebar = memo(() => {
                     }}
                   >
                     {/* Animated border on hover - theme colored */}
-                    <motion.div
-                      className="absolute inset-0 rounded-lg"
-                      initial={{ opacity: 0 }}
-                      whileHover={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
+                    <div
+                      className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       style={{
                         background:
                           'linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--primary) / 0.2))',
@@ -332,12 +273,10 @@ const AppSidebar = memo(() => {
                           'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 60%)',
                       }}
                     />
-                    <motion.img
+                    <img
                       src={logoImage}
                       alt="Gym Gurus"
-                      className="rounded-lg object-contain relative z-20"
-                      whileHover={{ rotate: 3, scale: 1.05 }}
-                      transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+                      className="rounded-lg object-contain relative z-20 group-hover:rotate-3 group-hover:scale-105 transition-transform duration-300"
                       style={{
                         width: '76px',
                         height: '76px',
@@ -345,19 +284,14 @@ const AppSidebar = memo(() => {
                       }}
                     />
                   </div>
-                </motion.div>
+                </div>
               </div>
             ) : null}
 
             <SidebarGroupLabel
               className={`mb-4 md:mb-8 ${isCollapsed ? 'hidden' : 'px-2 md:px-4'}`}
             >
-              <motion.div
-                className="flex items-center gap-2 md:gap-3 cursor-pointer"
-                variants={logoVariants}
-                initial="initial"
-                whileHover="hover"
-              >
+              <div className="flex items-center gap-2 md:gap-3 cursor-pointer group hover:scale-[1.03] hover:rotate-[0.5deg] transition-transform duration-300">
                 <div
                   className="relative w-12 h-12 md:w-16 md:h-16 rounded-xl p-1 shrink-0"
                   style={{
@@ -376,20 +310,16 @@ const AppSidebar = memo(() => {
                         'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 60%)',
                     }}
                   />
-                  <motion.img
+                  <img
                     src={logoImage}
                     alt="Gym Gurus"
-                    className="w-full h-full rounded-lg object-cover relative z-10"
-                    whileHover={{ rotate: 3, scale: 1.05 }}
-                    transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+                    className="w-full h-full rounded-lg object-cover relative z-10 group-hover:rotate-3 group-hover:scale-105 transition-transform duration-300"
                     style={{ filter: 'brightness(1.15) contrast(1.08) saturate(0.85)' }}
                   />
                 </div>
                 <div className="flex flex-col">
-                  <motion.span
-                    className="text-lg md:text-xl font-extralight tracking-wide"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                  <span
+                    className="text-lg md:text-xl font-extralight tracking-wide group-hover:scale-105 transition-transform duration-300 origin-left"
                     style={{
                       fontFamily: "'Playfair Display', serif",
                       background:
@@ -400,7 +330,7 @@ const AppSidebar = memo(() => {
                     }}
                   >
                     GYM GURUS
-                  </motion.span>
+                  </span>
                   <div
                     className="w-full h-px my-1 md:my-1.5"
                     style={{
@@ -419,12 +349,12 @@ const AppSidebar = memo(() => {
                     ELITE FITNESS
                   </span>
                 </div>
-              </motion.div>
+              </div>
             </SidebarGroupLabel>
 
             <SidebarGroupContent className="px-2">
               <SidebarMenu className="space-y-1">
-                {menuItems.map((item, index) => {
+                {menuItems.map((item) => {
                   const active = isActive(item.url);
                   const isMyWorkouts = isSolo && item.title === 'My Workouts';
 
@@ -432,38 +362,24 @@ const AppSidebar = memo(() => {
                     <SidebarMenuItem key={item.title}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <motion.div
-                            variants={menuItemVariants}
-                            initial="initial"
-                            animate={active ? 'active' : 'initial'}
-                            whileHover="hover"
-                            onHoverStart={() => setHoveredItem(item.title)}
-                            onHoverEnd={() => setHoveredItem(null)}
-                            className={`relative rounded-xl overflow-visible transition-colors duration-200 ${
-                              hoveredItem === item.title
-                                ? 'bg-muted/30'
-                                : active
-                                  ? 'bg-muted/50'
+                          <div
+                            onMouseEnter={() => setHoveredItem(item.title)}
+                            onMouseLeave={() => setHoveredItem(null)}
+                            className={`relative rounded-xl overflow-visible transition-all duration-200 ${
+                              active
+                                ? 'translate-x-2 scale-[1.02] bg-muted/50'
+                                : hoveredItem === item.title
+                                  ? 'translate-x-1.5 scale-[1.01] bg-muted/30'
                                   : 'bg-transparent'
                             }`}
                             style={{ transformOrigin: 'left center' }}
                           >
                             {!isCollapsed && (
-                              <motion.div
-                                className="absolute left-0 top-0 w-1 h-full rounded-r-full z-10"
-                                initial={{ scaleY: 0 }}
-                                animate={{
-                                  scaleY: active ? 1 : hoveredItem === item.title ? 0.6 : 0,
-                                  opacity: active ? 1 : hoveredItem === item.title ? 0.7 : 0,
-                                }}
-                                transition={{
-                                  type: 'spring',
-                                  damping: 20,
-                                  stiffness: 400,
-                                  delay: index * 0.05,
-                                }}
+                              <div
+                                className="absolute left-0 top-0 w-1 h-full rounded-r-full z-10 transition-all duration-200 origin-center"
                                 style={{
-                                  transformOrigin: 'center',
+                                  transform: `scaleY(${active ? 1 : hoveredItem === item.title ? 0.6 : 0})`,
+                                  opacity: active ? 1 : hoveredItem === item.title ? 0.7 : 0,
                                   background:
                                     'linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.7) 100%)',
                                 }}
@@ -482,28 +398,25 @@ const AppSidebar = memo(() => {
                                 className={`flex items-center w-full ${isCollapsed ? 'justify-center !px-0' : 'gap-3 px-4'}`}
                                 onClick={() => isMobile && setOpenMobile(false)}
                               >
-                                <motion.div
-                                  variants={iconVariants}
-                                  initial="initial"
-                                  animate={hoveredItem === item.title ? 'hover' : 'initial'}
-                                  className={isCollapsed ? 'flex-shrink-0' : ''}
+                                <div
+                                  className={`transition-transform duration-200 ${
+                                    hoveredItem === item.title ? 'rotate-[5deg] scale-110' : ''
+                                  } ${isCollapsed ? 'flex-shrink-0' : ''}`}
                                 >
                                   <item.icon
                                     className={`h-5 w-5 ${active ? 'opacity-100' : 'opacity-80'}`}
                                   />
-                                </motion.div>
+                                </div>
                                 {!isCollapsed && (
-                                  <motion.span
-                                    className={`text-base transition-colors duration-200 flex-1 ${
+                                  <span
+                                    className={`text-base transition-all duration-200 flex-1 ${
                                       active
                                         ? 'font-medium text-primary'
                                         : 'font-light text-foreground'
                                     }`}
-                                    animate={{ fontWeight: active ? 500 : 300 }}
-                                    transition={{ duration: 0.2 }}
                                   >
                                     {item.title}
-                                  </motion.span>
+                                  </span>
                                 )}
                               </a>
                             </SidebarMenuButton>
@@ -526,7 +439,7 @@ const AppSidebar = memo(() => {
                                 />
                               </SidebarMenuAction>
                             )}
-                          </motion.div>
+                          </div>
                         </TooltipTrigger>
                         {isCollapsed && (
                           <TooltipContent side="right" className="flex items-center gap-4">
@@ -536,106 +449,89 @@ const AppSidebar = memo(() => {
                       </Tooltip>
 
                       {/* Collapsible workout sub-items (solo My Workouts only) */}
-                      <AnimatePresence initial={false}>
-                        {isMyWorkouts && workoutsOpen && !isCollapsed && (
-                          <motion.div
-                            key="workout-list"
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="relative mt-1 mb-2 ml-2 pl-2 overflow-hidden"
-                          >
-                            {/* Vertical connector line */}
-                            <div className="absolute left-[18px] top-1 bottom-3 w-px bg-gradient-to-b from-purple-500/50 via-purple-500/20 to-transparent" />
+                      {isMyWorkouts && !isCollapsed && (
+                        <div
+                          className={`relative mt-1 mb-2 ml-2 pl-2 overflow-hidden transition-all duration-200 ease-in-out ${
+                            workoutsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                          }`}
+                        >
+                          {/* Vertical connector line */}
+                          <div className="absolute left-[18px] top-1 bottom-3 w-px bg-gradient-to-b from-purple-500/50 via-purple-500/20 to-transparent" />
 
-                            <div className="space-y-0.5">
-                              {myWorkouts.length === 0 ? (
-                                <div className="flex items-center gap-2 pl-7 py-2">
-                                  <span className="text-[11px] text-muted-foreground/50 font-light italic">
-                                    No workouts yet
-                                  </span>
-                                </div>
-                              ) : (
-                                myWorkouts.map((workout, wIdx) => {
-                                  const isActiveWorkout =
-                                    location === `/workout-builder/${workout.id}`;
-                                  return (
-                                    <motion.div
-                                      key={workout.id}
-                                      initial={{ opacity: 0, x: -6 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      transition={{
-                                        delay: wIdx * 0.04,
-                                        type: 'spring',
-                                        stiffness: 400,
-                                        damping: 30,
-                                      }}
-                                      whileHover={{ x: 4 }}
+                          <div className="space-y-0.5">
+                            {myWorkouts.length === 0 ? (
+                              <div className="flex items-center gap-2 pl-7 py-2">
+                                <span className="text-[11px] text-muted-foreground/50 font-light italic">
+                                  No workouts yet
+                                </span>
+                              </div>
+                            ) : (
+                              myWorkouts.map((workout) => {
+                                const isActiveWorkout =
+                                  location === `/workout-builder/${workout.id}`;
+                                return (
+                                  <div
+                                    key={workout.id}
+                                    className="hover:translate-x-1 transition-transform duration-200"
+                                  >
+                                    <a
+                                      href={`/workout-builder/${workout.id}`}
+                                      className={`flex items-center gap-2.5 pl-7 pr-3 py-2 mx-1 rounded-xl transition-all duration-200 group relative ${
+                                        isActiveWorkout
+                                          ? 'bg-purple-500/15 border border-purple-500/20 shadow-sm shadow-purple-500/10'
+                                          : 'hover:bg-muted/20 border border-transparent'
+                                      }`}
+                                      onClick={() => isMobile && setOpenMobile(false)}
                                     >
-                                      <a
-                                        href={`/workout-builder/${workout.id}`}
-                                        className={`flex items-center gap-2.5 pl-7 pr-3 py-2 mx-1 rounded-xl transition-all duration-200 group relative ${
+                                      {/* Connector dot */}
+                                      <div
+                                        className={`absolute left-2 w-2 h-2 rounded-full border-2 flex-shrink-0 transition-all duration-200 ${
                                           isActiveWorkout
-                                            ? 'bg-purple-500/15 border border-purple-500/20 shadow-sm shadow-purple-500/10'
-                                            : 'hover:bg-muted/20 border border-transparent'
+                                            ? 'bg-purple-400 border-purple-400 shadow-sm shadow-purple-400/50'
+                                            : 'bg-background border-muted-foreground/30 group-hover:border-muted-foreground/60'
                                         }`}
-                                        onClick={() => isMobile && setOpenMobile(false)}
+                                      />
+
+                                      {/* Icon */}
+                                      <div
+                                        className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                                          isActiveWorkout
+                                            ? 'bg-purple-500/20 shadow-inner'
+                                            : 'bg-muted/20 group-hover:bg-muted/40'
+                                        }`}
                                       >
-                                        {/* Connector dot */}
-                                        <div
-                                          className={`absolute left-2 w-2 h-2 rounded-full border-2 flex-shrink-0 transition-all duration-200 ${
+                                        <Dumbbell
+                                          className={`w-3.5 h-3.5 transition-colors duration-200 ${
                                             isActiveWorkout
-                                              ? 'bg-purple-400 border-purple-400 shadow-sm shadow-purple-400/50'
-                                              : 'bg-background border-muted-foreground/30 group-hover:border-muted-foreground/60'
+                                              ? 'text-purple-400'
+                                              : 'text-muted-foreground/50 group-hover:text-muted-foreground/80'
                                           }`}
                                         />
+                                      </div>
 
-                                        {/* Icon */}
-                                        <div
-                                          className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
-                                            isActiveWorkout
-                                              ? 'bg-purple-500/20 shadow-inner'
-                                              : 'bg-muted/20 group-hover:bg-muted/40'
-                                          }`}
-                                        >
-                                          <Dumbbell
-                                            className={`w-3.5 h-3.5 transition-colors duration-200 ${
-                                              isActiveWorkout
-                                                ? 'text-purple-400'
-                                                : 'text-muted-foreground/50 group-hover:text-muted-foreground/80'
-                                            }`}
-                                          />
-                                        </div>
+                                      {/* Title */}
+                                      <span
+                                        className={`text-[13px] truncate flex-1 transition-colors duration-200 ${
+                                          isActiveWorkout
+                                            ? 'font-medium text-purple-300'
+                                            : 'font-light text-muted-foreground/70 group-hover:text-foreground'
+                                        }`}
+                                      >
+                                        {workout.title}
+                                      </span>
 
-                                        {/* Title */}
-                                        <span
-                                          className={`text-[13px] truncate flex-1 transition-colors duration-200 ${
-                                            isActiveWorkout
-                                              ? 'font-medium text-purple-300'
-                                              : 'font-light text-muted-foreground/70 group-hover:text-foreground'
-                                          }`}
-                                        >
-                                          {workout.title}
-                                        </span>
-
-                                        {/* Active dot indicator */}
-                                        {isActiveWorkout && (
-                                          <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0"
-                                          />
-                                        )}
-                                      </a>
-                                    </motion.div>
-                                  );
-                                })
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                                      {/* Active dot indicator */}
+                                      {isActiveWorkout && (
+                                        <div className="w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0 animate-in zoom-in duration-200" />
+                                      )}
+                                    </a>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </SidebarMenuItem>
                   );
                 })}
