@@ -253,6 +253,19 @@ repeat:Infinity glow → animate-pulse.
 
 ---
 
+## Cleanup sprint (2026-03-20)
+
+VA-4: SettingsPage local TIER_NAMES replaced with getPlanDisplayName from @/lib/roles.
+BE-4: server/config/env.ts deleted — email.ts migrated to server/env.ts.
+BE-5: 6 debug scripts moved from server/ to scripts/ with production guard.
+BE-6: server/routes/shopping.ts deleted (890 lines) — was never mounted.
+FE-7: framer-motion removed from AuthGuard (5 motion.div → CSS animate-pulse/animate-in)
+and AppSidebar (21 motion elements → CSS hover: transitions, group-hover:, max-h transitions).
+vendor-motion chunk still appears in modulepreload via AppHeader.tsx — next target.
+ESLint: client/public/** and \_brain/** added to ignores. AchievementBadge fixed.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]

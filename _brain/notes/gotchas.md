@@ -248,6 +248,19 @@ lint-fix commit before next major release. Do not block feature work on these.
 
 ---
 
+## framer-motion bundle chain (2026-03-20)
+
+After removing framer-motion from AuthGuard and AppSidebar, vendor-motion chunk
+still appears in modulepreload because AppHeader.tsx imports from framer-motion.
+AppHeader is in the eager-load chain (App.tsx → AppShell → AppHeader).
+Next target to fully eliminate framer-motion from the initial bundle.
+
+Also: shoppingLists, shoppingListItems, groceryStores tables still exist in
+shared/schema.ts as orphaned definitions — shopping.ts was deleted but schema
+wasn't touched (schema changes require migrations). Note for future cleanup.
+
+---
+
 ## Related Notes
 
 - [[decisions]]
