@@ -1,12 +1,7 @@
-import { motion } from "framer-motion";
-import { Lock } from "lucide-react";
-import { Achievement, TIER_COLORS } from "@/lib/achievements";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { motion } from 'framer-motion';
+import { Lock } from 'lucide-react';
+import { Achievement, TIER_COLORS } from '@/lib/achievements';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface AchievementBadgeProps {
@@ -15,7 +10,11 @@ interface AchievementBadgeProps {
   showProgress?: boolean;
 }
 
-export function AchievementBadge({ achievement, size = 'md', showProgress = false }: AchievementBadgeProps) {
+export function AchievementBadge({
+  achievement,
+  size = 'md',
+  showProgress = false,
+}: AchievementBadgeProps) {
   const prefersReducedMotion = useReducedMotion();
   const tierColor = TIER_COLORS[achievement.tier];
 
@@ -37,16 +36,17 @@ export function AchievementBadge({ achievement, size = 'md', showProgress = fals
             className="relative inline-flex items-center justify-center"
             whileHover={{ scale: 1.1, rotate: achievement.unlocked ? 5 : 0 }}
             whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
           >
             {/* Badge container */}
             <div
               className={`
                 relative ${sizeClasses[size]} rounded-full
                 flex items-center justify-center
-                ${achievement.unlocked
-                  ? `bg-gradient-to-br ${tierColor.bg} ${tierColor.border} border-2 shadow-premium-lg ${tierColor.glow}`
-                  : 'bg-muted/30 border-2 border-muted/50 opacity-50'
+                ${
+                  achievement.unlocked
+                    ? `bg-gradient-to-br ${tierColor.bg} ${tierColor.border} border-2 shadow-premium-lg ${tierColor.glow}`
+                    : 'bg-muted/30 border-2 border-muted/50 opacity-50'
                 }
                 backdrop-blur-sm transition-all duration-300
               `}
@@ -56,7 +56,11 @@ export function AchievementBadge({ achievement, size = 'md', showProgress = fals
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent rounded-full pointer-events-none"
                   animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 2, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
+                  transition={{
+                    duration: 2,
+                    repeat: prefersReducedMotion ? 0 : Infinity,
+                    ease: 'easeInOut',
+                  }}
                 />
               )}
 
@@ -91,8 +95,10 @@ export function AchievementBadge({ achievement, size = 'md', showProgress = fals
                     strokeLinecap="round"
                     className="text-cyan-500"
                     initial={{ strokeDashoffset: 2 * Math.PI * 45 }}
-                    animate={{ strokeDashoffset: 2 * Math.PI * 45 * (1 - progressPercentage / 100) }}
-                    transition={{ duration: 1, ease: "easeOut" }}
+                    animate={{
+                      strokeDashoffset: 2 * Math.PI * 45 * (1 - progressPercentage / 100),
+                    }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
                   />
                 </svg>
               )}
@@ -135,14 +141,16 @@ export function AchievementBadge({ achievement, size = 'md', showProgress = fals
               <div className="mt-2">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Progress</span>
-                  <span>{achievement.progress || 0} / {achievement.requirement}</span>
+                  <span>
+                    {achievement.progress || 0} / {achievement.requirement}
+                  </span>
                 </div>
                 <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                   <motion.div
                     className="h-full bg-cyan-500"
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercentage}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
                   />
                 </div>
               </div>
@@ -165,12 +173,14 @@ interface AchievementGridProps {
   showProgress?: boolean;
 }
 
-export function AchievementGrid({ achievements, maxDisplay, showProgress = true }: AchievementGridProps) {
-  const displayAchievements = maxDisplay
-    ? achievements.slice(0, maxDisplay)
-    : achievements;
+export function AchievementGrid({
+  achievements,
+  maxDisplay,
+  showProgress = true,
+}: AchievementGridProps) {
+  const displayAchievements = maxDisplay ? achievements.slice(0, maxDisplay) : achievements;
 
-  const unlockedCount = achievements.filter(a => a.unlocked).length;
+  const unlockedCount = achievements.filter((a) => a.unlocked).length;
   const totalCount = achievements.length;
 
   return (
@@ -187,9 +197,7 @@ export function AchievementGrid({ achievements, maxDisplay, showProgress = true 
             <div
               key={i}
               className={`w-2 h-2 rounded-full ${
-                i < Math.ceil((unlockedCount / totalCount) * 5)
-                  ? 'bg-cyan-500'
-                  : 'bg-muted'
+                i < Math.ceil((unlockedCount / totalCount) * 5) ? 'bg-cyan-500' : 'bg-muted'
               }`}
             />
           ))}

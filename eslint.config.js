@@ -31,6 +31,8 @@ export default [
       '**/*.spec.ts',
       '**/*.spec.tsx',
       'server/test/**',
+      'client/public/**',
+      '_brain/**',
     ],
   },
   {
