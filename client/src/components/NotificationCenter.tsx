@@ -16,7 +16,6 @@ import {
   Clock,
   Trash2,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Notification {
@@ -178,27 +177,18 @@ export default function NotificationCenter() {
       >
         <Bell className="w-5 h-5 text-white/80" />
         {unreadCount > 0 && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1"
-          >
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 animate-in zoom-in duration-200">
             {unreadCount > 99 ? '99+' : unreadCount}
-          </motion.span>
+          </span>
         )}
       </button>
 
       {/* Backdrop + Dropdown panel */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
+      {isOpen && (
+        <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-[384px] max-h-[70vh] overflow-hidden rounded-xl border shadow-2xl z-50"
+          <div
+            className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-[384px] max-h-[70vh] overflow-hidden rounded-xl border shadow-2xl z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150"
             style={{
               background: 'linear-gradient(135deg, rgba(20, 20, 30, 0.98), rgba(15, 15, 25, 0.98))',
               borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -291,10 +281,9 @@ export default function NotificationCenter() {
                 })
               )}
             </div>
-          </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,9 +1,6 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
 import { LogOut, Crown, Zap, CreditCard } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +46,6 @@ function HeaderCenterText() {
 
 // User menu component for authenticated users
 function UserMenu() {
-  const prefersReducedMotion = useReducedMotion();
   const [, navigate] = useLocation();
   const { user } = useUser();
 
@@ -57,12 +53,10 @@ function UserMenu() {
 
   if (!user) return null;
 
-  const initials =
-    `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U';
+  const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U';
 
   // Subscription display helpers
-  const isActive =
-    user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing';
+  const isActive = user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing';
   const trialEndsAt = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
   const now = new Date();
   const isInTrial = trialEndsAt ? trialEndsAt > now && !isActive : false;
@@ -96,37 +90,30 @@ function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <motion.button
-          className="relative group"
-          whileHover={{ scale: 1.08, y: -2 }}
-          whileTap={{ scale: 0.95 }}
+        <button
+          className="relative group hover:scale-[1.08] hover:-translate-y-0.5 active:scale-95 transition-transform duration-200"
           data-testid="button-user-menu"
           aria-label="User menu"
         >
           {/* Premium glow effect on hover */}
-          <motion.div
+          <div
             className="absolute inset-0 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"
             style={{
               background: `radial-gradient(circle, hsl(var(--primary) / 0.3), hsl(var(--accent) / 0.3))`,
             }}
-            initial={false}
           />
 
-          {/* Outer ring with premium gradient */}
-          <motion.div
-            className="absolute inset-0 rounded-full p-[2px]"
+          {/* Outer ring with premium gradient — slow CSS spin */}
+          <div
+            className="absolute inset-0 rounded-full p-[2px] animate-spin"
             style={{
               background: `linear-gradient(135deg, hsl(var(--primary) / 0.4), hsl(var(--accent) / 0.4))`,
-            }}
-            animate={{ rotate: [0, 360] }}
-            transition={{
-              duration: 8,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: 'linear',
+              animationDuration: '8s',
+              animationTimingFunction: 'linear',
             }}
           >
             <div className="w-full h-full rounded-full bg-background" />
-          </motion.div>
+          </div>
 
           {/* Avatar container */}
           <div
@@ -160,8 +147,8 @@ function UserMenu() {
             />
 
             <div className="relative h-full w-full flex items-center justify-center">
-              <motion.span
-                className="text-sm md:text-base font-semibold"
+              <span
+                className="text-sm md:text-base font-semibold animate-in fade-in zoom-in-95 duration-300"
                 style={{
                   background: `linear-gradient(135deg, hsl(var(--primary)) 0%, #e5e4e2 50%, hsl(var(--accent)) 100%)`,
                   WebkitBackgroundClip: 'text',
@@ -171,190 +158,152 @@ function UserMenu() {
                   fontFamily: '"Inter", sans-serif',
                   letterSpacing: '0.05em',
                 }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               >
                 {initials}
-              </motion.span>
+              </span>
             </div>
 
-            <motion.div
-              className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%]"
+            {/* Shine sweep on hover */}
+            <div
+              className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"
               style={{
                 background:
                   'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%)',
               }}
-              transition={{ duration: 0.8, ease: 'easeInOut' }}
-              initial={false}
             />
           </div>
 
           {/* Status indicator */}
-          <motion.div
-            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2"
+          <div
+            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 animate-in zoom-in-50 duration-300"
             style={{
               background: 'linear-gradient(135deg, #10b981, #059669)',
               borderColor: 'rgba(0, 0, 0, 0.8)',
               boxShadow: '0 0 12px rgba(16, 185, 129, 0.6), 0 0 6px rgba(16, 185, 129, 0.8)',
+              animationDelay: '100ms',
+              animationFillMode: 'backwards',
             }}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 30, delay: 0.1 }}
           >
-            <motion.div
-              className="absolute inset-0 rounded-full"
+            <div
+              className="absolute inset-0 rounded-full animate-pulse"
               style={{
                 background: 'radial-gradient(circle, rgba(16, 185, 129, 0.8), transparent)',
               }}
-              animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0.9, 0.6] }}
-              transition={{
-                duration: 2,
-                repeat: prefersReducedMotion ? 0 : Infinity,
-                ease: 'easeInOut',
-              }}
             />
-          </motion.div>
-        </motion.button>
+          </div>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-72 glass-strong border-border/50 shadow-premium-lg overflow-hidden p-0"
-        asChild
+        className="w-72 glass-strong border-border/50 shadow-premium-lg overflow-hidden p-0 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200"
       >
-        <motion.div
-          initial={{ opacity: 0, y: -10, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.95 }}
-          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-        >
-          {/* Header section */}
-          <div className="relative p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b border-border/50">
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-primary/5 to-transparent" />
-            <div className="relative flex items-center gap-4">
-              <div className="h-14 w-14 rounded-full glass border border-border/50 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center shrink-0 shadow-lg">
-                <span className="text-xl font-semibold bg-gradient-to-br from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-                  {initials}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0 space-y-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <motion.p
-                      className="text-base font-semibold text-foreground truncate"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      {user.firstName} {user.lastName}
-                    </motion.p>
-                  </TooltipTrigger>
-                  <TooltipContent>
+        {/* Header section */}
+        <div className="relative p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b border-border/50">
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-primary/5 to-transparent" />
+          <div className="relative flex items-center gap-4">
+            <div className="h-14 w-14 rounded-full glass border border-border/50 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center shrink-0 shadow-lg">
+              <span className="text-xl font-semibold bg-gradient-to-br from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                {initials}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="text-base font-semibold text-foreground truncate">
                     {user.firstName} {user.lastName}
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <motion.p
-                      className="text-xs text-muted-foreground truncate font-light"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.15 }}
-                    >
-                      {user.email}
-                    </motion.p>
-                  </TooltipTrigger>
-                  <TooltipContent>{user.email}</TooltipContent>
-                </Tooltip>
-                <motion.div
-                  className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-medium">Active</span>
-                  <SubscriptionBadge />
-                </motion.div>
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {user.firstName} {user.lastName}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="text-xs text-muted-foreground truncate font-light">{user.email}</p>
+                </TooltipTrigger>
+                <TooltipContent>{user.email}</TooltipContent>
+              </Tooltip>
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-medium">Active</span>
+                <SubscriptionBadge />
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Menu items */}
-          <div className="p-2">
-            {/* Subscription action — hidden for disciples */}
-            {!isClient && (
-              <>
-                <DropdownMenuItem
-                  onClick={() => navigate('/pricing')}
-                  className="group relative cursor-pointer rounded-xl px-3 py-2.5 hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200 overflow-hidden"
-                >
-                  <div className="relative flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors duration-200">
-                      {isActive ? (
-                        <CreditCard className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Zap className="h-4 w-4 text-yellow-400" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">
-                        {isActive ? 'Manage Subscription' : 'Upgrade Plan'}
-                      </p>
-                      <p className="text-xs text-muted-foreground font-light">
-                        {isActive
-                          ? `${getPlanDisplayName(user.subscriptionTier) || 'Active'} plan`
-                          : isInTrial
-                            ? `${trialDaysRemaining} days left in trial`
-                            : 'Subscribe to continue'}
-                      </p>
-                    </div>
+        {/* Menu items */}
+        <div className="p-2">
+          {/* Subscription action — hidden for disciples */}
+          {!isClient && (
+            <>
+              <DropdownMenuItem
+                onClick={() => navigate('/pricing')}
+                className="group relative cursor-pointer rounded-xl px-3 py-2.5 hover:bg-primary/10 focus:bg-primary/10 transition-all duration-200 overflow-hidden"
+              >
+                <div className="relative flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors duration-200">
+                    {isActive ? (
+                      <CreditCard className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Zap className="h-4 w-4 text-yellow-400" />
+                    )}
                   </div>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="my-1" />
-              </>
-            )}
-            <DropdownMenuItem
-              onClick={async () => {
-                try {
-                  queryClient.clear();
-                  await fetch('/api/logout', {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: { 'Cache-Control': 'no-cache' },
-                  });
-                  localStorage.clear();
-                  sessionStorage.clear();
-                  window.location.href = '/';
-                } catch (error) {
-                  console.error('Logout failed:', error);
-                  queryClient.clear();
-                  localStorage.clear();
-                  sessionStorage.clear();
-                  window.location.href = '/';
-                }
-              }}
-              data-testid="button-logout"
-              className="group relative cursor-pointer rounded-xl px-3 py-2.5 hover:bg-destructive/10 focus:bg-destructive/10 transition-all duration-200 overflow-hidden"
-            >
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-destructive/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"
-                initial={false}
-              />
-              <div className="relative flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-destructive/10 group-hover:bg-destructive/20 flex items-center justify-center transition-colors duration-200">
-                  <LogOut className="h-4 w-4 text-destructive" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      {isActive ? 'Manage Subscription' : 'Upgrade Plan'}
+                    </p>
+                    <p className="text-xs text-muted-foreground font-light">
+                      {isActive
+                        ? `${getPlanDisplayName(user.subscriptionTier) || 'Active'} plan`
+                        : isInTrial
+                          ? `${trialDaysRemaining} days left in trial`
+                          : 'Subscribe to continue'}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-destructive">Sign out</p>
-                  <p className="text-xs text-muted-foreground font-light">
-                    End your session securely
-                  </p>
-                </div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1" />
+            </>
+          )}
+          <DropdownMenuItem
+            onClick={async () => {
+              try {
+                queryClient.clear();
+                await fetch('/api/logout', {
+                  method: 'GET',
+                  credentials: 'include',
+                  headers: { 'Cache-Control': 'no-cache' },
+                });
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/';
+              } catch (error) {
+                console.error('Logout failed:', error);
+                queryClient.clear();
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/';
+              }
+            }}
+            data-testid="button-logout"
+            className="group relative cursor-pointer rounded-xl px-3 py-2.5 hover:bg-destructive/10 focus:bg-destructive/10 transition-all duration-200 overflow-hidden"
+          >
+            {/* Logout shine sweep */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-destructive/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+            <div className="relative flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-destructive/10 group-hover:bg-destructive/20 flex items-center justify-center transition-colors duration-200">
+                <LogOut className="h-4 w-4 text-destructive" />
               </div>
-            </DropdownMenuItem>
-          </div>
-        </motion.div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">Sign out</p>
+                <p className="text-xs text-muted-foreground font-light">
+                  End your session securely
+                </p>
+              </div>
+            </div>
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -400,27 +349,19 @@ export default function AppHeader() {
       {/* Grid layout for proper centering */}
       <div className="relative z-10 h-full grid grid-cols-3 items-center px-3 sm:px-4 md:px-6">
         {/* Left section - Sidebar Toggle */}
-        <motion.div
-          className="flex justify-start"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-        >
-          <motion.div whileHover={{ scale: 1.05, y: -1 }} whileTap={{ scale: 0.95 }}>
-            <SidebarTrigger
-              data-testid="button-sidebar-toggle"
-              aria-label="Toggle sidebar navigation"
-              className="hover-elevate transition-all duration-300 rounded-xl border h-11 w-11"
-              style={{
-                background: `linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--accent) / 0.12))`,
-                borderColor: `hsl(var(--primary) / 0.25)`,
-                backdropFilter: 'blur(12px)',
-                boxShadow:
-                  '0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-              }}
-            />
-          </motion.div>
-        </motion.div>
+        <div className="flex justify-start animate-in fade-in slide-in-from-left-3 duration-500">
+          <SidebarTrigger
+            data-testid="button-sidebar-toggle"
+            aria-label="Toggle sidebar navigation"
+            className="hover-elevate transition-all duration-300 rounded-xl border h-11 w-11 hover:scale-105 hover:-translate-y-px active:scale-95"
+            style={{
+              background: `linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--accent) / 0.12))`,
+              borderColor: `hsl(var(--primary) / 0.25)`,
+              backdropFilter: 'blur(12px)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+            }}
+          />
+        </div>
 
         {/* Center section */}
         <div className="flex justify-center">
@@ -428,15 +369,13 @@ export default function AppHeader() {
         </div>
 
         {/* Right section */}
-        <motion.div
-          className="flex items-center gap-2 sm:gap-3 justify-end"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+        <div
+          className="flex items-center gap-2 sm:gap-3 justify-end animate-in fade-in slide-in-from-right-3 duration-500"
+          style={{ animationDelay: '100ms', animationFillMode: 'backwards' }}
         >
           <NotificationCenter />
           <UserMenu />
-        </motion.div>
+        </div>
       </div>
     </header>
   );

@@ -2,9 +2,7 @@ import { ReactNode } from 'react';
 import { Redirect } from 'wouter';
 import { useUser, type Permission } from '@/contexts/UserContext';
 import { getRoleDisplayName, type InternalRole } from '@/lib/roles';
-import { motion } from 'framer-motion';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -40,51 +38,21 @@ export default function ProtectedRoute({
   fallbackPath = '/',
 }: ProtectedRouteProps) {
   const { user, isLoading, isTrainer, isClient, hasPermission } = useUser();
-  const prefersReducedMotion = useReducedMotion();
 
   // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <motion.div
-        className="flex items-center justify-center min-h-[60vh]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
+      <div className="flex items-center justify-center min-h-[60vh] animate-in fade-in duration-300">
         <div className="space-y-6 text-center">
-          <motion.div
-            className="relative inline-block"
-            animate={{ rotate: 360 }}
-            transition={{
-              duration: 2,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: 'linear',
-            }}
-          >
-            <Loader2 className="h-12 w-12 text-primary mx-auto" />
-            <motion.div
-              className="absolute inset-0 rounded-full bg-primary/20 blur-xl"
-              animate={{ opacity: [0.3, 0.6, 0.3] }}
-              transition={{
-                duration: 2,
-                repeat: prefersReducedMotion ? 0 : Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-          </motion.div>
-          <motion.p
-            className="text-base font-light text-muted-foreground/80"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{
-              duration: 1.5,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: 'easeInOut',
-            }}
-          >
+          <div className="relative inline-block">
+            <Loader2 className="h-12 w-12 text-primary mx-auto animate-spin" />
+            <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" />
+          </div>
+          <p className="text-base font-light text-muted-foreground/80 animate-pulse">
             Checking permissions...
-          </motion.p>
+          </p>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
@@ -122,54 +90,25 @@ function UnauthorizedAccess({
   requiredRole?: 'trainer' | 'client';
   requiredPermission?: Permission;
 }) {
-  const prefersReducedMotion = useReducedMotion();
   return (
-    <motion.div
-      className="flex items-center justify-center min-h-[60vh]"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4 }}
-    >
+    <div className="flex items-center justify-center min-h-[60vh] animate-in fade-in zoom-in-95 duration-300">
       <div className="max-w-md w-full space-y-8 text-center p-8">
         {/* Error Icon */}
         <div className="relative inline-block">
-          <motion.div
-            className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-destructive/20 via-destructive/10 to-transparent flex items-center justify-center"
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{
-              duration: 2,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: 'easeInOut',
-            }}
-          >
+          <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-destructive/20 via-destructive/10 to-transparent flex items-center justify-center animate-pulse">
             <AlertCircle className="h-12 w-12 text-destructive/60" />
-          </motion.div>
-          <motion.div
-            className="absolute inset-0 rounded-full bg-gradient-to-br from-destructive/10 to-transparent blur-xl"
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{
-              duration: 2,
-              repeat: prefersReducedMotion ? 0 : Infinity,
-              ease: 'easeInOut',
-            }}
-          />
+          </div>
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-destructive/10 to-transparent blur-xl animate-pulse" />
         </div>
 
         {/* Error Message */}
         <div className="space-y-3">
-          <motion.h2
-            className="text-2xl font-light text-foreground"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <h2 className="text-2xl font-light text-foreground animate-in fade-in slide-in-from-bottom-2 duration-300">
             Access Denied
-          </motion.h2>
-          <motion.p
-            className="text-base font-light text-muted-foreground"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+          </h2>
+          <p
+            className="text-base font-light text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-300"
+            style={{ animationDelay: '100ms', animationFillMode: 'backwards' }}
           >
             {requiredRole && (
               <>
@@ -189,25 +128,22 @@ function UnauthorizedAccess({
                 </span>
               </>
             )}
-          </motion.p>
-          <motion.p
-            className="text-sm text-muted-foreground/70"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+          </p>
+          <p
+            className="text-sm text-muted-foreground/70 animate-in fade-in duration-300"
+            style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}
           >
             Current role:{' '}
             <span className="font-medium text-foreground">
               {getRoleDisplayName(userRole as InternalRole)}
             </span>
-          </motion.p>
+          </p>
         </div>
 
         {/* Action Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+        <div
+          className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+          style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}
         >
           <button
             onClick={() => window.history.back()}
@@ -215,8 +151,8 @@ function UnauthorizedAccess({
           >
             Go Back
           </button>
-        </motion.div>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
