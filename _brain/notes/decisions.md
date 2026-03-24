@@ -266,6 +266,25 @@ ESLint: client/public/** and \_brain/** added to ignores. AchievementBadge fixed
 
 ---
 
+## §FE-7 complete — framer-motion out of initial bundle (2026-03-20)
+
+Removed framer-motion from AppHeader (26), NotificationCenter (3), and
+ProtectedRoute (11) — 40 total usages. vendor-motion chunk (115.92 kB /
+38.36 kB gzip) no longer in modulepreload. First page load no longer
+downloads framer-motion at all.
+
+Full eager-load chain now framer-motion free:
+App.tsx → AppShell.tsx → AuthGuard + AppSidebar + AppHeader +
+NotificationCenter + ProtectedRoute
+
+framer-motion still loads lazily for pages that use it directly:
+Achievements, Dashboard, WorkoutExecution, etc.
+
+Key pattern: rotating gradient ring → CSS animate-spin with animationDuration
+override. DropdownMenuContent asChild + motion.div → Radix data-[state] CSS.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]

@@ -261,6 +261,15 @@ wasn't touched (schema changes require migrations). Note for future cleanup.
 
 ---
 
+## ProtectedRoute is in the eager-load chain
+
+ProtectedRoute.tsx is imported by RouterConfig.tsx which is imported by
+AppShell.tsx — making it part of the initial bundle. Any framer-motion or
+heavy dependency added to ProtectedRoute will eagerly load for every user
+on every page. Keep ProtectedRoute dependency-light.
+
+---
+
 ## Related Notes
 
 - [[decisions]]
