@@ -1,4 +1,9 @@
-import { getDb } from './db';
+if (process.env.NODE_ENV === 'production') {
+  console.error('This script must not be run in production');
+  process.exit(1);
+}
+
+import { getDb } from '../server/db';
 import { clients } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
@@ -27,7 +32,7 @@ async function updateClients() {
         activityLevel: 'moderately_active',
         neckCircumference: '32',
         waistCircumference: '78',
-        hipCircumference: '98'
+        hipCircumference: '98',
       },
       'Mike Chen': {
         age: 28,
@@ -37,7 +42,7 @@ async function updateClients() {
         activityLevel: 'active',
         neckCircumference: '38',
         waistCircumference: '82',
-        hipCircumference: '95'
+        hipCircumference: '95',
       },
       'Emily Rodriguez': {
         age: 29,
@@ -47,7 +52,7 @@ async function updateClients() {
         activityLevel: 'very_active',
         neckCircumference: '30',
         waistCircumference: '68',
-        hipCircumference: '88'
+        hipCircumference: '88',
       },
       'James Williams': {
         age: 45,
@@ -57,7 +62,7 @@ async function updateClients() {
         activityLevel: 'lightly_active',
         neckCircumference: '39',
         waistCircumference: '92',
-        hipCircumference: '100'
+        hipCircumference: '100',
       },
       'Lisa Thompson': {
         age: 34,
@@ -67,7 +72,7 @@ async function updateClients() {
         activityLevel: 'lightly_active',
         neckCircumference: '31',
         waistCircumference: '75',
-        hipCircumference: '95'
+        hipCircumference: '95',
       },
       'David Martinez': {
         age: 36,
@@ -77,7 +82,7 @@ async function updateClients() {
         activityLevel: 'active',
         neckCircumference: '40',
         waistCircumference: '87',
-        hipCircumference: '98'
+        hipCircumference: '98',
       },
       'Jessica Lee': {
         age: 38,
@@ -87,7 +92,7 @@ async function updateClients() {
         activityLevel: 'moderately_active',
         neckCircumference: '33',
         waistCircumference: '92',
-        hipCircumference: '108'
+        hipCircumference: '108',
       },
       'Robert Taylor': {
         age: 52,
@@ -97,7 +102,7 @@ async function updateClients() {
         activityLevel: 'moderately_active',
         neckCircumference: '37',
         waistCircumference: '88',
-        hipCircumference: '96'
+        hipCircumference: '96',
       },
       'Amanda White': {
         age: 27,
@@ -107,7 +112,7 @@ async function updateClients() {
         activityLevel: 'active',
         neckCircumference: '31',
         waistCircumference: '70',
-        hipCircumference: '92'
+        hipCircumference: '92',
       },
       'Chris Anderson': {
         age: 24,
@@ -117,7 +122,7 @@ async function updateClients() {
         activityLevel: 'very_active',
         neckCircumference: '38',
         waistCircumference: '78',
-        hipCircumference: '94'
+        hipCircumference: '94',
       },
       'Jennifer Brown': {
         age: 41,
@@ -127,7 +132,7 @@ async function updateClients() {
         activityLevel: 'moderately_active',
         neckCircumference: '30',
         waistCircumference: '72',
-        hipCircumference: '90'
+        hipCircumference: '90',
       },
       'Daniel Garcia': {
         age: 31,
@@ -137,8 +142,8 @@ async function updateClients() {
         activityLevel: 'very_active',
         neckCircumference: '42',
         waistCircumference: '90',
-        hipCircumference: '102'
-      }
+        hipCircumference: '102',
+      },
     };
 
     // Update each client
@@ -147,9 +152,7 @@ async function updateClients() {
       const data = biometricData[client.name];
 
       if (data) {
-        await db.update(clients)
-          .set(data)
-          .where(eq(clients.id, client.id));
+        await db.update(clients).set(data).where(eq(clients.id, client.id));
 
         console.log(`✅ Updated ${client.name} with biometric data`);
         updatedCount++;
@@ -160,15 +163,19 @@ async function updateClients() {
           gender: Math.random() > 0.5 ? 'male' : 'female',
           height: 160 + Math.floor(Math.random() * 25),
           weight: 60 + Math.floor(Math.random() * 30),
-          activityLevel: ['sedentary', 'lightly_active', 'moderately_active', 'active', 'very_active'][Math.floor(Math.random() * 5)],
+          activityLevel: [
+            'sedentary',
+            'lightly_active',
+            'moderately_active',
+            'active',
+            'very_active',
+          ][Math.floor(Math.random() * 5)],
           neckCircumference: (30 + Math.floor(Math.random() * 12)).toString(),
           waistCircumference: (70 + Math.floor(Math.random() * 25)).toString(),
-          hipCircumference: (85 + Math.floor(Math.random() * 25)).toString()
+          hipCircumference: (85 + Math.floor(Math.random() * 25)).toString(),
         };
 
-        await db.update(clients)
-          .set(genericData)
-          .where(eq(clients.id, client.id));
+        await db.update(clients).set(genericData).where(eq(clients.id, client.id));
 
         console.log(`✅ Updated ${client.name} with generic biometric data`);
         updatedCount++;
@@ -176,7 +183,6 @@ async function updateClients() {
     }
 
     console.log(`\n✨ Successfully updated ${updatedCount} clients with biometric data!`);
-
   } catch (error) {
     console.error('❌ Error updating clients:', error);
     throw error;
