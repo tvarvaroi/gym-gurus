@@ -38,7 +38,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useRef } from 'react';
-import { getRoleDisplayName, type InternalRole } from '@/lib/roles';
+import { getRoleDisplayName, getPlanDisplayName, type InternalRole } from '@/lib/roles';
 import { apiRequest } from '@/lib/queryClient';
 // Inline subscription helpers (mirrors server/services/subscription.ts logic)
 function isInTrial(user: {
@@ -677,18 +677,6 @@ function SubscriptionTab() {
   const daysLeft = user ? trialDaysRemaining(user) : 0;
   const isActive = user?.subscriptionStatus === 'active';
 
-  // Tier display names
-  const TIER_NAMES: Record<string, string> = {
-    free: 'Free Trial',
-    solo: 'Ronin',
-    solo_free: 'Ronin Free',
-    solo_ai: 'Ronin AI',
-    trainer: 'Guru',
-    trainer_basic: 'Guru Basic',
-    trainer_pro: 'Guru Pro',
-    pro: 'Pro Guru',
-  };
-
   return (
     <div className="space-y-4">
       {/* Current plan */}
@@ -707,9 +695,7 @@ function SubscriptionTab() {
           {isActive && user?.subscriptionTier ? (
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-lg font-semibold">
-                  {TIER_NAMES[user.subscriptionTier] ?? user.subscriptionTier}
-                </p>
+                <p className="text-lg font-semibold">{getPlanDisplayName(user.subscriptionTier)}</p>
                 <p className="text-sm text-muted-foreground">Active subscription</p>
                 {user.subscriptionCurrentPeriodEnd && (
                   <p className="text-xs text-muted-foreground mt-1">
