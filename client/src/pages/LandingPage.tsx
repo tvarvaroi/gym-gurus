@@ -8,6 +8,9 @@ const FeaturesPage = lazy(() => import('@/components/landing/pages/FeaturesPage'
 const AboutPage = lazy(() => import('@/components/landing/pages/AboutPage'));
 const ContactPage = lazy(() => import('@/components/landing/pages/ContactPage'));
 const PricingPage = lazy(() => import('@/components/landing/pages/PricingPage'));
+const ChooseYourPathSection = lazy(
+  () => import('@/components/landing/pages/ChooseYourPathSection')
+);
 
 const PageLoader = () => (
   <div className="min-h-screen w-full flex items-center justify-center">
@@ -91,6 +94,12 @@ const LandingPage = memo(() => {
         <section id="pricing" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
             <PricingPage />
+          </Suspense>
+        </section>
+
+        <section id="choose-path" style={{ scrollMarginTop: '5rem' }}>
+          <Suspense fallback={<PageLoader />}>
+            <ChooseYourPathSection />
           </Suspense>
         </section>
       </div>

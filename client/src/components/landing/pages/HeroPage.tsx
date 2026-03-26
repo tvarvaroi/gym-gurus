@@ -1,9 +1,7 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { fadeInUpVariants, staggerContainer } from '@/lib/landingAnimations';
 import { Users, Clock, TrendingUp, CheckCircle, Crown, ArrowRight, Trophy } from 'lucide-react';
-import CTAButton from '../shared/CTAButton';
 
 // Luxury shimmer particle component
 const ShimmerParticle = ({
@@ -136,24 +134,12 @@ const HeroPage = memo(() => {
             >
               <Crown className="w-4 h-4" style={{ color: 'hsl(var(--color-guru))' }} />
               <span className="text-sm font-light tracking-wider" style={{ color: '#d4d4d4' }}>
-                FOR PERSONAL TRAINERS WHO WANT TO SCALE
+                AI-POWERED FITNESS PLATFORM
               </span>
             </motion.div>
 
             {/* Oversized Magazine-Style Headline */}
             <div className="space-y-6">
-              {/* Problem statement */}
-              <p
-                className="text-base md:text-lg font-light"
-                style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  color: '#999',
-                  letterSpacing: '0.02em',
-                }}
-              >
-                Tired of juggling spreadsheets, losing client progress, and wasting hours on admin?
-              </p>
-
               <h1
                 className="text-5xl md:text-6xl lg:text-7xl font-light pb-4"
                 style={{
@@ -167,16 +153,16 @@ const HeroPage = memo(() => {
                   lineHeight: '1.25',
                 }}
               >
-                Run Your
+                Train
                 <br />
-                <span className="font-normal">Fitness</span>
+                <span className="font-normal">Smarter.</span>
                 <br />
-                Business
+                Grow
                 <br />
-                Like a Pro
+                Faster.
               </h1>
 
-              {/* Subheadline with generous spacing */}
+              {/* Subheadline */}
               <p
                 className="text-xl md:text-2xl max-w-xl font-light pl-2 pb-3"
                 style={{
@@ -188,8 +174,7 @@ const HeroPage = memo(() => {
                   paddingLeft: '2rem',
                 }}
               >
-                Manage clients, build workouts, track progress, and grow your revenue — all from one
-                platform built for personal trainers.
+                The platform where personal trainers build empires and solo athletes break limits.
               </p>
             </div>
           </motion.div>
@@ -204,11 +189,9 @@ const HeroPage = memo(() => {
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row items-start gap-4">
               <motion.div whileHover={{ scale: 1.05, x: 5 }} whileTap={{ scale: 0.98 }}>
-                <button
-                  onClick={() => {
-                    window.location.href = '/auth/login';
-                  }}
-                  className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all"
+                <a
+                  href="#choose-path"
+                  className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all cursor-pointer"
                   style={{
                     fontFamily: "'Playfair Display', serif",
                     background:
@@ -217,31 +200,41 @@ const HeroPage = memo(() => {
                       '0 20px 40px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                     color: '#ffffff',
                     letterSpacing: '0.05em',
+                    textDecoration: 'none',
                   }}
                 >
-                  Start Free Trial
+                  Start Free — No Card Needed
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                </button>
+                </a>
               </motion.div>
 
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                <button
-                  onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
-                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-light transition-all"
+                <a
+                  href="#how-it-works"
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-light transition-all cursor-pointer"
                   style={{
                     fontFamily: "'Playfair Display', serif",
                     background: 'transparent',
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     color: '#ffffff',
                     letterSpacing: '0.05em',
+                    textDecoration: 'none',
                   }}
                 >
-                  See How It Works
-                </button>
+                  Watch It Work
+                </a>
               </motion.div>
             </div>
 
             {/* Trust Indicators - Horizontal */}
+            {/* Trust signals */}
+            <p
+              className="text-sm font-light tracking-wide"
+              style={{ color: '#777', fontFamily: 'Inter, sans-serif' }}
+            >
+              2,000+ trainers · 50,000+ workouts built · 500,000+ sets logged
+            </p>
+
             <div className="flex flex-wrap items-center gap-6 text-sm" style={{ color: '#999' }}>
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" style={{ color: 'hsl(var(--color-guru))' }} />
@@ -253,7 +246,7 @@ const HeroPage = memo(() => {
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" style={{ color: 'hsl(var(--color-guru))' }} />
-                <span className="font-light">Cancel anytime</span>
+                <span className="font-light">Cancel in one click</span>
               </div>
             </div>
           </motion.div>
@@ -269,9 +262,9 @@ const HeroPage = memo(() => {
             className="space-y-6"
           >
             {[
-              { value: '10K+', label: 'Active Trainers', variant: 'blue' as const },
-              { value: '50K+', label: 'Clients Served', variant: 'emerald' as const },
-              { value: '99%', label: 'Satisfaction', variant: 'blue' as const },
+              { value: '2,000+', label: 'Trainers', variant: 'blue' as const },
+              { value: '50K+', label: 'Workouts Built', variant: 'emerald' as const },
+              { value: '500K+', label: 'Sets Logged', variant: 'blue' as const },
             ].map((stat, index) => (
               <motion.div key={index} whileHover={{ x: 10, scale: 1.05 }} className="relative">
                 {/* Floating card effect */}

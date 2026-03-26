@@ -6,6 +6,7 @@ import {
   LineChart,
   Calendar,
   CreditCard,
+  Calculator,
   Crown,
   ArrowRight,
   CheckCircle,
@@ -38,33 +39,44 @@ const FeaturesPage = memo(() => {
   const features = [
     {
       icon: <Users className="w-6 h-6" />,
-      title: 'Client Management',
-      description: 'Track every detail',
+      title: 'Know Where Every Client Stands',
+      description:
+        "No spreadsheets. Every client's progress, compliance, and next session — one glance.",
       variant: 'blue' as const,
     },
     {
       icon: <Dumbbell className="w-6 h-6" />,
-      title: 'Workout Builder',
-      description: 'Create in minutes',
+      title: 'Build a Program in 3 Minutes',
+      description: 'Manual builder or hit Generate. AI writes the whole thing in 30 seconds.',
       variant: 'emerald' as const,
     },
     {
       icon: <LineChart className="w-6 h-6" />,
-      title: 'Progress Analytics',
-      description: 'Data-driven results',
+      title: 'Receipts Your Clients Screenshot',
+      description: "PRs, volume trends, body metrics. Data so clear they'll show it off.",
       variant: 'blue' as const,
     },
     {
       icon: <Calendar className="w-6 h-6" />,
-      title: 'Smart Scheduling',
-      description: 'Automated booking',
+      title: 'Your Calendar Fills Itself',
+      description:
+        'Recurring sessions, automated reminders, rescheduling — without the back-and-forth.',
       variant: 'emerald' as const,
     },
     {
       icon: <CreditCard className="w-6 h-6" />,
-      title: 'Payment Processing',
-      description: 'Get paid faster',
+      title: 'Invoice Once. Get Paid Every Time.',
+      description:
+        'Stripe-powered. Custom plans. Auto-billing. You coach, the platform handles the rest.',
+      variant: 'blue' as const,
+    },
+    {
+      icon: <Calculator className="w-6 h-6" />,
+      title: 'Tools That Bring Them to You',
+      description:
+        '13 free calculators — BMI, TDEE, 1RM, macros. No login. Builds trust, drives signups.',
       variant: 'emerald' as const,
+      link: '/calculators',
     },
   ];
 
@@ -250,16 +262,14 @@ const FeaturesPage = memo(() => {
                 lineHeight: '2',
               }}
             >
-              All-in-one platform built for trainers. No juggling multiple apps, just results.
+              One platform for trainers and athletes. No juggling apps, just results.
             </p>
 
             {/* CTA */}
             <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.98 }}>
-              <button
-                onClick={() => {
-                  window.location.href = '/auth/login';
-                }}
-                className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all"
+              <a
+                href="#choose-path"
+                className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-light transition-all cursor-pointer"
                 style={{
                   fontFamily: "'Playfair Display', serif",
                   background:
@@ -268,11 +278,12 @@ const FeaturesPage = memo(() => {
                     '0 20px 40px hsl(var(--color-guru) / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                   color: '#ffffff',
                   letterSpacing: '0.05em',
+                  textDecoration: 'none',
                 }}
               >
-                Start Free Trial
+                Start Free — No Card Needed
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </button>
+              </a>
             </motion.div>
 
             {/* Trust Indicators */}

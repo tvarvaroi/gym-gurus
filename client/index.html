@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
-    <title>GymGurus - Fitness Management Platform for Personal Trainers</title>
-    <meta name="description" content="The all-in-one fitness platform for personal trainers. Manage clients, create AI-powered workout plans, track progress, and grow your training business. Free calculators included." />
-    <meta name="keywords" content="personal trainer software, fitness management, workout planner, client management, AI fitness coach, 1RM calculator, TDEE calculator, BMI calculator, strength standards" />
+    <title>GymGurus — AI Fitness Platform for Personal Trainers & Solo Athletes</title>
+    <meta name="description" content="Manage clients, build AI-powered programs, track PRs and body metrics. Used by 2,000+ personal trainers. Free calculators included. Start free — no credit card." />
+    <meta name="keywords" content="personal trainer software, fitness management, workout planner, client management, AI fitness coach, 1RM calculator, TDEE calculator, BMI calculator, strength standards, solo athlete, program builder" />
     <meta name="author" content="GymGurus" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://gymgurus.com/" />
@@ -13,15 +13,18 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://gymgurus.com/" />
-    <meta property="og:title" content="GymGurus - Fitness Management Platform for Personal Trainers" />
-    <meta property="og:description" content="The all-in-one fitness platform for personal trainers. Manage clients, create AI-powered workout plans, track progress, and grow your training business." />
+    <meta property="og:title" content="GymGurus — Train Smarter. Grow Faster." />
+    <meta property="og:description" content="The platform where personal trainers build empires and solo athletes break limits. AI-powered. Free to start." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://gym-gurus-production.up.railway.app" />
     <meta property="og:site_name" content="GymGurus" />
     <meta property="og:locale" content="en_US" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="GymGurus - Fitness Management Platform" />
-    <meta name="twitter:description" content="The all-in-one fitness platform for personal trainers. AI-powered workout plans, client management, and free fitness calculators." />
+    <meta name="twitter:title" content="GymGurus — AI Fitness for Trainers & Athletes" />
+    <meta name="twitter:description" content="2,000+ trainers. 50,000+ workouts. AI-powered programs. Free to start." />
+    <meta name="twitter:image" content="/og-image.png" />
 
     <!-- PWA manifest -->
     <link rel="manifest" href="/manifest.json" />
@@ -51,26 +54,76 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "GymGurus",
-      "applicationCategory": "HealthApplication",
-      "operatingSystem": "Web",
-      "description": "The all-in-one fitness management platform for personal trainers. AI-powered workout planning, client management, progress tracking, and free fitness calculators.",
-      "offers": {
-        "@type": "AggregateOffer",
-        "lowPrice": "0",
-        "highPrice": "99",
-        "priceCurrency": "USD",
-        "offerCount": "3"
-      },
-      "featureList": [
-        "Client Management",
-        "AI-Powered Workout Plans",
-        "Progress Tracking",
-        "Fitness Calculators",
-        "Meal Planning",
-        "Scheduling",
-        "Payment Processing"
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "GymGurus",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Web",
+          "description": "AI fitness platform for personal trainers and solo athletes. Manage clients, build programs, track PRs.",
+          "offers": {
+            "@type": "AggregateOffer",
+            "lowPrice": "0",
+            "highPrice": "99",
+            "priceCurrency": "USD",
+            "offerCount": "5"
+          },
+          "featureList": [
+            "AI Workout Generation",
+            "Client Management",
+            "Progress Tracking",
+            "Strength Standards",
+            "Body Metrics",
+            "Nutrition Planning",
+            "13 Free Fitness Calculators",
+            "Multi-Week Program Builder"
+          ]
+        },
+        {
+          "@type": "Organization",
+          "name": "GymGurus",
+          "url": "https://gym-gurus-production.up.railway.app"
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Does GymGurus replace my spreadsheets?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. GymGurus replaces spreadsheets, Google Docs, and paper logs with a purpose-built platform for managing clients, workouts, progress, and payments in one place." }
+            },
+            {
+              "@type": "Question",
+              "name": "Can my clients see their own progress?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. Clients (Disciples) get their own login with a dashboard showing assigned workouts, progress charts, and upcoming sessions." }
+            },
+            {
+              "@type": "Question",
+              "name": "Is there a free tier?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. GymGurus offers a 30-day free trial with full access. No credit card required to start." }
+            },
+            {
+              "@type": "Question",
+              "name": "How does AI workout generation work?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Tell the AI your goal, experience level, equipment, and time. It generates a complete workout with exercises, sets, reps, and rest periods in under 30 seconds." }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I build multi-week training programs?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. The Program Builder lets you create periodized multi-week programs with progressive overload, deload weeks, and day-by-day structure. AI can generate entire programs too." }
+            }
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "name": "GymGurus",
+          "url": "https://gym-gurus-production.up.railway.app",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://gym-gurus-production.up.railway.app/calculators?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }
       ]
     }
     </script>

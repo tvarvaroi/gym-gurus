@@ -127,7 +127,7 @@ const LandingHeader = memo(() => {
 
             {/* Login CTA */}
             <motion.a
-              href="/auth/login"
+              href="#choose-path"
               whileHover={{ y: -2 }}
               className="text-base font-light transition-colors tracking-wider px-4 py-1.5 rounded-lg cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
               style={{
@@ -213,7 +213,7 @@ const LandingHeader = memo(() => {
 
                 {/* Login CTA */}
                 <motion.a
-                  href="/auth/login"
+                  href="#choose-path"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: navItems.length * 0.1 }}
