@@ -220,13 +220,89 @@ const RoleCardContent = memo(
     isSelected,
     reducedMotion,
     circleSize = 64,
+    isMobile = false,
   }: {
     role: RoleConfig;
     isSelected: boolean;
     reducedMotion: boolean;
     circleSize?: number;
+    isMobile?: boolean;
   }) => {
     const Icon = role.icon;
+
+    if (isMobile) {
+      // Mobile: centered vertical layout — circle → name → tagline → divider → features
+      return (
+        <div className="flex flex-col items-center pt-4">
+          {/* Centered circle */}
+          <motion.div
+            className="rounded-full flex items-center justify-center mb-4"
+            style={{
+              width: circleSize,
+              height: circleSize,
+              background: role.gradient,
+              boxShadow: isSelected ? `0 6px 20px -4px ${role.glow}` : 'none',
+            }}
+            whileHover={reducedMotion ? {} : { rotate: 360, scale: 1.15 }}
+            transition={{ duration: 0.7 }}
+          >
+            <Icon size={role.iconSize} variant="white" className={role.iconMt} />
+          </motion.div>
+
+          {/* Title */}
+          <h2
+            className="text-2xl font-light mb-1 text-center"
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              background: `linear-gradient(135deg, #ffffff, ${role.color})`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            {role.name}
+          </h2>
+
+          {/* Tagline */}
+          <p
+            className="text-sm mb-4 text-center"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              color: isSelected ? role.color : 'hsl(0 0% 50%)',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            {getRoleTagline(role.id)}
+          </p>
+
+          {/* Divider */}
+          <div className="h-px w-full mb-4" style={{ background: `${role.color}25` }} />
+
+          {/* Features */}
+          <ul className="space-y-2.5 w-full">
+            {role.features.map((feat) => (
+              <li key={feat} className="flex items-center gap-2">
+                <div
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{
+                    background: role.color,
+                    boxShadow: `0 0 4px ${role.glow}`,
+                  }}
+                />
+                <span
+                  className="text-sm font-light"
+                  style={{ color: '#d4d4d4', fontFamily: 'Inter, sans-serif' }}
+                >
+                  {feat}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    // Desktop: horizontal top row (circle left, checkmark right) then vertical
     return (
       <>
         {/* Top row: circle + checkmark */}
@@ -797,8 +873,12 @@ function MobileLayout({
         </p>
       </div>
 
-      {/* Swipeable card area */}
-      <div className="flex-1 relative overflow-hidden" ref={containerRef}>
+      {/* Swipeable card area — fixed height to prevent empty gap */}
+      <div
+        className="relative overflow-hidden flex-shrink-0"
+        style={{ height: 420 }}
+        ref={containerRef}
+      >
         <div className="relative h-full flex items-center justify-center">
           {ROLES.map((role, index) => {
             const lastIdx = ROLES.length - 1;
@@ -865,7 +945,7 @@ function MobileLayout({
                       : '1px solid rgba(255,255,255,0.06)',
                     boxShadow: isActive ? `0 20px 40px -10px ${role.glow}` : 'none',
                     backdropFilter: 'blur(20px)',
-                    minHeight: '360px',
+                    minHeight: '390px',
                   }}
                 >
                   <div className="relative z-10">
@@ -874,6 +954,7 @@ function MobileLayout({
                       isSelected={isActive}
                       reducedMotion={reducedMotion}
                       circleSize={100}
+                      isMobile
                     />
                   </div>
                 </div>
