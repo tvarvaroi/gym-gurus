@@ -2,15 +2,14 @@ import { memo, Suspense, lazy } from 'react';
 import LandingHeader from '@/components/landing/LandingHeader';
 
 // Lazy load sections for better performance
-const HeroPage = lazy(() => import('@/components/landing/pages/HeroPage'));
+const HeroChoosePathSection = lazy(
+  () => import('@/components/landing/pages/HeroChoosePathSection')
+);
 const HowItWorksPage = lazy(() => import('@/components/landing/pages/HowItWorksPage'));
 const FeaturesPage = lazy(() => import('@/components/landing/pages/FeaturesPage'));
 const AboutPage = lazy(() => import('@/components/landing/pages/AboutPage'));
-const ContactPage = lazy(() => import('@/components/landing/pages/ContactPage'));
 const PricingPage = lazy(() => import('@/components/landing/pages/PricingPage'));
-const ChooseYourPathSection = lazy(
-  () => import('@/components/landing/pages/ChooseYourPathSection')
-);
+const ContactPage = lazy(() => import('@/components/landing/pages/ContactPage'));
 
 const PageLoader = () => (
   <div className="min-h-screen w-full flex items-center justify-center">
@@ -61,11 +60,9 @@ const LandingPage = memo(() => {
 
       {/* Scrollable sections */}
       <div className="relative z-10">
-        <section id="hero" style={{ scrollMarginTop: '5rem' }}>
-          <Suspense fallback={<PageLoader />}>
-            <HeroPage />
-          </Suspense>
-        </section>
+        <Suspense fallback={<PageLoader />}>
+          <HeroChoosePathSection />
+        </Suspense>
 
         <section id="how-it-works" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
@@ -85,21 +82,15 @@ const LandingPage = memo(() => {
           </Suspense>
         </section>
 
-        <section id="contact" style={{ scrollMarginTop: '5rem' }}>
-          <Suspense fallback={<PageLoader />}>
-            <ContactPage />
-          </Suspense>
-        </section>
-
         <section id="pricing" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
             <PricingPage />
           </Suspense>
         </section>
 
-        <section id="choose-path" style={{ scrollMarginTop: '5rem' }}>
+        <section id="contact" style={{ scrollMarginTop: '5rem' }}>
           <Suspense fallback={<PageLoader />}>
-            <ChooseYourPathSection />
+            <ContactPage />
           </Suspense>
         </section>
       </div>
