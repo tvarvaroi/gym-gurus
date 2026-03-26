@@ -41,6 +41,7 @@ import workoutRoutes from './routes/workoutsRouter';
 import assignmentRoutes from './routes/assignments';
 import progressRoutes from './routes/progress';
 import scheduleRoutes from './routes/schedule';
+import programRoutes from './routes/programsRouter';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ─── Health check — public, NO rate limiting, NO auth ───────────────────
@@ -104,6 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', secureAuth, assignmentRoutes);
   app.use('/api', secureAuth, progressRoutes);
   app.use('/api/appointments', secureAuth, scheduleRoutes);
+  app.use('/api/programs', secureAuth, apiRateLimit, programRoutes);
 
   // ─── Contact form (public, rate-limited) ────────────────────────────────
   app.post('/api/contact', strictRateLimit, async (req: Request, res: Response) => {

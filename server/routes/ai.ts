@@ -5,6 +5,7 @@ import {
   aiGenerateWorkout,
   aiGenerateMealPlan,
   aiProgressInsights,
+  aiGenerateProgram,
 } from '../services/aiService';
 import { getDb } from '../db';
 import { aiChatConversations, aiChatMessages } from '../../shared/schema';
@@ -452,6 +453,68 @@ router.post('/generate-meal-plan', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('AI Meal Plan Generation error:', error);
     res.status(500).json({ error: 'Meal plan generation service temporarily unavailable' });
+  } finally {
+    releaseConcurrentSlot(user.id);
+  }
+});
+
+// ---------- POST /generate-program ----------
+
+/**
+ * AI Program Generator
+ * POST /api/ai/generate-program
+ * Generates a multi-week periodized training program
+ */
+router.post('/generate-program', async (req: Request, res: Response) => {
+  const user = req.user;
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  if (!requireApiKey(res)) return;
+
+  const slot = await checkAndReserveSlot(user);
+  if (!slot.allowed) {
+    return sendLimitError(res, slot.reason!, slot.remaining, slot.limit);
+  }
+
+  try {
+    const {
+      goal,
+      experienceLevel,
+      durationWeeks,
+      daysPerWeek,
+      availableEquipment,
+      focusMuscles,
+      inspiredBy,
+    } = req.body;
+
+    if (!goal || !durationWeeks || !daysPerWeek) {
+      releaseConcurrentSlot(user.id);
+      return res.status(400).json({ error: 'Goal, durationWeeks, and daysPerWeek are required' });
+    }
+
+    const program = await aiGenerateProgram({
+      goal,
+      experienceLevel: experienceLevel || 'intermediate',
+      durationWeeks,
+      daysPerWeek,
+      availableEquipment,
+      focusMuscles,
+      inspiredBy,
+    });
+
+    const tokensUsed = Math.ceil(JSON.stringify(program).length / 4);
+    await recordUsage(user.id, tokensUsed);
+    const remaining = Math.max(0, slot.remaining - 1);
+
+    res.json({
+      program: {
+        ...program,
+        generatedAt: new Date().toISOString(),
+      },
+      usage: { remaining, limit: slot.limit },
+    });
+  } catch (error) {
+    console.error('AI Program Generation error:', error);
+    res.status(500).json({ error: 'Program generation service temporarily unavailable' });
   } finally {
     releaseConcurrentSlot(user.id);
   }

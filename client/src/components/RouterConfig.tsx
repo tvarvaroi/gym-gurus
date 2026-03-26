@@ -98,6 +98,12 @@ const WorkoutGenerator = lazy(() => import('@/pages/solo/WorkoutGenerator'));
 const NutritionPlanner = lazy(() => import('@/pages/solo/NutritionPlanner'));
 const ExerciseDetailPage = lazy(() => import('@/pages/solo/ExerciseDetailPage'));
 
+// Program pages
+const ProgramPage = lazy(() => import('@/pages/programs/ProgramPage'));
+const ProgramBuilderPage = lazy(() => import('@/pages/programs/ProgramBuilderPage'));
+const ProgramBrowserPage = lazy(() => import('@/pages/programs/ProgramBrowserPage'));
+const GuruProgramDashboard = lazy(() => import('@/pages/programs/GuruProgramDashboard'));
+
 // Dev-only test page (named export)
 const TestLoginPage = lazy(() =>
   import('@/components/TestLoginPage').then((m) => ({ default: m.TestLoginPage }))
@@ -283,6 +289,17 @@ export function RouterConfig() {
             path="/solo/exercises/:exerciseId/history"
             component={lazyRoute(ExerciseDetailPage)}
           />
+
+          {/* Programs */}
+          <Route path="/programs/builder/:id" component={lazyRoute(ProgramBuilderPage)} />
+          <Route path="/programs/builder" component={lazyRoute(ProgramBuilderPage)} />
+          <Route path="/programs/browse" component={lazyRoute(ProgramBrowserPage)} />
+          <Route
+            path="/programs/dashboard"
+            component={protectedRoute(GuruProgramDashboard, 'trainer')}
+          />
+          <Route path="/programs/:id" component={lazyRoute(ProgramPage)} />
+          <Route path="/programs" component={lazyRoute(ProgramBrowserPage)} />
 
           {/* Disciple login (public) */}
           <Route path="/disciple-login" component={lazyRoute(DiscipleLoginPage)} />

@@ -14,6 +14,7 @@ import {
   Settings,
   Apple,
   ChevronDown,
+  Layers,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -50,6 +51,11 @@ const trainerMenuItems = [
     title: 'Workout Plans',
     url: '/workouts',
     icon: Dumbbell,
+  },
+  {
+    title: 'Programs',
+    url: '/programs',
+    icon: Layers,
   },
   {
     title: 'Exercise Library',
@@ -101,6 +107,11 @@ const clientMenuItems = [
     icon: Dumbbell,
   },
   {
+    title: 'Programs',
+    url: '/programs',
+    icon: Layers,
+  },
+  {
     title: 'My Progress',
     url: '/progress',
     icon: TrendingUp,
@@ -148,6 +159,11 @@ const soloMenuItems = [
     title: 'My Workouts',
     url: '/workouts',
     icon: Dumbbell,
+  },
+  {
+    title: 'Programs',
+    url: '/programs',
+    icon: Layers,
   },
   {
     title: 'My Progress',

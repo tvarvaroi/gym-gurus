@@ -2007,3 +2007,160 @@ function generateFallbackInsights(stats: {
         : 'Try to increase your training frequency to see faster results.',
   };
 }
+
+// ---------- Structured Program Generation ----------
+
+const programWeekSchema = z.object({
+  weekNumber: z.number(),
+  label: z.string(),
+  notes: z.string().optional(),
+  days: z.array(
+    z.object({
+      dayNumber: z.number(),
+      label: z.string(),
+      exercises: z.array(
+        z.object({
+          name: z.string(),
+          sets: z.number(),
+          reps: z.string(),
+          rpe: z.number().optional(),
+          rest: z.string(),
+          notes: z.string().optional(),
+        })
+      ),
+    })
+  ),
+});
+
+const programSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  weeks: z.array(programWeekSchema),
+  tags: z.array(z.string()),
+});
+
+export async function aiGenerateProgram(params: {
+  goal: string;
+  experienceLevel: string;
+  durationWeeks: number;
+  daysPerWeek: number;
+  availableEquipment?: string[];
+  focusMuscles?: string[];
+  inspiredBy?: string;
+}): Promise<z.infer<typeof programSchema>> {
+  const model = getModel();
+  if (!model) return generateFallbackProgram(params);
+
+  try {
+    const { object } = await generateObject({
+      model,
+      schema: programSchema,
+      system:
+        'You are an expert strength and conditioning coach who designs multi-week periodized training programs. You understand volume landmarks (MEV/MAV/MRV), progressive overload, deloads, and program design principles from coaches like Mike Israetel, Greg Nuckols, and Eric Helms. Design safe, evidence-based programs.',
+      prompt: `Generate a ${params.durationWeeks}-week training program for a ${params.experienceLevel} lifter.
+
+Goal: ${params.goal}
+Days per week: ${params.daysPerWeek}
+${params.availableEquipment ? `Equipment: ${params.availableEquipment.join(', ')}` : 'Equipment: full gym'}
+${params.focusMuscles ? `Focus muscles: ${params.focusMuscles.join(', ')}` : ''}
+${params.inspiredBy ? `Training style: inspired by "${params.inspiredBy}"` : ''}
+
+REQUIREMENTS:
+- Include a proper periodization structure (accumulation → intensification → deload)
+- Include a deload week (typically the last week or every 4th week)
+- Progressive overload across weeks (increase weight, reps, or sets)
+- Each day should have 5-7 exercises with appropriate sets, reps, RPE, and rest periods
+- Use exercise-appropriate rest periods (compounds: 120-180s, isolation: 45-90s)
+- Provide a descriptive title and brief description
+- Label each week phase (e.g. "Accumulation", "Intensification", "Deload")
+- Label each day (e.g. "Push", "Pull", "Legs", "Upper", "Lower", "Full Body")
+- Include relevant tags for categorization
+- For programs > 6 weeks, you may leave later weeks with empty days arrays and just notes about progression`,
+      maxTokens: 4096,
+    });
+    return object;
+  } catch (error) {
+    console.warn('AI program generation failed, using fallback:', error);
+    return generateFallbackProgram(params);
+  }
+}
+
+function generateFallbackProgram(params: {
+  goal: string;
+  experienceLevel: string;
+  durationWeeks: number;
+  daysPerWeek: number;
+}): z.infer<typeof programSchema> {
+  const splitLabels =
+    params.daysPerWeek <= 3
+      ? ['Full Body A', 'Full Body B', 'Full Body C']
+      : params.daysPerWeek <= 4
+        ? ['Upper', 'Lower', 'Upper', 'Lower']
+        : ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs'];
+
+  const weeks: z.infer<typeof programWeekSchema>[] = [];
+
+  for (let w = 1; w <= params.durationWeeks; w++) {
+    const isDeload = w === params.durationWeeks || (w > 1 && w % 4 === 0);
+    const days = [];
+
+    for (let d = 1; d <= params.daysPerWeek; d++) {
+      const label = splitLabels[(d - 1) % splitLabels.length] + (isDeload ? ' (Deload)' : '');
+      days.push({
+        dayNumber: d,
+        label,
+        exercises: [
+          {
+            name: 'Barbell Back Squat',
+            sets: isDeload ? 2 : 3 + Math.min(w - 1, 2),
+            reps: isDeload ? '8' : params.goal === 'strength' ? '5' : '8-12',
+            rpe: isDeload ? 5 : 6 + Math.min(w, 3),
+            rest: '120s',
+          },
+          {
+            name: 'Bench Press',
+            sets: isDeload ? 2 : 3 + Math.min(w - 1, 1),
+            reps: isDeload ? '8' : params.goal === 'strength' ? '5' : '8-10',
+            rest: '120s',
+          },
+          {
+            name: 'Barbell Row',
+            sets: isDeload ? 2 : 3,
+            reps: isDeload ? '8' : '8-10',
+            rest: '90s',
+          },
+          {
+            name: 'Overhead Press',
+            sets: isDeload ? 2 : 3,
+            reps: isDeload ? '10' : '8-10',
+            rest: '90s',
+          },
+          {
+            name: 'Plank',
+            sets: 3,
+            reps: isDeload ? '30s' : '45s',
+            rest: '45s',
+          },
+        ],
+      });
+    }
+
+    weeks.push({
+      weekNumber: w,
+      label: isDeload
+        ? 'Deload'
+        : w <= Math.ceil(params.durationWeeks / 2)
+          ? 'Accumulation'
+          : 'Intensification',
+      notes: isDeload ? 'Reduce weight 40%, reduce volume. Active recovery.' : undefined,
+      days,
+    });
+  }
+
+  return {
+    title: `${params.durationWeeks}-Week ${params.goal.charAt(0).toUpperCase() + params.goal.slice(1)} Program`,
+    description: `A ${params.durationWeeks}-week ${params.goal} program for ${params.experienceLevel} lifters. ${params.daysPerWeek} days per week with built-in deloads.`,
+    weeks,
+    tags: [params.goal, params.experienceLevel, `${params.daysPerWeek}-day`],
+  };
+}

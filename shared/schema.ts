@@ -1735,3 +1735,178 @@ export const insertSavedMealPlanSchema = createInsertSchema(savedMealPlans).omit
 });
 export type InsertSavedMealPlan = z.infer<typeof insertSavedMealPlanSchema>;
 export type SavedMealPlan = typeof savedMealPlans.$inferSelect;
+
+// -------------------- PROGRAM BUILDER --------------------
+
+// Training Programs (multi-week structured plans)
+export const programs = pgTable(
+  'programs',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    creatorId: varchar('creator_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    goal: varchar('goal', { length: 50 }).notNull(), // strength, hypertrophy, fat_loss, endurance, general
+    experienceLevel: varchar('experience_level', { length: 20 }).notNull(), // beginner, intermediate, advanced
+    durationWeeks: integer('duration_weeks').notNull(),
+    daysPerWeek: integer('days_per_week').notNull(),
+    isTemplate: boolean('is_template').default(false).notNull(), // seed templates are templates
+    isPublic: boolean('is_public').default(false).notNull(),
+    source: varchar('source', { length: 20 }).notNull().default('manual'), // manual, ai, template
+    tags: jsonb('tags').$type<string[]>().default([]),
+    coverImage: varchar('cover_image'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+    deletedAt: timestamp('deleted_at'),
+  },
+  (table) => [
+    index('idx_programs_creator_id').on(table.creatorId),
+    index('idx_programs_goal').on(table.goal),
+    index('idx_programs_public').on(table.isPublic),
+  ]
+);
+
+export const programsRelations = relations(programs, ({ one, many }) => ({
+  creator: one(users, { fields: [programs.creatorId], references: [users.id] }),
+  weeks: many(programWeeks),
+  enrollments: many(programEnrollments),
+}));
+
+// Program Weeks (each week within a program)
+export const programWeeks = pgTable(
+  'program_weeks',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    programId: varchar('program_id')
+      .notNull()
+      .references(() => programs.id, { onDelete: 'cascade' }),
+    weekNumber: integer('week_number').notNull(),
+    label: varchar('label', { length: 100 }), // e.g. "Accumulation", "Intensification", "Deload"
+    notes: text('notes'),
+    days: jsonb('days')
+      .$type<
+        {
+          dayNumber: number;
+          label: string; // e.g. "Push", "Pull", "Legs", "Rest"
+          exercises: {
+            name: string;
+            sets: number;
+            reps: string; // "8-12", "5", "AMRAP"
+            rpe?: number;
+            rest: string; // "90s", "3min"
+            notes?: string;
+          }[];
+        }[]
+      >()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_program_weeks_program_id').on(table.programId),
+    index('idx_program_weeks_order').on(table.programId, table.weekNumber),
+  ]
+);
+
+export const programWeeksRelations = relations(programWeeks, ({ one }) => ({
+  program: one(programs, { fields: [programWeeks.programId], references: [programs.id] }),
+}));
+
+// Program Enrollments (user is actively running a program)
+export const programEnrollments = pgTable(
+  'program_enrollments',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    programId: varchar('program_id')
+      .notNull()
+      .references(() => programs.id, { onDelete: 'cascade' }),
+    currentWeek: integer('current_week').default(1).notNull(),
+    currentDay: integer('current_day').default(1).notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('active'), // active, paused, completed, abandoned
+    startedAt: timestamp('started_at').defaultNow().notNull(),
+    completedAt: timestamp('completed_at'),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index('idx_enrollments_user_id').on(table.userId),
+    index('idx_enrollments_program_id').on(table.programId),
+    index('idx_enrollments_status').on(table.status),
+  ]
+);
+
+export const programEnrollmentsRelations = relations(programEnrollments, ({ one }) => ({
+  user: one(users, { fields: [programEnrollments.userId], references: [users.id] }),
+  program: one(programs, { fields: [programEnrollments.programId], references: [programs.id] }),
+}));
+
+// Program Day Completions (tracks which days the user has finished)
+export const programDayCompletions = pgTable(
+  'program_day_completions',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    enrollmentId: varchar('enrollment_id')
+      .notNull()
+      .references(() => programEnrollments.id, { onDelete: 'cascade' }),
+    weekNumber: integer('week_number').notNull(),
+    dayNumber: integer('day_number').notNull(),
+    completedAt: timestamp('completed_at').defaultNow().notNull(),
+    workoutLogId: varchar('workout_log_id'), // optional link to workoutSessions
+  },
+  (table) => [
+    index('idx_day_completions_enrollment_id').on(table.enrollmentId),
+    index('idx_day_completions_enrollment_week').on(table.enrollmentId, table.weekNumber),
+  ]
+);
+
+export const programDayCompletionsRelations = relations(programDayCompletions, ({ one }) => ({
+  enrollment: one(programEnrollments, {
+    fields: [programDayCompletions.enrollmentId],
+    references: [programEnrollments.id],
+  }),
+}));
+
+// Program schemas and types
+export const insertProgramSchema = createInsertSchema(programs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+});
+export type InsertProgram = z.infer<typeof insertProgramSchema>;
+export type Program = typeof programs.$inferSelect;
+
+export const insertProgramWeekSchema = createInsertSchema(programWeeks).omit({ id: true });
+export type InsertProgramWeek = z.infer<typeof insertProgramWeekSchema>;
+export type ProgramWeek = typeof programWeeks.$inferSelect;
+
+export const insertProgramEnrollmentSchema = createInsertSchema(programEnrollments).omit({
+  id: true,
+  startedAt: true,
+  updatedAt: true,
+});
+export type InsertProgramEnrollment = z.infer<typeof insertProgramEnrollmentSchema>;
+export type ProgramEnrollment = typeof programEnrollments.$inferSelect;
+
+export const insertProgramDayCompletionSchema = createInsertSchema(programDayCompletions).omit({
+  id: true,
+  completedAt: true,
+});
+export type InsertProgramDayCompletion = z.infer<typeof insertProgramDayCompletionSchema>;
+export type ProgramDayCompletion = typeof programDayCompletions.$inferSelect;
