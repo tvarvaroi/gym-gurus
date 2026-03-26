@@ -261,7 +261,7 @@ const RoleCardContent = memo(
 
         {/* Title */}
         <h2
-          className="text-xl font-light mb-1"
+          className="text-xl font-light mb-1 mt-6"
           style={{
             fontFamily: "'Playfair Display', serif",
             background: `linear-gradient(135deg, #ffffff, ${role.color})`,
@@ -285,8 +285,11 @@ const RoleCardContent = memo(
           {getRoleTagline(role.id)}
         </p>
 
+        {/* Divider */}
+        <div className="h-px w-full mb-5" style={{ background: `${role.color}25` }} />
+
         {/* Features */}
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {role.features.map((feat) => (
             <li key={feat} className="flex items-center gap-2">
               <div
@@ -348,7 +351,7 @@ function DesktopLayout({
   );
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden">
+    <div className="w-full relative overflow-hidden" style={{ minHeight: '100vh' }}>
       {/* Ambient glow orbs */}
       <motion.div
         className="absolute w-[600px] h-[600px] rounded-full pointer-events-none z-0"
@@ -400,9 +403,9 @@ function DesktopLayout({
       )}
 
       {/* Split layout */}
-      <div className="relative z-10 min-h-screen flex items-center">
+      <div className="relative z-10 flex items-center pt-24 pb-16" style={{ minHeight: '100vh' }}>
         {/* LEFT — branding (40%) */}
-        <div className="w-[40%] px-8 lg:px-16 space-y-8 flex flex-col justify-center min-h-screen">
+        <div className="w-[40%] px-8 lg:px-16 space-y-8 flex flex-col justify-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -533,7 +536,7 @@ function DesktopLayout({
         </div>
 
         {/* RIGHT — 3 role cards (60%) */}
-        <div className="w-[60%] px-6 lg:px-10 py-12">
+        <div className="w-[60%] px-6 lg:px-10">
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
@@ -552,7 +555,7 @@ function DesktopLayout({
                   ariaLabel={`Select ${role.name} path as ${role.label}`}
                   ariaPressed={isSelected}
                   onKeyDown={handleKeyDown(role.id)}
-                  className="rounded-3xl p-5 lg:p-6 cursor-pointer transition-[border,box-shadow] duration-300 relative"
+                  className="rounded-3xl p-6 lg:p-8 cursor-pointer transition-[border,box-shadow] duration-300 relative min-h-[520px]"
                   style={{
                     background: isSelected
                       ? `linear-gradient(135deg, ${role.color}12, ${role.color}08)`
@@ -597,87 +600,112 @@ function DesktopLayout({
             })}
           </motion.div>
 
-          {/* CTA buttons below cards */}
+          {/* CTA buttons below cards — fixed height to prevent layout shift */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
-            className="mt-8 flex flex-col items-center gap-3"
+            className="mt-8 flex flex-col items-center justify-center"
+            style={{ height: 140 }}
+            layout
           >
-            {selectedRole === 'client' ? (
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/disciple-login')}
-                className="px-10 py-3.5 rounded-2xl text-sm font-semibold tracking-widest uppercase cursor-pointer min-h-[48px]"
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  background: roleData?.gradient,
-                  color: '#ffffff',
-                  boxShadow: `0 12px 30px -4px ${roleData?.glow}`,
-                }}
-                aria-label="Access with your client code"
-              >
-                Access With Code
-              </motion.button>
-            ) : selectedRole ? (
-              <div className="flex items-center gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate(`/auth/login?role=${selectedRole}`)}
-                  className="px-10 py-3.5 rounded-2xl text-sm font-semibold tracking-widest uppercase cursor-pointer min-h-[48px]"
-                  style={{
-                    fontFamily: 'Inter, sans-serif',
-                    background: roleData?.gradient,
-                    color: selectedRole === 'trainer' ? '#0a0a0a' : '#ffffff',
-                    boxShadow: `0 12px 30px -4px ${roleData?.glow}`,
-                  }}
-                  aria-label={`Sign in as ${roleData?.name}`}
+            <AnimatePresence mode="wait">
+              {selectedRole === 'client' ? (
+                <motion.div
+                  key="desktop-client-cta"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col items-center"
                 >
-                  Sign In
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate(`/auth/register?role=${selectedRole}`)}
-                  className="px-8 py-3.5 rounded-2xl text-sm font-light tracking-widest uppercase cursor-pointer min-h-[48px]"
-                  style={{
-                    fontFamily: 'Inter, sans-serif',
-                    background: 'transparent',
-                    border: `1px solid ${roleData?.color}50`,
-                    color: roleData?.color,
-                  }}
-                  aria-label={`Create ${roleData?.name} account`}
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate('/disciple-login')}
+                    className="px-10 py-3.5 rounded-2xl text-sm font-semibold tracking-widest uppercase cursor-pointer min-h-[48px]"
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      background: roleData?.gradient,
+                      color: '#ffffff',
+                      boxShadow: `0 12px 30px -4px ${roleData?.glow}`,
+                    }}
+                    aria-label="Access with your client code"
+                  >
+                    Access With Code
+                  </motion.button>
+                </motion.div>
+              ) : selectedRole ? (
+                <motion.div
+                  key="desktop-auth-cta"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col items-center gap-3"
                 >
-                  Create Account
-                </motion.button>
-              </div>
-            ) : (
-              <p
-                className="text-sm"
-                style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  color: 'hsl(0 0% 40%)',
-                }}
-              >
-                Select your path above
-              </p>
-            )}
-
-            {/* Disciple link when non-client selected */}
-            {selectedRole && selectedRole !== 'client' && (
-              <button
-                onClick={() => navigate('/disciple-login')}
-                className="text-xs font-light cursor-pointer hover:underline transition-colors mt-1"
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  color: 'hsl(var(--color-disciple) / 0.7)',
-                }}
-              >
-                Are you a client? Access with your code →
-              </button>
-            )}
+                  <div className="flex items-center gap-4">
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => navigate(`/auth/login?role=${selectedRole}`)}
+                      className="px-10 py-3.5 rounded-2xl text-sm font-semibold tracking-widest uppercase cursor-pointer min-h-[48px]"
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        background: roleData?.gradient,
+                        color: selectedRole === 'trainer' ? '#0a0a0a' : '#ffffff',
+                        boxShadow: `0 12px 30px -4px ${roleData?.glow}`,
+                      }}
+                      aria-label={`Sign in as ${roleData?.name}`}
+                    >
+                      Sign In
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => navigate(`/auth/register?role=${selectedRole}`)}
+                      className="px-8 py-3.5 rounded-2xl text-sm font-light tracking-widest uppercase cursor-pointer min-h-[48px]"
+                      style={{
+                        fontFamily: 'Inter, sans-serif',
+                        background: 'transparent',
+                        border: `1px solid ${roleData?.color}50`,
+                        color: roleData?.color,
+                      }}
+                      aria-label={`Create ${roleData?.name} account`}
+                    >
+                      Create Account
+                    </motion.button>
+                  </div>
+                  <button
+                    onClick={() => navigate('/disciple-login')}
+                    className="text-xs font-light cursor-pointer hover:underline transition-colors"
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      color: 'hsl(var(--color-disciple) / 0.7)',
+                    }}
+                  >
+                    Are you a client? Access with your code →
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="desktop-empty-cta"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <p
+                    className="text-sm"
+                    style={{
+                      fontFamily: "'Cormorant Garamond', serif",
+                      color: 'hsl(0 0% 40%)',
+                    }}
+                  >
+                    Select your path above
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       </div>
@@ -740,31 +768,12 @@ function MobileLayout({
 
   return (
     <div
-      className="min-h-screen w-full relative overflow-hidden flex flex-col"
+      className="w-full relative overflow-hidden flex flex-col"
+      style={{ minHeight: '100dvh' }}
       onKeyDown={handleKeyDown}
     >
-      {/* Header zone */}
-      <div className="pt-24 pb-4 px-6 text-center">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <img
-            src={logoImage}
-            alt="GymGurus logo"
-            className="w-10 h-10 rounded-lg object-cover"
-            style={{ filter: 'brightness(1.15) contrast(1.08) saturate(0.85)' }}
-          />
-          <span
-            className="text-lg font-extralight tracking-[0.2em]"
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              background:
-                'linear-gradient(90deg, hsl(var(--color-guru)), #e5e4e2, hsl(var(--color-disciple)))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            GYM GURUS
-          </span>
-        </div>
+      {/* Header clearance + title */}
+      <div className="pb-3 px-6 text-center flex-shrink-0" style={{ paddingTop: 88 }}>
         <h1
           className="text-3xl font-light"
           style={{
@@ -777,70 +786,100 @@ function MobileLayout({
         >
           Choose Your Path
         </h1>
+        <p
+          className="text-sm mt-1"
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            color: '#777',
+          }}
+        >
+          The first decision of your journey
+        </p>
       </div>
 
       {/* Swipeable card area */}
-      <div className="flex-1 relative px-2" ref={containerRef}>
+      <div className="flex-1 relative overflow-hidden" ref={containerRef}>
         <div className="relative h-full flex items-center justify-center">
-          <AnimatePresence mode="popLayout">
-            {ROLES.map((role, index) => {
-              const isActive = index === activeIndex;
-              const offset = index - activeIndex;
-              if (Math.abs(offset) > 1) return null; // Only render active + adjacent
+          {ROLES.map((role, index) => {
+            const lastIdx = ROLES.length - 1;
+            const isActive = index === activeIndex;
+            const isNext = index === activeIndex + 1 || (activeIndex === lastIdx && index === 0);
+            const isPrev = index === activeIndex - 1 || (activeIndex === 0 && index === lastIdx);
 
-              return (
-                <motion.div
-                  key={role.id}
-                  className="absolute w-[85%] max-w-[360px]"
-                  initial={false}
-                  animate={{
-                    x: `${offset * 88}%`,
-                    scale: isActive ? 1 : 0.92,
-                    opacity: isActive ? 1 : 0.5,
-                    zIndex: isActive ? 10 : 5,
-                  }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  drag={isActive ? 'x' : false}
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.15}
-                  onDragEnd={(_, info) => {
-                    if (info.offset.x < -60 || info.velocity.x < -300) {
-                      goTo(activeIndex + 1);
-                    } else if (info.offset.x > 60 || info.velocity.x > 300) {
-                      goTo(activeIndex - 1);
-                    }
-                  }}
-                  onClick={() => {
-                    if (!isActive) goTo(index);
+            // Position: active=center, adjacent=peeking, others=offscreen
+            let xPercent = 200; // off-screen default
+            let cardOpacity = 0;
+            let cardScale = 0.92;
+            let zIndex = 0;
+
+            if (isActive) {
+              xPercent = 0;
+              cardOpacity = 1;
+              cardScale = 1;
+              zIndex = 10;
+            } else if (isNext) {
+              xPercent = 92; // peek from right (card width + gap)
+              cardOpacity = 0.65;
+              zIndex = 5;
+            } else if (isPrev) {
+              xPercent = -92; // peek from left
+              cardOpacity = 0.65;
+              zIndex = 5;
+            }
+
+            return (
+              <motion.div
+                key={role.id}
+                className="absolute"
+                style={{ width: 'calc(100vw - 80px)', maxWidth: 360, left: '50%' }}
+                initial={false}
+                animate={{
+                  x: `calc(-50% + ${xPercent}%)`,
+                  scale: cardScale,
+                  opacity: cardOpacity,
+                  zIndex,
+                }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                drag={isActive ? 'x' : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.15}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x < -60 || info.velocity.x < -300) {
+                    goTo(activeIndex + 1);
+                  } else if (info.offset.x > 60 || info.velocity.x > 300) {
+                    goTo(activeIndex - 1);
+                  }
+                }}
+                onClick={() => {
+                  if (!isActive) goTo(index);
+                }}
+              >
+                <div
+                  className="rounded-3xl p-6 relative cursor-pointer"
+                  style={{
+                    background: isActive
+                      ? `linear-gradient(135deg, ${role.color}10, rgba(15,15,15,0.8))`
+                      : 'linear-gradient(135deg, rgba(15,15,15,0.7), rgba(10,10,10,0.8))',
+                    border: isActive
+                      ? `1px solid ${role.color}40`
+                      : '1px solid rgba(255,255,255,0.06)',
+                    boxShadow: isActive ? `0 20px 40px -10px ${role.glow}` : 'none',
+                    backdropFilter: 'blur(20px)',
+                    minHeight: '360px',
                   }}
                 >
-                  <div
-                    className="rounded-3xl p-6 relative cursor-pointer"
-                    style={{
-                      background: isActive
-                        ? `linear-gradient(135deg, ${role.color}10, rgba(15,15,15,0.8))`
-                        : 'linear-gradient(135deg, rgba(15,15,15,0.7), rgba(10,10,10,0.8))',
-                      border: isActive
-                        ? `1px solid ${role.color}40`
-                        : '1px solid rgba(255,255,255,0.06)',
-                      boxShadow: isActive ? `0 20px 40px -10px ${role.glow}` : 'none',
-                      backdropFilter: 'blur(20px)',
-                      minHeight: '380px',
-                    }}
-                  >
-                    <div className="relative z-10">
-                      <RoleCardContent
-                        role={role}
-                        isSelected={isActive}
-                        reducedMotion={reducedMotion}
-                        circleSize={100}
-                      />
-                    </div>
+                  <div className="relative z-10">
+                    <RoleCardContent
+                      role={role}
+                      isSelected={isActive}
+                      reducedMotion={reducedMotion}
+                      circleSize={100}
+                    />
                   </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Gesture hint */}
@@ -898,73 +937,91 @@ function MobileLayout({
         ))}
       </div>
 
-      {/* CTA zone */}
-      <div className="px-6 pb-8 space-y-3">
-        {selectedRole === 'client' ? (
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/disciple-login')}
-            className="w-full py-4 rounded-2xl text-sm font-semibold tracking-widest uppercase cursor-pointer min-h-[56px]"
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              background: roleData?.gradient || activeRole.gradient,
-              color: '#ffffff',
-              boxShadow: `0 12px 30px -4px ${roleData?.glow || activeRole.glow}`,
-              transition: 'background 0.4s ease, box-shadow 0.4s ease',
-            }}
-            aria-label="Access with your client code"
-          >
-            Access With Code
-          </motion.button>
-        ) : (
-          <>
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => navigate(`/auth/login?role=${selectedRole || activeRole.id}`)}
-              className="w-full py-4 rounded-2xl text-sm font-semibold tracking-widest uppercase cursor-pointer min-h-[56px]"
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                background: roleData?.gradient || activeRole.gradient,
-                color: (selectedRole || activeRole.id) === 'trainer' ? '#0a0a0a' : '#ffffff',
-                boxShadow: `0 12px 30px -4px ${roleData?.glow || activeRole.glow}`,
-                transition: 'background 0.4s ease, box-shadow 0.4s ease',
-              }}
-              aria-label={`Sign in as ${roleData?.name || activeRole.name}`}
+      {/* CTA zone — fixed height to prevent layout shift */}
+      <motion.div
+        className="px-6 pb-4 flex-shrink-0 flex flex-col items-center justify-center"
+        style={{ height: 160 }}
+        layout
+        transition={{ layout: { duration: 0.3, ease: 'easeInOut' } }}
+      >
+        <AnimatePresence mode="wait">
+          {selectedRole === 'client' ? (
+            <motion.div
+              key="client-cta"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="w-full flex flex-col items-center justify-center gap-3"
             >
-              Sign In as {roleData?.name || activeRole.name}
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={() => navigate(`/auth/register?role=${selectedRole || activeRole.id}`)}
-              className="w-full py-3 rounded-2xl text-sm font-light tracking-widest uppercase cursor-pointer min-h-[48px]"
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                background: 'transparent',
-                border: `1px solid ${roleData?.color || activeRole.color}50`,
-                color: roleData?.color || activeRole.color,
-                transition: 'border-color 0.4s ease, color 0.4s ease',
-              }}
-              aria-label={`Create ${roleData?.name || activeRole.name} account`}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/disciple-login')}
+                className="w-full py-4 rounded-2xl text-sm font-semibold tracking-widest uppercase cursor-pointer min-h-[56px]"
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  background: roleData?.gradient || activeRole.gradient,
+                  color: '#ffffff',
+                  boxShadow: `0 12px 30px -4px ${roleData?.glow || activeRole.glow}`,
+                }}
+                aria-label="Access with your client code"
+              >
+                Access With Code
+              </motion.button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="default-cta"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="w-full space-y-2"
             >
-              Create Account
-            </motion.button>
-          </>
-        )}
-
-        {/* Disciple link */}
-        {selectedRole !== 'client' && (
-          <button
-            onClick={() => navigate('/disciple-login')}
-            className="w-full text-center text-xs font-light cursor-pointer hover:underline transition-colors py-2 min-h-[44px]"
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              color: 'hsl(var(--color-disciple) / 0.7)',
-            }}
-          >
-            Are you a client? Access with your code →
-          </button>
-        )}
-      </div>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate(`/auth/login?role=${selectedRole || activeRole.id}`)}
+                className="w-full py-4 rounded-2xl text-sm font-semibold tracking-widest uppercase cursor-pointer min-h-[56px]"
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  background: roleData?.gradient || activeRole.gradient,
+                  color: (selectedRole || activeRole.id) === 'trainer' ? '#0a0a0a' : '#ffffff',
+                  boxShadow: `0 12px 30px -4px ${roleData?.glow || activeRole.glow}`,
+                  transition: 'background 0.4s ease, box-shadow 0.4s ease',
+                }}
+                aria-label={`Sign in as ${roleData?.name || activeRole.name}`}
+              >
+                Sign In as {roleData?.name || activeRole.name}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate(`/auth/register?role=${selectedRole || activeRole.id}`)}
+                className="w-full py-2.5 rounded-2xl text-sm font-light tracking-widest uppercase cursor-pointer min-h-[44px]"
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  background: 'transparent',
+                  border: `1px solid ${roleData?.color || activeRole.color}50`,
+                  color: roleData?.color || activeRole.color,
+                  transition: 'border-color 0.4s ease, color 0.4s ease',
+                }}
+                aria-label={`Create ${roleData?.name || activeRole.name} account`}
+              >
+                Create Account
+              </motion.button>
+              <button
+                onClick={() => navigate('/disciple-login')}
+                className="w-full text-center text-xs font-light cursor-pointer hover:underline transition-colors min-h-[28px]"
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  color: 'hsl(var(--color-disciple) / 0.7)',
+                }}
+              >
+                Are you a client? Access with your code →
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
