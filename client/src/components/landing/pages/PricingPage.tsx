@@ -72,11 +72,13 @@ const PricingPage = memo(() => {
       priceMonthly: 6.99,
       priceAnnual: 5.59,
       features: [
-        'Progress tracking',
-        'Workout logging',
-        'Gamification & XP',
-        'Premium calculators',
-        'Personal dashboard',
+        'Progress tracking & volume analytics',
+        'Workout logging with set-by-set tracking',
+        'Personal records & strength standards',
+        'Gamification — XP, levels, achievements, streaks',
+        'Premium fitness calculators (13 types)',
+        'Recovery tracking & muscle fatigue status',
+        'Personal dashboard with activity feed',
       ],
       cta: 'Start Trial',
       popular: false,
@@ -88,10 +90,12 @@ const PricingPage = memo(() => {
       priceAnnual: 14.39,
       features: [
         'Everything in Ronin',
-        'AI workout generation',
-        'AI coaching chat',
-        '20 AI requests/day',
-        'Personalized programs',
+        'AI workout generator (30-second custom workouts)',
+        'AI coach chat — 24/7 personal trainer',
+        'AI nutrition & meal plan generator',
+        'Multi-week program builder + 4 templates',
+        '30 AI requests per day',
+        'Advanced recovery intelligence (ACWR)',
       ],
       cta: 'Start Trial',
       popular: true,
@@ -102,11 +106,13 @@ const PricingPage = memo(() => {
       priceMonthly: 24.99,
       priceAnnual: 19.99,
       features: [
-        'Up to 10 clients',
-        'Client management',
-        'Workout assignment',
-        'Payment plans',
-        'Session scheduling',
+        'Up to 10 active clients',
+        'Client management, notes & progress tracking',
+        'Custom workout & program builder',
+        'Exercise library (100+ exercises)',
+        'Client workout assignment & scheduling',
+        'Stripe payment plans & invoicing',
+        'Client access codes (Disciple login)',
       ],
       cta: 'Start Trial',
       popular: false,
@@ -119,9 +125,11 @@ const PricingPage = memo(() => {
       features: [
         'Unlimited clients',
         'Everything in Guru',
-        'AI coaching tools',
-        '50 AI requests/day',
-        'Priority support',
+        'AI workout generation for clients',
+        'AI coach tools for client programs',
+        '50 AI requests per day',
+        'Multi-week program builder',
+        'Priority support & early access',
       ],
       cta: 'Start Trial',
       popular: false,
@@ -384,7 +392,7 @@ const PricingPage = memo(() => {
 
                     {/* Plan Name */}
                     <h3
-                      className="text-xl font-light mb-4 text-center pb-1"
+                      className="text-2xl font-light mb-4 text-center pb-1"
                       style={{
                         fontFamily: "'Playfair Display', serif",
                         background:
@@ -450,10 +458,12 @@ const PricingPage = memo(() => {
                             }}
                           />
                           <span
-                            className="text-xs font-light"
+                            className="font-light"
                             style={{
                               fontFamily: "'Cormorant Garamond', serif",
                               color: '#d4d4d4',
+                              fontSize: '15px',
+                              lineHeight: '1.7',
                             }}
                           >
                             {feature}

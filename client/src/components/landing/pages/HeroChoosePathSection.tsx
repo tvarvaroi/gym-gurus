@@ -12,17 +12,27 @@ import logoImage from '@assets/Sophisticated Logo with Japanese Influences (3)_1
 // ─── Types ──────────────────────────────────────────────────────────────────
 type UserRole = 'trainer' | 'client' | 'solo';
 
+interface FeatureItem {
+  name: string;
+  desc: string;
+}
+
 interface RoleConfig {
   id: UserRole;
   name: string;
   label: string;
+  pillLabel: string;
+  bottomTagline: string;
   color: string;
   gradient: string;
   glow: string;
   iconSize: number;
   iconMt?: string;
   icon: React.ComponentType<{ size?: number; variant?: 'default' | 'white'; className?: string }>;
-  features: string[];
+  group1Label: string;
+  group1: FeatureItem[];
+  group2Label: string;
+  group2: FeatureItem[];
 }
 
 const ROLES: RoleConfig[] = [
@@ -30,36 +40,75 @@ const ROLES: RoleConfig[] = [
     id: 'trainer',
     name: 'Guru',
     label: 'Personal Trainer',
+    pillLabel: 'TRAINER',
+    bottomTagline: 'Elite Trainer Platform',
     color: 'hsl(var(--color-guru))',
     gradient: 'linear-gradient(135deg, hsl(var(--color-guru)), hsl(var(--color-guru-accent)))',
     glow: 'hsl(var(--color-guru) / 0.35)',
     iconSize: 90,
     icon: GuruIcon,
-    features: ['Unlimited clients', 'Custom workouts', 'Analytics dashboard', 'Messaging'],
+    group1Label: 'For Your Practice',
+    group1: [
+      { name: 'Client Roster & Progress', desc: 'unlimited clients, biometrics, notes' },
+      { name: 'Custom Program Builder', desc: 'multi-week programs, assign to clients' },
+      { name: 'Exercise Library', desc: '100+ exercises with muscle anatomy' },
+    ],
+    group2Label: 'Grow Your Revenue',
+    group2: [
+      { name: 'Payment Plans & Invoicing', desc: 'Stripe-powered billing' },
+      { name: 'Smart Scheduling', desc: 'recurring appointments, calendar sync' },
+      { name: 'AI Coaching Tools', desc: 'generate workouts for any client instantly' },
+    ],
   },
   {
     id: 'client',
     name: 'Disciple',
     label: 'Fitness Client',
+    pillLabel: 'CLIENT',
+    bottomTagline: 'Guided by Your Guru',
     color: 'hsl(var(--color-disciple))',
     gradient:
       'linear-gradient(135deg, hsl(var(--color-disciple)), hsl(var(--color-disciple-secondary)))',
     glow: 'hsl(var(--color-disciple) / 0.35)',
     iconSize: 110,
     icon: DiscipleIcon,
-    features: ['Personalized plans', 'Progress tracking', 'Guru messaging', 'Exercise library'],
+    group1Label: 'Your Training',
+    group1: [
+      { name: 'Assigned Workouts', desc: 'receive programs from your trainer' },
+      { name: 'Live Workout Execution', desc: 'set-by-set logging with rest timer' },
+      { name: 'Personal Records', desc: 'automatic PR detection and tracking' },
+    ],
+    group2Label: 'Your Progress',
+    group2: [
+      { name: 'Progress Dashboard', desc: 'volume trends, strength curves' },
+      { name: 'Recovery Tracking', desc: 'per-muscle fatigue anatomy diagram' },
+      { name: 'Premium Calculators', desc: 'TDEE, macros, 1RM, BMI and 10 more' },
+    ],
   },
   {
     id: 'solo',
     name: 'Ronin',
     label: 'Solo Athlete',
+    pillLabel: 'SOLO',
+    bottomTagline: 'Train Alone. Grow Together.',
     color: 'hsl(var(--color-ronin))',
     gradient: 'linear-gradient(135deg, #a855f7, #6366f1)',
     glow: 'hsl(var(--color-ronin) / 0.35)',
     iconSize: 120,
     iconMt: '-mt-4',
     icon: RoninIcon,
-    features: ['AI-powered coach', 'Smart workouts', 'Gamification', 'Recovery tracking'],
+    group1Label: 'AI-Powered Training',
+    group1: [
+      { name: 'AI Workout Generator', desc: 'full workout in 30 seconds' },
+      { name: 'AI Coach Chat', desc: '24/7 personal coach powered by Claude' },
+      { name: 'Program Builder', desc: 'templates or AI-generated multi-week plans' },
+    ],
+    group2Label: 'Track Everything',
+    group2: [
+      { name: 'Gamification & XP', desc: 'level up, achievements, streaks' },
+      { name: 'Nutrition Planner', desc: 'AI meal plans for your macros' },
+      { name: 'Recovery Intelligence', desc: 'ACWR training load + muscle fatigue' },
+    ],
   },
 ];
 
@@ -214,6 +263,54 @@ const ParallaxCard = memo(
 ParallaxCard.displayName = 'ParallaxCard';
 
 // ─── RoleCardContent (memo'd) ───────────────────────────────────────────────
+// Shared feature group renderer
+function FeatureGroup({
+  label,
+  items,
+  color,
+  glow,
+}: {
+  label: string;
+  items: FeatureItem[];
+  color: string;
+  glow: string;
+}) {
+  return (
+    <div>
+      <p
+        className="mb-2"
+        style={{
+          fontSize: '9px',
+          fontFamily: 'Inter, sans-serif',
+          textTransform: 'uppercase',
+          letterSpacing: '0.15em',
+          color: `${color}`,
+          opacity: 0.7,
+        }}
+      >
+        {label}
+      </p>
+      <ul className="space-y-2">
+        {items.map((feat) => (
+          <li key={feat.name} className="flex items-start gap-2">
+            <div
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
+              style={{ background: color, boxShadow: `0 0 4px ${glow}` }}
+            />
+            <span style={{ fontFamily: 'Inter, sans-serif' }}>
+              <span className="text-[13px] font-medium text-white">{feat.name}</span>
+              <span className="text-[12px] font-light" style={{ color: '#999' }}>
+                {' '}
+                — {feat.desc}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const RoleCardContent = memo(
   ({
     role,
@@ -230,13 +327,47 @@ const RoleCardContent = memo(
   }) => {
     const Icon = role.icon;
 
+    // Shared features block
+    const featuresBlock = (
+      <>
+        <FeatureGroup
+          label={role.group1Label}
+          items={role.group1}
+          color={role.color}
+          glow={role.glow}
+        />
+        <div className="h-px w-full my-3" style={{ background: `${role.color}18` }} />
+        <FeatureGroup
+          label={role.group2Label}
+          items={role.group2}
+          color={role.color}
+          glow={role.glow}
+        />
+      </>
+    );
+
     if (isMobile) {
-      // Mobile: centered vertical layout — circle → name → tagline → divider → features
       return (
-        <div className="flex flex-col items-center pt-4">
-          {/* Centered circle */}
+        <div className="flex flex-col items-center pt-4 relative">
+          {/* Pill badge */}
+          <div
+            className="absolute top-3 right-0 px-2 rounded-full"
+            style={{
+              height: 18,
+              fontSize: '9px',
+              fontFamily: 'Inter, sans-serif',
+              letterSpacing: '0.15em',
+              lineHeight: '18px',
+              color: role.color,
+              border: `1px solid ${role.color}60`,
+            }}
+          >
+            {role.pillLabel}
+          </div>
+
+          {/* Circle */}
           <motion.div
-            className="rounded-full flex items-center justify-center mb-4"
+            className="rounded-full flex items-center justify-center mb-3"
             style={{
               width: circleSize,
               height: circleSize,
@@ -249,9 +380,8 @@ const RoleCardContent = memo(
             <Icon size={role.iconSize} variant="white" className={role.iconMt} />
           </motion.div>
 
-          {/* Title */}
           <h2
-            className="text-2xl font-light mb-1 text-center"
+            className="text-2xl font-light mb-0.5 text-center"
             style={{
               fontFamily: "'Playfair Display', serif",
               background: `linear-gradient(135deg, #ffffff, ${role.color})`,
@@ -262,10 +392,8 @@ const RoleCardContent = memo(
           >
             {role.name}
           </h2>
-
-          {/* Tagline */}
           <p
-            className="text-sm mb-4 text-center"
+            className="text-sm mb-3 text-center"
             style={{
               fontFamily: "'Cormorant Garamond', serif",
               color: isSelected ? role.color : 'hsl(0 0% 50%)',
@@ -274,117 +402,137 @@ const RoleCardContent = memo(
           >
             {getRoleTagline(role.id)}
           </p>
-
-          {/* Divider */}
-          <div className="h-px w-full mb-4" style={{ background: `${role.color}25` }} />
-
-          {/* Features */}
-          <ul className="space-y-2.5 w-full">
-            {role.features.map((feat) => (
-              <li key={feat} className="flex items-center gap-2">
-                <div
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{
-                    background: role.color,
-                    boxShadow: `0 0 4px ${role.glow}`,
-                  }}
-                />
-                <span
-                  className="text-sm font-light"
-                  style={{ color: '#d4d4d4', fontFamily: 'Inter, sans-serif' }}
-                >
-                  {feat}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className="h-px w-full mb-3" style={{ background: `${role.color}25` }} />
+          <div className="w-full">{featuresBlock}</div>
         </div>
       );
     }
 
-    // Desktop: horizontal top row (circle left, checkmark right) then vertical
+    // Desktop layout
     return (
-      <>
-        {/* Top row: circle + checkmark */}
-        <div className="flex items-start justify-between mb-4">
-          <motion.div
-            className="rounded-full flex items-center justify-center"
-            style={{
-              width: circleSize,
-              height: circleSize,
-              background: role.gradient,
-              boxShadow: isSelected ? `0 6px 20px -4px ${role.glow}` : 'none',
-            }}
-            whileHover={reducedMotion ? {} : { rotate: 360, scale: 1.15 }}
-            transition={{ duration: 0.7 }}
-          >
-            <Icon size={role.iconSize} variant="white" className={role.iconMt} />
-          </motion.div>
+      <div className="relative">
+        {/* Diagonal lines SVG background */}
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none z-0 rounded-3xl overflow-hidden"
+          aria-hidden="true"
+        >
+          <defs>
+            <pattern
+              id={`diag-${role.id}`}
+              width="20"
+              height="20"
+              patternTransform="rotate(45)"
+              patternUnits="userSpaceOnUse"
+            >
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="20"
+                stroke={role.color}
+                strokeWidth="0.5"
+                strokeOpacity="0.03"
+              />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#diag-${role.id})`} />
+        </svg>
 
-          <AnimatePresence>
-            {isSelected && (
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                exit={{ scale: 0, rotate: 180 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-              >
-                <CheckCircle className="w-6 h-6" style={{ color: role.color }} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+        {/* Pill badge */}
+        <div
+          className="absolute top-4 right-14 px-2 rounded-full z-10"
+          style={{
+            height: 18,
+            fontSize: '9px',
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.15em',
+            lineHeight: '18px',
+            color: role.color,
+            border: `1px solid ${role.color}60`,
+          }}
+        >
+          {role.pillLabel}
         </div>
 
-        {/* Title */}
-        <h2
-          className="text-xl font-light mb-1 mt-6"
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            background: `linear-gradient(135deg, #ffffff, ${role.color})`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
-          {role.name}
-        </h2>
+        <div className="relative z-10">
+          {/* Top row: circle + checkmark */}
+          <div className="flex items-start justify-between mb-4">
+            <motion.div
+              className="rounded-full flex items-center justify-center"
+              style={{
+                width: circleSize,
+                height: circleSize,
+                background: role.gradient,
+                boxShadow: isSelected ? `0 6px 20px -4px ${role.glow}` : 'none',
+              }}
+              whileHover={reducedMotion ? {} : { rotate: 360, scale: 1.15 }}
+              transition={{ duration: 0.7 }}
+            >
+              <Icon size={role.iconSize} variant="white" className={role.iconMt} />
+            </motion.div>
+            <AnimatePresence>
+              {isSelected && (
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  exit={{ scale: 0, rotate: 180 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                >
+                  <CheckCircle className="w-6 h-6" style={{ color: role.color }} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-        {/* Tagline */}
-        <p
-          className="text-xs mb-4"
-          style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            color: isSelected ? role.color : 'hsl(0 0% 50%)',
-            transition: 'color 0.3s ease',
-          }}
-        >
-          {getRoleTagline(role.id)}
-        </p>
+          <h2
+            className="text-xl font-light mb-1 mt-6"
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              background: `linear-gradient(135deg, #ffffff, ${role.color})`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            {role.name}
+          </h2>
+          <p
+            className="text-xs mb-4"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              color: isSelected ? role.color : 'hsl(0 0% 50%)',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            {getRoleTagline(role.id)}
+          </p>
+          <div className="h-px w-full mb-5" style={{ background: `${role.color}25` }} />
+          {featuresBlock}
+        </div>
 
-        {/* Divider */}
-        <div className="h-px w-full mb-5" style={{ background: `${role.color}25` }} />
-
-        {/* Features */}
-        <ul className="space-y-3">
-          {role.features.map((feat) => (
-            <li key={feat} className="flex items-center gap-2">
-              <div
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{
-                  background: role.color,
-                  boxShadow: `0 0 4px ${role.glow}`,
-                }}
-              />
-              <span
-                className="text-xs font-light"
-                style={{ color: '#d4d4d4', fontFamily: 'Inter, sans-serif' }}
-              >
-                {feat}
-              </span>
-            </li>
+        {/* Bottom bar */}
+        <div className="absolute bottom-4 left-6 right-6 flex items-center gap-2 z-10">
+          {[1, 2, 3].map((d) => (
+            <div
+              key={d}
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: role.color, opacity: d === 3 ? 0.4 : 1 }}
+            />
           ))}
-        </ul>
-      </>
+          <span
+            style={{
+              fontSize: '9px',
+              fontFamily: 'Inter, sans-serif',
+              textTransform: 'uppercase',
+              letterSpacing: '0.15em',
+              color: role.color,
+              opacity: 0.6,
+            }}
+          >
+            {role.bottomTagline}
+          </span>
+        </div>
+      </div>
     );
   }
 );
@@ -631,7 +779,7 @@ function DesktopLayout({
                   ariaLabel={`Select ${role.name} path as ${role.label}`}
                   ariaPressed={isSelected}
                   onKeyDown={handleKeyDown(role.id)}
-                  className="rounded-3xl p-6 lg:p-8 cursor-pointer transition-[border,box-shadow] duration-300 relative min-h-[520px]"
+                  className="rounded-3xl p-6 lg:p-8 pb-14 cursor-pointer transition-[border,box-shadow] duration-300 relative min-h-[520px]"
                   style={{
                     background: isSelected
                       ? `linear-gradient(135deg, ${role.color}12, ${role.color}08)`

@@ -13,12 +13,11 @@ const ShimmerDot = ({
   <motion.div
     className="absolute w-1 h-1 rounded-full"
     style={{
-      background:
-        variant === 'blue'
-          ? 'hsl(var(--color-guru))'
-          : 'hsl(var(--color-disciple))',
+      background: variant === 'blue' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
       boxShadow:
-        variant === 'blue' ? '0 0 6px hsl(var(--color-guru) / 0.4)' : '0 0 6px hsl(var(--color-disciple) / 0.4)',
+        variant === 'blue'
+          ? '0 0 6px hsl(var(--color-guru) / 0.4)'
+          : '0 0 6px hsl(var(--color-disciple) / 0.4)',
     }}
     initial={{ opacity: 0, scale: 0 }}
     animate={{ opacity: 0.5, scale: 1 }}
@@ -72,7 +71,8 @@ const AboutPage = memo(() => {
       <motion.div
         className="absolute w-[500px] h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
+          background:
+            'radial-gradient(circle, hsl(var(--color-disciple) / 0.08) 0%, transparent 70%)',
           bottom: '10%',
           left: '5%',
           filter: 'blur(80px)',
@@ -116,7 +116,8 @@ const AboutPage = memo(() => {
               className="text-4xl md:text-5xl lg:text-6xl font-light pb-3"
               style={{
                 fontFamily: "'Playfair Display', serif",
-                background: 'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
+                background:
+                  'linear-gradient(90deg, hsl(var(--color-guru)) 0%, #e5e4e2 50%, hsl(var(--color-disciple)) 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -187,7 +188,10 @@ const AboutPage = memo(() => {
                           value.variant === 'blue'
                             ? 'linear-gradient(135deg, hsl(var(--color-guru) / 0.15), hsl(var(--color-guru-secondary) / 0.1))'
                             : 'linear-gradient(135deg, hsl(var(--color-disciple) / 0.15), hsl(var(--color-disciple-secondary) / 0.1))',
-                        color: value.variant === 'blue' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
+                        color:
+                          value.variant === 'blue'
+                            ? 'hsl(var(--color-guru))'
+                            : 'hsl(var(--color-disciple))',
                       }}
                       whileHover={{ rotate: 360, scale: 1.1 }}
                       transition={{ duration: 0.6 }}
@@ -244,21 +248,24 @@ const AboutPage = memo(() => {
           >
             {[
               {
-                quote: 'GymGurus cut my admin time in half. I spend more time coaching and less time on spreadsheets.',
+                quote:
+                  'I went from managing 6 clients on spreadsheets to 18 clients on GymGurus. The program builder alone saves me 4 hours a week.',
                 name: 'Sarah M.',
-                role: 'Personal Trainer, NYC',
+                role: 'Personal Trainer · New York',
                 variant: 'guru' as const,
               },
               {
-                quote: 'The AI workout generator is a game-changer. My clients love the personalized programs.',
-                name: 'James K.',
-                role: 'Strength Coach, LA',
+                quote:
+                  'The AI coach actually knows my training history. It told me to deload before I even felt fatigued. Hit a 20kg squat PR the week after.',
+                name: 'Marcus T.',
+                role: 'Ronin · 8 months on GymGurus',
                 variant: 'disciple' as const,
               },
               {
-                quote: 'Finally a platform that understands what trainers actually need. Simple, fast, effective.',
+                quote:
+                  'My clients love the Disciple app — they can see their own progress, log workouts, and message me without needing WhatsApp groups.',
                 name: 'Maria L.',
-                role: 'Fitness Studio Owner',
+                role: 'Fitness Studio Owner · Barcelona',
                 variant: 'guru' as const,
               },
             ].map((testimonial, index) => (
@@ -269,7 +276,8 @@ const AboutPage = memo(() => {
                 transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
                 className="rounded-2xl p-5 relative"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
+                  background:
+                    'linear-gradient(135deg, rgba(15, 15, 15, 0.7), rgba(10, 10, 10, 0.8))',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
                 }}
               >
@@ -277,18 +285,30 @@ const AboutPage = memo(() => {
                   <Quote
                     className="w-5 h-5"
                     style={{
-                      color: testimonial.variant === 'guru' ? 'hsl(var(--color-guru) / 0.4)' : 'hsl(var(--color-disciple) / 0.4)',
+                      color:
+                        testimonial.variant === 'guru'
+                          ? 'hsl(var(--color-guru) / 0.4)'
+                          : 'hsl(var(--color-disciple) / 0.4)',
                     }}
                   />
                   <p
-                    className="text-sm font-light italic"
-                    style={{ fontFamily: "'Cormorant Garamond', serif", color: '#ccc', lineHeight: '1.8' }}
+                    className="font-light italic"
+                    style={{
+                      fontFamily: "'Cormorant Garamond', serif",
+                      color: '#ccc',
+                      lineHeight: '1.8',
+                      fontSize: '15px',
+                    }}
                   >
-                    "{testimonial.quote}"
+                    &ldquo;{testimonial.quote}&rdquo;
                   </p>
                   <div>
-                    <p className="text-sm font-medium" style={{ color: '#fff' }}>{testimonial.name}</p>
-                    <p className="text-xs font-light" style={{ color: '#888' }}>{testimonial.role}</p>
+                    <p className="text-sm font-medium" style={{ color: '#fff' }}>
+                      {testimonial.name}
+                    </p>
+                    <p className="font-light" style={{ color: '#888', fontSize: '13px' }}>
+                      {testimonial.role}
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -310,8 +330,12 @@ const AboutPage = memo(() => {
           style={{
             left: dot.left,
             top: dot.top,
-            background: dot.variant === 'guru' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
-            boxShadow: dot.variant === 'guru' ? '0 0 6px hsl(var(--color-guru) / 0.4)' : '0 0 6px hsl(var(--color-disciple) / 0.4)',
+            background:
+              dot.variant === 'guru' ? 'hsl(var(--color-guru))' : 'hsl(var(--color-disciple))',
+            boxShadow:
+              dot.variant === 'guru'
+                ? '0 0 6px hsl(var(--color-guru) / 0.4)'
+                : '0 0 6px hsl(var(--color-disciple) / 0.4)',
           }}
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 0.4, scale: 1 }}
