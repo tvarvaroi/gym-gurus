@@ -33,6 +33,7 @@ interface RoleConfig {
   group1: FeatureItem[];
   group2Label: string;
   group2: FeatureItem[];
+  mobileFeatured: FeatureItem[];
 }
 
 const ROLES: RoleConfig[] = [
@@ -59,6 +60,11 @@ const ROLES: RoleConfig[] = [
       { name: 'Smart Scheduling', desc: 'recurring appointments, calendar sync' },
       { name: 'AI Coaching Tools', desc: 'generate workouts for any client instantly' },
     ],
+    mobileFeatured: [
+      { name: 'Client & Program Management', desc: 'build programs, assign to clients' },
+      { name: 'Payment Plans & Scheduling', desc: 'Stripe billing + calendar' },
+      { name: 'AI Coaching Tools', desc: 'generate workouts for any client' },
+    ],
   },
   {
     id: 'client',
@@ -84,6 +90,11 @@ const ROLES: RoleConfig[] = [
       { name: 'Recovery Tracking', desc: 'per-muscle fatigue anatomy diagram' },
       { name: 'Premium Calculators', desc: 'TDEE, macros, 1RM, BMI and 10 more' },
     ],
+    mobileFeatured: [
+      { name: 'Assigned Workouts', desc: 'receive & execute trainer programs' },
+      { name: 'Personal Records', desc: 'automatic PR tracking & history' },
+      { name: 'Progress Dashboard', desc: 'volume trends, strength curves' },
+    ],
   },
   {
     id: 'solo',
@@ -108,6 +119,11 @@ const ROLES: RoleConfig[] = [
       { name: 'Gamification & XP', desc: 'level up, achievements, streaks' },
       { name: 'Nutrition Planner', desc: 'AI meal plans for your macros' },
       { name: 'Recovery Intelligence', desc: 'ACWR training load + muscle fatigue' },
+    ],
+    mobileFeatured: [
+      { name: 'AI Workout Generator', desc: 'full workout in 30 seconds' },
+      { name: 'AI Coach Chat', desc: '24/7 coach powered by Claude AI' },
+      { name: 'Gamification & XP', desc: 'level up, achievements, streaks' },
     ],
   },
 ];
@@ -278,7 +294,7 @@ function FeatureGroup({
   return (
     <div>
       <p
-        className="mb-2"
+        className="mb-2.5"
         style={{
           fontSize: '9px',
           fontFamily: 'Inter, sans-serif',
@@ -290,7 +306,7 @@ function FeatureGroup({
       >
         {label}
       </p>
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {items.map((feat) => (
           <li key={feat.name} className="flex items-start gap-2">
             <div
@@ -336,7 +352,7 @@ const RoleCardContent = memo(
           color={role.color}
           glow={role.glow}
         />
-        <div className="h-px w-full my-3" style={{ background: `${role.color}18` }} />
+        <div className="h-px w-full my-4" style={{ background: `${role.color}18` }} />
         <FeatureGroup
           label={role.group2Label}
           items={role.group2}
@@ -402,15 +418,30 @@ const RoleCardContent = memo(
           >
             {getRoleTagline(role.id)}
           </p>
-          <div className="h-px w-full mb-3" style={{ background: `${role.color}25` }} />
-          <div className="w-full">{featuresBlock}</div>
+          <ul className="w-full space-y-2.5 mt-1">
+            {role.mobileFeatured.map((feat, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <div
+                  className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
+                  style={{ background: role.color, boxShadow: `0 0 6px ${role.glow}` }}
+                />
+                <span style={{ fontFamily: 'Inter, sans-serif' }}>
+                  <span className="text-[13px] font-medium text-white">{feat.name}</span>
+                  <span className="text-[12px] font-light" style={{ color: '#999' }}>
+                    {' '}
+                    &mdash; {feat.desc}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       );
     }
 
     // Desktop layout
     return (
-      <div className="relative">
+      <div className="relative h-full flex flex-col">
         {/* Diagonal lines SVG background */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none z-0 rounded-3xl overflow-hidden"
@@ -440,7 +471,7 @@ const RoleCardContent = memo(
 
         {/* Pill badge */}
         <div
-          className="absolute top-4 right-14 px-2 rounded-full z-10"
+          className="absolute top-[22px] right-[72px] px-2 rounded-full z-10"
           style={{
             height: 18,
             fontSize: '9px',
@@ -454,7 +485,7 @@ const RoleCardContent = memo(
           {role.pillLabel}
         </div>
 
-        <div className="relative z-10">
+        <div className="relative z-10 flex-1">
           {/* Top row: circle + checkmark */}
           <div className="flex items-start justify-between mb-4">
             <motion.div
@@ -485,7 +516,7 @@ const RoleCardContent = memo(
           </div>
 
           <h2
-            className="text-xl font-light mb-1 mt-6"
+            className="text-xl font-light mb-2 mt-6"
             style={{
               fontFamily: "'Playfair Display', serif",
               background: `linear-gradient(135deg, #ffffff, ${role.color})`,
@@ -511,7 +542,7 @@ const RoleCardContent = memo(
         </div>
 
         {/* Bottom bar */}
-        <div className="absolute bottom-4 left-6 right-6 flex items-center gap-2 z-10">
+        <div className="flex items-center gap-2 mt-auto pt-4 z-10">
           {[1, 2, 3].map((d) => (
             <div
               key={d}
@@ -779,7 +810,7 @@ function DesktopLayout({
                   ariaLabel={`Select ${role.name} path as ${role.label}`}
                   ariaPressed={isSelected}
                   onKeyDown={handleKeyDown(role.id)}
-                  className="rounded-3xl p-6 lg:p-8 pb-14 cursor-pointer transition-[border,box-shadow] duration-300 relative min-h-[520px]"
+                  className="rounded-3xl p-6 lg:p-8 pb-16 cursor-pointer transition-[border,box-shadow] duration-300 relative min-h-[580px]"
                   style={{
                     background: isSelected
                       ? `linear-gradient(135deg, ${role.color}12, ${role.color}08)`
@@ -812,11 +843,12 @@ function DesktopLayout({
                       }}
                     />
                   )}
-                  <div className="relative z-10">
+                  <div className="relative z-10 h-full flex flex-col">
                     <RoleCardContent
                       role={role}
                       isSelected={isSelected}
                       reducedMotion={reducedMotion}
+                      circleSize={72}
                     />
                   </div>
                 </ParallaxCard>
@@ -976,9 +1008,9 @@ function MobileLayout({
     onSelectRole(ROLES[activeIndex].id);
   }, [activeIndex, onSelectRole]);
 
+  const TOTAL = ROLES.length; // 3
   const goTo = useCallback((index: number) => {
-    const clamped = Math.max(0, Math.min(ROLES.length - 1, index));
-    setActiveIndex(clamped);
+    setActiveIndex(((index % TOTAL) + TOTAL) % TOTAL);
   }, []);
 
   // Arrow key navigation
@@ -992,7 +1024,7 @@ function MobileLayout({
 
   return (
     <div
-      className="w-full relative overflow-hidden flex flex-col"
+      className="w-full relative overflow-visible flex flex-col"
       style={{ minHeight: '100dvh' }}
       onKeyDown={handleKeyDown}
     >
@@ -1023,8 +1055,8 @@ function MobileLayout({
 
       {/* Swipeable card area — fixed height to prevent empty gap */}
       <div
-        className="relative overflow-hidden flex-shrink-0"
-        style={{ height: 420 }}
+        className="relative overflow-visible flex-shrink-0"
+        style={{ height: 460 }}
         ref={containerRef}
       >
         <div className="relative h-full flex items-center justify-center">
@@ -1093,7 +1125,7 @@ function MobileLayout({
                       : '1px solid rgba(255,255,255,0.06)',
                     boxShadow: isActive ? `0 20px 40px -10px ${role.glow}` : 'none',
                     backdropFilter: 'blur(20px)',
-                    minHeight: '390px',
+                    minHeight: '440px',
                   }}
                 >
                   <div className="relative z-10">
