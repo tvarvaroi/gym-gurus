@@ -2,7 +2,13 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client
 import sharp from 'sharp';
 import { randomUUID } from 'crypto';
 
-const ALLOWED_FOLDERS = ['profiles', 'progress', 'exercises'] as const;
+const ALLOWED_FOLDERS = [
+  'profiles',
+  'progress',
+  'exercises',
+  'biometrics',
+  'biometrics-thumbnails',
+] as const;
 type UploadFolder = (typeof ALLOWED_FOLDERS)[number];
 
 function getR2Client(): S3Client | null {
