@@ -285,6 +285,114 @@ override. DropdownMenuContent asChild + motion.div → Radix data-[state] CSS.
 
 ---
 
+## Hero + Choose Your Path merge (2026-03-26)
+
+**Decided:** Merge HeroPage and ChooseYourPathSection into a single above-fold
+`HeroChoosePathSection.tsx`. Desktop: 40/60 split (branding left, 3-card bento
+right). Mobile: swipeable card stack with pagination dots + CTA zone.
+**Rejected:** Keeping ChooseYourPath as a separate section after Pricing (6 sections
+before any conversion action).
+**Why:** CRO research — 80% of time is spent above the fold. Every scroll = dropout
+risk. Role selection IS the conversion action and must be the first thing seen.
+Cards navigate to `/auth/login?role=` — no inline auth form on landing.
+
+---
+
+## Header Login vs Home distinction (2026-03-26)
+
+**Decided:** Home nav item scrolls to `#hero`. Login button navigates to `/auth/login`.
+**Rejected:** Both pointing to `#hero` (which we had briefly).
+**Why:** Different user intents. New visitors discover roles via the hero section.
+Returning users who already know their role want direct access to the login form.
+
+---
+
+## Landing page FAQ section (2026-03-26)
+
+**Decided:** Dedicated `FAQSection.tsx` with 20 questions in 4 groups, using shadcn
+Accordion. Placed between `#pricing` and `#contact`.
+**Rejected:** Inline FAQ within PricingPage (was 4 questions only).
+**Why:** 20 codebase-accurate questions serve both SEO (FAQ schema) and user trust.
+Group structure (Getting Started / Guru / Ronin / Platform) matches user journeys.
+Removed the small 4-question FAQ from PricingPage to avoid duplication.
+
+---
+
+## Program Builder architecture (2026-03-26)
+
+**Decided:** Programs are multi-week containers with `programWeeks` (JSONB days array
+per week). Enrollments track user progress (currentWeek/currentDay).
+DayCompletions record individual day finishes.
+**Rejected:** Extending the existing workouts table with a "program" flag.
+**Why:** Programs and workouts are different abstractions. A program contains multiple
+workouts across weeks. Keeping them separate avoids schema overload on the workouts
+table and allows independent program lifecycle (enroll, pause, complete, abandon).
+
+---
+
+## Open Wearables for unified wearable integration (2026-04, Q2-Q3 roadmap, Sprint 4)
+
+**Decided:** Self-hosted Open Wearables (MIT, free, Railway-deployed) for all wearable
+integrations — Whoop, Oura, Garmin, Strava, Withings, Fitbit, Polar, Suunto.
+**Rejected:** Terra API ($0.50–$2/user/month, $60k–$240k/year at 10k users). Building
+6+ separate OAuth integrations.
+**Why:** Zero per-user fees, data sovereignty (never leaves our infra), MCP server for
+direct AI Coach integration, MIT license = customizable. Trade-off: more dev work to
+host vs Terra's drop-in, accepted because infrastructure quality > shipping speed for
+Q2-Q3 horizon. Source: `docs/plans/2026-05-02-q2-q3-master-roadmap.md`.
+
+---
+
+## Capacitor for native iOS+Android shell (2026-04, Q3 roadmap, Sprint 12)
+
+**Decided:** Wrap existing React app with Capacitor. Native code only for HealthKit /
+Health Connect / FCM bridges.
+**Rejected:** React Native (full rewrite cost), separate native apps in Swift+Kotlin
+(sync nightmare).
+**Why:** ~95% code reuse, web app and native app stay in sync, native APIs accessible
+where needed. Apple Health and Google Health Connect both require native SDK — no web
+alternative exists. Web push converts at ~16% on iOS PWA vs 40-70% native, so the
+notification ROI also justifies the shell. Source:
+`docs/plans/2026-05-02-q2-q3-master-roadmap.md`.
+
+---
+
+## Daily wellness check-in: optional with nudges (2026-04, Sprint 3)
+
+**Decided:** Daily wellness check-in is optional. Gentle nudge after 24h skip. After 7
+consecutive skipped days → "are you still using GymGurus?" re-engagement check.
+**Rejected:** Required (friction risk, churn driver). Pure-optional with no nudges
+(habit never forms).
+**Why:** Habit formation needs gentle pressure but not coercion. The 7-day
+re-engagement is for genuine churn detection, not a punishment. Source:
+`docs/plans/2026-05-02-q2-q3-master-roadmap.md`.
+
+---
+
+## Disciple → Guru wearable data sharing default-on (2026-04, Sprint 4)
+
+**Decided:** Disciples share wearable + biometric data with their Guru by default.
+Explicit consent shown at Disciple onboarding. Granular per-data-type opt-out in
+settings.
+**Rejected:** Default-off opt-in.
+**Why:** The entire value prop of having a Guru is they coach based on your data.
+Default-off creates a lifeless coach experience. Consent is informed and reversible.
+Source: `docs/plans/2026-05-02-q2-q3-master-roadmap.md`.
+
+---
+
+## Wearable features bundled into existing pricing tiers (2026-04, Sprint 4 + Sprint 8)
+
+**Decided:** Bundle wearable features into existing tiers. 1 wearable connection on
+Ronin/Guru. Unlimited connections + AI context-aware coaching + Adaptive Programming
+on Ronin AI / Pro Guru.
+**Rejected:** New SKU for wearables.
+**Why:** Avoid SKU sprawl. Use the wearable count + AI features as the upsell lever to
+push power users from Ronin → Ronin AI and Guru → Pro Guru. Source:
+`docs/plans/2026-05-02-q2-q3-master-roadmap.md`.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]

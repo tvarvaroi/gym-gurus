@@ -24,6 +24,7 @@
 ## Decisions
 
 - [[notes/decisions]]
+- **Q2-Q3 Roadmap (2026-04):** [docs/plans/2026-05-02-q2-q3-master-roadmap.md](../../docs/plans/2026-05-02-q2-q3-master-roadmap.md) — 5 phases, 13 sprints, 12 new tables (biometrics + wearables + notifications + native shell)
 
 ## Design
 
