@@ -92,6 +92,18 @@ The Drizzle config points to `server/migrations/`. Do not create files in `drizz
 **20 DB tables have no Drizzle schema definition (§DB-5).**
 `shared/schema.ts` only defines 13 of 33+ tables. Running `drizzle-kit generate` without fixing this will produce DROP TABLE diffs for the unmanaged tables. See §DB-5 in CLAUDE.md for the full list.
 
+**`clients.id` is NOT a FK to `users.id` — Disciple linkage is by email match.**
+Trainers add clients to their roster by email; the Disciple registers separately as a `users` row with `role='client'`. The two tables are NOT joined by a FK column. To find a Disciple's `users.id` from a `clients.id`, look up by email + role:
+
+```ts
+const [u] = await db
+  .select({ id: users.id })
+  .from(users)
+  .where(and(eq(users.email, client.email), eq(users.role, 'client'), isNull(users.deletedAt)));
+```
+
+If no match returns, the client row is for a non-registered prospect — handle as empty data, not 404. Pattern helpers: `resolveDiscipleUserId(db, email)` and `getClientUserIdForTrainer(req, res)` (first written in `server/routes/biometrics.ts`, Sprint 1, 2026-05-02). Sprint 4 will add `clients.user_id` as a proper FK alongside the granular consent flags.
+
 ---
 
 ---
@@ -267,6 +279,73 @@ ProtectedRoute.tsx is imported by RouterConfig.tsx which is imported by
 AppShell.tsx — making it part of the initial bundle. Any framer-motion or
 heavy dependency added to ProtectedRoute will eagerly load for every user
 on every page. Keep ProtectedRoute dependency-light.
+
+---
+
+## Landing Page Architecture (2026-03-26)
+
+**Hero + Choose Your Path are ONE merged section — not separate.**
+`HeroChoosePathSection.tsx` replaces both `HeroPage.tsx` and `ChooseYourPathSection.tsx`.
+`HeroPage.tsx` still exists as dead code but is not imported anywhere.
+`ChooseYourPathSection.tsx` was deleted.
+
+**Header Login button goes to `/auth/login`, NOT `#hero`.**
+Home nav item scrolls to `#hero`. Login button navigates to the standalone login page.
+Returning users want direct login access; new users discover roles by scrolling.
+
+**Mobile swipeable cards: only adjacent card peeks.**
+The card positioning uses `isNext`/`isPrev`/offscreen logic with `xPercent` calculations.
+Non-adjacent cards get `translateX: 200%` (fully offscreen). Only ±1 index peeks.
+
+**Mobile card zone needs fixed height, not flex-1.**
+`flex-1` on the card container creates a massive empty gap below cards.
+Use `height: 420px` (or similar fixed value) with `flex-shrink-0`.
+
+**Mobile header clearance is 88px (80px header + 8px breathing room).**
+All mobile landing sections that render below the fixed header need `paddingTop: 88`.
+The mobile HeroChoosePathSection removes the duplicate logo — the fixed header already shows GYM GURUS.
+
+**CTA zone must have fixed height to prevent "Disciple earthquake".**
+Disciple renders 1 button; Guru/Ronin render 3 elements. Switching causes layout shift.
+Fix: fixed height (160px mobile, 140px desktop) + `AnimatePresence mode="wait"` inside.
+
+**RoleCardContent has `isMobile` prop for layout variant.**
+Desktop: horizontal top row (circle left, checkmark right) with features below.
+Mobile: centered vertical layout (circle → name → tagline → divider → features).
+Without `isMobile`, the circle is invisible on mobile due to flex row layout.
+
+**Landing section order (2026-03-26):**
+`#hero` (HeroChoosePathSection) → `#how-it-works` → `#features` → `#about` → `#pricing` → `#faq` (FAQSection) → `#contact`
+
+---
+
+## Program Builder (2026-03-26)
+
+**4 new DB tables:** `programs`, `program_weeks`, `program_enrollments`, `program_day_completions`.
+Migration: `010_program_builder.ts`. Schema in `shared/schema.ts` at bottom.
+API: `/api/programs` with CRUD + enroll + complete-day + active-enrollments.
+AI generation: `POST /api/ai/generate-program` with fallback.
+Frontend: 4 pages in `client/src/pages/programs/` + `Layers` icon in sidebar for all 3 roles.
+
+**Program tables don't exist in production yet.**
+Migration ran on Neon dev DB only. Production Railway DB needs the migration run before the program feature works there.
+
+---
+
+## Dev/Prod Database Sync (2026-03-26)
+
+**Dev DB (Neon) and Prod DB (Railway) are completely separate.**
+Local `.env` DATABASE_URL points to Neon. Prod uses Railway's internal Postgres.
+Use `getDb()` / `getPool()` from `server/db.ts` for dev connections — direct `pg.Pool` with `process.env.DATABASE_URL` fails because `db.ts` reads `.env` manually.
+
+**Array columns need native arrays, not JSON strings, when inserting via `pg.Pool.query()`.**
+The pg driver handles PostgreSQL arrays natively. JSON.stringify on array columns causes `malformed array literal` errors.
+
+**JSONB columns from prod may arrive as already-parsed objects.**
+When copying JSONB data between databases, check if the value is already an object (pass as-is to JSON.stringify) or a string (pass as-is without double-stringifying).
+
+**`workout_exercises.sets_configuration` has NOT NULL in dev but NULLs in prod.**
+Had to `ALTER TABLE ... DROP NOT NULL` before syncing. Schema drift between dev and prod.
 
 ---
 
