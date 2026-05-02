@@ -51,6 +51,7 @@ export function isKnownAuthRoute(pathname: string): boolean {
     pathname.startsWith('/dashboard/calculators') ||
     pathname.startsWith('/solo') ||
     pathname === '/pricing' ||
-    pathname === '/settings'
+    pathname === '/settings' ||
+    pathname === '/biometrics'
   );
 }

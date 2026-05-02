@@ -85,6 +85,7 @@ const DiscipleLoginPage = lazy(() => import('@/pages/DiscipleLoginPage'));
 // Pricing, Settings and payment result pages
 const PricingPage = lazy(() => import('@/pages/PricingPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const BiometricsPage = lazy(() => import('@/pages/BiometricsPage'));
 const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess'));
 const PaymentCancelled = lazy(() => import('@/pages/PaymentCancelled'));
 
@@ -307,6 +308,9 @@ export function RouterConfig() {
           {/* Pricing and Settings */}
           <Route path="/pricing" component={lazyRoute(PricingPage)} />
           <Route path="/settings" component={lazyRoute(SettingsPage)} />
+
+          {/* Biometrics — Sprint 1 (Body Metrics tab live; Photos + Trends in BATCH 4-5) */}
+          <Route path="/biometrics" component={lazyRoute(BiometricsPage)} />
 
           {/* Payment result pages (public — Stripe redirects here) */}
           <Route path="/payment-success" component={lazyRoute(PaymentSuccess)} />
