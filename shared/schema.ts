@@ -120,6 +120,9 @@ export const clients = pgTable(
     neckCircumference: decimal('neck_circumference'), // cm
     waistCircumference: decimal('waist_circumference'), // cm
     hipCircumference: decimal('hip_circumference'), // cm (for women)
+    // Disciple consent: defaults true so trainers see body data; granular siblings
+    // (sleep / hrv / activity / cycle) arrive Sprint 4 alongside wearables.
+    shareBodyMetricsWithTrainer: boolean('share_body_metrics_with_trainer').notNull().default(true),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     lastSession: timestamp('last_session'),
     nextSession: timestamp('next_session'),
@@ -314,16 +317,19 @@ export const workoutAssignments = pgTable(
   ]
 );
 
-// Progress Tracking
+// Progress Tracking — polymorphic since Sprint 1 / migration 011.
+// Either user_id (Ronin/Guru self-tracking) OR client_id (trainer-logged) is set,
+// never both. CHECK constraint progress_entries_user_or_client_check enforces XOR
+// at the DB level. New body progress should write to body_metrics; this table is
+// kept for legacy client rows + the photoUrl column.
 export const progressEntries = pgTable(
   'progress_entries',
   {
     id: varchar('id')
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    clientId: varchar('client_id')
-      .notNull()
-      .references(() => clients.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    clientId: varchar('client_id').references(() => clients.id, { onDelete: 'cascade' }),
     type: text('type').notNull(), // weight, body_fat, measurement, workout_completion
     value: decimal('value', { precision: 8, scale: 2 }).notNull(),
     unit: text('unit').notNull(), // lbs, kg, inches, cm, etc.
@@ -333,6 +339,7 @@ export const progressEntries = pgTable(
   },
   (table) => [
     index('idx_progress_entries_client_id').on(table.clientId),
+    index('idx_progress_entries_user_id').on(table.userId),
     index('idx_progress_entries_recorded_at').on(table.recordedAt),
     index('idx_progress_entries_client_type_date').on(table.clientId, table.type, table.recordedAt),
   ]
@@ -569,10 +576,14 @@ export const insertWorkoutAssignmentSchema = createInsertSchema(workoutAssignmen
   assignedAt: true,
 });
 
-export const insertProgressEntrySchema = createInsertSchema(progressEntries).omit({
-  id: true,
-  recordedAt: true,
-});
+export const insertProgressEntrySchema = createInsertSchema(progressEntries)
+  .omit({
+    id: true,
+    recordedAt: true,
+  })
+  .refine((d) => Boolean(d.userId) !== Boolean(d.clientId), {
+    message: 'Exactly one of userId or clientId must be set (XOR)',
+  });
 
 export const insertTrainingSessionSchema = createInsertSchema(trainingSessions).omit({
   id: true,
@@ -1910,3 +1921,104 @@ export const insertProgramDayCompletionSchema = createInsertSchema(programDayCom
 });
 export type InsertProgramDayCompletion = z.infer<typeof insertProgramDayCompletionSchema>;
 export type ProgramDayCompletion = typeof programDayCompletions.$inferSelect;
+
+// -------------------- BIOMETRICS (Sprint 1 / migration 011) --------------------
+// Time-series body data for ALL roles. Replaces the client-only progressEntries
+// table for new logs. Wearable + Apple Health imports (Sprint 4-5) write here too.
+
+export const bodyMetrics = pgTable(
+  'body_metrics',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    recordedAt: timestamp('recorded_at').defaultNow().notNull(),
+    weightKg: decimal('weight_kg', { precision: 6, scale: 2 }),
+    bodyFatPercentage: decimal('body_fat_percentage', { precision: 4, scale: 2 }),
+    neckCm: decimal('neck_cm', { precision: 5, scale: 2 }),
+    chestCm: decimal('chest_cm', { precision: 5, scale: 2 }),
+    waistCm: decimal('waist_cm', { precision: 5, scale: 2 }),
+    hipsCm: decimal('hips_cm', { precision: 5, scale: 2 }),
+    bicepLeftCm: decimal('bicep_left_cm', { precision: 5, scale: 2 }),
+    bicepRightCm: decimal('bicep_right_cm', { precision: 5, scale: 2 }),
+    thighLeftCm: decimal('thigh_left_cm', { precision: 5, scale: 2 }),
+    thighRightCm: decimal('thigh_right_cm', { precision: 5, scale: 2 }),
+    calfLeftCm: decimal('calf_left_cm', { precision: 5, scale: 2 }),
+    calfRightCm: decimal('calf_right_cm', { precision: 5, scale: 2 }),
+    muscleMassKg: decimal('muscle_mass_kg', { precision: 5, scale: 2 }),
+    visceralFatRating: integer('visceral_fat_rating'),
+    boneMassKg: decimal('bone_mass_kg', { precision: 4, scale: 2 }),
+    bodyWaterPercentage: decimal('body_water_percentage', { precision: 4, scale: 2 }),
+    source: varchar('source', { length: 30 }).notNull().default('manual'), // manual | wearable | apple_health | smart_scale
+    sourceProvider: varchar('source_provider', { length: 50 }), // whoop | withings | manual | ...
+    notes: text('notes'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index('idx_body_metrics_user_id').on(table.userId),
+    index('idx_body_metrics_user_recorded_at').on(table.userId, table.recordedAt),
+  ]
+);
+
+export const progressPhotos = pgTable(
+  'progress_photos',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    takenAt: timestamp('taken_at').defaultNow().notNull(),
+    imageUrl: varchar('image_url', { length: 500 }).notNull(),
+    thumbnailUrl: varchar('thumbnail_url', { length: 500 }),
+    pose: varchar('pose', { length: 20 }).notNull(), // front | side_left | side_right | back | other
+    weightAtPhotoKg: decimal('weight_at_photo_kg', { precision: 5, scale: 2 }),
+    bodyFatAtPhoto: decimal('body_fat_at_photo', { precision: 4, scale: 2 }),
+    isPrivate: boolean('is_private').notNull().default(true),
+    comparesPhotoId: varchar('compares_photo_id').references((): any => progressPhotos.id, {
+      onDelete: 'set null',
+    }),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_progress_photos_user_id').on(table.userId),
+    index('idx_progress_photos_user_taken_at').on(table.userId, table.takenAt),
+    index('idx_progress_photos_user_pose_taken_at').on(table.userId, table.pose, table.takenAt),
+  ]
+);
+
+export const bodyMetricsRelations = relations(bodyMetrics, ({ one }) => ({
+  user: one(users, { fields: [bodyMetrics.userId], references: [users.id] }),
+}));
+
+export const progressPhotosRelations = relations(progressPhotos, ({ one }) => ({
+  user: one(users, { fields: [progressPhotos.userId], references: [users.id] }),
+  comparesPhoto: one(progressPhotos, {
+    fields: [progressPhotos.comparesPhotoId],
+    references: [progressPhotos.id],
+  }),
+}));
+
+export const insertBodyMetricsSchema = createInsertSchema(bodyMetrics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertBodyMetrics = z.infer<typeof insertBodyMetricsSchema>;
+export type BodyMetrics = typeof bodyMetrics.$inferSelect;
+
+export const insertProgressPhotoSchema = createInsertSchema(progressPhotos).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertProgressPhoto = z.infer<typeof insertProgressPhotoSchema>;
+export type ProgressPhoto = typeof progressPhotos.$inferSelect;

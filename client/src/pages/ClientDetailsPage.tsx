@@ -92,6 +92,7 @@ interface ClientAPI {
   neckCircumference: string | null;
   waistCircumference: string | null;
   hipCircumference: string | null;
+  shareBodyMetricsWithTrainer: boolean;
   deletedAt: string | null;
 }
 

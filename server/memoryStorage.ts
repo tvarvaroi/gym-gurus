@@ -1534,6 +1534,7 @@ export class MemoryStorage implements IStorage {
       height: insertClient.height || null,
       weight: insertClient.weight || null,
       activityLevel: insertClient.activityLevel || null,
+      shareBodyMetricsWithTrainer: insertClient.shareBodyMetricsWithTrainer ?? true,
       neckCircumference: insertClient.neckCircumference || null,
       waistCircumference: insertClient.waistCircumference || null,
       hipCircumference: insertClient.hipCircumference || null,
@@ -1799,13 +1800,23 @@ export class MemoryStorage implements IStorage {
   }
 
   async addProgressEntry(insertEntry: InsertProgressEntry): Promise<ProgressEntry> {
+    // Memory storage is a dev-only fallback that has always been keyed by clientId.
+    // Sprint 1 made progress_entries polymorphic in the real schema, but Ronin/Guru
+    // self-tracked body data flows through body_metrics now — not this path.
+    if (!insertEntry.clientId) {
+      throw new Error(
+        'memoryStorage.addProgressEntry requires clientId; user-keyed entries belong in body_metrics'
+      );
+    }
     const entry: ProgressEntry = {
       id: generateId(),
+      userId: insertEntry.userId ?? null,
       clientId: insertEntry.clientId,
       type: insertEntry.type,
       value: insertEntry.value.toString(),
       unit: insertEntry.unit,
       notes: insertEntry.notes || null,
+      photoUrl: insertEntry.photoUrl ?? null,
       recordedAt: new Date(),
     };
 
