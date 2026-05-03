@@ -18,8 +18,27 @@ const router = Router();
 // ─── Validation schemas ─────────────────────────────────────────────────────
 // createInsertSchema picks up `userId` as required, but we always set it from
 // req.user — so omit it from the public payload. All measurements are optional.
+//
+// Date floor 2010-01-01 covers modern fitness tracking history (MyFitnessPal
+// 2005, Withings 2009, Apple Health 2014). Floor is for typo prevention, not
+// history gating — a stray `19` instead of `20` in the year hits this.
+// Ceiling is now+60s to absorb client clock skew without false-rejecting
+// near-midnight logs (Sprint 1.5 audit A2).
+//
+// IMPORTANT: ceiling uses .refine() not .max(), because .max(new Date(...))
+// freezes the cutoff at module-load time. After the server runs for >60s,
+// every "now" request would fail the .max check. Caught during BATCH 2 smoke
+// tests (Sprint 1.5, 2026-05-03). The floor uses .min() because 2010-01-01
+// is a constant and freezing is correct.
+const recordedAtSchema = z.coerce
+  .date()
+  .min(new Date('2010-01-01'), 'Date too far in the past')
+  .refine((d) => d.getTime() <= Date.now() + 60_000, {
+    message: 'Cannot log future entries',
+  });
+
 const createBodyMetricsBodySchema = insertBodyMetricsSchema.omit({ userId: true }).extend({
-  recordedAt: z.coerce.date().optional(),
+  recordedAt: recordedAtSchema.optional(),
 });
 
 const updateBodyMetricsBodySchema = createBodyMetricsBodySchema.partial();
@@ -38,12 +57,25 @@ const createPhotoBodySchema = z.object({
 });
 
 // ─── Multer (memory storage — never write to disk) ──────────────────────────
+// Tightened from a permissive `image/*` filter to an explicit allow-list
+// (Sprint 1.5 audit C1). SVG was the prior risk: image/svg+xml passes
+// `startsWith('image/')` but can carry XSS payloads. Sharp would have failed
+// on most SVGs anyway, but defence-in-depth is cheap.
+const ALLOWED_PHOTO_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+]);
+const UNSUPPORTED_MIME_ERROR = 'Unsupported image format. Use JPEG, PNG, WebP, or HEIC.';
+
 const photoUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) cb(null, true);
-    else cb(new Error('Only images allowed'));
+    if (ALLOWED_PHOTO_MIME.has(file.mimetype)) cb(null, true);
+    else cb(new Error(UNSUPPORTED_MIME_ERROR));
   },
 });
 
@@ -54,8 +86,8 @@ function handleUploadError(err: any, _req: Request, res: Response, next: NextFun
     }
     return res.status(400).json({ error: err.message });
   }
-  if (err?.message === 'Only images allowed') {
-    return res.status(400).json({ error: 'Only images are allowed' });
+  if (err?.message === UNSUPPORTED_MIME_ERROR) {
+    return res.status(400).json({ error: UNSUPPORTED_MIME_ERROR });
   }
   next(err);
 }
@@ -232,8 +264,13 @@ router.post(
       const body = createPhotoBodySchema.parse(req.body);
 
       // Pre-resize to thumbnail (400px); always needed for both R2 and base64 paths.
+      // .rotate() honours EXIF orientation BEFORE .withMetadata({}) strips it.
+      // Strip EXIF/GPS explicitly even though webp encoder strips by default
+      // (defence-in-depth, Sprint 1.5 audit C1).
       const thumbBuffer = await sharp(req.file.buffer)
+        .rotate()
         .resize({ width: 400, withoutEnlargement: true })
+        .withMetadata({})
         .webp({ quality: 80 })
         .toBuffer();
 
@@ -241,7 +278,7 @@ router.post(
       let thumbnailUrl: string;
 
       if (isR2Configured()) {
-        // Full-size: 1024px max width, sharp+webp inside uploadImage()
+        // Full-size: 1024px max width, sharp+webp inside uploadImage() (also strips EXIF)
         imageUrl = await uploadImage(req.file.buffer, 'biometrics', req.file.mimetype, 1024);
         thumbnailUrl = await uploadImage(thumbBuffer, 'biometrics-thumbnails', 'image/webp', 400);
       } else {
@@ -249,7 +286,9 @@ router.post(
         // store as base64 data URL. Pre-resize the full-size to 1024px first
         // so we don't blow up the row size with a 4MB original.
         const fullBuffer = await sharp(req.file.buffer)
+          .rotate()
           .resize({ width: 1024, withoutEnlargement: true })
+          .withMetadata({})
           .webp({ quality: 82 })
           .toBuffer();
         imageUrl = `data:image/webp;base64,${fullBuffer.toString('base64')}`;

@@ -41,8 +41,13 @@ export async function uploadImage(
   const bucket = process.env.CLOUDFLARE_R2_BUCKET!;
   const publicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL!;
 
+  // Explicit EXIF/GPS strip — photos may contain location data from camera apps.
+  // Sharp's webp encoder strips most metadata by default, but explicit
+  // .withMetadata({}) is defence-in-depth (Sprint 1.5 audit C1).
   const optimized = await sharp(buffer)
+    .rotate() // honour EXIF orientation BEFORE stripping it
     .resize({ width: maxWidthPx, withoutEnlargement: true })
+    .withMetadata({})
     .webp({ quality: 82 })
     .toBuffer();
 

@@ -257,6 +257,9 @@ No `requireRole` middleware exists — use the inline pattern.
 **Dev server dies between Playwright + Bash interleaving on Windows.**
 Don't issue Bash calls between Playwright actions if the same `npm run dev` process needs to stay alive. Either batch all Playwright actions before any Bash, or accept that you'll restart the dev server. Sprint 1 BATCH 3.5 hit this twice during the screenshot session — `npm run dev` (run via `run_in_background`) exits when the harness kills the parent shell mid-session.
 
+**Dev server runs `tsx` not `tsx watch` — file edits don't auto-reload.**
+After backend changes (server/routes/_, server/services/_, server/middleware/\_, shared/schema.ts), the running dev server keeps the OLD code. Symptom: a route you just deleted still responds, or a Zod schema you just tightened still accepts old input. Diagnostic: hit a "shouldn't exist anymore" endpoint — if it returns the OLD code's response shape (e.g. a custom error string from a deleted handler) instead of the global `notFoundHandler`'s `{code: 'NOT_FOUND'}` response, you're seeing cached code. Fix per restart: `netstat -ano | grep :5000` → `taskkill //F //PID <pid>` → `npm run dev`. First hit during Sprint 1.5 BATCH 1 (2026-05-03). Future fix: `package.json` `"dev"` script → `"tsx watch server/index.ts"`. Deferred to a tooling sprint to avoid scope creep.
+
 ---
 
 ## CI / Build (added 2026-03-20)

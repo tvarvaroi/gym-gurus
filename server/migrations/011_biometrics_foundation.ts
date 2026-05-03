@@ -111,6 +111,25 @@ export async function up() {
 export async function down() {
   const db = await getDb();
 
+  // Safety: refuse to down-migrate if any progress_entries rows depend on
+  // user_id, because dropping the column would silently destroy data.
+  // Force the operator to reconcile (delete the rows, OR migrate them to a
+  // different owner) first. (Sprint 1.5 audit B2.)
+  const rows = await db.execute<{ count: string }>(
+    sql`SELECT COUNT(*)::text AS count FROM progress_entries WHERE user_id IS NOT NULL`
+  );
+  // Drizzle's NeonHttpDatabase shape returns { rows: [...] }; standard pg
+  // returns { rows: [...] } too. Both have the row at .rows[0].
+  const countStr = (rows as any).rows?.[0]?.count ?? (rows as any)[0]?.count ?? '0';
+  const count = parseInt(countStr, 10);
+  if (count > 0) {
+    throw new Error(
+      `[Migration 011 down] BLOCKED: ${count} progress_entries rows have user_id NOT NULL. ` +
+        `Dropping the user_id column would destroy these rows silently. ` +
+        `Reconcile the data manually (delete or re-key to client_id) before re-running down().`
+    );
+  }
+
   await db.execute(
     sql`ALTER TABLE clients DROP COLUMN IF EXISTS share_body_metrics_with_trainer`
   );
@@ -120,14 +139,18 @@ export async function down() {
     sql`ALTER TABLE progress_entries DROP CONSTRAINT IF EXISTS progress_entries_user_or_client_check`
   );
   await db.execute(sql`ALTER TABLE progress_entries DROP COLUMN IF EXISTS user_id`);
-  // Intentionally NOT re-applying NOT NULL on client_id — if any rows were inserted
-  // with user_id only, that would fail. A real rollback would inspect data first.
+  // Intentionally NOT re-applying NOT NULL on client_id — historical state
+  // was NOT NULL before 011, and the assertion above verified no user_id-only
+  // rows exist, so client_id is populated for every row. Leaving the column
+  // nullable is the conservative choice (avoids a second ALTER if a future
+  // forward-migration needs the looser shape).
 
   await db.execute(sql`DROP TABLE IF EXISTS progress_photos`);
   await db.execute(sql`DROP TABLE IF EXISTS body_metrics`);
 
   console.warn(
-    '[Migration 011 down] Reverted body_metrics + progress_photos + indexes; left progress_entries.client_id nullable for safety'
+    '[Migration 011 down] Reverted body_metrics + progress_photos + indexes; ' +
+      `${count} user_id rows existed (safe to revert)`
   );
 }
 
