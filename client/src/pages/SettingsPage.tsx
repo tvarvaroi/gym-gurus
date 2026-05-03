@@ -36,6 +36,7 @@ import {
   Camera,
   Scale,
   Settings,
+  Lock,
 } from 'lucide-react';
 import { useRef } from 'react';
 import { getRoleDisplayName, getPlanDisplayName, type InternalRole } from '@/lib/roles';
@@ -1027,9 +1028,92 @@ function DangerZoneTab() {
 }
 
 // ─────────────────────────────────────────────
+// Privacy Tab (Disciple-only in v1)
+// ─────────────────────────────────────────────
+function PrivacyTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const settingQuery = useQuery<{ shareBodyMetricsWithTrainer: boolean; hasTrainer: boolean }>({
+    queryKey: ['/api/settings/biometrics-sharing'],
+  });
+
+  const isShared = settingQuery.data?.shareBodyMetricsWithTrainer ?? true;
+  const hasTrainer = settingQuery.data?.hasTrainer ?? false;
+
+  const updateSharing = useMutation({
+    mutationFn: async (next: boolean) => {
+      const res = await apiRequest('PATCH', '/api/settings/biometrics-sharing', {
+        shareBodyMetricsWithTrainer: next,
+      });
+      return res.json();
+    },
+    onSuccess: (_d, next) => {
+      queryClient.setQueryData(['/api/settings/biometrics-sharing'], (prev: any) => ({
+        ...(prev ?? {}),
+        shareBodyMetricsWithTrainer: next,
+      }));
+      toast({
+        title: next ? 'Sharing turned on' : 'Sharing turned off',
+        description: next
+          ? 'Your trainer can now see your weight, body fat, and measurements.'
+          : 'Your trainer no longer sees your body metrics.',
+      });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Save failed', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5 text-primary" />
+            Privacy
+          </CardTitle>
+          <CardDescription>
+            Control what your trainer can see. Photos are never shared with your trainer in this
+            version — granular per-photo sharing is coming in a future release.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1 flex-1 min-w-0">
+              <p className="text-sm font-medium">Share body metrics with my trainer</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Your trainer can see your weight, body fat, body composition, and measurements. You
+                can turn this off anytime — your trainer is told it&apos;s a privacy choice, not an
+                error.
+              </p>
+            </div>
+            <Switch
+              checked={isShared}
+              onCheckedChange={(v) => updateSharing.mutate(v)}
+              disabled={updateSharing.isPending || settingQuery.isLoading}
+              aria-label="Share body metrics with my trainer"
+            />
+          </div>
+          {!hasTrainer && !settingQuery.isLoading && (
+            <p className="text-xs text-muted-foreground italic pt-2 border-t border-border/30">
+              You don&apos;t have a trainer linked yet. This setting will apply once a trainer adds
+              you to their roster.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Main SettingsPage
 // ─────────────────────────────────────────────
 export default function SettingsPage() {
+  const { user } = useUser();
+  const isDisciple = user?.role === 'client';
+
   return (
     <div className="max-w-3xl mx-auto py-2">
       <BlurFade delay={0.05}>
@@ -1045,7 +1129,9 @@ export default function SettingsPage() {
 
       <BlurFade delay={0.1}>
         <Tabs defaultValue="profile">
-          <TabsList className="mb-6 grid w-full grid-cols-5 h-11">
+          <TabsList
+            className={`mb-6 grid w-full ${isDisciple ? 'grid-cols-6' : 'grid-cols-5'} h-11`}
+          >
             <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm min-h-[44px]">
               <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Profile</span>
@@ -1062,6 +1148,12 @@ export default function SettingsPage() {
               <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Alerts</span>
             </TabsTrigger>
+            {isDisciple && (
+              <TabsTrigger value="privacy" className="gap-1 text-xs sm:text-sm min-h-[44px]">
+                <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Privacy</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger
               value="danger"
               className="gap-1 text-xs sm:text-sm min-h-[44px] text-destructive data-[state=active]:text-destructive"
@@ -1083,6 +1175,11 @@ export default function SettingsPage() {
           <TabsContent value="notifications">
             <NotificationsTab />
           </TabsContent>
+          {isDisciple && (
+            <TabsContent value="privacy">
+              <PrivacyTab />
+            </TabsContent>
+          )}
           <TabsContent value="danger">
             <DangerZoneTab />
           </TabsContent>

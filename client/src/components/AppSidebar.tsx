@@ -15,6 +15,7 @@ import {
   Apple,
   ChevronDown,
   Layers,
+  Activity,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -68,6 +69,11 @@ const trainerMenuItems = [
     icon: Calculator,
   },
   {
+    title: 'Body',
+    url: '/biometrics',
+    icon: Activity,
+  },
+  {
     title: 'Schedule',
     url: '/schedule',
     icon: Calendar,
@@ -115,6 +121,11 @@ const clientMenuItems = [
     title: 'My Progress',
     url: '/progress',
     icon: TrendingUp,
+  },
+  {
+    title: 'Body',
+    url: '/biometrics',
+    icon: Activity,
   },
   {
     title: 'Calculators',
@@ -169,6 +180,11 @@ const soloMenuItems = [
     title: 'My Progress',
     url: '/progress',
     icon: TrendingUp,
+  },
+  {
+    title: 'Body',
+    url: '/biometrics',
+    icon: Activity,
   },
   {
     title: 'Recovery',

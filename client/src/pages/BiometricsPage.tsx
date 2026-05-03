@@ -13,6 +13,7 @@ import { BodyMetricsList } from '@/components/biometrics/BodyMetricsList';
 import { BodyMetricsEmptyState } from '@/components/biometrics/BodyMetricsEmptyState';
 import { LogBodyMetricsSheet } from '@/components/biometrics/LogBodyMetricsSheet';
 import { PhotosTab } from '@/components/biometrics/PhotosTab';
+import { BodyMetricsTrends } from '@/components/biometrics/BodyMetricsTrends';
 import type { BodyMetrics } from '@shared/schema';
 
 export default function BiometricsPage() {
@@ -138,11 +139,21 @@ export default function BiometricsPage() {
           <PhotosTab units={units} />
         </TabsContent>
 
-        {/* ─── Trends tab (BATCH 5) ───────────────────────────────────────── */}
+        {/* ─── Trends tab ──────────────────────────────────────────────────── */}
         <TabsContent value="trends" className="mt-4 md:mt-6">
-          <div className="text-center py-16 text-sm text-muted-foreground">
-            Trend charts coming in BATCH 5.
-          </div>
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-20 rounded-2xl" />
+              <Skeleton className="h-72 rounded-2xl" />
+            </div>
+          ) : (
+            <BodyMetricsTrends
+              entries={entries}
+              units={units}
+              defaultRange="30d"
+              onLog={openLogSheet}
+            />
+          )}
         </TabsContent>
       </Tabs>
 

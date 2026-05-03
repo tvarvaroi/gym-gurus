@@ -71,6 +71,11 @@ import ClientIntakeForm from '@/components/ClientIntakeForm';
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { TruncatedText } from '@/components/TruncatedText';
+import { BodyMetricsList } from '@/components/biometrics/BodyMetricsList';
+import { BodyMetricsTrends } from '@/components/biometrics/BodyMetricsTrends';
+import { Lock } from 'lucide-react';
+import { getUnits } from '@/lib/units';
+import type { BodyMetrics } from '@shared/schema';
 
 // API response type - dates are serialized as strings
 interface ClientAPI {
@@ -1231,6 +1236,7 @@ export default function ClientDetailsPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="workouts">Workouts</TabsTrigger>
           <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsTrigger value="body">Body</TabsTrigger>
           <TabsTrigger value="sessions">Sessions</TabsTrigger>
           <TabsTrigger value="intake">Intake</TabsTrigger>
         </TabsList>
@@ -1579,6 +1585,17 @@ export default function ClientDetailsPage() {
                 </p>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* Body Tab — read-only client biometrics view */}
+        <TabsContent value="body" className="space-y-6">
+          {clientId && client && (
+            <ClientBodyTab
+              clientId={clientId}
+              shareEnabled={Boolean(client.shareBodyMetricsWithTrainer)}
+              clientFirstName={client.name?.split(' ')[0] ?? 'Your client'}
+            />
           )}
         </TabsContent>
 
@@ -1941,5 +1958,92 @@ export default function ClientDetailsPage() {
         </DialogContent>
       </Dialog>
     </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// ClientBodyTab — read-only Disciple body metrics view for trainers.
+// Photos are intentionally NEVER rendered here in v1 — granular per-photo
+// consent is the Sprint 4 deliverable. The empty state explains this so
+// the Guru does not interpret it as a bug.
+// ─────────────────────────────────────────────
+interface ClientBodyTabProps {
+  clientId: string;
+  shareEnabled: boolean;
+  clientFirstName: string;
+}
+
+function ClientBodyTab({ clientId, shareEnabled, clientFirstName }: ClientBodyTabProps) {
+  const units = getUnits();
+
+  const entriesQuery = useQuery<BodyMetrics[]>({
+    queryKey: [`/api/biometrics/client/${clientId}`],
+    enabled: shareEnabled,
+  });
+
+  // Privacy-gated: client opted out of sharing
+  if (!shareEnabled) {
+    return (
+      <Card className="glass-strong border-border/50">
+        <CardContent className="py-16 text-center px-6">
+          <div className="mx-auto w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center mb-4">
+            <Lock className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <p className="text-base font-medium text-foreground mb-1">
+            {clientFirstName} hasn&apos;t shared body metrics.
+          </p>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            They can turn this on in Settings → Privacy. Photos always require separate consent —
+            granular per-photo sharing ships in a future release.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const entries = entriesQuery.data ?? [];
+  const isLoading = entriesQuery.isLoading;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <div className="h-28 rounded-2xl bg-muted/20 animate-pulse" />
+        <div className="h-28 rounded-2xl bg-muted/20 animate-pulse" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Trends — read-only, defaults to 90d for trainer mental model */}
+      <Card className="glass-strong border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg">Trends</CardTitle>
+          <CardDescription>
+            {entries.length === 0
+              ? 'No body metrics logged yet.'
+              : 'Read-only view of the metrics your client has logged. Photos are not shared.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BodyMetricsTrends entries={entries} units={units} defaultRange="90d" readOnly />
+        </CardContent>
+      </Card>
+
+      {/* History list */}
+      {entries.length > 0 && (
+        <Card className="glass-strong border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg">History</CardTitle>
+            <CardDescription>
+              {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BodyMetricsList entries={entries} units={units} readOnly />
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

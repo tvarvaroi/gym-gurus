@@ -225,6 +225,58 @@ router.patch('/notifications', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/settings/biometrics-sharing — Disciple-only read of consent flag
+router.get('/biometrics-sharing', async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (user.role !== 'client') {
+      return res.status(403).json({ error: 'Disciple-only setting' });
+    }
+
+    const [client] = await db
+      .select({ shareBodyMetricsWithTrainer: clients.shareBodyMetricsWithTrainer })
+      .from(clients)
+      .where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
+
+    res.json({
+      shareBodyMetricsWithTrainer: client?.shareBodyMetricsWithTrainer ?? true,
+      hasTrainer: Boolean(client),
+    });
+  } catch (error) {
+    console.error('Error fetching biometrics-sharing setting:', error);
+    res.status(500).json({ error: 'Failed to fetch privacy setting' });
+  }
+});
+
+// PATCH /api/settings/biometrics-sharing — Disciple-only toggle of consent flag
+router.patch('/biometrics-sharing', async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (user.role !== 'client') {
+      return res.status(403).json({ error: 'Disciple-only setting' });
+    }
+
+    const { shareBodyMetricsWithTrainer } = req.body;
+    if (typeof shareBodyMetricsWithTrainer !== 'boolean') {
+      return res.status(400).json({ error: 'shareBodyMetricsWithTrainer must be boolean' });
+    }
+
+    // Disciple → trainer linkage is by email match (clients.email = users.email).
+    // A Disciple may have zero or one matching client row at any time. The
+    // clients table has no updatedAt column today (Sprint 4 tracking arrives
+    // with the full FK migration).
+    await db
+      .update(clients)
+      .set({ shareBodyMetricsWithTrainer })
+      .where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
+
+    res.json({ success: true, shareBodyMetricsWithTrainer });
+  } catch (error) {
+    console.error('Error updating biometrics-sharing setting:', error);
+    res.status(500).json({ error: 'Failed to update privacy setting' });
+  }
+});
+
 // DELETE /api/settings/account — anonymize PII and destroy session
 router.delete('/account', async (req: Request, res: Response) => {
   try {
