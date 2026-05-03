@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, isThisYear } from 'date-fns';
-import { Camera, Lock, Link2, Plus, X } from 'lucide-react';
+import { Lock, Link2, Plus, X } from 'lucide-react';
 import { ActionButton } from '@/components/ui/premium/ActionButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ProgressPhoto } from '@shared/schema';
@@ -23,25 +23,22 @@ type PoseFilter = (typeof POSE_FILTERS)[number]['value'];
 
 interface PhotosTabProps {
   units: UnitSystem;
-  /** When set, fetches that client's photos via the trainer endpoint. Hides write actions. */
-  clientId?: string;
 }
 
-export function PhotosTab({ units, clientId }: PhotosTabProps) {
-  const isReadOnly = Boolean(clientId);
-
+// Sprint 1 ships a Disciple-only photos surface. The trainer-side photos route
+// (GET /api/biometrics/photos/client/:clientId) was removed in Sprint 1.5
+// because it contradicted the locked decision "Photos NEVER visible to Guru in
+// v1." Sprint 4 will reintroduce a trainer-side photos view with proper
+// per-photo consent grants — see docs/audits/2026-05-03-sprint-1-retrospective-audit.md.
+export function PhotosTab({ units }: PhotosTabProps) {
   const [poseFilter, setPoseFilter] = useState<PoseFilter>('all');
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhoto | null>(null);
   const [compareFrom, setCompareFrom] = useState<ProgressPhoto | null>(null);
   const [compareTo, setCompareTo] = useState<ProgressPhoto | null>(null);
 
-  const queryUrl = clientId
-    ? `/api/biometrics/photos/client/${clientId}`
-    : '/api/biometrics/photos';
-
   const photosQuery = useQuery<ProgressPhoto[]>({
-    queryKey: [queryUrl],
+    queryKey: ['/api/biometrics/photos'],
   });
 
   const photos = photosQuery.data ?? [];
@@ -82,16 +79,6 @@ export function PhotosTab({ units, clientId }: PhotosTabProps) {
 
   // ─── Empty state ──────────────────────────────────────────────────────────
   if (!hasPhotos) {
-    if (isReadOnly) {
-      return (
-        <div className="text-center py-16 px-6">
-          <Lock className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            No photos shared yet, or this client hasn&apos;t enabled photo visibility.
-          </p>
-        </div>
-      );
-    }
     return (
       <>
         <PhotosEmptyState onAddPhoto={() => setUploadOpen(true)} />
@@ -144,17 +131,15 @@ export function PhotosTab({ units, clientId }: PhotosTabProps) {
             </button>
           ))}
         </div>
-        {!isReadOnly && (
-          <ActionButton
-            variant="primary"
-            size="sm"
-            onClick={() => setUploadOpen(true)}
-            icon={<Plus className="w-4 h-4" />}
-            className="hidden md:inline-flex"
-          >
-            Add photo
-          </ActionButton>
-        )}
+        <ActionButton
+          variant="primary"
+          size="sm"
+          onClick={() => setUploadOpen(true)}
+          icon={<Plus className="w-4 h-4" />}
+          className="hidden md:inline-flex"
+        >
+          Add photo
+        </ActionButton>
       </div>
 
       {/* Photo grid */}
@@ -232,7 +217,7 @@ export function PhotosTab({ units, clientId }: PhotosTabProps) {
       </div>
 
       {/* Mobile sticky add CTA */}
-      {!isReadOnly && !inCompareSelect && (
+      {!inCompareSelect && (
         <button
           onClick={() => setUploadOpen(true)}
           aria-label="Add photo"
@@ -248,7 +233,6 @@ export function PhotosTab({ units, clientId }: PhotosTabProps) {
       <PhotoFullScreen
         photo={selectedPhoto}
         units={units}
-        readOnly={isReadOnly}
         onClose={() => setSelectedPhoto(null)}
         onCompare={(p) => {
           setSelectedPhoto(null);
@@ -259,7 +243,6 @@ export function PhotosTab({ units, clientId }: PhotosTabProps) {
         photoA={compareFrom}
         photoB={compareTo}
         units={units}
-        readOnly={isReadOnly}
         onClose={onCloseCompare}
       />
     </>

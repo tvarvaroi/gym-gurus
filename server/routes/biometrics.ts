@@ -281,27 +281,13 @@ router.post(
   }
 );
 
-// GET /api/biometrics/photos/client/:clientId — trainer view, ordered before /:id
-router.get('/photos/client/:clientId', async (req: Request, res: Response) => {
-  try {
-    const userId = await getClientUserIdForTrainer(req, res);
-    if (res.headersSent) return;
-    if (!userId) return res.json([]);
-
-    const db = await getDb();
-    const rows = await db
-      .select()
-      .from(progressPhotos)
-      .where(eq(progressPhotos.userId, userId))
-      .orderBy(desc(progressPhotos.takenAt))
-      .limit(200);
-
-    res.json(rows);
-  } catch (err) {
-    console.error('Trainer list client photos error:', err);
-    res.status(500).json({ error: 'Failed to fetch client photos' });
-  }
-});
+// Trainer-side photos route intentionally NOT exposed in v1.
+// The previous GET /photos/client/:clientId contradicted the locked decision
+// "Photos NEVER visible to Guru in v1" by allowing any consenting Disciple's
+// photos to be fetched via curl. Sprint 4 will reintroduce a trainer photos
+// view backed by per-photo consent grants — a different consent model than
+// the single share_body_metrics_with_trainer flag covers today.
+// See: docs/audits/2026-05-03-sprint-1-retrospective-audit.md (finding C1).
 
 // GET /api/biometrics/photos/:id — single, ownership-checked
 router.get('/photos/:id', async (req: Request, res: Response) => {
