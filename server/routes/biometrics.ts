@@ -184,74 +184,10 @@ router.get('/client/:clientId', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/biometrics/:id — single, ownership-checked
-router.get('/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = z.object({ id: z.string() }).parse(req.params);
-    const db = await getDb();
-
-    const [row] = await db
-      .select()
-      .from(bodyMetrics)
-      .where(and(eq(bodyMetrics.id, id), eq(bodyMetrics.userId, req.user!.id)));
-
-    if (!row) return res.status(404).json({ error: 'Not found' });
-    res.json(row);
-  } catch (err) {
-    console.error('Get body metrics error:', err);
-    res.status(500).json({ error: 'Failed to fetch body metrics' });
-  }
-});
-
-// PUT /api/biometrics/:id — partial update, ownership-checked
-router.put('/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = z.object({ id: z.string() }).parse(req.params);
-    const body = updateBodyMetricsBodySchema.parse(req.body);
-    const db = await getDb();
-
-    const [existing] = await db
-      .select()
-      .from(bodyMetrics)
-      .where(and(eq(bodyMetrics.id, id), eq(bodyMetrics.userId, req.user!.id)));
-    if (!existing) return res.status(404).json({ error: 'Not found' });
-
-    const [updated] = await db
-      .update(bodyMetrics)
-      .set(body)
-      .where(eq(bodyMetrics.id, id))
-      .returning();
-
-    res.json(updated);
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return res.status(400).json({ error: 'Validation failed', details: err.errors });
-    }
-    console.error('Update body metrics error:', err);
-    res.status(500).json({ error: 'Failed to update body metrics' });
-  }
-});
-
-// DELETE /api/biometrics/:id — hard delete, ownership-checked
-router.delete('/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = z.object({ id: z.string() }).parse(req.params);
-    const db = await getDb();
-
-    const [existing] = await db
-      .select()
-      .from(bodyMetrics)
-      .where(and(eq(bodyMetrics.id, id), eq(bodyMetrics.userId, req.user!.id)));
-    if (!existing) return res.status(404).json({ error: 'Not found' });
-
-    await db.delete(bodyMetrics).where(eq(bodyMetrics.id, id));
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Delete body metrics error:', err);
-    res.status(500).json({ error: 'Failed to delete body metrics' });
-  }
-});
-
+// IMPORTANT: all /photos* routes must be declared BEFORE the /:id body-metrics
+// routes below — otherwise Express matches "photos" as the :id parameter and
+// the photos endpoints become unreachable. See the BATCH 4 routing fix.
+//
 // ─── PHOTOS ─────────────────────────────────────────────────────────────────
 
 // GET /api/biometrics/photos — list user photos
@@ -295,26 +231,30 @@ router.post(
       if (!req.file) return res.status(400).json({ error: 'No file provided' });
       const body = createPhotoBodySchema.parse(req.body);
 
-      if (!isR2Configured()) {
-        return res.status(503).json({
-          error: 'Image upload not configured (R2 missing)',
-        });
-      }
-
-      // Full-size: 1024px max width, sharp+webp inside uploadImage()
-      const imageUrl = await uploadImage(req.file.buffer, 'biometrics', req.file.mimetype, 1024);
-
-      // Thumbnail: pre-resize to 400px via sharp, upload to dedicated folder
+      // Pre-resize to thumbnail (400px); always needed for both R2 and base64 paths.
       const thumbBuffer = await sharp(req.file.buffer)
         .resize({ width: 400, withoutEnlargement: true })
         .webp({ quality: 80 })
         .toBuffer();
-      const thumbnailUrl = await uploadImage(
-        thumbBuffer,
-        'biometrics-thumbnails',
-        'image/webp',
-        400
-      );
+
+      let imageUrl: string;
+      let thumbnailUrl: string;
+
+      if (isR2Configured()) {
+        // Full-size: 1024px max width, sharp+webp inside uploadImage()
+        imageUrl = await uploadImage(req.file.buffer, 'biometrics', req.file.mimetype, 1024);
+        thumbnailUrl = await uploadImage(thumbBuffer, 'biometrics-thumbnails', 'image/webp', 400);
+      } else {
+        // Dev fallback (matches settings.ts profile-image-upload pattern):
+        // store as base64 data URL. Pre-resize the full-size to 1024px first
+        // so we don't blow up the row size with a 4MB original.
+        const fullBuffer = await sharp(req.file.buffer)
+          .resize({ width: 1024, withoutEnlargement: true })
+          .webp({ quality: 82 })
+          .toBuffer();
+        imageUrl = `data:image/webp;base64,${fullBuffer.toString('base64')}`;
+        thumbnailUrl = `data:image/webp;base64,${thumbBuffer.toString('base64')}`;
+      }
 
       const db = await getDb();
       const [row] = await db
@@ -436,6 +376,76 @@ router.post('/photos/:id/compare/:otherId', async (req: Request, res: Response) 
   } catch (err) {
     console.error('Compare photos error:', err);
     res.status(500).json({ error: 'Failed to link photos' });
+  }
+});
+
+// ─── BODY METRICS by-id (must come AFTER all /photos* routes) ───────────────
+
+// GET /api/biometrics/:id — single, ownership-checked
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const db = await getDb();
+
+    const [row] = await db
+      .select()
+      .from(bodyMetrics)
+      .where(and(eq(bodyMetrics.id, id), eq(bodyMetrics.userId, req.user!.id)));
+
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    res.json(row);
+  } catch (err) {
+    console.error('Get body metrics error:', err);
+    res.status(500).json({ error: 'Failed to fetch body metrics' });
+  }
+});
+
+// PUT /api/biometrics/:id — partial update, ownership-checked
+router.put('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const body = updateBodyMetricsBodySchema.parse(req.body);
+    const db = await getDb();
+
+    const [existing] = await db
+      .select()
+      .from(bodyMetrics)
+      .where(and(eq(bodyMetrics.id, id), eq(bodyMetrics.userId, req.user!.id)));
+    if (!existing) return res.status(404).json({ error: 'Not found' });
+
+    const [updated] = await db
+      .update(bodyMetrics)
+      .set(body)
+      .where(eq(bodyMetrics.id, id))
+      .returning();
+
+    res.json(updated);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: err.errors });
+    }
+    console.error('Update body metrics error:', err);
+    res.status(500).json({ error: 'Failed to update body metrics' });
+  }
+});
+
+// DELETE /api/biometrics/:id — hard delete, ownership-checked
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const db = await getDb();
+
+    const [existing] = await db
+      .select()
+      .from(bodyMetrics)
+      .where(and(eq(bodyMetrics.id, id), eq(bodyMetrics.userId, req.user!.id)));
+    if (!existing) return res.status(404).json({ error: 'Not found' });
+
+    await db.delete(bodyMetrics).where(eq(bodyMetrics.id, id));
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete body metrics error:', err);
+    res.status(500).json({ error: 'Failed to delete body metrics' });
   }
 });
 

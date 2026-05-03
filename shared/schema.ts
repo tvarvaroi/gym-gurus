@@ -1977,8 +1977,8 @@ export const progressPhotos = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     takenAt: timestamp('taken_at').defaultNow().notNull(),
-    imageUrl: varchar('image_url', { length: 500 }).notNull(),
-    thumbnailUrl: varchar('thumbnail_url', { length: 500 }),
+    imageUrl: text('image_url').notNull(),
+    thumbnailUrl: text('thumbnail_url'),
     pose: varchar('pose', { length: 20 }).notNull(), // front | side_left | side_right | back | other
     weightAtPhotoKg: decimal('weight_at_photo_kg', { precision: 5, scale: 2 }),
     bodyFatAtPhoto: decimal('body_fat_at_photo', { precision: 4, scale: 2 }),

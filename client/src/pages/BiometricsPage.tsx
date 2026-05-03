@@ -12,6 +12,7 @@ import { getUnits, setUnits, type UnitSystem } from '@/lib/units';
 import { BodyMetricsList } from '@/components/biometrics/BodyMetricsList';
 import { BodyMetricsEmptyState } from '@/components/biometrics/BodyMetricsEmptyState';
 import { LogBodyMetricsSheet } from '@/components/biometrics/LogBodyMetricsSheet';
+import { PhotosTab } from '@/components/biometrics/PhotosTab';
 import type { BodyMetrics } from '@shared/schema';
 
 export default function BiometricsPage() {
@@ -132,11 +133,9 @@ export default function BiometricsPage() {
           )}
         </TabsContent>
 
-        {/* ─── Photos tab (BATCH 4) ───────────────────────────────────────── */}
+        {/* ─── Photos tab ──────────────────────────────────────────────────── */}
         <TabsContent value="photos" className="mt-4 md:mt-6">
-          <div className="text-center py-16 text-sm text-muted-foreground">
-            Photos coming next batch.
-          </div>
+          <PhotosTab units={units} />
         </TabsContent>
 
         {/* ─── Trends tab (BATCH 5) ───────────────────────────────────────── */}
