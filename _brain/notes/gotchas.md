@@ -249,6 +249,13 @@ No `requireRole` middleware exists — use the inline pattern.
 
 ---
 
+## Local dev / tooling
+
+**Dev server dies between Playwright + Bash interleaving on Windows.**
+Don't issue Bash calls between Playwright actions if the same `npm run dev` process needs to stay alive. Either batch all Playwright actions before any Bash, or accept that you'll restart the dev server. Sprint 1 BATCH 3.5 hit this twice during the screenshot session — `npm run dev` (run via `run_in_background`) exits when the harness kills the parent shell mid-session.
+
+---
+
 ## CI / Build (added 2026-03-20)
 
 **Pre-existing lint failures block CI — not from recent work.**

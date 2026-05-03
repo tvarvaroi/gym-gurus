@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { format, isThisYear } from 'date-fns';
 import {
   Accordion,
   AccordionContent,
@@ -99,7 +99,12 @@ function EntryCard({ entry, units, isMostRecent, onEdit, onAskDelete, readOnly }
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             {weightDisplay && (
               <span className="text-2xl md:text-3xl font-light tracking-tight text-foreground">
-                {/* NumberTicker on most-recent only — restraint per design */}
+                {/* NumberTicker on most-recent only — restraint per design.
+                    TODO Sprint 4+: animate from previous entry's value to the
+                    current value (e.g. 82.0 → 82.5) instead of 0 → 82.5. The
+                    0-start gives a momentary empty-state feel which is wrong
+                    for "your data". Pass `startValue={prevWeightKg}` once the
+                    list has access to the second-most-recent entry. */}
                 {isMostRecent && weightNum != null ? (
                   <>
                     <NumberTicker
@@ -128,7 +133,10 @@ function EntryCard({ entry, units, isMostRecent, onEdit, onAskDelete, readOnly }
             )}
           </div>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
-            {format(new Date(entry.recordedAt), 'MMM d · h:mm a')}
+            {format(
+              new Date(entry.recordedAt),
+              isThisYear(new Date(entry.recordedAt)) ? 'MMM d · h:mm a' : 'MMM d, yyyy · h:mm a'
+            )}
           </p>
         </div>
         {!readOnly && (
