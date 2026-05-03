@@ -393,6 +393,75 @@ push power users from Ronin → Ronin AI and Guru → Pro Guru. Source:
 
 ---
 
+## `progressEntries` polymorphic refactor (Sprint 1, 2026-05-02)
+
+**Decided:** Refactor `progressEntries` to be polymorphic — `clientId` becomes nullable, `userId` added (also nullable), with a CHECK constraint enforcing exactly one is set (XOR). Migration `011_biometrics_foundation.ts`.
+
+**Rejected:**
+
+1. Add a parallel `userProgressEntries` table for self-tracking users.
+2. Keep `clientId` mandatory and force Ronin/Guru to be their own "client".
+
+**Why:** Sprint 1 had to unblock Ronin (and Guru-as-self-tracker) to log body progress. Today the table is `clientId NOT NULL`, which means only Disciples have any progress history. Parallel-table option doubled the surface area for every later feature (charts, exports, AI context). Self-as-client option corrupts the trainer/client semantics throughout the app.
+
+The XOR CHECK constraint (`(user_id IS NOT NULL AND client_id IS NULL) OR (user_id IS NULL AND client_id IS NOT NULL)`) keeps the database honest — every row is either user-owned or client-owned, never both, never neither. Application code branches on which column is set.
+
+---
+
+## `share_body_metrics_with_trainer` default-on, single boolean for v1 (Sprint 1, 2026-05-02)
+
+**Decided:** Single boolean column on `clients`, defaults to `true`. Disciple can toggle off in Settings → Privacy. Photos are NEVER trainer-visible regardless of the flag in v1.
+
+**Rejected:**
+
+1. Per-data-stream consent (separate flags for weight, body fat, photos, sleep, etc.)
+2. Per-photo consent.
+3. Default-off until Disciple opts in.
+
+**Why:** The Q2-Q3 roadmap locked "Disciple → Guru data sharing: default-on with granular consent + opt-out" as a master decision. Sprint 1 ships the bare minimum that aligns with that direction — one boolean, body-metric scope only. Photos are intentionally carved out because they're the highest-sensitivity biometric data and deserve granular per-photo consent (Sprint 4).
+
+Default-off would have made the trainer view useless on day 1 for the 90%+ of Disciples who'd never discover the toggle. Default-on with a clearly explained opt-out toggle (and copy that says "your trainer is told it's a privacy choice, not an error") delivers data parity for trainers without removing Disciple agency.
+
+The single-boolean simplicity is a deliberate Sprint 1 constraint. Sprint 4 will replace this with granular siblings (`share_sleep_with_trainer`, `share_hrv_with_trainer`, etc.) AND `clients.user_id` as a proper FK. Don't grow the boolean strategy — replace it.
+
+---
+
+## Single-point chart fallback uses recharts native dot, not ZoneBandChart (Sprint 1 BATCH 5, 2026-05-02)
+
+**Decided:** When a Trends chart has exactly one data point, render it as a recharts `<Line>` with a larger `dot={r:8}` and a "Log another to see the line." caption absolutely-positioned inside the chart area (italic, muted-foreground, translate-y-8 to sit just below the dot).
+
+**Rejected:**
+
+1. Import `ZoneBandChart` (used elsewhere for Recovery and Progress charts) which already has single-point fallback logic.
+2. Show no chart at all when entries < 2 — just a placeholder card.
+3. Show the chart with a default flat line at the value.
+
+**Why:** ZoneBandChart is purpose-built for ACWR/training-load with colored zone bands (red/amber/green). Body metrics have no zones — there's no "good range" for weight or body fat that applies universally. Importing it would force one of: (a) fake zone bands that don't mean anything, or (b) a stripped-down variant that's effectively a different component.
+
+Recharts' `<Line>` with `dot=true` natively renders a visible dot when there's only one point. The `padSinglePoint()` helper adds a ghost null point 7 days before to give the chart a visible domain (otherwise the dot sits awkwardly at the right edge with no breathing room). Caption inside the chart frames the lone dot as "your data, more is coming" rather than as a placeholder above an empty box.
+
+This pattern generalizes — any future chart with sparse early-stage data can adopt the same `padSinglePoint` + `r:8` + inline caption recipe. Domain-specific charts (recovery, training load) keep using ZoneBandChart.
+
+---
+
+## Unit preference via localStorage `gg_units` flag for v1 (Sprint 1, 2026-05-02)
+
+**Decided:** User toggles `kg·cm` / `lb·in` via the BiometricsPage `UnitsToggle`. Selection persists in `localStorage` under key `gg_units`. All inputs convert to canonical (kg, cm) before POST. All displays read the flag at render time.
+
+**Rejected:**
+
+1. Add `preferredUnits` column to `users` table now.
+2. Add `preferredUnits` column to a new `userFitnessProfile` table now.
+3. Auto-detect from browser locale (`Intl.Locale.weekInfo` + country).
+
+**Why:** Sprint 1 doesn't need server-side persistence yet because (a) the unit choice is per-device anyway (you don't suddenly want metric on your laptop and imperial on your phone), and (b) the proper home for it is the eventual `userFitnessProfile` table that arrives Sprint 4 alongside granular consent flags. Adding it now would mean migrating it later, and Sprint 4 has a more comprehensive plan for fitness preferences.
+
+Auto-detect from locale was rejected because users frequently want imperial despite living in metric countries (and vice versa). User-explicit > inferred.
+
+The `client/src/lib/units.ts` helpers (`getUnits`, `setUnits`, `displayWeight`, `displayPercent`, `displayLength`, `toCanonicalWeight`, `toCanonicalLength`, `weightUnitLabel`) abstract away the storage path — when Sprint 4 migrates to `userFitnessProfile.preferredUnits`, only these helpers change. Call sites stay untouched. The TODO is documented inline in `units.ts`.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
