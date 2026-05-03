@@ -67,7 +67,7 @@ export default function BiometricsPage() {
   const isLoading = entriesQuery.isLoading;
 
   return (
-    <div className="container max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
+    <div className="container max-w-5xl mx-auto px-4 md:px-6 pt-10 md:pt-8 pb-6 md:pb-8">
       <PageHeader
         icon={<Activity className="w-full h-full" />}
         title="Body"

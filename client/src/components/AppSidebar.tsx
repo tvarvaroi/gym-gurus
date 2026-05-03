@@ -123,14 +123,14 @@ const clientMenuItems = [
     icon: TrendingUp,
   },
   {
-    title: 'Body',
-    url: '/biometrics',
-    icon: Activity,
-  },
-  {
     title: 'Calculators',
     url: '/dashboard/calculators',
     icon: Calculator,
+  },
+  {
+    title: 'Body',
+    url: '/biometrics',
+    icon: Activity,
   },
   {
     title: 'Schedule',
@@ -182,11 +182,6 @@ const soloMenuItems = [
     icon: TrendingUp,
   },
   {
-    title: 'Body',
-    url: '/biometrics',
-    icon: Activity,
-  },
-  {
     title: 'Recovery',
     url: '/solo/recovery',
     icon: Heart,
@@ -200,6 +195,11 @@ const soloMenuItems = [
     title: 'Calculators',
     url: '/dashboard/calculators',
     icon: Calculator,
+  },
+  {
+    title: 'Body',
+    url: '/biometrics',
+    icon: Activity,
   },
   {
     title: 'Schedule',

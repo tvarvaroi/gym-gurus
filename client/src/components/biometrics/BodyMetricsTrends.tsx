@@ -130,6 +130,7 @@ function MetricChart({ data, units, metric, height = 220 }: MetricChartProps) {
     );
   }
 
+  const isSingle = filtered.length === 1;
   const padded = padSinglePoint(filtered);
   const colorVar =
     metric === 'weight'
@@ -140,43 +141,54 @@ function MetricChart({ data, units, metric, height = 220 }: MetricChartProps) {
   const yLabel = metric === 'bodyFat' ? '%' : units === 'metric' ? 'kg' : 'lb';
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={padded} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" vertical={false} />
-        <XAxis
-          dataKey="dateStr"
-          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-          tickLine={false}
-          axisLine={{ stroke: 'hsl(var(--border) / 0.4)' }}
-        />
-        <YAxis
-          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-          tickLine={false}
-          axisLine={false}
-          width={40}
-          label={{
-            value: yLabel,
-            position: 'insideTopLeft',
-            offset: 0,
-            fill: 'hsl(var(--muted-foreground))',
-            fontSize: 10,
-          }}
-          domain={['dataMin - 1', 'dataMax + 1']}
-        />
-        <Tooltip content={<ChartTooltip units={units} />} />
-        <Line
-          type="monotone"
-          dataKey={metric}
-          name={metric === 'weight' ? 'Weight' : metric === 'bodyFat' ? 'Body fat' : 'Muscle mass'}
-          stroke={colorVar}
-          strokeWidth={2}
-          dot={{ fill: colorVar, r: 3 }}
-          activeDot={{ r: 5 }}
-          connectNulls
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="relative" style={{ height }}>
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={padded} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" vertical={false} />
+          <XAxis
+            dataKey="dateStr"
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            tickLine={false}
+            axisLine={{ stroke: 'hsl(var(--border) / 0.4)' }}
+          />
+          <YAxis
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            width={40}
+            label={{
+              value: yLabel,
+              position: 'insideTopLeft',
+              offset: 0,
+              fill: 'hsl(var(--muted-foreground))',
+              fontSize: 10,
+            }}
+            domain={['dataMin - 1', 'dataMax + 1']}
+          />
+          <Tooltip content={<ChartTooltip units={units} />} />
+          <Line
+            type="monotone"
+            dataKey={metric}
+            name={
+              metric === 'weight' ? 'Weight' : metric === 'bodyFat' ? 'Body fat' : 'Muscle mass'
+            }
+            stroke={colorVar}
+            strokeWidth={2}
+            dot={{ fill: colorVar, r: isSingle ? 8 : 3 }}
+            activeDot={{ r: isSingle ? 9 : 5 }}
+            connectNulls
+            isAnimationActive={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+      {isSingle && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <p className="italic text-xs text-muted-foreground translate-y-8">
+            Log another to see the line.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -187,76 +199,91 @@ interface DualAxisChartProps {
 }
 
 function DualAxisChart({ data, units, height = 320 }: DualAxisChartProps) {
+  // Single-point detection — both series independently. The dual-axis chart
+  // is "single" when at least one series has exactly one point; that's the
+  // user-facing signal that the line can't be drawn yet.
+  const weightPts = data.filter((p) => p.weight != null).length;
+  const bodyFatPts = data.filter((p) => p.bodyFat != null).length;
+  const isSingle = weightPts === 1 || bodyFatPts === 1;
   const padded = padSinglePoint(data);
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={padded} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" vertical={false} />
-        <XAxis
-          dataKey="dateStr"
-          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-          tickLine={false}
-          axisLine={{ stroke: 'hsl(var(--border) / 0.4)' }}
-        />
-        <YAxis
-          yAxisId="weight"
-          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-          tickLine={false}
-          axisLine={false}
-          width={48}
-          label={{
-            value: units === 'metric' ? 'kg' : 'lb',
-            position: 'insideTopLeft',
-            offset: -8,
-            fill: 'hsl(var(--primary))',
-            fontSize: 11,
-          }}
-          domain={['dataMin - 1', 'dataMax + 1']}
-        />
-        <YAxis
-          yAxisId="bodyFat"
-          orientation="right"
-          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-          tickLine={false}
-          axisLine={false}
-          width={40}
-          label={{
-            value: '%',
-            position: 'insideTopRight',
-            offset: -8,
-            fill: 'hsl(var(--muted-foreground))',
-            fontSize: 11,
-          }}
-          domain={['dataMin - 1', 'dataMax + 1']}
-        />
-        <Tooltip content={<ChartTooltip units={units} />} />
-        <Line
-          yAxisId="weight"
-          type="monotone"
-          dataKey="weight"
-          name="Weight"
-          stroke="hsl(var(--primary))"
-          strokeWidth={2}
-          dot={{ fill: 'hsl(var(--primary))', r: 3 }}
-          activeDot={{ r: 5 }}
-          connectNulls
-          isAnimationActive={false}
-        />
-        <Line
-          yAxisId="bodyFat"
-          type="monotone"
-          dataKey="bodyFat"
-          name="Body fat"
-          stroke="hsl(var(--muted-foreground))"
-          strokeWidth={2}
-          strokeDasharray="4 3"
-          dot={{ fill: 'hsl(var(--muted-foreground))', r: 3 }}
-          activeDot={{ r: 5 }}
-          connectNulls
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="relative" style={{ height }}>
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={padded} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" vertical={false} />
+          <XAxis
+            dataKey="dateStr"
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            tickLine={false}
+            axisLine={{ stroke: 'hsl(var(--border) / 0.4)' }}
+          />
+          <YAxis
+            yAxisId="weight"
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            width={48}
+            label={{
+              value: units === 'metric' ? 'kg' : 'lb',
+              position: 'insideTopLeft',
+              offset: -8,
+              fill: 'hsl(var(--primary))',
+              fontSize: 11,
+            }}
+            domain={['dataMin - 1', 'dataMax + 1']}
+          />
+          <YAxis
+            yAxisId="bodyFat"
+            orientation="right"
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            width={40}
+            label={{
+              value: '%',
+              position: 'insideTopRight',
+              offset: -8,
+              fill: 'hsl(var(--muted-foreground))',
+              fontSize: 11,
+            }}
+            domain={['dataMin - 1', 'dataMax + 1']}
+          />
+          <Tooltip content={<ChartTooltip units={units} />} />
+          <Line
+            yAxisId="weight"
+            type="monotone"
+            dataKey="weight"
+            name="Weight"
+            stroke="hsl(var(--primary))"
+            strokeWidth={2}
+            dot={{ fill: 'hsl(var(--primary))', r: weightPts === 1 ? 8 : 3 }}
+            activeDot={{ r: weightPts === 1 ? 9 : 5 }}
+            connectNulls
+            isAnimationActive={false}
+          />
+          <Line
+            yAxisId="bodyFat"
+            type="monotone"
+            dataKey="bodyFat"
+            name="Body fat"
+            stroke="hsl(var(--muted-foreground))"
+            strokeWidth={2}
+            strokeDasharray="4 3"
+            dot={{ fill: 'hsl(var(--muted-foreground))', r: bodyFatPts === 1 ? 8 : 3 }}
+            activeDot={{ r: bodyFatPts === 1 ? 9 : 5 }}
+            connectNulls
+            isAnimationActive={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+      {isSingle && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <p className="italic text-xs text-muted-foreground translate-y-8">
+            Log another to see the line.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -367,12 +394,9 @@ export function BodyMetricsTrends({
 
       {!outOfRange && (
         <>
-          {/* Single-point caption */}
-          {inRange === 1 && (
-            <p className="text-xs text-muted-foreground text-center italic">
-              Log another to see the line.
-            </p>
-          )}
+          {/* Single-point caption is now rendered INSIDE each chart (centered
+              over the dot) instead of above it — so users see it as a label
+              on their data, not a header above what looks like an empty box. */}
 
           {/* ── Desktop: dual-axis combined chart + muscle mass below ── */}
           <div className="hidden md:block space-y-5">

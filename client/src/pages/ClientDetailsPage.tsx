@@ -1985,9 +1985,9 @@ function ClientBodyTab({ clientId, shareEnabled, clientFirstName }: ClientBodyTa
   if (!shareEnabled) {
     return (
       <Card className="glass-strong border-border/50">
-        <CardContent className="py-16 text-center px-6">
-          <div className="mx-auto w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-            <Lock className="w-6 h-6 text-muted-foreground" />
+        <CardContent className="py-12 md:py-16 text-center px-6">
+          <div className="mx-auto w-10 h-10 md:w-12 md:h-12 rounded-full bg-muted/30 flex items-center justify-center mb-3 md:mb-4">
+            <Lock className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground" />
           </div>
           <p className="text-base font-medium text-foreground mb-1">
             {clientFirstName} hasn&apos;t shared body metrics.
