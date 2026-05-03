@@ -42,6 +42,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { performanceMonitor, getPerformanceStats } from './middleware/performanceMonitor';
 import webhookRoutes from './routes/webhooks';
+import { isR2Configured } from './services/fileUpload';
 
 // Initialize Sentry error monitoring (production only)
 initSentry();
@@ -325,5 +326,12 @@ app.use(performanceMonitor);
 
   server.listen(listenOptions, () => {
     log(`serving on port ${port}`);
+    if (!isR2Configured()) {
+      console.warn(
+        '⚠️  R2 not configured — image uploads will be stored as base64 in the database. ' +
+          'This is dev-only. Configure CLOUDFLARE_R2_* env vars in any non-dev environment ' +
+          'to avoid Postgres bloat.'
+      );
+    }
   });
 })();

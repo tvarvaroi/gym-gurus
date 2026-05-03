@@ -41,6 +41,9 @@ Because of the unique constraint above, any "soft-delete and re-insert" pattern 
 **Triple isPublicRoute pattern → now single source in routeConfig.ts.**
 Previously three independent `isPublicPage` lists (AppLayout, UserContext, queryClient.ts) had to stay in sync. Now: one file, `client/src/lib/routeConfig.ts`. Add new public routes only there.
 
+**Express matches routes in declaration order — static paths must come before parameterised ones.**
+Pattern that breaks: `GET /:id` declared before `GET /photos` → "photos" matches as `:id`, wrong handler runs, returns 404 or wrong data. Rule: in any router, declare the most specific routes first. `/photos`, `/photos/:photoId`, `/client/:clientId` all come BEFORE `/:id`. First hit in `server/routes/biometrics.ts` (Sprint 1, BATCH 4, 2026-05-03) — `GET /:id` body-metrics route was matching "photos" as an ID. Fixed by reordering all `/photos*` routes above `/:id`.
+
 ---
 
 ## Build / Deploy
