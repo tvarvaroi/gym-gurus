@@ -1,11 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import sharp from 'sharp';
+import { z } from 'zod';
 import { db } from '../db';
 import { users, clients, workouts } from '../../shared/schema';
 import { eq, sql, isNull, and } from 'drizzle-orm';
 import { getUserById } from '../auth';
 import { uploadImage, isR2Configured } from '../services/fileUpload';
+import { deleteUserAccount } from '../services/userDeletion';
 import { logger } from '../logger';
 import { getRequestId } from '../middleware/requestLogger';
 
@@ -316,7 +318,76 @@ router.patch('/biometrics-sharing', async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/settings/account — anonymize PII and destroy session
+// GET /api/settings/preferred-units — return cross-device unit preference
+// Sprint 2 BATCH 6 (client) hooks `useUnits()` to this endpoint. Until BATCH 6
+// ships, the BiometricsPage still reads localStorage; this route is harmless
+// because it's read-only.
+router.get('/preferred-units', async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const [row] = await db
+      .select({ preferredUnits: users.preferredUnits })
+      .from(users)
+      .where(eq(users.id, user.id));
+    res.json({ units: row?.preferredUnits ?? 'metric' });
+  } catch (error) {
+    console.error('Error fetching preferred units:', error);
+    res.status(500).json({ error: 'Failed to fetch unit preference' });
+  }
+});
+
+// PATCH /api/settings/preferred-units — set cross-device unit preference
+// Audit-logged because (a) it's a user-visible state change and (b) anomaly
+// detection on rapid toggling can flag bot activity later.
+const preferredUnitsSchema = z.object({ units: z.enum(['metric', 'imperial']) });
+router.patch('/preferred-units', async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const parsed = preferredUnitsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "units must be 'metric' or 'imperial'" });
+    }
+
+    // SELECT-before-UPDATE captures previousValue for the audit log.
+    // Race tradeoff matches the consent-toggle pattern (Sprint 1.5 BATCH 3):
+    // two near-simultaneous PATCH requests can interleave, producing an audit
+    // line with stale previousValue. Acceptable for v1 — destination value is
+    // always correct, only a midstream "false flip" log line might appear.
+    const [existing] = await db
+      .select({ preferredUnits: users.preferredUnits })
+      .from(users)
+      .where(eq(users.id, user.id));
+    const previousValue = existing?.preferredUnits ?? null;
+
+    await db
+      .update(users)
+      .set({ preferredUnits: parsed.data.units, updatedAt: new Date() })
+      .where(eq(users.id, user.id));
+
+    logger.audit('preferences.units_changed', {
+      userId: user.id,
+      email: user.email,
+      previousValue,
+      value: parsed.data.units,
+      ts: new Date().toISOString(),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      requestId: getRequestId(req),
+    });
+
+    res.json({ units: parsed.data.units });
+  } catch (error) {
+    console.error('Error updating preferred units:', error);
+    res.status(500).json({ error: 'Failed to update unit preference' });
+  }
+});
+
+// DELETE /api/settings/account — full account deletion via userDeletion service.
+// Sprint 2 BATCH 2 — replaces the inline anonymize-only flow. Now also:
+//   - audit-logs BEFORE any mutation (forensic chain of custody)
+//   - cleans up R2 objects (progress photos)
+//   - marks all push subscriptions inactive
+//   - cancels active Stripe subscription (best-effort)
 router.delete('/account', async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
@@ -328,28 +399,22 @@ router.delete('/account', async (req: Request, res: Response) => {
         .json({ error: 'Please type "DELETE MY ACCOUNT" to confirm account deletion' });
     }
 
-    // Anonymize all PII - user row stays so foreign key constraints hold
-    await db
-      .update(users)
-      .set({
-        email: `deleted-${user.id}@deleted.invalid`,
-        firstName: null,
-        lastName: null,
-        profileImageUrl: null,
-        password: null,
-        authProviderId: null,
-        stripeCustomerId: null,
-        subscriptionId: null,
-        subscriptionStatus: null,
-        subscriptionTier: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id));
+    const result = await deleteUserAccount(user.id);
 
-    // Destroy session
+    // Destroy session AFTER deletion completes — destroying first would race
+    // with the audit log (req.user.id would still be valid, but req.session is
+    // gone, breaking any per-request observability that depends on it).
     (req as any).session?.destroy?.();
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      cleanup: {
+        photosDeleted: result.r2.deleted,
+        photosFailed: result.r2.failed,
+        pushSubscriptionsRevoked: result.pushSubsMarkedInactive,
+        stripe: result.stripe,
+      },
+    });
   } catch (error) {
     console.error('Error deleting account:', error);
     res.status(500).json({ error: 'Failed to delete account' });

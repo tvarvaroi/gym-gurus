@@ -1,28 +1,39 @@
-// Notification Service - Server-side notification management
+// Notification Service — server-side notification management
+//
+// Sprint 2 BATCH 2 refactor: every helper now routes through
+// notificationDispatcher.dispatch() so it benefits from category gating, quiet
+// hours, push fan-out, and email fallback automatically. The helper signatures
+// are unchanged — every existing call site (assignments.ts, clients.ts,
+// gamification.ts, payments.ts, schedule.ts, solo.ts, webhooks.ts) keeps working.
+//
+// `createNotification` stays exported for backwards compatibility but is marked
+// @deprecated. New code should use the typed `notify*` helpers below; Sprint 3
+// will remove createNotification once the in-tree call site count drops to zero.
+import { sql, eq, and, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { notifications } from '../../shared/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { dispatch } from './notificationDispatcher';
+import type { NotificationType } from './notificationTemplates';
 
-export type NotificationType =
-  | 'workout_assigned'
-  | 'workout_completed'
-  | 'session_reminder'
-  | 'achievement_unlocked'
-  | 'streak_milestone'
-  | 'streak_danger'
-  | 'level_up'
-  | 'payment_received'
-  | 'client_joined'
-  | 'personal_record'
-  | 'message';
+// Kept for legacy code paths; mirrors the post-Sprint 2 type set defined in
+// notificationTemplates.ts (NotificationType). New types should be added there
+// FIRST — this alias keeps existing imports compiling.
+export type { NotificationType };
 
-// Create a notification for a user
+/**
+ * @deprecated Sprint 2 — use a typed `notify*` helper below or call
+ * `dispatch(userId, type, data)` directly from notificationDispatcher.
+ *
+ * Direct row insert that BYPASSES push delivery, category gating, and quiet
+ * hours. Kept exported only because some legacy paths may still import it;
+ * Sprint 3 will remove once verified unused.
+ */
 export async function createNotification(
   userId: string,
   type: NotificationType,
   title: string,
   message: string,
-  data?: Record<string, any>
+  data?: Record<string, unknown>
 ): Promise<void> {
   const database = await db;
 
@@ -31,8 +42,10 @@ export async function createNotification(
     type,
     title,
     message,
-    data: data || null,
+    data: data ?? null,
     read: false,
+    // Mark delivered immediately — this legacy helper writes-only, no push.
+    deliveredAt: new Date(),
   });
 }
 
@@ -49,7 +62,7 @@ export async function getUserNotifications(userId: string, limit: number = 30, o
     .offset(offset);
 
   // Auto-expire time-sensitive notifications older than 24 hours
-  return results.filter(n => {
+  return results.filter((n) => {
     if (n.type === 'streak_danger') {
       const ageHours = (Date.now() - new Date(n.createdAt).getTime()) / (1000 * 60 * 60);
       return ageHours < 24;
@@ -106,7 +119,14 @@ export async function cleanupOldNotifications(): Promise<void> {
   await database.delete(notifications).where(sql`${notifications.createdAt} < ${cutoff}`);
 }
 
-// --- Helper functions to create specific notification types ---
+// ─── Typed notify* helpers (Sprint 2 — route through dispatcher) ────────────
+// Each helper:
+//   1. Optionally dedups against recent rows (streak_danger, session_reminder)
+//   2. Calls dispatch(userId, type, data) — the row, push fan-out, gating, and
+//      email fallback all happen there.
+//
+// Helper signatures preserved exactly so every call site (7 files, 11 invocations
+// total) keeps compiling without edits.
 
 export async function notifyWorkoutAssigned(
   clientUserId: string,
@@ -114,13 +134,7 @@ export async function notifyWorkoutAssigned(
   workoutTitle: string,
   assignmentId: string
 ): Promise<void> {
-  await createNotification(
-    clientUserId,
-    'workout_assigned',
-    'New Workout Assigned',
-    `${trainerName} assigned you "${workoutTitle}"`,
-    { assignmentId }
-  );
+  await dispatch(clientUserId, 'workout_assigned', { trainerName, workoutTitle, assignmentId });
 }
 
 export async function notifyWorkoutCompleted(
@@ -129,13 +143,7 @@ export async function notifyWorkoutCompleted(
   workoutTitle: string,
   assignmentId: string
 ): Promise<void> {
-  await createNotification(
-    trainerUserId,
-    'workout_completed',
-    'Workout Completed',
-    `${clientName} completed "${workoutTitle}"`,
-    { assignmentId }
-  );
+  await dispatch(trainerUserId, 'workout_completed', { clientName, workoutTitle, assignmentId });
 }
 
 export async function notifyAchievementUnlocked(
@@ -143,13 +151,7 @@ export async function notifyAchievementUnlocked(
   achievementTitle: string,
   xpReward: number
 ): Promise<void> {
-  await createNotification(
-    userId,
-    'achievement_unlocked',
-    'Achievement Unlocked!',
-    `You earned "${achievementTitle}" (+${xpReward} XP)`,
-    { achievementTitle, xpReward }
-  );
+  await dispatch(userId, 'achievement_unlocked', { achievementTitle, xpReward });
 }
 
 export async function notifyStreakMilestone(
@@ -157,13 +159,7 @@ export async function notifyStreakMilestone(
   days: number,
   xpReward: number
 ): Promise<void> {
-  await createNotification(
-    userId,
-    'streak_milestone',
-    `${days}-Day Streak!`,
-    `Amazing consistency! You've worked out ${days} days in a row (+${xpReward} XP)`,
-    { days, xpReward }
-  );
+  await dispatch(userId, 'streak_milestone', { days, xpReward });
 }
 
 export async function notifyLevelUp(
@@ -171,13 +167,7 @@ export async function notifyLevelUp(
   newLevel: number,
   newRank: string
 ): Promise<void> {
-  await createNotification(
-    userId,
-    'level_up',
-    `Level ${newLevel}!`,
-    `You've reached level ${newLevel} — rank: ${newRank}`,
-    { newLevel, newRank }
-  );
+  await dispatch(userId, 'level_up', { newLevel, newRank });
 }
 
 export async function notifyPersonalRecord(
@@ -185,13 +175,7 @@ export async function notifyPersonalRecord(
   exerciseName: string,
   newRecord: string
 ): Promise<void> {
-  await createNotification(
-    userId,
-    'personal_record',
-    'New Personal Record!',
-    `PR on ${exerciseName}: ${newRecord}`,
-    { exerciseName, newRecord }
-  );
+  await dispatch(userId, 'personal_record', { exerciseName, newRecord });
 }
 
 export async function notifyClientJoined(
@@ -199,13 +183,7 @@ export async function notifyClientJoined(
   clientName: string,
   clientId: string
 ): Promise<void> {
-  await createNotification(
-    trainerUserId,
-    'client_joined',
-    'New Client',
-    `${clientName} has joined your roster`,
-    { clientId }
-  );
+  await dispatch(trainerUserId, 'client_joined', { clientName, clientId });
 }
 
 export async function notifyPaymentReceived(
@@ -214,13 +192,7 @@ export async function notifyPaymentReceived(
   amountFormatted: string,
   paymentId: string
 ): Promise<void> {
-  await createNotification(
-    trainerUserId,
-    'payment_received',
-    'Payment Received',
-    `${clientName} paid ${amountFormatted}`,
-    { paymentId }
-  );
+  await dispatch(trainerUserId, 'payment_received', { clientName, amountFormatted, paymentId });
 }
 
 export async function notifyStreakDanger(
@@ -242,42 +214,28 @@ export async function notifyStreakDanger(
     )
     .limit(1);
 
-  if (recent.length > 0) return; // Already notified recently
+  if (recent.length > 0) return;
 
-  await createNotification(
-    userId,
-    'streak_danger',
-    'Streak in Danger!',
-    `Your ${currentStreak}-day streak expires in ~${Math.round(hoursRemaining)} hours. Work out to keep it alive!`,
-    { currentStreak, hoursRemaining }
-  );
+  await dispatch(userId, 'streak_danger', { currentStreak, hoursRemaining });
 }
 
 export async function notifyWeeklySummary(
   userId: string,
   stats: { workoutsCompleted: number; xpEarned: number; streakDays: number; prsSet: number }
 ): Promise<void> {
-  const lines: string[] = [];
-  if (stats.workoutsCompleted > 0)
-    lines.push(
-      `${stats.workoutsCompleted} workout${stats.workoutsCompleted > 1 ? 's' : ''} completed`
-    );
-  if (stats.xpEarned > 0) lines.push(`+${stats.xpEarned} XP earned`);
-  if (stats.streakDays > 0) lines.push(`${stats.streakDays}-day streak`);
-  if (stats.prsSet > 0) lines.push(`${stats.prsSet} personal record${stats.prsSet > 1 ? 's' : ''}`);
-
-  const message =
-    lines.length > 0
-      ? `This week: ${lines.join(' • ')}. Keep it up!`
-      : 'No workouts logged this week. Start fresh next week!';
-
-  await createNotification(
-    userId,
-    'streak_milestone', // reuse existing type for weekly summaries
-    'Weekly Summary',
-    message,
-    { ...stats, type: 'weekly_summary' }
-  );
+  // Sprint 2: use the proper `summary_weekly` type instead of the old
+  // 'streak_milestone' hack. The template renders the title/body from data,
+  // so callers don't need to format strings anymore.
+  await dispatch(userId, 'summary_weekly', {
+    workoutsCompleted: stats.workoutsCompleted,
+    xpEarned: stats.xpEarned,
+    streakDays: stats.streakDays,
+    prsSet: stats.prsSet,
+    // adherencePct is not currently computed by the caller — pass 0 so the
+    // template renders a deterministic message; Sprint 8 (AI context) will
+    // produce the real adherence figure.
+    adherencePct: 0,
+  });
 }
 
 export async function notifySessionReminder(
@@ -302,11 +260,5 @@ export async function notifySessionReminder(
 
   if (recent.length > 0) return;
 
-  await createNotification(
-    userId,
-    'session_reminder',
-    'Session Starting Soon',
-    `"${sessionTitle}" starts at ${startTime}`,
-    { appointmentId }
-  );
+  await dispatch(userId, 'session_reminder', { sessionTitle, startTime, appointmentId });
 }

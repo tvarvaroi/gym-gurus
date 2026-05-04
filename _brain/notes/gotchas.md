@@ -252,6 +252,13 @@ No `requireRole` middleware exists — use the inline pattern.
 
 ---
 
+## Notifications
+
+**`PushSubscription` is a browser DOM global type (Notifications API).**
+The server-side type for our database row is named `PushSubscriptionRecord`. Don't import or alias them as the same name in any file that runs in both environments — the server-side type and the DOM type have different shapes. The DB row has `id`, `userId`, `createdAt`, `failureCount`, `active`, etc. The DOM type has `endpoint`, `expirationTime`, `getKey()`, `toJSON()`, etc. Watch for this in service worker code, push subscription helpers, and any shared `lib/` code that touches both. First captured: Sprint 2 BATCH 1 (2026-05-05) — `shared/schema.ts` exports `PushSubscriptionRecord` (typeof pushSubscriptions.$inferSelect) deliberately, not `PushSubscription`.
+
+---
+
 ## Local dev / tooling
 
 **Dev server dies between Playwright + Bash interleaving on Windows.**

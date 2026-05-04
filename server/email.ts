@@ -61,6 +61,70 @@ async function sendEmail(options: EmailOptions): Promise<boolean> {
 }
 
 /**
+ * Send a notification fallback email (Sprint 2).
+ *
+ * Used by notificationDispatcher when push delivery has zero successful drops
+ * AND the user opted into email channel. Reuses the existing branded HTML
+ * template (gold gradient header) so fallback emails feel native.
+ *
+ * Returns true if Resend accepted the message (or dev-mode logged it). Caller
+ * does not retry — the in-app notifications row is the source of truth, email
+ * is a "your phone might be off" courtesy.
+ */
+export async function sendNotificationFallbackEmail(
+  to: string,
+  title: string,
+  bodyText: string,
+  actionUrl: string
+): Promise<boolean> {
+  const fullActionUrl = actionUrl.startsWith('http')
+    ? actionUrl
+    : `${env.APP_URL || 'http://localhost:5000'}${actionUrl}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title}</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #c9a855 0%, #d4b870 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">GymGurus</h1>
+        </div>
+
+        <div style="background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #1f2937; margin-top: 0;">${title}</h2>
+
+          <p style="color: #4b5563; font-size: 16px;">${bodyText}</p>
+
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${fullActionUrl}"
+               style="display: inline-block; background: linear-gradient(135deg, #c9a855 0%, #d4b870 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+              Open in GymGurus
+            </a>
+          </div>
+
+          <p style="color: #6b7280; font-size: 13px; margin-top: 32px;">
+            You're getting this email because GymGurus push notifications didn't reach your device.
+            You can change this in
+            <a href="${env.APP_URL || 'http://localhost:5000'}/settings?tab=notifications"
+               style="color: #c9a855;">Settings → Notifications</a>.
+          </p>
+
+          <p style="color: #9ca3af; font-size: 13px; margin-top: 32px; text-align: center;">
+            © ${new Date().getFullYear()} GymGurus.
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({ to, subject: title, html });
+}
+
+/**
  * Send password reset email
  */
 export async function sendPasswordResetEmail(email: string, resetToken: string): Promise<boolean> {

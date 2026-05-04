@@ -43,6 +43,8 @@ import { requestLogger } from './middleware/requestLogger';
 import { performanceMonitor, getPerformanceStats } from './middleware/performanceMonitor';
 import webhookRoutes from './routes/webhooks';
 import { isR2Configured } from './services/fileUpload';
+import { isPushConfigured } from './services/pushService';
+import { startQuietHoursCron, stopQuietHoursCron } from './jobs/cleanupExpiredQuietHours';
 
 // Initialize Sentry error monitoring (production only)
 initSentry();
@@ -333,5 +335,27 @@ app.use(performanceMonitor);
           'to avoid Postgres bloat.'
       );
     }
+    if (!isPushConfigured()) {
+      console.warn(
+        '⚠️  Push not configured — VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT not all set. ' +
+          'Notifications will write rows but never deliver via push. ' +
+          'Run `npx web-push generate-vapid-keys` and add to env to enable.'
+      );
+    }
+    // Sprint 2: quiet-hours retry cron. Safe even when push isn't configured —
+    // the dispatcher's fanOut() returns early when isPushConfigured() is false,
+    // so the cron just no-ops on rows it claims (still marks them delivered_at).
+    startQuietHoursCron();
   });
+
+  // Graceful shutdown — clear the cron interval so the process exits cleanly.
+  // SIGTERM is what Railway sends on deploy; SIGINT is Ctrl-C in dev.
+  const shutdown = (signal: string) => {
+    log(`Received ${signal}, stopping cron and closing server...`);
+    stopQuietHoursCron();
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 })();
