@@ -15,6 +15,35 @@ import {
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
+// ─── Notification preferences shape (jsonb on users table) ──────────────────
+// Sprint 2 reshape — existing column was {email, push, sms} (legacy from
+// migrations/0000_burly_yellow_claw.sql). Backfill to this shape happens in
+// migration 012_notification_engine. Once migration runs every row matches
+// this typing — Sprint 2 BATCH 5 UI assumes this shape.
+
+export const NOTIFICATION_CATEGORIES = [
+  'workouts',
+  'recovery',
+  'achievements',
+  'social',
+  'billing',
+] as const;
+export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
+
+export interface NotificationPreferences {
+  categories: Record<NotificationCategory, boolean>;
+  quietHours: {
+    enabled: boolean;
+    start: string; // 'HH:MM' 24-hour
+    end: string; // 'HH:MM' 24-hour
+    timezone: string; // IANA, e.g. 'Europe/Bucharest'
+  };
+  channels: {
+    push: boolean;
+    email: boolean;
+  };
+}
+
 // Session storage table for express-session with PostgreSQL
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessions = pgTable(
@@ -59,7 +88,15 @@ export const users = pgTable(
     subscriptionId: varchar('subscription_id'),
     subscriptionCurrentPeriodEnd: timestamp('subscription_current_period_end'),
     trialEndsAt: timestamp('trial_ends_at'),
-    notificationPreferences: jsonb('notification_preferences'),
+    notificationPreferences: jsonb('notification_preferences').$type<NotificationPreferences>(),
+    // Cross-device unit preference. Sprint 1 used localStorage (`gg_units`); Sprint 2
+    // promotes this to a server-persisted column so phone + desktop share the same
+    // unit. Migration 012 adds the column with default 'metric'; the AuthGuard
+    // one-time migration (BATCH 6) writes any existing localStorage value back here.
+    preferredUnits: varchar('preferred_units', { length: 10 })
+      .notNull()
+      .default('metric')
+      .$type<'metric' | 'imperial'>(),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -1247,12 +1284,23 @@ export const notifications = pgTable(
     userId: varchar('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    type: text('type').notNull(), // 'workout_assigned', 'workout_completed', 'session_reminder', 'achievement_unlocked', 'streak_milestone', 'level_up', 'payment_received', 'client_joined', 'message'
+    type: text('type').notNull(), // 'workout_assigned', 'workout_completed', 'session_reminder', 'achievement_unlocked', 'streak_milestone', 'level_up', 'payment_received', 'client_joined', 'message', 'recovery_low', 'sleep_summary', 'summary_weekly', 'workout_reminder', 'workout_missed'
     title: text('title').notNull(),
     message: text('message').notNull(),
     data: jsonb('data').$type<Record<string, any>>(), // Additional context (clientId, workoutId, etc.)
     read: boolean('read').default(false).notNull(),
     readAt: timestamp('read_at'),
+    // Sprint 2 quiet-hours queue: NULL = deliver immediately. Non-NULL = earliest
+    // wall-clock time at which the cron may fan out this notification (computed at
+    // write time in the user's timezone-aware quiet-hours window end).
+    deliverAfter: timestamp('deliver_after'),
+    // Sprint 2 delivery accounting. SEMANTIC: non-NULL means we successfully pushed
+    // to AT LEAST ONE active subscription (or attempted push and accepted the result
+    // as terminal — i.e. all subs returned non-retryable failures and we won't retry).
+    // It does NOT just mean "the row was inserted." The cron retry job filters on
+    // `delivered_at IS NULL` so a stuck unfulfilled notification will keep retrying
+    // until either a push lands or the row is explicitly closed out as terminally failed.
+    deliveredAt: timestamp('delivered_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
@@ -1260,6 +1308,52 @@ export const notifications = pgTable(
     index('idx_notifications_read').on(table.read),
     index('idx_notifications_created_at').on(table.createdAt),
     index('idx_notifications_user_feed').on(table.userId, table.read, table.createdAt),
+    // Partial index drives the quiet-hours retry cron — only rows still pending
+    // delivery participate in the working set, regardless of total table size.
+    // Concrete partial-WHERE clause is in migration 012 (Drizzle's index() builder
+    // does not support partial WHERE here; index name is what matters for parity).
+    index('idx_notifications_delivery_queue').on(table.deliverAfter, table.deliveredAt),
+  ]
+);
+
+// ─── Push Subscriptions (Sprint 2 — Web Push delivery) ──────────────────────
+// One row per device-browser-pair the user has granted notification permission to.
+// `endpoint` is globally unique because push services (FCM, Mozilla Autopush,
+// WindowsNotificationServices) issue one URL per registration; UNIQUE prevents
+// duplicate rows when a tab re-subscribes. `active=false` rows are kept for
+// audit/forensics — the user revoked or the push service marked it expired.
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull(),
+    p256dh: varchar('p256dh', { length: 200 }).notNull(),
+    auth: varchar('auth', { length: 50 }).notNull(),
+    userAgent: text('user_agent'),
+    platform: varchar('platform', { length: 20 })
+      .notNull()
+      .$type<'web' | 'ios_pwa' | 'android' | 'ios_native' | 'android_native'>(),
+    active: boolean('active').notNull().default(true),
+    lastUsedAt: timestamp('last_used_at'),
+    failureCount: integer('failure_count').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    // Composite hot path for sendNotification fan-out: WHERE user_id = ? AND active = true.
+    // Concrete partial-WHERE (active=true) lives in the migration SQL.
+    index('idx_push_subs_user_active').on(table.userId, table.active),
+    // Globally unique — push services issue one endpoint per registration, so a
+    // duplicate insert means a re-subscribe. Routes upsert on this constraint.
+    uniqueIndex('idx_push_subs_endpoint').on(table.endpoint),
   ]
 );
 
@@ -1691,6 +1785,50 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 });
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+// ─── Notification preferences validation (Sprint 2) ─────────────────────────
+// HH:MM regex covers 00:00–23:59. Timezone is validated as a non-empty string;
+// IANA-name format checking happens application-side (zod can't natively).
+const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export const notificationPreferencesSchema = z.object({
+  categories: z.object({
+    workouts: z.boolean(),
+    recovery: z.boolean(),
+    achievements: z.boolean(),
+    social: z.boolean(),
+    billing: z.boolean(),
+  }),
+  quietHours: z.object({
+    enabled: z.boolean(),
+    start: z.string().regex(HHMM_RE, 'must be HH:MM 24-hour'),
+    end: z.string().regex(HHMM_RE, 'must be HH:MM 24-hour'),
+    timezone: z.string().min(1).max(64),
+  }),
+  channels: z.object({
+    push: z.boolean(),
+    email: z.boolean(),
+  }),
+}) satisfies z.ZodType<NotificationPreferences>;
+
+// PATCH endpoint accepts `Partial<NotificationPreferences>` so the UI can update
+// one field without sending the full object. Deep-partial recursively makes every
+// nested field optional.
+export const notificationPreferencesPatchSchema = notificationPreferencesSchema.deepPartial();
+
+// ─── Push subscription schemas (Sprint 2) ───────────────────────────────────
+export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastUsedAt: true,
+  failureCount: true,
+});
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
+// `PushSubscriptionRecord` (not `PushSubscription`) — the latter collides with
+// the browser DOM global. Client-side code that touches `pushManager.subscribe()`
+// imports the DOM type; server-side code that touches the row imports this one.
+export type PushSubscriptionRecord = typeof pushSubscriptions.$inferSelect;
 
 // Payment Plan schemas and types
 export const insertPaymentPlanSchema = createInsertSchema(paymentPlans).omit({

@@ -462,6 +462,23 @@ The `client/src/lib/units.ts` helpers (`getUnits`, `setUnits`, `displayWeight`, 
 
 ---
 
+---
+
+## web-push MPL-2.0 dependency accepted (2026-05-05, Sprint 2 BATCH 1)
+
+**Decided:** `web-push@3.6.7` (MPL-2.0) accepted as a Sprint 2 dependency.
+
+**Rejected:**
+
+1. `node-pushnotifications` — transitively depends on web-push, inherits the same license obligations with extra abstraction overhead.
+2. Rolling our own RFC 8291 implementation — multi-week distraction with real cryptographic risk for zero gain.
+
+**Why:** MPL-2.0 file-level weak copyleft permits unmodified dependency use in a closed-source commercial product. We don't modify the package source. Consistent with existing accepted licenses in the stack (Apache-2.0 via `@aws-sdk/*`, ISC, BSD). web-push is the de-facto standard for Node.js web push (3.6M weekly downloads, Mozilla's official reference implementation).
+
+**Constraint:** if we ever need to modify web-push internals, the modified files must be released under MPL-2.0. We won't.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
