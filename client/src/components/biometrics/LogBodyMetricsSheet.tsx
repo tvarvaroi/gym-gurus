@@ -26,6 +26,10 @@ import {
   type UnitSystem,
 } from '@/lib/units';
 import type { BodyMetrics } from '@shared/schema';
+import {
+  PushPermissionPrompt,
+  shouldShowPushPrompt,
+} from '@/components/notifications/PushPermissionPrompt';
 
 interface LogBodyMetricsSheetProps {
   open: boolean;
@@ -149,6 +153,8 @@ export function LogBodyMetricsSheet({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [emptyHint, setEmptyHint] = useState(false);
+  // Sprint 2 BATCH 3: post-action push permission prompt
+  const [pushPromptOpen, setPushPromptOpen] = useState(false);
 
   const form = useForm<FormValues>({
     defaultValues: editing ? valuesFromEntry(editing, units) : EMPTY,
@@ -174,6 +180,13 @@ export function LogBodyMetricsSheet({
         description: editing ? 'Your changes are saved.' : 'Tracking another data point.',
       });
       onOpenChange(false);
+
+      // Sprint 2 BATCH 3: post-action push permission prompt. Only fires on
+      // first-ever-log (not edit) and only if user hasn't dismissed before.
+      // 600ms delay so the Drawer/Dialog finishes its close animation first.
+      if (!editing && shouldShowPushPrompt()) {
+        setTimeout(() => setPushPromptOpen(true), 600);
+      }
     },
     onError: (err: unknown) => {
       toast({
@@ -299,32 +312,43 @@ export function LogBodyMetricsSheet({
     </form>
   );
 
+  // Render the prompt as a sibling so it can show AFTER the Drawer/Dialog closes.
+  const promptOverlay = (
+    <PushPermissionPrompt open={pushPromptOpen} onOpenChange={setPushPromptOpen} />
+  );
+
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="text-left pb-2">
-            <DrawerTitle className="text-xl font-['Playfair_Display'] font-light tracking-tight">
-              {editing ? 'Edit entry' : 'Log entry'}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-6 overflow-y-auto">{Body}</div>
-        </DrawerContent>
-      </Drawer>
+      <>
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerContent className="max-h-[90vh]">
+            <DrawerHeader className="text-left pb-2">
+              <DrawerTitle className="text-xl font-['Playfair_Display'] font-light tracking-tight">
+                {editing ? 'Edit entry' : 'Log entry'}
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 pb-6 overflow-y-auto">{Body}</div>
+          </DrawerContent>
+        </Drawer>
+        {promptOverlay}
+      </>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-['Playfair_Display'] font-light tracking-tight">
-            {editing ? 'Edit entry' : 'Log entry'}
-          </DialogTitle>
-        </DialogHeader>
-        {Body}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-['Playfair_Display'] font-light tracking-tight">
+              {editing ? 'Edit entry' : 'Log entry'}
+            </DialogTitle>
+          </DialogHeader>
+          {Body}
+        </DialogContent>
+      </Dialog>
+      {promptOverlay}
+    </>
   );
 }
 

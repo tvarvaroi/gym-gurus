@@ -29,6 +29,10 @@ import { BlurFade } from '@/components/ui/blur-fade';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { QuickActions } from '@/components/redesign/coach';
+import {
+  PushPermissionPrompt,
+  shouldShowPushPrompt,
+} from '@/components/notifications/PushPermissionPrompt';
 
 interface Message {
   id: string;
@@ -213,6 +217,8 @@ export default function AICoach() {
   const [localRemaining, setLocalRemaining] = useState<number | null>(null);
   const [limitReached, setLimitReached] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  // Sprint 2 BATCH 3: post-action push permission prompt
+  const [pushPromptOpen, setPushPromptOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
@@ -402,6 +408,15 @@ export default function AICoach() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Sprint 2 BATCH 3: post-action push permission prompt. Only fires when
+      // this is the user's FIRST round-trip (messages.length captured at handleSend
+      // start === 1, i.e. only the initial greeting was present). Subsequent
+      // responses don't re-prompt. shouldShowPushPrompt() additionally gates on
+      // localStorage dismissed flag and current permission state.
+      if (messages.length === 1 && shouldShowPushPrompt()) {
+        setTimeout(() => setPushPromptOpen(true), 1500);
+      }
     } catch {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -424,6 +439,8 @@ export default function AICoach() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-auto md:max-h-none max-w-4xl mx-auto md:pt-4 md:space-y-4">
+      {/* Sprint 2 BATCH 3: push permission prompt (fires after first AI response) */}
+      <PushPermissionPrompt open={pushPromptOpen} onOpenChange={setPushPromptOpen} />
       {/* Header — compact on mobile, full on desktop */}
       <BlurFade delay={0.05} className="flex-none">
         {/* Mobile: minimal header */}

@@ -254,13 +254,13 @@ No `requireRole` middleware exists — use the inline pattern.
 
 ## Notifications
 
-**CSRF header must be `x-csrf-token` (lowercase) — uppercase `X-CSRF-Token` triggers a byte-length-mismatch crash.**
+**Don't manually add CSRF headers in client code — `client/src/main.tsx` has a global `window.fetch` interceptor that auto-injects `x-csrf-token` on every `/api/*` POST/PUT/PATCH/DELETE.**
 
-When a fetch from the browser sends `'X-CSRF-Token': token` (capital X), `server/middleware/csrf.ts:73`'s `crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken))` throws `RangeError: Input buffers must have the same byte length`. The same fetch with `'x-csrf-token': token` (lowercase) works fine. Root cause is unclear (browsers should normalize HTTP header names case-insensitively before transmission, and Express normalizes `req.headers` to lowercase) but the symptom is reproducible. Probable: the browser dropped the header due to some forbidden-header-list rule or fetch-spec normalization quirk that emptied the header value. Documented as a Sprint 2 BATCH 2 finding while running real-Chrome push verification.
+Manually adding a CSRF header creates a duplicate. If the manual header uses different casing (`'X-CSRF-Token'`) the JS object literal stores it as a separate key from the interceptor's `'x-csrf-token'`, both spreads survive, and when the browser serializes the Headers object it joins them comma-separated — server sees a `~130-char` doubled token, fails the `length !== 64` cookie compare in `server/middleware/csrf.ts:73`'s `crypto.timingSafeEqual`, throws `RangeError: Input buffers must have the same byte length`, returns 500. First hit during Sprint 2 BATCH 2 real-Chrome verification: my Playwright fetch added `'X-CSRF-Token': token` thinking it was missing → debug pulled the rug.
 
-The middleware itself ALSO has a defensive bug: `crypto.timingSafeEqual` requires equal-length buffers but the middleware doesn't pre-check lengths before comparing. Any length mismatch (including empty string vs full token) propagates as a RangeError → 500. The defensive fix is `if (cookieToken.length !== headerToken.length)` before timingSafeEqual. Out of Sprint 2 scope; capture as a tooling-sprint cleanup ticket.
+**Rule for new client code:** rely on the main.tsx interceptor. If you need to set a CSRF header explicitly (e.g. multipart upload via `apiRequest`), use lowercase `'x-csrf-token'` to match the interceptor's key — the spread will dedupe correctly.
 
-**Always use `'x-csrf-token'` lowercase from new client code.** Existing code (queryClient.ts, RegisterPage, DiscipleLoginPage, UploadPhotoSheet) already does — match it.
+The middleware itself also has a small defensive gap: `crypto.timingSafeEqual` requires equal-length buffers, but the middleware doesn't pre-check lengths. Any mismatched length crashes with RangeError → 500. The defensive fix is `if (cookieToken.length !== headerToken.length) return 403` before `timingSafeEqual`. Captured as a tooling-sprint cleanup ticket — the fix is one line but tangential to Sprint 2.
 
 ---
 

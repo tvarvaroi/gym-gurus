@@ -43,3 +43,16 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
     });
   });
 }
+
+// Sprint 2 BATCH 3: listen for SW messages about push subscription rotation.
+// The SW posts PUSH_SUBSCRIPTION_ROTATED when the browser auto-renews a sub
+// (typically because the push service expired the endpoint). The handler
+// re-POSTs the new subscription from the main thread (so CSRF interceptor fires)
+// and lets the dispatcher's natural failure-path eventually mark the old row
+// inactive. See client/src/lib/pushSubscription.ts for details.
+if ('serviceWorker' in navigator) {
+  // Lazy-load to keep main.tsx slim — pushSubscription.ts pulls in nothing heavy.
+  import('./lib/pushSubscription').then(({ listenForSwSubscriptionMessages }) => {
+    listenForSwSubscriptionMessages();
+  });
+}

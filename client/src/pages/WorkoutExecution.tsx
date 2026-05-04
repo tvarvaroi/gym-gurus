@@ -28,6 +28,10 @@ import {
   inferMusclesFromName,
 } from '@/lib/constants/muscleGroups';
 import { ExerciseMuscleDisplay } from '@/components/redesign/charts/ExerciseMuscleDisplay';
+import {
+  PushPermissionPrompt,
+  shouldShowPushPrompt,
+} from '@/components/notifications/PushPermissionPrompt';
 
 // ═══════════════════════════════════════════════════════════
 // TYPES
@@ -192,6 +196,11 @@ export default function WorkoutExecution() {
   const [showCompletion, setShowCompletion] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showEarlyFinishDialog, setShowEarlyFinishDialog] = useState(false);
+  // Sprint 2 BATCH 3: post-action push permission prompt. Fired after the
+  // workout is successfully saved (not just visually completed) — the
+  // shouldShowPushPrompt() gate inside the trigger respects the localStorage
+  // dismissed flag so a returning user who already declined never sees it again.
+  const [pushPromptOpen, setPushPromptOpen] = useState(false);
   const [showExerciseList, setShowExerciseList] = useState(false);
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [savedSessionData, setSavedSessionData] = useState<any>(null);
@@ -706,6 +715,14 @@ export default function WorkoutExecution() {
         }
       } catch {
         // response may already be consumed
+      }
+
+      // Sprint 2 BATCH 3: post-action permission prompt. Workout save success is
+      // a meaningful moment — the user just engaged. Delay 2s so the celebration
+      // breathes before we layer a second overlay. Gated on localStorage flag so
+      // returning dismissers never see this again.
+      if (shouldShowPushPrompt()) {
+        setTimeout(() => setPushPromptOpen(true), 2000);
       }
 
       // Save performance for next time (hints + pre-fill)
@@ -1313,6 +1330,9 @@ export default function WorkoutExecution() {
         onAddTime={addRestTime}
         onSkip={skipRest}
       />
+
+      {/* ── Sprint 2 BATCH 3: Push permission prompt (post-workout-save) ── */}
+      <PushPermissionPrompt open={pushPromptOpen} onOpenChange={setPushPromptOpen} />
 
       {/* ── Way To Go Celebration Card ── */}
       {showWayToGo && wayToGoData && (
