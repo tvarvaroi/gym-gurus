@@ -64,11 +64,26 @@ class Logger {
    */
   error(message: string, error?: Error | any): void {
     if (this.shouldLog('error')) {
-      const errorData = error instanceof Error
-        ? { message: error.message, stack: error.stack }
-        : error;
+      const errorData =
+        error instanceof Error ? { message: error.message, stack: error.stack } : error;
       console.error(this.formatMessage('error', message, errorData));
     }
+  }
+
+  /**
+   * Log audit events (always logged in every environment).
+   *
+   * Use for security/privacy-sensitive state changes that need a forensic
+   * trail: consent flips, role changes, account deletions, permission
+   * grants. Output is a structured JSON line so downstream log aggregators
+   * can filter on the `[AUDIT]` prefix and parse the payload directly.
+   *
+   * Distinguishes from `warn()` semantically — audit events aren't warnings,
+   * they're successful state transitions worth recording.
+   */
+  audit(event: string, data: Record<string, unknown>): void {
+    const timestamp = new Date().toISOString();
+    console.warn(`[${timestamp}] [AUDIT] ${event} ${JSON.stringify(data)}`);
   }
 }
 

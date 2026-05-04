@@ -6,6 +6,8 @@ import { users, clients, workouts } from '../../shared/schema';
 import { eq, sql, isNull, and } from 'drizzle-orm';
 import { getUserById } from '../auth';
 import { uploadImage, isR2Configured } from '../services/fileUpload';
+import { logger } from '../logger';
+import { getRequestId } from '../middleware/requestLogger';
 
 const router = Router();
 
@@ -265,10 +267,47 @@ router.patch('/biometrics-sharing', async (req: Request, res: Response) => {
     // A Disciple may have zero or one matching client row at any time. The
     // clients table has no updatedAt column today (Sprint 4 tracking arrives
     // with the full FK migration).
+    //
+    // SELECT-before-UPDATE captures the previous value for the audit log.
+    // Race tradeoff (intentional, Sprint 1.5 BATCH 3): two near-simultaneous
+    // PATCH requests can interleave the SELECT and UPDATE, producing an
+    // audit log entry with a stale previousValue (i.e. "false flip"). The
+    // worst case is a forensic record showing X→Y when the true sequence
+    // was X→Y→X→Y. Acceptable because (a) the event is still captured,
+    // (b) the destination value in the log matches the DB after both
+    // requests settle, (c) wrapping in a transaction would serialise toggle
+    // requests across the user's whole consent surface, which is overkill
+    // for v1's single flag. Sprint 4's granular consent system should
+    // revisit if multiple flags get toggled simultaneously by an automation.
+    const [existing] = await db
+      .select({ shareBodyMetricsWithTrainer: clients.shareBodyMetricsWithTrainer })
+      .from(clients)
+      .where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
+    const previousValue = existing?.shareBodyMetricsWithTrainer ?? null;
+
     await db
       .update(clients)
       .set({ shareBodyMetricsWithTrainer })
       .where(and(eq(clients.email, user.email), isNull(clients.deletedAt)));
+
+    // Audit log — privacy-sensitive flag changes must be reconstructable.
+    // {flag, previousValue, value} is a complete audit event; {flag, value}
+    // alone can't distinguish a flip from a reaffirm. previousValue is null
+    // for Disciples without a linked client row (the toggle UI is invisible
+    // for them, but the API still accepts the call) — logging null is
+    // honest and lets log analysis distinguish "first toggle ever" from
+    // "flip" from "reaffirm".
+    logger.audit('consent.toggled', {
+      userId: user.id,
+      email: user.email,
+      flag: 'shareBodyMetricsWithTrainer',
+      previousValue,
+      value: shareBodyMetricsWithTrainer,
+      ts: new Date().toISOString(),
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      requestId: getRequestId(req),
+    });
 
     res.json({ success: true, shareBodyMetricsWithTrainer });
   } catch (error) {
