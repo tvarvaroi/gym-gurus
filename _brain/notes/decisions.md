@@ -464,6 +464,16 @@ The `client/src/lib/units.ts` helpers (`getUnits`, `setUnits`, `displayWeight`, 
 
 ---
 
+## Privacy/forensic deletion: audit-first ordering (2026-05-05, Sprint 2 BATCH 2)
+
+**Pattern:** Audit logs for account deletion / data anonymization fire BEFORE any mutation. Original PII (email, names, third-party IDs) is captured in the audit log first; only then does the destructive operation begin.
+
+**Why:** After anonymization the audit log is the only surviving record of who the user was. If audit fires after, an in-flight failure leaves no forensic trail. Privacy regulators (GDPR Article 30, CCPA) require deletion logs.
+
+**Rule for future flows:** any helper that anonymizes/deletes user data must audit first, mutate second. Captured concretely in `server/services/userDeletion.ts` — Step 1 logs, Steps 2-5 mutate.
+
+---
+
 ## web-push MPL-2.0 dependency accepted (2026-05-05, Sprint 2 BATCH 1)
 
 **Decided:** `web-push@3.6.7` (MPL-2.0) accepted as a Sprint 2 dependency.
