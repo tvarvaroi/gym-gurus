@@ -254,6 +254,16 @@ No `requireRole` middleware exists — use the inline pattern.
 
 ## Notifications
 
+**CSRF header must be `x-csrf-token` (lowercase) — uppercase `X-CSRF-Token` triggers a byte-length-mismatch crash.**
+
+When a fetch from the browser sends `'X-CSRF-Token': token` (capital X), `server/middleware/csrf.ts:73`'s `crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken))` throws `RangeError: Input buffers must have the same byte length`. The same fetch with `'x-csrf-token': token` (lowercase) works fine. Root cause is unclear (browsers should normalize HTTP header names case-insensitively before transmission, and Express normalizes `req.headers` to lowercase) but the symptom is reproducible. Probable: the browser dropped the header due to some forbidden-header-list rule or fetch-spec normalization quirk that emptied the header value. Documented as a Sprint 2 BATCH 2 finding while running real-Chrome push verification.
+
+The middleware itself ALSO has a defensive bug: `crypto.timingSafeEqual` requires equal-length buffers but the middleware doesn't pre-check lengths before comparing. Any length mismatch (including empty string vs full token) propagates as a RangeError → 500. The defensive fix is `if (cookieToken.length !== headerToken.length)` before timingSafeEqual. Out of Sprint 2 scope; capture as a tooling-sprint cleanup ticket.
+
+**Always use `'x-csrf-token'` lowercase from new client code.** Existing code (queryClient.ts, RegisterPage, DiscipleLoginPage, UploadPhotoSheet) already does — match it.
+
+---
+
 **`PushSubscription` is a browser DOM global type (Notifications API).**
 The server-side type for our database row is named `PushSubscriptionRecord`. Don't import or alias them as the same name in any file that runs in both environments — the server-side type and the DOM type have different shapes. The DB row has `id`, `userId`, `createdAt`, `failureCount`, `active`, etc. The DOM type has `endpoint`, `expirationTime`, `getKey()`, `toJSON()`, etc. Watch for this in service worker code, push subscription helpers, and any shared `lib/` code that touches both. First captured: Sprint 2 BATCH 1 (2026-05-05) — `shared/schema.ts` exports `PushSubscriptionRecord` (typeof pushSubscriptions.$inferSelect) deliberately, not `PushSubscription`.
 
