@@ -1,6 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
-import sharp from 'sharp';
 import { z } from 'zod';
 import { db } from '../db';
 import { users, clients, workouts } from '../../shared/schema';
@@ -166,22 +165,12 @@ router.post(
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
       if (!req.file) return res.status(400).json({ error: 'No file provided' });
 
-      let processedBuffer: Buffer = req.file.buffer;
-      let mimeType = req.file.mimetype;
-
-      try {
-        // Server-side background removal (model cached after first call)
-        const { removeBackground } = await import('@imgly/background-removal-node');
-        const inputBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
-        const resultBlob = await removeBackground(inputBlob);
-        const arrayBuffer = await resultBlob.arrayBuffer();
-        processedBuffer = Buffer.from(arrayBuffer);
-        mimeType = 'image/png';
-
-        processedBuffer = await sharp(processedBuffer).trim().png().toBuffer();
-      } catch (bgError) {
-        console.error('Background removal failed, using original:', bgError);
-      }
+      // Background removal feature paused 2026-05-06 (AGPL dependency removed).
+      // See _brain/notes/decisions.md "Profile photo background removal — feature paused"
+      // for restoration plan and MIT alternatives to evaluate.
+      // Photo uploads as-is; sharp resize + WebP conversion still happens inside uploadImage().
+      const processedBuffer: Buffer = req.file.buffer;
+      const mimeType = req.file.mimetype;
 
       let imageUrl: string;
 

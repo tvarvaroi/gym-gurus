@@ -611,6 +611,33 @@ export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
 
 ---
 
+## Profile photo background removal — feature paused due to AGPL dependency removal (2026-05-06, Sprint 2.5)
+
+**Status:** Paused, not abandoned. Restore when an MIT-licensed alternative is evaluated and adopted.
+
+**What was paused:** Server-side automatic background removal on profile-image upload (`server/routes/settings.ts` profile-image-upload handler). The original implementation called `@imgly/background-removal-node` to produce a transparent-background PNG, then `sharp().trim().png()` to clamp the bounding box to the subject. Result was a profile photo where the subject is "cut out" cleanly against the role-themed UI background.
+
+**Why paused:** `@imgly/background-removal-node@1.4.5` is **AGPL-3.0** licensed. AGPL's network-use clause requires source disclosure to any user interacting with the software over a network. GymGurus is closed-source SaaS — incompatible. Sprint 2 BATCH 8 license audit caught it; Sprint 2.5 removes it.
+
+**What still works:** Profile photos still upload, resize, and convert to WebP via `sharp` inside `uploadImage()` (`server/services/fileUpload.ts:49,51`). The only thing missing is the auto-cutout against the original photo's background.
+
+**Why this matters to product (preserved for restoration):** The user explicitly values the premium aesthetic of background-removed profile photos cut out to the body silhouette — it's part of GymGurus's distinct visual language, not arbitrary polish. When restoring, prioritize visual quality of the cutout (clean edges, no halo, handles hair/limbs cleanly) over runtime cost. Cheaper-and-worse cutouts will look like the generic "AI background remover" web tools and undermine the premium positioning.
+
+**Candidate MIT-licensed alternatives to evaluate when feature is restored:**
+
+1. **rembg** (Python, MIT) — high-quality U-2-Net / SAM / BiRefNet models. Would require a Python microservice (separate Railway deploy) or a serverless function (Modal / RunPod). Adds operational cost + cold-start latency. Best visual quality among open-source options.
+2. **@huggingface/transformers** (JavaScript, Apache-2.0) — ONNX-runtime in Node, runs in-process. No extra service. Bundle/cold-start cost: model weights are 50-150 MB depending on the picked model (briaai/RMBG-1.4 is the standard choice for portrait BG removal). Reasonable visual quality.
+3. **Cloudflare Workers AI background removal** — paid, ~$0.10 per 1k requests. Zero ops, but creates Cloudflare infrastructure dependency. Predictable per-call cost. Quality depends on which model CF exposes (changes over time).
+4. **Self-hosted U-2-Net or BiRefNet via onnxruntime-node** (MIT) — DIY route. Highest visual ceiling (BiRefNet is research-quality), highest implementation cost. Worth considering only if the feature ends up being load-bearing for the product narrative.
+
+**Decision when feature is restored:** Evaluate cost vs quality tradeoff at that time. Recommended starting point: try `@huggingface/transformers` with `briaai/RMBG-1.4` first because it stays in-process (no microservice ops), runs Node-native, and the model is well-suited to portrait cutouts. Fall back to a microservice (option 1) only if RMBG-1.4 visual quality doesn't meet the premium bar.
+
+**Restoration insertion point:** The original try/catch wrapper at `server/routes/settings.ts:174` was removed in Sprint 2.5. The natural restoration site is the same handler — re-introduce a try/catch around the new call, preserving the "fall through to original buffer on failure" calling pattern so the upload path stays robust. Keep `processedBuffer = req.file.buffer` and `mimeType = req.file.mimetype` as the safe defaults so any future replacement that fails to load doesn't break uploads.
+
+**Anti-pattern to avoid on restoration:** Don't pre-process the input image (no normalize / CLAHE / modulate / linear / sharpen) before passing to the BG-removal model. The Sprint-1 gotcha (`_brain/notes/gotchas.md`) about @imgly's behavior generalizes: every BG-removal model is trained on natural photos and pre-processing introduces artifacts. Pass `req.file.buffer` directly. Apply `.trim()` after the cutout to clamp the bounding box.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
