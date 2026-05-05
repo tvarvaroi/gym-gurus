@@ -800,6 +800,14 @@ export const userGamification = pgTable(
     longestStreakDays: integer('longest_streak_days').default(0),
     lastWorkoutDate: timestamp('last_workout_date'),
 
+    // Sprint 3 — wellness streak (parallel to workout streak above).
+    // Mirrors workout-streak shape so Guru dashboard queries can read both
+    // streaks in a single SELECT. lastWellnessCheckInDate is the YYYY-MM-DD
+    // string in the user's stored timezone — see decisions.md "Today" definition.
+    currentWellnessStreakDays: integer('current_wellness_streak_days').default(0),
+    longestWellnessStreakDays: integer('longest_wellness_streak_days').default(0),
+    lastWellnessCheckInDate: varchar('last_wellness_check_in_date', { length: 10 }),
+
     // Lifetime Stats
     totalWorkoutsCompleted: integer('total_workouts_completed').default(0),
     totalVolumeLiftedKg: decimal('total_volume_lifted_kg', { precision: 12, scale: 2 }).default(
@@ -1057,6 +1065,117 @@ export const workoutRecoveryLog = pgTable(
     index('idx_recovery_log_created_at').on(table.createdAt),
   ]
 );
+
+// -------------------- DAILY WELLNESS CHECK-IN (Sprint 3 — Phase B) --------------------
+//
+// Keystone wellness table from the Q2-Q3 master roadmap. ONE row per user per
+// date (UNIQUE constraint enforces). All slider/toggle/notes fields are
+// nullable — user may skip any. readinessScore is computed server-side by
+// computeReadinessScoreV0 in server/services/wellnessService.ts.
+//
+// "Date" is YYYY-MM-DD in the user's stored timezone (read from
+// users.notification_preferences.quietHours.timezone — see _brain/notes/decisions.md
+// "Today definition"). Browser timezone is NEVER used.
+//
+// Sprint 6 will replace v0 readiness algorithm with Recovery Engine v2; the
+// readinessScoreFactors jsonb shape carries `algorithm: 'v0' | 'v2' | ...` so
+// historical entries stay tagged with the algorithm that produced them.
+//
+// Sprint 8 will read recent rows into AI Coach context.
+// Sprint 7 will read readinessScore for adaptive programming.
+export interface ReadinessScoreFactor {
+  label: string; // human-readable, used directly in factor-breakdown UI
+  score: number; // 0-100 component score
+  weight: number; // 0..1 contribution weight at compute time
+  contribution: number; // score * weight (rounded to 1 decimal)
+}
+
+export interface ReadinessScoreFactors {
+  factors: ReadinessScoreFactor[];
+  missingInputs: string[]; // names of optional inputs the user left blank — drives "connect a wearable" upsell
+  computedAt: string; // ISO timestamp
+  algorithm: string; // 'v0' for Sprint 3; will become 'v2' when Sprint 6 ships Recovery Engine v2
+}
+
+export const dailyWellnessLog = pgTable(
+  'daily_wellness_log',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: varchar('date', { length: 10 }).notNull(), // YYYY-MM-DD in user's timezone
+    // Subjective inputs (1-10 scale, all optional — CHECK constraints enforce range)
+    energyLevel: integer('energy_level'),
+    moodScore: integer('mood_score'),
+    stressLevel: integer('stress_level'),
+    sleepQualitySubjective: integer('sleep_quality_subjective'),
+    motivationLevel: integer('motivation_level'),
+    sorenessOverall: integer('soreness_overall'),
+    // Wellness behaviors (yes/no, all optional)
+    hydrationGoalMet: boolean('hydration_goal_met'),
+    steppedOutside: boolean('stepped_outside'),
+    meditationCompleted: boolean('meditation_completed'),
+    // Free text
+    notes: text('notes'),
+    // Computed readiness 0-100 + factor snapshot for trend display + audit
+    readinessScore: integer('readiness_score'),
+    readinessScoreFactors: jsonb('readiness_score_factors').$type<ReadinessScoreFactors>(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    // UNIQUE (user_id, date) enforces one row per user per date — upsert path
+    // in wellnessService.upsertTodayEntry relies on this constraint name.
+    uniqueIndex('idx_daily_wellness_user_date').on(table.userId, table.date),
+    // Covers "recent wellness" queries (last N days, DESC).
+    index('idx_daily_wellness_user_recent').on(table.userId, table.date),
+  ]
+);
+
+export const insertDailyWellnessLogSchema = createInsertSchema(dailyWellnessLog, {
+  energyLevel: z.number().int().min(1).max(10).nullable().optional(),
+  moodScore: z.number().int().min(1).max(10).nullable().optional(),
+  stressLevel: z.number().int().min(1).max(10).nullable().optional(),
+  sleepQualitySubjective: z.number().int().min(1).max(10).nullable().optional(),
+  motivationLevel: z.number().int().min(1).max(10).nullable().optional(),
+  sorenessOverall: z.number().int().min(1).max(10).nullable().optional(),
+  hydrationGoalMet: z.boolean().nullable().optional(),
+  steppedOutside: z.boolean().nullable().optional(),
+  meditationCompleted: z.boolean().nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+})
+  .omit({
+    id: true,
+    userId: true,
+    date: true, // server-derived from user timezone
+    readinessScore: true,
+    readinessScoreFactors: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .refine(
+    (v) =>
+      v.energyLevel != null ||
+      v.moodScore != null ||
+      v.stressLevel != null ||
+      v.sleepQualitySubjective != null ||
+      v.motivationLevel != null ||
+      v.sorenessOverall != null ||
+      v.hydrationGoalMet != null ||
+      v.steppedOutside != null ||
+      v.meditationCompleted != null ||
+      (v.notes != null && v.notes.trim() !== ''),
+    { message: 'At least one field must be provided' }
+  );
+
+export type DailyWellnessLog = typeof dailyWellnessLog.$inferSelect;
+export type InsertDailyWellnessLog = z.infer<typeof insertDailyWellnessLogSchema>;
 
 // -------------------- AI CHAT & COACHING --------------------
 

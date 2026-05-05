@@ -611,6 +611,33 @@ export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
 
 ---
 
+## "Today" definition: `users.notification_preferences.quietHours.timezone` (2026-05-06, Sprint 3 BATCH 1)
+
+**Decided:** All "today" / "this morning" / "yesterday" semantics across the platform read from `users.notification_preferences.quietHours.timezone` (the IANA timezone the user configured for quiet hours). Browser timezone is NEVER consulted for date-bucketing decisions.
+
+**Rejected:**
+
+1. **Browser timezone** — would cause "today" to flip when user travels. A user who logged a wellness check-in at 23:55 in Bucharest, then flew to NYC and opened the app at 22:00 EST, would see two "today" rows on the same calendar day from their perspective, AND lose their streak when the cron evaluated "did they check in today?" using EST.
+2. **Server UTC** — forces every user to do timezone math in their head ("it's 1am here so my streak should still be safe, right?"). Server-UTC date bucketing is correct for analytics, wrong for user-facing date semantics.
+3. **Separate `users.timezone` column** — stores the same value twice (it's already in `users.notification_preferences.quietHours.timezone`). A new column would drift from the prefs value any time one was updated without the other.
+
+**Why:** Single source of truth. The user explicitly chose this timezone in Settings — using it for date bucketing matches their mental model. Travelers don't get spurious streak-break events at midnight UTC while still in their morning. Eventually-consistent: when the user updates their timezone in Settings, every date-bucketing decision flips together because they all read from the same column.
+
+**Rule for future sprints:** Any backend logic that computes "today" or buckets data by date must accept a `tz` parameter (defaulting to the user's stored timezone). Frontend MUST use the same timezone via the `useUserTimezone()` hook (Sprint 3, `client/src/hooks/useUserTimezone.ts`). Never use `new Date().toISOString().slice(0,10)` or `Intl.DateTimeFormat()` without an explicit `timeZone` option for any persisted date.
+
+**First applied:** Sprint 3 BATCH 1 (wellness check-in). Shared by:
+
+- `wellnessService.todayInTimezone(tz)` — server-side
+- `wellnessService.upsertTodayEntry(userId, tz, partial)` — uses tz for the date column
+- `dailyWellnessNudge.ts` cron — filters by user-local 07:00–11:00 window
+- `wellnessReengagement.ts` cron — checks 7-day-ago in user-local time
+- `useUserTimezone()` frontend hook — reads from prefs query
+- `wellnessTime.ts` helpers — `todayInUserTimezone()`, `dateMatchesUserToday()`
+
+**Future inheritors:** Sprint 4 wearables (when did the user wake up?), Sprint 6 Recovery Engine v2 (what's the comparison window?), Sprint 9 habits (did they hit the streak today?), Sprint 13 insights (which day to bucket data into?).
+
+---
+
 ## Migration retry-cron pattern: explicitly mark historical rows as settled (2026-05-06, Sprint 2 BATCH 2 / migration 012 prod run)
 
 **Pattern:** When a migration adds `trigger_at` / `processed_at` columns (or any pair where a non-NULL trigger column makes the row claimable by a cron) onto an existing table, the migration must explicitly mark every pre-existing row as settled — don't rely on the columns starting NULL.
