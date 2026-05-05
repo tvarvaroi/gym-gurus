@@ -1,29 +1,21 @@
 /**
- * Unit system preference — stored in localStorage as 'gg_units'.
+ * Unit system display helpers.
  *
  * Storage is always metric (kg, cm) on the server. This module owns the
  * display-side conversion. Toggling units never changes server data.
  *
- * TODO Sprint 4+: migrate to userFitnessProfile.preferredUnits column when
- * the granular consent system lands — userFitnessProfile is the natural home
- * for cross-device persistence. Two-device users (phone + desktop) currently
- * see independent toggles per device; that's the deliberate v1 trade-off.
+ * Sprint 2 BATCH 6: cross-device unit preference moved to the server
+ * (`users.preferred_units` column) and is exposed via the `useUnits()` hook
+ * in `client/src/hooks/useUnits.ts`. The hook handles a one-time migration
+ * of any legacy `localStorage.gg_units` value on first load, then clears the
+ * key. The `getUnits()` localStorage getter previously exported here was
+ * intentionally REMOVED — non-React code paths must read the cached value
+ * via `queryClient.getQueryData(['/api/settings/preferred-units'])` if they
+ * absolutely need a synchronous read, but most callers should refactor to
+ * use the hook from a React component instead.
  */
 
 export type UnitSystem = 'metric' | 'imperial';
-
-const KEY = 'gg_units';
-
-export function getUnits(): UnitSystem {
-  if (typeof window === 'undefined') return 'metric';
-  const v = window.localStorage.getItem(KEY);
-  return v === 'imperial' ? 'imperial' : 'metric';
-}
-
-export function setUnits(u: UnitSystem) {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(KEY, u);
-}
 
 // ─── Conversion helpers ─────────────────────────────────────────────────────
 

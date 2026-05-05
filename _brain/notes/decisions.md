@@ -489,6 +489,29 @@ The `client/src/lib/units.ts` helpers (`getUnits`, `setUnits`, `displayWeight`, 
 
 ---
 
+## Push permission prompt: appointment-confirmation trigger (deferred from Sprint 2 BATCH 5)
+
+**Status:** Deferred from Sprint 2 BATCH 5 (2026-05-05).
+
+**Reason:** Disciple-side appointment-confirmation flow does not exist yet. The `appointments` table has `status` column with values `scheduled / completed / cancelled` only — no `confirmed` state, and no Disciple-side endpoint to confirm an appointment a Guru has scheduled. Adding the trigger today would mean dead code waiting for a feature.
+
+**Action when feature lands:** Add a post-action trigger inside the Disciple-side appointment-confirm mutation `onSuccess`, gated by:
+
+1. `user.role === 'client'` — only Disciples. Guru-created appointments do NOT trigger the prompt; the Guru wasn't part of that interaction.
+2. First confirmed appointment ever — same `localStorage.getItem('gg_push_prompt_seen')` gate the body-metric trigger uses.
+
+Pattern reference: `client/src/components/biometrics/LogBodyMetricsSheet.tsx` (search for `shouldShowPushPrompt()`). It is the cleanest example of "first action of this kind" gating because it also handles the editing/non-first case (`!editing && shouldShowPushPrompt()`).
+
+**Why care:** Disciples who never log body metrics or interact with AI Coach get no push prompt today. The workout-completion trigger catches some — but only after their trainer assigns a workout and they actually execute it via WorkoutExecution.tsx. Appointment confirmation would catch them earlier in their lifecycle, right at the moment they're committing to a session.
+
+**Cross-references:**
+
+- Sprint 2 BATCH 4 brainstorm Q1 amendment (where this trigger was approved).
+- Sprint 2 BATCH 5 commit (where it was deferred with rationale).
+- Q2-Q3 master roadmap: appointment-confirm flow is not currently on the locked sprint list. When it appears, this trigger is part of that work.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]

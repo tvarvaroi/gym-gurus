@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Activity, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
@@ -8,7 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { getUnits, setUnits, type UnitSystem } from '@/lib/units';
+import type { UnitSystem } from '@/lib/units';
+import { useUnits } from '@/hooks/useUnits';
 import { BodyMetricsList } from '@/components/biometrics/BodyMetricsList';
 import { BodyMetricsEmptyState } from '@/components/biometrics/BodyMetricsEmptyState';
 import { LogBodyMetricsSheet } from '@/components/biometrics/LogBodyMetricsSheet';
@@ -21,14 +22,13 @@ export default function BiometricsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [units, setUnitsState] = useState<UnitSystem>(() => getUnits());
+  // Sprint 2 BATCH 6: server-backed cross-device unit preference. The hook
+  // handles legacy localStorage migration internally and returns a muted/
+  // loading state during the initial fetch — the toggle below mirrors that
+  // so the user never sees the wrong unit flashed.
+  const { units, isLoading: unitsLoading, setUnits: setUnitsServer } = useUnits();
   const [logOpen, setLogOpen] = useState(false);
   const [editing, setEditing] = useState<BodyMetrics | null>(null);
-
-  // Sync to localStorage whenever the user toggles
-  useEffect(() => {
-    setUnits(units);
-  }, [units]);
 
   const entriesQuery = useQuery<BodyMetrics[]>({
     queryKey: ['/api/biometrics'],
@@ -73,7 +73,7 @@ export default function BiometricsPage() {
         title="Body"
         titleAccent="metrics"
         subtitle="Track your body composition over time"
-        actions={<UnitsToggle units={units} onChange={setUnitsState} />}
+        actions={<UnitsToggle units={units} onChange={setUnitsServer} loading={unitsLoading} />}
       />
 
       <Tabs defaultValue="body" className="mt-6 md:mt-8">
@@ -168,22 +168,34 @@ export default function BiometricsPage() {
 }
 
 // ─── Units toggle (in PageHeader actions slot) ─────────────────────────────
+// Sprint 2 BATCH 6: `loading` prop renders a muted/disabled toggle during the
+// initial server fetch — prevents the wrong unit flashing before useUnits()
+// resolves. Defaults to 'metric' visually during loading (no aria-pressed
+// signals the actual current state until we have one).
 interface UnitsToggleProps {
   units: UnitSystem;
   onChange: (u: UnitSystem) => void;
+  loading?: boolean;
 }
-function UnitsToggle({ units, onChange }: UnitsToggleProps) {
+function UnitsToggle({ units, onChange, loading = false }: UnitsToggleProps) {
   return (
     <div
       role="group"
       aria-label="Unit system"
-      className="inline-flex items-center rounded-full border border-border/50 bg-card p-0.5"
+      aria-busy={loading || undefined}
+      data-testid="units-toggle"
+      data-loading={loading ? 'true' : 'false'}
+      className={`inline-flex items-center rounded-full border border-border/50 bg-card p-0.5 ${
+        loading ? 'opacity-50 pointer-events-none' : ''
+      }`}
     >
       <button
         onClick={() => onChange('metric')}
-        aria-pressed={units === 'metric'}
-        className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer min-h-[32px] ${
-          units === 'metric'
+        aria-pressed={!loading && units === 'metric'}
+        disabled={loading}
+        data-testid="units-toggle-metric"
+        className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer min-h-[32px] disabled:cursor-not-allowed ${
+          !loading && units === 'metric'
             ? 'bg-primary text-primary-foreground'
             : 'text-muted-foreground hover:text-foreground'
         }`}
@@ -192,9 +204,11 @@ function UnitsToggle({ units, onChange }: UnitsToggleProps) {
       </button>
       <button
         onClick={() => onChange('imperial')}
-        aria-pressed={units === 'imperial'}
-        className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer min-h-[32px] ${
-          units === 'imperial'
+        aria-pressed={!loading && units === 'imperial'}
+        disabled={loading}
+        data-testid="units-toggle-imperial"
+        className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer min-h-[32px] disabled:cursor-not-allowed ${
+          !loading && units === 'imperial'
             ? 'bg-primary text-primary-foreground'
             : 'text-muted-foreground hover:text-foreground'
         }`}

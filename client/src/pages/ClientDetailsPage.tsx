@@ -74,7 +74,7 @@ import { TruncatedText } from '@/components/TruncatedText';
 import { BodyMetricsList } from '@/components/biometrics/BodyMetricsList';
 import { BodyMetricsTrends } from '@/components/biometrics/BodyMetricsTrends';
 import { Lock } from 'lucide-react';
-import { getUnits } from '@/lib/units';
+import { useUnits } from '@/hooks/useUnits';
 import type { BodyMetrics } from '@shared/schema';
 
 // API response type - dates are serialized as strings
@@ -1974,7 +1974,11 @@ interface ClientBodyTabProps {
 }
 
 function ClientBodyTab({ clientId, shareEnabled, clientFirstName }: ClientBodyTabProps) {
-  const units = getUnits();
+  // Sprint 2 BATCH 6: server-backed unit preference. Trainers viewing a
+  // Disciple's body data inherit the trainer's own unit preference here —
+  // not the Disciple's. (Both metric and imperial show the same canonical
+  // server values; only the display layer differs.)
+  const { units } = useUnits();
 
   const entriesQuery = useQuery<BodyMetrics[]>({
     queryKey: [`/api/biometrics/client/${clientId}`],
