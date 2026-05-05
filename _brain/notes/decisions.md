@@ -512,6 +512,20 @@ Pattern reference: `client/src/components/biometrics/LogBodyMetricsSheet.tsx` (s
 
 ---
 
+## localStorage -> server migration pattern (2026-05-05, Sprint 2 BATCH 6)
+
+**Pattern:** When migrating a client preference from `localStorage` to a server-backed column, both shapes coexist during the deploy window. Stale builds read the old `localStorage` path until they refresh.
+
+**Worst case:** brief flip back to default on one device while another device runs the new build.
+
+**Bounded by:** deploy completion. Affects display layer only — no data corruption.
+
+**Self-heal:** migration shim runs on next refresh, reads legacy `localStorage`, PATCHes server, clears `localStorage`. Idempotent — once cleared, the shim is a no-op forever after.
+
+**First applied:** Sprint 2 BATCH 6 (`gg_units` preference -> `users.preferred_units`). Future reuse: any localStorage flag that needs cross-device consistency. Reference implementation: `client/src/hooks/useUnits.ts` migration `useEffect`.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
