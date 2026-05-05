@@ -271,6 +271,9 @@ The server-side type for our database row is named `PushSubscriptionRecord`. Don
 
 ## Local dev / tooling
 
+**Disposable verifier scripts go in `.git/` not the tracked tree.**
+Sprint 3 BATCH 1 used `.git/verify-013-dev.ts` and `.git/test-013-down-block.ts` for one-shot dev verification, then deleted them after running. Putting them in `.git/` (which is `.gitignore`d by definition) prevents accidental commits AND keeps them locally inspectable until manually cleaned. If you need a permanent verifier, put it in `scripts/` instead — `scripts/verify-prod-migrations.ts` is the durable companion. Pattern first used: Sprint 3 BATCH 1 (2026-05-06).
+
 **Dev server dies between Playwright + Bash interleaving on Windows.**
 Don't issue Bash calls between Playwright actions if the same `npm run dev` process needs to stay alive. Either batch all Playwright actions before any Bash, or accept that you'll restart the dev server. Sprint 1 BATCH 3.5 hit this twice during the screenshot session — `npm run dev` (run via `run_in_background`) exits when the harness kills the parent shell mid-session.
 

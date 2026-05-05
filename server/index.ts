@@ -45,6 +45,11 @@ import webhookRoutes from './routes/webhooks';
 import { isR2Configured } from './services/fileUpload';
 import { isPushConfigured } from './services/pushService';
 import { startQuietHoursCron, stopQuietHoursCron } from './jobs/cleanupExpiredQuietHours';
+import { startWellnessNudgeCron, stopWellnessNudgeCron } from './jobs/dailyWellnessNudge';
+import {
+  startWellnessReengagementCron,
+  stopWellnessReengagementCron,
+} from './jobs/wellnessReengagement';
 
 // Initialize Sentry error monitoring (production only)
 initSentry();
@@ -346,6 +351,14 @@ app.use(performanceMonitor);
     // the dispatcher's fanOut() returns early when isPushConfigured() is false,
     // so the cron just no-ops on rows it claims (still marks them delivered_at).
     startQuietHoursCron();
+
+    // Sprint 3: wellness check-in nudge crons. Both filter on
+    // notification_preferences.categories.recovery, so users who toggled
+    // recovery alerts off see neither. Both safe even when push isn't
+    // configured (dispatcher writes the notifications row regardless;
+    // push fan-out is a best-effort secondary).
+    startWellnessNudgeCron();
+    startWellnessReengagementCron();
   });
 
   // Graceful shutdown — clear the cron interval so the process exits cleanly.
@@ -353,6 +366,8 @@ app.use(performanceMonitor);
   const shutdown = (signal: string) => {
     log(`Received ${signal}, stopping cron and closing server...`);
     stopQuietHoursCron();
+    stopWellnessNudgeCron();
+    stopWellnessReengagementCron();
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(1), 10000).unref();
   };

@@ -50,6 +50,9 @@ export const NOTIFICATION_TYPES = [
   'recovery_low',
   'sleep_summary',
   'summary_weekly',
+  // New (Sprint 3 — wellness check-in)
+  'wellness_daily_nudge',
+  'wellness_reengagement_7day',
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -77,6 +80,10 @@ export const TYPE_TO_CATEGORY = {
   recovery_low: 'recovery',
   sleep_summary: 'recovery',
   summary_weekly: 'achievements',
+  // Sprint 3 wellness — both map to 'recovery' so they obey the same user toggle
+  // as recovery alerts. Quiet hours apply naturally via the dispatcher.
+  wellness_daily_nudge: 'recovery',
+  wellness_reengagement_7day: 'recovery',
 } as const satisfies Record<NotificationType, NotificationCategory>;
 
 export function categoryForType(type: NotificationType): NotificationCategory {
@@ -100,6 +107,12 @@ export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
   'workout_assigned', // Disciple-blocking — they need to know to train
   'payment_received', // Trainer revenue event — billing-critical
   'session_reminder', // Imminent appointment — operationally critical
+  // NOTE: wellness_daily_nudge and wellness_reengagement_7day are deliberately
+  // EXCLUDED from this allowlist. They are soft prompts ("how are you feeling
+  // today?", "still with us?") — emailing them would feel spammy and dilute the
+  // "email = critical" signal. Wellness nudges stay push-only. If push fails on
+  // every device, the user just doesn't see the nudge that day — no harm done.
+  // See `_brain/notes/decisions.md` Sprint 3 entry.
 ] as const satisfies readonly NotificationType[];
 
 export type EmailFallbackHighPriorityType = (typeof EMAIL_FALLBACK_HIGH_PRIORITY_TYPES)[number];
@@ -238,6 +251,21 @@ export const NOTIFICATION_TEMPLATES = {
     body: `${n(d, 'workoutsCompleted')} workouts, ${n(d, 'prsSet')} PRs, ${n(d, 'adherencePct')}% adherence`,
     actionUrl: '/dashboard',
     tag: 'summary_weekly',
+  }),
+  // Sprint 3 — wellness check-in nudges. Both use single tags so a second
+  // dispatch on the same user-day collapses on the OS notification tray
+  // rather than stacking duplicate banners.
+  wellness_daily_nudge: () => ({
+    title: 'How are you feeling today?',
+    body: '30 seconds — slide a few sliders, feed your AI coach.',
+    actionUrl: '/wellness',
+    tag: 'wellness_daily_nudge',
+  }),
+  wellness_reengagement_7day: () => ({
+    title: 'Still with us?',
+    body: '7 days since your last check-in. We miss the data.',
+    actionUrl: '/wellness',
+    tag: 'wellness_reengagement_7day',
   }),
 } as const satisfies Record<NotificationType, Renderer>;
 
