@@ -1,22 +1,31 @@
-// One-shot verification script for migrations 010 + 011 against Railway prod.
+// One-shot verification script for migrations 010 + 011 + 012 against Railway prod.
 // Run via: railway run -- npx tsx scripts/verify-prod-migrations.ts <phase>
 //
 // Phases:
-//   baseline  — pre-010 snapshot: existing-table row counts + confirm 010/011
-//               artefacts are absent (so we know the migrations haven't been
-//               run yet)
-//   post-010  — confirm program_* tables exist + indexes + row counts on
-//               existing tables haven't drifted from baseline
-//   post-011  — confirm body_metrics + progress_photos exist, progress_entries
-//               polymorphic refactor took effect, share_body_metrics_with_trainer
-//               column on clients, AND the critical check that no existing
-//               progress_entries row has client_id=NULL after the refactor
+//   baseline      — pre-010 snapshot: existing-table row counts + confirm 010/011
+//                   artefacts are absent
+//   post-010      — confirm program_* tables exist + indexes + row counts on
+//                   existing tables haven't drifted from baseline
+//   post-011      — confirm body_metrics + progress_photos exist, progress_entries
+//                   polymorphic refactor took effect, share_body_metrics_with_trainer
+//                   column on clients, AND the critical check that no existing
+//                   progress_entries row has client_id=NULL after the refactor
+//   baseline-012  — pre-012 snapshot: confirm 012 artefacts ABSENT, capture
+//                   row counts for drift detection, assert notification_preferences
+//                   column has zero rows with new-shape (categories key)
+//   post-012      — confirm push_subscriptions table + 3 indexes, preferred_units
+//                   column with all rows = 'metric', notification_preferences fully
+//                   reshaped (every row has categories/quietHours/channels keys),
+//                   notifications.deliver_after + delivered_at + partial index,
+//                   AND CRITICAL: zero pre-existing notifications rows are
+//                   cron-claimable (would cause historical re-delivery)
 //
-// Designed to be safe to re-run. All queries are SELECT-only.
+// Designed to be safe to re-run. All queries are SELECT-only except the
+// transaction-wrapped CHECK constraint enforcement test in post-011.
 import { sql } from 'drizzle-orm';
 import { getDb } from '../server/db';
 
-type Phase = 'baseline' | 'post-010' | 'post-011';
+type Phase = 'baseline' | 'post-010' | 'post-011' | 'baseline-012' | 'post-012';
 
 const EXISTING_TABLES_TO_COUNT = [
   'users',
@@ -333,16 +342,349 @@ async function post011() {
   }
 }
 
+async function columnDefault(
+  db: Awaited<ReturnType<typeof getDb>>,
+  table: string,
+  column: string
+): Promise<string | null> {
+  const result: any = await db.execute(sql`
+    SELECT column_default
+    FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = ${table} AND column_name = ${column}
+  `);
+  const v = result.rows?.[0]?.column_default ?? result[0]?.column_default;
+  return v ?? null;
+}
+
+async function indexDef(
+  db: Awaited<ReturnType<typeof getDb>>,
+  name: string
+): Promise<string | null> {
+  const result: any = await db.execute(sql`
+    SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname = ${name}
+  `);
+  const v = result.rows?.[0]?.indexdef ?? result[0]?.indexdef;
+  return v ?? null;
+}
+
+async function jsonbCount(
+  db: Awaited<ReturnType<typeof getDb>>,
+  whereClause: string
+): Promise<number> {
+  const r: any = await db.execute(
+    sql.raw(`SELECT COUNT(*)::text AS c FROM users WHERE ${whereClause}`)
+  );
+  return parseInt(r.rows?.[0]?.c ?? r[0]?.c ?? '0', 10);
+}
+
+async function baseline012() {
+  const db = await getDb();
+  console.log('=== BASELINE-012 (pre-012) ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db, version() AS v`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}`);
+  console.log(`Version : ${(ident.rows?.[0]?.v ?? ident[0]?.v ?? '').slice(0, 80)}\n`);
+
+  // 012 artefacts — must NOT exist
+  const pushSubsExists = await tableExists(db, 'push_subscriptions');
+  const preferredUnitsExists = await columnExists(db, 'users', 'preferred_units');
+  const deliverAfterExists = await columnExists(db, 'notifications', 'deliver_after');
+  const deliveredAtExists = await columnExists(db, 'notifications', 'delivered_at');
+  const idxQueueExists = await indexExists(db, 'idx_notifications_delivery_queue');
+  const idxPushUserActiveExists = await indexExists(db, 'idx_push_subs_user_active');
+  const idxPushEndpointExists = await indexExists(db, 'idx_push_subs_endpoint');
+
+  console.log('012 artefacts (must be absent before run):');
+  console.log(
+    `  push_subscriptions table              : ${pushSubsExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  users.preferred_units column          : ${preferredUnitsExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  notifications.deliver_after column    : ${deliverAfterExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  notifications.delivered_at column     : ${deliveredAtExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  idx_notifications_delivery_queue      : ${idxQueueExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  idx_push_subs_user_active             : ${idxPushUserActiveExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  idx_push_subs_endpoint                : ${idxPushEndpointExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  // notification_preferences column must already exist (pre-Sprint-2 schema), but
+  // ZERO rows should have the new-shape `categories` key — that key is added by
+  // the migration's reshape UPDATE.
+  const npColExists = await columnExists(db, 'users', 'notification_preferences');
+  console.log('\nnotification_preferences shape (must be legacy or NULL pre-012):');
+  console.log(
+    `  column exists                         : ${npColExists ? 'yes ✓' : 'NO (UNEXPECTED — migration assumes column is pre-existing)'}`
+  );
+  if (npColExists) {
+    const newShapeRows = await jsonbCount(db, `notification_preferences ? 'categories'`);
+    const legacyShapeRows = await jsonbCount(
+      db,
+      `notification_preferences IS NOT NULL AND NOT (notification_preferences ? 'categories')`
+    );
+    const nullRows = await jsonbCount(db, `notification_preferences IS NULL`);
+    console.log(
+      `  rows with new-shape (categories key)  : ${newShapeRows} ${newShapeRows === 0 ? '✓' : '— UNEXPECTED, migration may already have run'}`
+    );
+    console.log(`  rows with legacy/other JSON shape     : ${legacyShapeRows}`);
+    console.log(`  rows with NULL                        : ${nullRows}`);
+  }
+
+  console.log('\nExisting-table row counts (snapshot for drift detection):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+
+  // Notifications-only count, since the migration backfills deliver_at on every
+  // pre-existing notifications row — useful to compare post-run.
+  const notifTotal: any = await db.execute(sql`SELECT COUNT(*)::text AS c FROM notifications`);
+  const notifTotalCount = parseInt(notifTotal.rows?.[0]?.c ?? notifTotal[0]?.c ?? '0', 10);
+  console.log(`  notifications (full count)   : ${notifTotalCount}`);
+
+  console.log('\nSAVE THESE NUMBERS — used as the baseline for post-012 drift checks.');
+}
+
+async function post012() {
+  const db = await getDb();
+  console.log('=== POST-012 ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}\n`);
+
+  // ─── (a) push_subscriptions table + 3 indexes ──────────────────────────
+  const pushSubsOk = await tableExists(db, 'push_subscriptions');
+  const idxPushUserActive = await indexExists(db, 'idx_push_subs_user_active');
+  const idxPushEndpoint = await indexExists(db, 'idx_push_subs_endpoint');
+  // pkey index on a table that uses `id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()`
+  // gets the standard name push_subscriptions_pkey.
+  const idxPushPkey = await indexExists(db, 'push_subscriptions_pkey');
+
+  console.log('(a) push_subscriptions table + indexes:');
+  console.log(`  table                                 : ${pushSubsOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  push_subscriptions_pkey               : ${idxPushPkey ? 'present ✓' : 'MISSING'}`);
+  console.log(
+    `  idx_push_subs_endpoint (UNIQUE)       : ${idxPushEndpoint ? 'present ✓' : 'MISSING'}`
+  );
+  console.log(
+    `  idx_push_subs_user_active (PARTIAL)   : ${idxPushUserActive ? 'present ✓' : 'MISSING'}`
+  );
+
+  // Verify the partial index has the right WHERE clause
+  if (idxPushUserActive) {
+    const def = (await indexDef(db, 'idx_push_subs_user_active')) ?? '';
+    const hasPartialClause = /WHERE\s+\(?active\s*=\s*true\)?/i.test(def);
+    console.log(
+      `  idx_push_subs_user_active WHERE check : ${hasPartialClause ? 'partial WHERE active=true ✓' : 'WRONG/MISSING (' + def + ')'}`
+    );
+  }
+
+  // Verify the UNIQUE index is actually unique on endpoint
+  if (idxPushEndpoint) {
+    const def = (await indexDef(db, 'idx_push_subs_endpoint')) ?? '';
+    const isUnique = /UNIQUE/i.test(def);
+    console.log(
+      `  idx_push_subs_endpoint UNIQUE check   : ${isUnique ? 'UNIQUE ✓' : 'NOT UNIQUE (' + def + ')'}`
+    );
+  }
+
+  // ─── (b) push_subscriptions row count = 0 ──────────────────────────────
+  const pushSubsCount: any = await db.execute(
+    sql`SELECT COUNT(*)::text AS c FROM push_subscriptions`
+  );
+  const psc = parseInt(pushSubsCount.rows?.[0]?.c ?? pushSubsCount[0]?.c ?? '0', 10);
+  console.log(
+    `\n(b) push_subscriptions row count        : ${psc} ${psc === 0 ? '✓' : '— UNEXPECTED'}`
+  );
+
+  // ─── (c) users.preferred_units default 'metric' + every row = 'metric' ──
+  const puColOk = await columnExists(db, 'users', 'preferred_units');
+  const puDefault = await columnDefault(db, 'users', 'preferred_units');
+  console.log('\n(c) users.preferred_units column:');
+  console.log(`  column exists                         : ${puColOk ? 'yes ✓' : 'NO'}`);
+  console.log(
+    `  default value                         : ${puDefault} ${puDefault?.includes("'metric'") ? '✓' : '— UNEXPECTED'}`
+  );
+  if (puColOk) {
+    const rowsByUnit: any = await db.execute(sql`
+      SELECT preferred_units, COUNT(*)::text AS c FROM users GROUP BY preferred_units
+    `);
+    const groups = (rowsByUnit.rows ?? rowsByUnit) as Array<{ preferred_units: string; c: string }>;
+    console.log(`  rows grouped by preferred_units value :`);
+    for (const g of groups) {
+      console.log(
+        `    ${String(g.preferred_units).padEnd(15)} : ${g.c} ${g.preferred_units === 'metric' ? '✓' : '— UNEXPECTED, only metric was expected post-migration'}`
+      );
+    }
+    const nullPu: any = await db.execute(
+      sql`SELECT COUNT(*)::text AS c FROM users WHERE preferred_units IS NULL`
+    );
+    const nullPuCount = parseInt(nullPu.rows?.[0]?.c ?? nullPu[0]?.c ?? '0', 10);
+    console.log(
+      `  rows with preferred_units IS NULL     : ${nullPuCount} ${nullPuCount === 0 ? '✓ (column is NOT NULL)' : '— UNEXPECTED'}`
+    );
+  }
+
+  // ─── (d), (e) users.notification_preferences reshape complete ──────────
+  console.log('\n(d, e) users.notification_preferences reshape:');
+  const totalUsers = await jsonbCount(db, 'TRUE');
+  const newShapeRows = await jsonbCount(db, `notification_preferences ? 'categories'`);
+  const hasQuietHours = await jsonbCount(db, `notification_preferences ? 'quietHours'`);
+  const hasChannels = await jsonbCount(db, `notification_preferences ? 'channels'`);
+  const stillLegacy = await jsonbCount(
+    db,
+    `notification_preferences IS NOT NULL AND NOT (notification_preferences ? 'categories')`
+  );
+  const stillNull = await jsonbCount(db, `notification_preferences IS NULL`);
+
+  console.log(`  total users                           : ${totalUsers}`);
+  console.log(
+    `  rows with new-shape (categories key)  : ${newShapeRows} ${newShapeRows === totalUsers ? '✓ (every row migrated)' : '— UNEXPECTED'}`
+  );
+  console.log(
+    `  rows with quietHours key              : ${hasQuietHours} ${hasQuietHours === totalUsers ? '✓' : '— UNEXPECTED'}`
+  );
+  console.log(
+    `  rows with channels key                : ${hasChannels} ${hasChannels === totalUsers ? '✓' : '— UNEXPECTED'}`
+  );
+  console.log(
+    `  rows still in legacy shape            : ${stillLegacy} ${stillLegacy === 0 ? '✓ (zero legacy remaining)' : '— UNEXPECTED, reshape did not cover all rows'}`
+  );
+  console.log(
+    `  rows still NULL                       : ${stillNull} ${stillNull === 0 ? '✓ (every row populated)' : '— UNEXPECTED'}`
+  );
+
+  // Sample a row to show actual reshape values — proves the structural shape.
+  const sample: any = await db.execute(sql`
+    SELECT id, notification_preferences::text AS prefs FROM users LIMIT 1
+  `);
+  const sampleRow = (sample.rows ?? sample)[0];
+  if (sampleRow) {
+    const prefsStr = sampleRow.prefs ?? sampleRow.notification_preferences;
+    console.log(
+      `\n  sample user (${String(sampleRow.id).slice(0, 12)}…) notification_preferences:`
+    );
+    try {
+      const prefs = JSON.parse(prefsStr);
+      const cat = prefs.categories ?? {};
+      const ch = prefs.channels ?? {};
+      const qh = prefs.quietHours ?? {};
+      const cats = ['workouts', 'recovery', 'achievements', 'social', 'billing'];
+      const allCatsTrue = cats.every((k) => cat[k] === true);
+      console.log(
+        `    categories.{workouts,recovery,achievements,social,billing} all true : ${allCatsTrue ? '✓' : '— UNEXPECTED: ' + JSON.stringify(cat)}`
+      );
+      console.log(
+        `    channels.push                                                       : ${ch.push} ${ch.push === true ? '✓' : '— UNEXPECTED'}`
+      );
+      console.log(
+        `    channels.email                                                      : ${ch.email} (note: COALESCE preserved legacy true if user had email=true pre-migration)`
+      );
+      console.log(
+        `    quietHours.enabled                                                  : ${qh.enabled} ${qh.enabled === false ? '✓' : '— UNEXPECTED'}`
+      );
+      console.log(
+        `    quietHours.start                                                    : ${qh.start} ${qh.start === '22:00' ? '✓' : '— UNEXPECTED'}`
+      );
+      console.log(
+        `    quietHours.end                                                      : ${qh.end} ${qh.end === '08:00' ? '✓' : '— UNEXPECTED'}`
+      );
+      console.log(
+        `    quietHours.timezone                                                 : ${qh.timezone} ${qh.timezone === 'UTC' ? '✓' : '— UNEXPECTED'}`
+      );
+    } catch (e) {
+      console.log(`    PARSE FAILED: ${(e as Error).message}; raw=${prefsStr}`);
+    }
+  }
+
+  // ─── (f) notifications.deliver_after + delivered_at columns ────────────
+  const daOk = await columnExists(db, 'notifications', 'deliver_after');
+  const dvOk = await columnExists(db, 'notifications', 'delivered_at');
+  console.log('\n(f) notifications new columns:');
+  console.log(`  deliver_after column                  : ${daOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  delivered_at column                   : ${dvOk ? 'present ✓' : 'MISSING'}`);
+
+  // ─── (g) idx_notifications_delivery_queue + WHERE clause ───────────────
+  const idxQueueOk = await indexExists(db, 'idx_notifications_delivery_queue');
+  console.log('\n(g) idx_notifications_delivery_queue:');
+  console.log(`  index exists                          : ${idxQueueOk ? 'yes ✓' : 'NO'}`);
+  if (idxQueueOk) {
+    const def = (await indexDef(db, 'idx_notifications_delivery_queue')) ?? '';
+    const hasDeliverAfter = /deliver_after\s+IS\s+NOT\s+NULL/i.test(def);
+    const hasDeliveredAt = /delivered_at\s+IS\s+NULL/i.test(def);
+    console.log(`  WHERE deliver_after IS NOT NULL       : ${hasDeliverAfter ? '✓' : '— MISSING'}`);
+    console.log(`  WHERE delivered_at IS NULL            : ${hasDeliveredAt ? '✓' : '— MISSING'}`);
+    console.log(`  full indexdef: ${def}`);
+  }
+
+  // ─── (h) CRITICAL: zero pre-existing notifications cron-claimable ──────
+  // The migration sets delivered_at = created_at on every pre-existing row
+  // (lines 92-97 of 012_notification_engine.ts), and deliver_after stays NULL.
+  // The cron's claim query is `WHERE deliver_after <= NOW() AND delivered_at IS NULL`
+  // — both gates closed for pre-existing rows.
+  console.log('\n(h) ⚠️  CRITICAL: cron will not re-deliver historical notifications:');
+  const claimable: any = await db.execute(sql`
+    SELECT COUNT(*)::text AS c FROM notifications
+    WHERE deliver_after IS NOT NULL AND delivered_at IS NULL
+  `);
+  const claimableCount = parseInt(claimable.rows?.[0]?.c ?? claimable[0]?.c ?? '0', 10);
+  console.log(
+    `  rows the cron would claim now         : ${claimableCount} ${claimableCount === 0 ? '✓ (cron has nothing to do — historical rows safely closed)' : '— CATASTROPHIC, cron would re-deliver these!'}`
+  );
+
+  const settled: any = await db.execute(sql`
+    SELECT COUNT(*)::text AS c FROM notifications WHERE delivered_at IS NOT NULL
+  `);
+  const settledCount = parseInt(settled.rows?.[0]?.c ?? settled[0]?.c ?? '0', 10);
+  const totalNotif: any = await db.execute(sql`SELECT COUNT(*)::text AS c FROM notifications`);
+  const totalNotifCount = parseInt(totalNotif.rows?.[0]?.c ?? totalNotif[0]?.c ?? '0', 10);
+  console.log(
+    `  rows with delivered_at IS NOT NULL    : ${settledCount} of ${totalNotifCount} ${settledCount === totalNotifCount ? '✓ (every pre-existing row marked settled = created_at)' : '— UNEXPECTED, some pre-existing rows missed by backfill'}`
+  );
+
+  const hasDeliverAfter: any = await db.execute(sql`
+    SELECT COUNT(*)::text AS c FROM notifications WHERE deliver_after IS NOT NULL
+  `);
+  const hasDeliverAfterCount = parseInt(
+    hasDeliverAfter.rows?.[0]?.c ?? hasDeliverAfter[0]?.c ?? '0',
+    10
+  );
+  console.log(
+    `  rows with deliver_after IS NOT NULL   : ${hasDeliverAfterCount} ${hasDeliverAfterCount === 0 ? '✓ (no pre-existing row was queued for cron)' : '— Sprint 2 dispatch already enqueued live rows; expected in active prod'}`
+  );
+
+  // ─── (i) row counts unchanged from baseline ────────────────────────────
+  console.log('\n(i) Existing-table row counts (compare to baseline-012 — MUST match exactly):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+  console.log(`  notifications (full count)   : ${totalNotifCount}`);
+}
+
 const phase = (process.argv[2] ?? '') as Phase;
 const phases: Record<Phase, () => Promise<void>> = {
   baseline,
   'post-010': post010,
   'post-011': post011,
+  'baseline-012': baseline012,
+  'post-012': post012,
 };
 
 const fn = phases[phase];
 if (!fn) {
-  console.error(`Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011>`);
+  console.error(
+    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012>`
+  );
   process.exit(2);
 }
 

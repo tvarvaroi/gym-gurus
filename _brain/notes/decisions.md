@@ -611,6 +611,28 @@ export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
 
 ---
 
+## Migration retry-cron pattern: explicitly mark historical rows as settled (2026-05-06, Sprint 2 BATCH 2 / migration 012 prod run)
+
+**Pattern:** When a migration adds `trigger_at` / `processed_at` columns (or any pair where a non-NULL trigger column makes the row claimable by a cron) onto an existing table, the migration must explicitly mark every pre-existing row as settled — don't rely on the columns starting NULL.
+
+**For migration 012:** lines 92–97 explicitly UPDATE every pre-existing notifications row to `delivered_at = created_at` while leaving `deliver_after IS NULL`. Result: pre-existing rows have BOTH gates closed against the cron's claim query (`WHERE deliver_after IS NOT NULL AND deliver_after <= NOW() AND delivered_at IS NULL`):
+
+- `deliver_after IS NULL` → fails the first predicate
+- `delivered_at IS NOT NULL` → fails the third predicate
+
+**Why belt-and-suspenders matters:** If a future bug somehow populates `deliver_after` on a historical row (e.g. a careless backfill, an incorrect dispatch path), the second gate (`delivered_at IS NOT NULL`) still protects against re-delivery. Relying on a single NULL invariant is fragile because any column-population bug breaks it. Marking rows explicitly settled is durable.
+
+**Rejected alternatives:**
+
+1. Leave both columns NULL on pre-existing rows — relies on `deliver_after IS NULL` alone to keep cron away. One bug populating `deliver_after` and the cron would claim historical rows for re-delivery.
+2. Add a separate `migrated_pre_cron BOOLEAN` flag — extra column, extra schema complexity, no semantic benefit over `delivered_at = created_at`.
+
+**Why:** The original spec for migration 012 didn't explicitly require the backfill — `deliver_after IS NULL` would have been "enough" given the cron query. The implementation was deliberately stricter. The Sprint 2 prod-migration audit (post-012 verifier assertion h) caught this and confirmed the safer-than-spec behavior.
+
+**Future migrations that introduce retry-cron columns inherit this pattern.** Apply to any sprint that adds `next_retry_at` / `last_attempted_at` / `processed_at` semantics: backfill historical rows to the "settled" state explicitly, never rely on default-NULL alone.
+
+---
+
 ## Profile photo background removal — feature paused due to AGPL dependency removal (2026-05-06, Sprint 2.5)
 
 **Status:** Paused, not abandoned. Restore when an MIT-licensed alternative is evaluated and adopted.
