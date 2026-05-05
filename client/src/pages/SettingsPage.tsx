@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/premium/PageHeader';
 import { BlurFade } from '@/components/ui/blur-fade';
 import { useLocation } from 'wouter';
+import { NotificationsTab } from '@/components/notifications/settings/NotificationsTab';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
@@ -72,15 +73,8 @@ function getInitials(firstName?: string, lastName?: string, email?: string): str
   return '?';
 }
 
-// Default notification preferences
-const DEFAULT_PREFS = {
-  emailWorkoutReminders: true,
-  emailWeeklyReport: true,
-  emailNewFeatures: false,
-  inAppWorkoutReminders: true,
-  inAppAchievements: true,
-  inAppSystemUpdates: true,
-};
+// (Legacy DEFAULT_PREFS removed — Sprint 2 BATCH 5. The new NotificationsTab
+// loads server-backed preferences via useNotificationPreferences().)
 
 // ─────────────────────────────────────────────
 // Body Stats Card
@@ -802,126 +796,9 @@ function SubscriptionTab() {
   );
 }
 
-// ─────────────────────────────────────────────
-// Notifications Tab
-// ─────────────────────────────────────────────
-function NotificationsTab() {
-  const { user, refetchUser } = useUser();
-  const { toast } = useToast();
-
-  const saved = user?.notificationPreferences ?? DEFAULT_PREFS;
-  const [prefs, setPrefs] = useState({ ...DEFAULT_PREFS, ...saved });
-
-  const updateNotifications = useMutation({
-    mutationFn: async (notificationPreferences: typeof DEFAULT_PREFS) => {
-      const res = await fetch('/api/settings/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationPreferences }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? 'Failed to save preferences');
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      refetchUser();
-      toast({ title: 'Preferences saved', description: 'Notification settings updated.' });
-    },
-    onError: (err: Error) => {
-      toast({ title: 'Save failed', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  function toggle(key: keyof typeof DEFAULT_PREFS) {
-    setPrefs((p: typeof DEFAULT_PREFS) => ({ ...p, [key]: !p[key] }));
-  }
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Email Notifications</CardTitle>
-          <CardDescription>Choose which emails you receive from GymGurus.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {(
-            [
-              {
-                key: 'emailWorkoutReminders',
-                label: 'Workout reminders',
-                desc: 'Reminders before scheduled sessions',
-              },
-              {
-                key: 'emailWeeklyReport',
-                label: 'Weekly progress report',
-                desc: 'Your weekly activity summary',
-              },
-              {
-                key: 'emailNewFeatures',
-                label: 'New features & announcements',
-                desc: 'Product updates from the GymGurus team',
-              },
-            ] as const
-          ).map(({ key, label, desc }) => (
-            <div key={key} className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium">{label}</p>
-                <p className="text-xs text-muted-foreground">{desc}</p>
-              </div>
-              <Switch checked={prefs[key]} onCheckedChange={() => toggle(key)} aria-label={label} />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>In-App Notifications</CardTitle>
-          <CardDescription>Control what you see in the notification center.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {(
-            [
-              {
-                key: 'inAppWorkoutReminders',
-                label: 'Workout reminders',
-                desc: 'Alert before upcoming sessions',
-              },
-              {
-                key: 'inAppAchievements',
-                label: 'Achievements & milestones',
-                desc: 'Celebrate your progress',
-              },
-              {
-                key: 'inAppSystemUpdates',
-                label: 'System updates',
-                desc: 'Important platform notifications',
-              },
-            ] as const
-          ).map(({ key, label, desc }) => (
-            <div key={key} className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium">{label}</p>
-                <p className="text-xs text-muted-foreground">{desc}</p>
-              </div>
-              <Switch checked={prefs[key]} onCheckedChange={() => toggle(key)} aria-label={label} />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Button
-        onClick={() => updateNotifications.mutate(prefs)}
-        disabled={updateNotifications.isPending}
-      >
-        {updateNotifications.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Save Preferences
-      </Button>
-    </div>
-  );
-}
+// (Legacy in-file NotificationsTab removed — Sprint 2 BATCH 5. The new tab
+// component lives at @/components/notifications/settings/NotificationsTab and
+// is imported at the top of this file.)
 
 // ─────────────────────────────────────────────
 // Danger Zone Tab
@@ -1110,9 +987,34 @@ function PrivacyTab() {
 // ─────────────────────────────────────────────
 // Main SettingsPage
 // ─────────────────────────────────────────────
+// Read ?tab=<name> from the URL once on mount so the test notification's
+// actionUrl (/settings?tab=notifications) lands on the right tab.
+function readInitialTab(allowed: string[]): string {
+  if (typeof window === 'undefined') return 'profile';
+  const param = new URLSearchParams(window.location.search).get('tab');
+  return param && allowed.includes(param) ? param : 'profile';
+}
+
 export default function SettingsPage() {
   const { user } = useUser();
   const isDisciple = user?.role === 'client';
+  const allowedTabs = isDisciple
+    ? ['profile', 'security', 'subscription', 'notifications', 'privacy', 'danger']
+    : ['profile', 'security', 'subscription', 'notifications', 'danger'];
+  const [activeTab, setActiveTab] = useState<string>(() => readInitialTab(allowedTabs));
+
+  // Keep the URL in sync with the active tab so deep links and bookmarks work.
+  function handleTabChange(value: string) {
+    setActiveTab(value);
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (value === 'profile') {
+      url.searchParams.delete('tab');
+    } else {
+      url.searchParams.set('tab', value);
+    }
+    window.history.replaceState({}, '', url.toString());
+  }
 
   return (
     <div className="max-w-3xl mx-auto py-2">
@@ -1128,7 +1030,7 @@ export default function SettingsPage() {
       </BlurFade>
 
       <BlurFade delay={0.1}>
-        <Tabs defaultValue="profile">
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList
             className={`mb-6 grid w-full ${isDisciple ? 'grid-cols-6' : 'grid-cols-5'} h-11`}
           >

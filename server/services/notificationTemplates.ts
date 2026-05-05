@@ -83,6 +83,31 @@ export function categoryForType(type: NotificationType): NotificationCategory {
   return TYPE_TO_CATEGORY[type];
 }
 
+// ─── Email fallback allowlist ────────────────────────────────────────────────
+// Only types in this set trigger an email when ALL push deliveries fail AND the
+// user has channels.email = true. The set is deliberately narrow: critical
+// notifications a user should never miss even if every device push expires
+// (e.g. payment, security, trainer-assigned workout for a Disciple). Marketing
+// and social notifications are excluded — those are nice-to-have, not critical.
+//
+// Compile-time exhaustive: every type listed here must be a valid NotificationType,
+// enforced via `satisfies readonly NotificationType[]`. Adding a new type here is
+// a quiet decision — make sure the type really is critical-path before doing it.
+//
+// Settings UI: tooltip on the "Email backup" toggle says "high-priority alerts only".
+// That phrasing maps to this list.
+export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
+  'workout_assigned', // Disciple-blocking — they need to know to train
+  'payment_received', // Trainer revenue event — billing-critical
+  'session_reminder', // Imminent appointment — operationally critical
+] as const satisfies readonly NotificationType[];
+
+export type EmailFallbackHighPriorityType = (typeof EMAIL_FALLBACK_HIGH_PRIORITY_TYPES)[number];
+
+export function isEmailFallbackEligible(type: NotificationType): boolean {
+  return (EMAIL_FALLBACK_HIGH_PRIORITY_TYPES as readonly string[]).includes(type);
+}
+
 // ─── Templates ───────────────────────────────────────────────────────────────
 // Each template renders to:
 //   - title   (required, short headline)

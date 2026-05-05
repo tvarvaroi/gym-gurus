@@ -15,6 +15,7 @@
 // All new routes are IDOR-safe (every WHERE clause includes userId from req.user!.id).
 // CSRF is blanket-applied at the index.ts mount point. Auth comes from secureAuth.
 import { Router, type Request, type Response } from 'express';
+import crypto from 'crypto';
 import { eq, and, desc } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '../db';
@@ -220,9 +221,13 @@ router.get('/subscriptions', async (req: Request, res: Response) => {
 
     const db = await getDb();
     // Don't return the endpoint URL or keys — those are server-side only secrets.
+    // BATCH 5: also return a SHA-256(endpoint) prefix so the Settings UI can
+    // mark "This device" by comparing against the active sub's hash. The hash
+    // is one-way and 16-char (8 bytes) so no endpoint reversal is possible.
     const rows = await db
       .select({
         id: pushSubscriptions.id,
+        endpoint: pushSubscriptions.endpoint,
         userAgent: pushSubscriptions.userAgent,
         platform: pushSubscriptions.platform,
         lastUsedAt: pushSubscriptions.lastUsedAt,
@@ -231,7 +236,17 @@ router.get('/subscriptions', async (req: Request, res: Response) => {
       .from(pushSubscriptions)
       .where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.active, true)))
       .orderBy(desc(pushSubscriptions.lastUsedAt));
-    res.json(rows);
+
+    const sanitised = rows.map((row) => {
+      const endpointHash = crypto
+        .createHash('sha256')
+        .update(row.endpoint)
+        .digest('hex')
+        .slice(0, 16);
+      const { endpoint: _omitted, ...rest } = row;
+      return { ...rest, endpointHash };
+    });
+    res.json(sanitised);
   } catch (error) {
     console.error('Error listing subscriptions:', error);
     res.status(500).json({ error: 'Failed to list subscriptions' });
@@ -338,6 +353,18 @@ router.patch('/preferences', async (req: Request, res: Response) => {
 // POST /api/notifications/test — fire a test push at yourself.
 // Bypasses category gating (the user explicitly asked for this) but RESPECTS
 // quiet hours so users can verify the queueing branch works.
+//
+// BATCH 5: copy + actionUrl override per design brainstorm Q3.
+//   title:     "GymGurus" (brand-only, no event noise)
+//   body:      "Test notification — your push setup is working. Tap to open the app."
+//              ("Tap to open" is an implicit instruction — completes the test by
+//              verifying click-through behavior, not just the banner render)
+//   actionUrl: /settings?tab=notifications
+//              (returns the user to where they sent the test from — natural mental
+//              model: "I tested it, here's the page where I tested it")
+//
+// Underlying type stays `achievement_unlocked` so the row is well-typed; the
+// templateOverride bypasses the achievement-flavoured renderer.
 router.post('/test', async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -350,7 +377,15 @@ router.post('/test', async (req: Request, res: Response) => {
         achievementTitle: 'Test notification',
         xpReward: 0,
       },
-      { bypassCategoryGating: true }
+      {
+        bypassCategoryGating: true,
+        templateOverride: {
+          title: 'GymGurus',
+          body: 'Test notification — your push setup is working. Tap to open the app.',
+          actionUrl: '/settings?tab=notifications',
+          tag: 'test_notification', // single-tag so repeated tests collapse on the OS notification tray
+        },
+      }
     );
 
     res.json({ success: true, ...result });

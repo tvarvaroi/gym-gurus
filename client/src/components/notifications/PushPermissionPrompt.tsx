@@ -130,7 +130,7 @@ export function PushPermissionPrompt({ open, onOpenChange }: PushPermissionPromp
   const Title = isIosNeedsPwa ? 'Stay on track' : 'Stay on track';
   const Body = isIosNeedsPwa
     ? 'On iPhone, web push works only when you install GymGurus on your Home Screen. Tap the Share button in Safari, then "Add to Home Screen" — come back here from the app icon.'
-    : "Get push reminders for workouts, recovery, and milestones. You're in control — turn off any category in Settings.";
+    : "Get push reminders for workouts, recovery, and achievements. You're in control — turn off any category in Settings.";
 
   const Icon = isIosNeedsPwa ? Smartphone : Sparkles;
 

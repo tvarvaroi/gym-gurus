@@ -377,6 +377,15 @@ When copying JSONB data between databases, check if the value is already an obje
 **`workout_exercises.sets_configuration` has NOT NULL in dev but NULLs in prod.**
 Had to `ALTER TABLE ... DROP NOT NULL` before syncing. Schema drift between dev and prod.
 
+**Push subscription rotation: old subscription stays `active=true` until the next push attempt.**
+The `pushsubscriptionchange` SW handler POSTs the new subscription but does not DELETE the old one — endpoints are opaque secrets the SW does not retain across rotations, and the `/subscriptions` list endpoint deliberately omits raw endpoint URLs (server-side secret). The 410 Gone response on the next push attempt naturally marks the old sub inactive via `pushService.applySubscriptionResult`.
+
+Window: bounded by push frequency (most users get pushed at least daily). Cost: ~0 — inactive subs aren't queried for delivery, and stale active rows don't accumulate forever because the dispatcher's natural failure path cleans them up.
+
+Sprint 12 (native shell) plan: extend `/api/notifications/subscriptions` with a redacted endpoint hash so the SW-rotation handler can explicit-match-and-delete the old row instead of waiting for the 410. Until then, this is a documented v1 trade-off.
+
+First captured: Sprint 2 BATCH 3 (2026-05-05).
+
 ---
 
 ## Related Notes

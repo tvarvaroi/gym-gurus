@@ -207,26 +207,15 @@ router.post(
   }
 );
 
-// PATCH /api/settings/notifications — update notification preferences
-router.patch('/notifications', async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user;
-    const { notificationPreferences } = req.body;
-
-    if (!notificationPreferences || typeof notificationPreferences !== 'object') {
-      return res.status(400).json({ error: 'notificationPreferences must be an object' });
-    }
-
-    await db
-      .update(users)
-      .set({ notificationPreferences, updatedAt: new Date() })
-      .where(eq(users.id, user.id));
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error updating notification preferences:', error);
-    res.status(500).json({ error: 'Failed to update notification preferences' });
-  }
+// PATCH /api/settings/notifications — RETIRED (Sprint 2 BATCH 5).
+// Superseded by PATCH /api/notifications/preferences which has Zod validation,
+// audit logging, and matches the new {categories, quietHours, channels} shape.
+// Returns 410 Gone so any unexpected legacy caller gets a clear signal rather
+// than a silent shape-mismatch write.
+router.patch('/notifications', (_req: Request, res: Response) => {
+  res.status(410).json({
+    error: 'This endpoint has been retired. Use PATCH /api/notifications/preferences instead.',
+  });
 });
 
 // GET /api/settings/biometrics-sharing — Disciple-only read of consent flag

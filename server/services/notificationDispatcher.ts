@@ -40,6 +40,7 @@ import {
 import {
   NOTIFICATION_TEMPLATES,
   TYPE_TO_CATEGORY,
+  isEmailFallbackEligible,
   type NotificationType,
   type NotificationData,
   renderTemplate,
@@ -149,13 +150,19 @@ export async function dispatch(
   userId: string,
   type: NotificationType,
   data: NotificationData,
-  options: { bypassCategoryGating?: boolean } = {}
+  options: {
+    bypassCategoryGating?: boolean;
+    // BATCH 5: lets the test endpoint inject custom title/body/actionUrl so the
+    // test push reads "Test notification — your push setup is working" and lands
+    // back on /settings?tab=notifications instead of the underlying type's URL.
+    templateOverride?: { title: string; body: string; actionUrl: string; tag?: string };
+  } = {}
 ): Promise<DispatchResult> {
   const db = await getDb();
 
   // Always write the notifications row first — that's the user's in-app feed.
   // The row is the source of truth even if push fails completely.
-  const rendered = renderTemplate(type, data);
+  const rendered = options.templateOverride ?? renderTemplate(type, data);
   const [row] = await db
     .insert(notifications)
     .values({
@@ -226,9 +233,12 @@ export async function dispatch(
     return { notificationId, outcome: 'sent', pushResults: counts };
   }
 
-  // Push delivered to zero subs. Try email fallback if user opted in AND
-  // category is on AND push channel was on (otherwise user explicitly disabled push).
-  if (prefs.channels.email && prefs.channels.push && user.email) {
+  // Push delivered to zero subs. Try email fallback if:
+  //   - user has channels.email = true AND channels.push = true (push disabled
+  //     means user explicitly opted out of every channel; respect that)
+  //   - notification type is in EMAIL_FALLBACK_HIGH_PRIORITY_TYPES (BATCH 5):
+  //     fallback is for critical alerts only, not marketing/social.
+  if (prefs.channels.email && prefs.channels.push && user.email && isEmailFallbackEligible(type)) {
     try {
       await sendNotificationFallbackEmail(
         user.email,
@@ -434,7 +444,12 @@ export async function deliverPending(notificationId: string): Promise<DispatchRe
     .where(eq(notifications.id, notificationId));
 
   if (counts.sent > 0) return 'sent';
-  if (prefs.channels.email && prefs.channels.push && user.email) {
+  if (
+    prefs.channels.email &&
+    prefs.channels.push &&
+    user.email &&
+    isEmailFallbackEligible(row.type as NotificationType)
+  ) {
     try {
       await sendNotificationFallbackEmail(
         user.email,
