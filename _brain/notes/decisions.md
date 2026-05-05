@@ -526,6 +526,91 @@ Pattern reference: `client/src/components/biometrics/LogBodyMetricsSheet.tsx` (s
 
 ---
 
+## Notification fanout: one row + many push subscriptions (2026-05-06, Sprint 2 BATCH 2)
+
+**Decided:** A single `notifications` row represents the user-facing event. Push delivery is a many-fan-out across `push_subscriptions` rows belonging to that user. The notification row carries `deliver_after` / `delivered_at` semantics; per-subscription state lives on the subscription row (`active`, `last_used_at`, `failure_count`).
+
+**Rejected alternatives:**
+
+1. One row per (user, device) — duplicates the user-facing event. The unread-count and inbox queries would have to dedupe.
+2. Notifications carry an array of subscription IDs — fragile when subscriptions are revoked mid-flight; couples write-time to fan-out time.
+
+**Why:** The notification row is the source-of-truth for "what the user saw." Push delivery is best-effort transport. Separating them lets each evolve independently — for example, the cron retry job manipulates push state without ever rewriting the notification row.
+
+**deliver_after / delivered_at semantic:**
+
+- `deliver_after IS NOT NULL AND delivered_at IS NULL` → cron-claimable
+- `delivered_at IS NOT NULL` → settled (whether push succeeded, expired, or fell through to email/no_destination)
+- The partial index on `deliver_after WHERE deliver_after IS NOT NULL AND delivered_at IS NULL` keeps the cron's claim query O(1) regardless of historical row count.
+
+**Reference:** `server/services/notificationDispatcher.ts` (dispatch, deliverPending), `server/migrations/012_notification_engine.ts`.
+
+---
+
+## Quiet hours: per-user JSON config + cron retry + SELECT FOR UPDATE SKIP LOCKED (2026-05-06, Sprint 2 BATCH 2)
+
+**Decided:** Quiet hours stored inline in `users.notification_preferences` as `{enabled, start, end, timezone}`. `computeDeliverAfter()` uses `Intl.DateTimeFormat` with the user's IANA timezone to compute the next window-end instant. Cron job (`server/jobs/cleanupExpiredQuietHours.ts`) claims expired rows via `SELECT FOR UPDATE SKIP LOCKED` and fires `deliverPending(notificationId)` per claimed row. Re-entrancy guarded by `isTickInFlight` boolean.
+
+**Rejected:**
+
+1. Separate `quiet_hours` table — unnecessary indirection for what is intrinsically a user setting.
+2. Single global cron lock — `SELECT FOR UPDATE SKIP LOCKED` is the documented Postgres idiom for fan-out workers and lets us scale beyond one cron node later. Today only one node runs, but the pattern means we don't have to revisit when we add a second.
+3. moment-timezone — Intl.DateTimeFormat is sufficient for "what hour is it in user's TZ" + delta-based computation.
+
+**Why:** Quiet hours are user-scoped, low-cardinality (one row per user), and rarely changed — co-locating with the rest of the prefs keeps the read path (single SELECT users) simple. The cron pattern matches Sprint 1.5's biometric upload-quota design and is worth standardizing across the codebase.
+
+**Re-entrancy guard:** `isTickInFlight` is a process-local boolean. If two ticks fire faster than one completes (manual interval test at 100ms), the second tick exits early. The guard is documented inline; tests verify it.
+
+**Interval clamping:** `Math.max(1000, parseInt(...))` rejects values <1s, NaN, negative. Falls back to 5min default.
+
+**Reference:** `server/jobs/cleanupExpiredQuietHours.ts`, `server/services/notificationDispatcher.ts:computeDeliverAfter`.
+
+---
+
+## Email fallback default-on with high-priority allowlist (2026-05-06, Sprint 2 BATCH 2)
+
+**Decided:** `users.notification_preferences.channels.email` defaults to `true` for users who had legacy `email: true` in pre-Sprint-2 prefs (preserved by migration 012 backfill via `COALESCE`); `false` for new users. Email fires ONLY when push delivers to zero subscriptions AND the notification type is in `EMAIL_FALLBACK_HIGH_PRIORITY_TYPES` (a compile-time exhaustive constant).
+
+**Rejected:**
+
+1. Email mirrors every push — duplicate-channel noise, user backlash. The whole reason we added email fallback is "what if push fails for billing/payment alert."
+2. Email fires when push fails ANY device — overly aggressive; one offline device shouldn't trigger duplicate channel.
+3. Email always-on for everything — dilutes "email = important" signal.
+
+**Why:** The high-priority allowlist (currently `payment_received`, `workout_assigned`, `appointment_reminder`) encodes the actual user contract: "you'll get an email if a critical alert can't reach your devices." Anything not on the list (achievements, social, marketing-style notifications) stays push-only, no-fallback.
+
+**Compile-time exhaustive constant:** `EMAIL_FALLBACK_HIGH_PRIORITY_TYPES` is typed as `readonly NotificationType[]` with `satisfies` so adding a new notification type forces a decision: either add it to the allowlist or explicitly leave it out. No silent drift.
+
+**Reference:** `server/services/notificationTemplates.ts:EMAIL_FALLBACK_HIGH_PRIORITY_TYPES`, `server/services/notificationDispatcher.ts:isEmailFallbackEligible`.
+
+---
+
+## EMAIL_FALLBACK_HIGH_PRIORITY_TYPES as compile-time exhaustive constant (2026-05-06, Sprint 2 BATCH 2)
+
+**Decided:** Use TypeScript `satisfies` operator on the allowlist constant so the compiler verifies every entry is a valid `NotificationType` and unrecognized strings break the build.
+
+```ts
+export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
+  'payment_received',
+  'workout_assigned',
+  'appointment_reminder',
+] as const satisfies readonly NotificationType[];
+```
+
+**Rejected:**
+
+1. Plain `string[]` — typo-prone; "payment_recieved" would silently never match.
+2. `Record<NotificationType, boolean>` — forces every type to declare in/out, inflates the constant when most types aren't email-eligible.
+3. Runtime allowlist Zod schema — adds a runtime check for what is intrinsically a static list. The compile-time check is faster and stronger.
+
+**Why:** This constant is small (3 entries today, maybe 10 long-term) and load-bearing for "which alerts wake the user via email when push is silent." `satisfies` is the right tool — narrow inferred type for runtime use (literal tuple), checked against the wider `readonly NotificationType[]` constraint at compile time.
+
+**Future-proofing:** When a new notification type is added in `notificationTemplates.ts`, the dev decides at code-write time whether it's email-eligible. The constant is the single place to look. No sprawling switch statements.
+
+**Reference:** `server/services/notificationTemplates.ts`.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
