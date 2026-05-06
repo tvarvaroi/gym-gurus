@@ -37,8 +37,9 @@
  * See docs/specs/2026-05-06-sprint-3-wellness-ui-design.md.
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { DailyWellnessLog } from '@shared/schema';
 import {
   Battery,
   BatteryLow,
@@ -71,14 +72,25 @@ import { WellnessSlider } from './WellnessSlider';
 interface WellnessRitualProps {
   /** Called with the API response after a successful submit. State B uses this. */
   onSubmitted: (response: SubmitResponse) => void;
+  /**
+   * Sprint 3 BATCH 5 — edit mode. When provided, the form pre-populates from
+   * this entry and the `touched` flag fires for any field that was non-null
+   * (so the edit's payload includes those fields, not undefined).
+   *
+   * Readiness recomputes on SAVE only — never live during slider drag. Live
+   * recomputation creates a feedback loop where users start gaming the score
+   * instead of being honest about how they feel. See design doc BATCH 5
+   * "Edit-existing-entry flow" lock.
+   */
+  initial?: DailyWellnessLog | null;
 }
 
-interface SubmitResponse {
-  entry: {
-    id: string;
-    date: string;
-    readinessScore: number | null;
-  };
+// The server returns the full DailyWellnessLog row (carrying readinessScore +
+// readinessScoreFactors) so State B can render factor cards from one POST
+// response. BATCH 5 expanded the entry shape from a stub-friendly subset to
+// the full DB row.
+export interface SubmitResponse {
+  entry: DailyWellnessLog;
   isNewInsert: boolean;
   streak: { current: number; longest: number; isNewStreakStart: boolean };
   xpAwarded: number;
@@ -133,10 +145,52 @@ const INITIAL: FormState = {
   },
 };
 
-export function WellnessRitual({ onSubmitted }: WellnessRitualProps) {
+/**
+ * Build the initial form state from an existing wellness entry. Fields that
+ * were non-null in the entry pre-populate AND set `touched=true` so the
+ * edit's payload includes them. Null fields stay at slider default 5 with
+ * `touched=false` (so they remain "untouched" in the upsert payload — the
+ * user can still ignore them).
+ */
+function formStateFromEntry(entry: DailyWellnessLog): FormState {
+  const v = (n: number | null | undefined) => n ?? DEFAULT_SLIDER;
+  return {
+    energy: v(entry.energyLevel),
+    mood: v(entry.moodScore),
+    stress: v(entry.stressLevel),
+    sleepQuality: v(entry.sleepQualitySubjective),
+    motivation: v(entry.motivationLevel),
+    soreness: v(entry.sorenessOverall),
+    hydrationGoalMet: entry.hydrationGoalMet ?? false,
+    steppedOutside: entry.steppedOutside ?? false,
+    meditationCompleted: entry.meditationCompleted ?? false,
+    notes: entry.notes ?? '',
+    touched: {
+      energy: entry.energyLevel != null,
+      mood: entry.moodScore != null,
+      stress: entry.stressLevel != null,
+      sleepQuality: entry.sleepQualitySubjective != null,
+      motivation: entry.motivationLevel != null,
+      soreness: entry.sorenessOverall != null,
+    },
+  };
+}
+
+export function WellnessRitual({ onSubmitted, initial }: WellnessRitualProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<FormState>(INITIAL);
+
+  // Build initial state from the existing entry (edit mode) or fall back
+  // to defaults (fresh check-in). Memoised so the form doesn't re-init on
+  // unrelated re-renders. NOTE: we never recompute readiness here — the
+  // backend recomputes on save only. Live recomputation is intentionally
+  // not implemented; see design doc BATCH 5 "Edit-existing-entry flow" lock.
+  const initialState = useMemo<FormState>(
+    () => (initial ? formStateFromEntry(initial) : INITIAL),
+    [initial]
+  );
+
+  const [form, setForm] = useState<FormState>(initialState);
   const [emptyHint, setEmptyHint] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
