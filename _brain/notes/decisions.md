@@ -687,6 +687,18 @@ export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
 
 ---
 
+## Wellness icon: HeartPulse, not Heart (2026-05-06, Sprint 3 BATCH 6)
+
+**Decided:** The Wellness sidebar entry uses lucide-react `HeartPulse`. Recovery uses `Heart`. They are intentionally different glyphs.
+
+**Why:** Both nav items live in adjacency in the Ronin self-tracking cluster (Recovery + Wellness). Two near-identical heart glyphs back-to-back in the same menu reads as a duplicate/bug to careful users and a minor nuisance to the rest. `HeartPulse` keeps the glyphs visually distinct AND carries better semantic for a daily readiness ritual ("wellness as vital sign") than the generic `Heart`.
+
+**Rule for future maintainers:** Do NOT "harmonize" these icons in a future visual cleanup pass. They are intentionally different. The `WellnessHintCard.tsx` component header documents the role-shape rationale for the dashboard hint card; the AppSidebar entry comment documents the icon-distinction rationale.
+
+**Discovery context:** During BATCH 6 the user initially said "use Heart" — the implementation noticed the collision in the existing Recovery entry before shipping and chose `HeartPulse` per the original locked design doc spec. Pre-emptive collision check before icon adoption is now a standard step.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]

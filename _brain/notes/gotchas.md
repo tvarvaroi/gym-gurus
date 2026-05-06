@@ -408,6 +408,25 @@ First captured: Sprint 2 BATCH 3 (2026-05-05).
 
 ---
 
+## The "DO NOT [refactor X as Y]" comment pattern
+
+**When code has an intentional inconsistency that would look like a bug to a careful reader, add a `DO NOT [proposed fix]` comment at the call site or component header with rationale.**
+
+The pattern is defensive code documentation: it pre-empts a future "this looks inconsistent, let me clean it up" refactor that would re-introduce a problem the inconsistency was deliberately solving. The comment turns "this looks wrong" into "this looks intentional, here's why."
+
+Examples in the codebase (`grep "DO NOT" client/src` to find all):
+
+- `client/src/components/wellness/ReadinessHero.tsx` — animation timing constants `firstTime` (1200ms total) vs `returning` (600ms total) carry a `DO NOT harmonize` comment. Without it, a future cleanup pass would see two near-identical timing tables and merge them, breaking the streak-aware reveal pacing.
+- `client/src/components/wellness/WellnessHintCard.tsx` (component header) — `DO NOT add the card to Dashboard.tsx Guru branch as a "fix" for the inconsistency`. The hint card is intentionally absent on the Guru dashboard (role-shape decision: Guru's mental model is "what do my clients need," not "how am I feeling"). Without the comment, a future Claude reading "WellnessHintCard renders for Ronin and Disciple but not Guru — that's inconsistent" would add it to `Dashboard.tsx` and pull Guru attention away from roster status.
+
+**Rule of thumb:** if you're making a deliberate decision that produces a visible inconsistency across roles, files, or call sites, the call site or component header gets a `DO NOT [the obvious fix]` comment with one-line rationale. Don't bury the rationale in commit messages or PR descriptions — they rot away from the code; comments stay attached.
+
+**Anti-pattern:** `DO NOT` comments on actual bugs or technical debt. The pattern is for _intentional_ inconsistencies. If something is wrong, fix it; don't add a `DO NOT` to mask it.
+
+First captured: Sprint 3 BATCH 5 (animation timing, 2026-05-06) and BATCH 6 (Guru-skip rationale, 2026-05-06).
+
+---
+
 ## Related Notes
 
 - [[decisions]]
