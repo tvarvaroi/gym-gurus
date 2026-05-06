@@ -107,6 +107,23 @@ const [u] = await db
 
 If no match returns, the client row is for a non-registered prospect — handle as empty data, not 404. Pattern helpers: `resolveDiscipleUserId(db, email)` and `getClientUserIdForTrainer(req, res)` (first written in `server/routes/biometrics.ts`, Sprint 1, 2026-05-02). Sprint 4 will add `clients.user_id` as a proper FK alongside the granular consent flags.
 
+**Postgres `AT TIME ZONE` on a `timestamp` (without zone) reinterprets — it does NOT convert.**
+A `timestamp` column stores a naked wall-clock with no zone information. `created_at AT TIME ZONE 'America/New_York'` does NOT mean "convert this UTC value to New York" — it means "treat this naked wall-clock AS IF it were already New York time, then return a timestamptz". If the column actually stores UTC values (which `NOW()` does in this codebase), this gives wrong dates for any non-UTC user.
+
+The correct UTC → user-tz conversion is two-step:
+
+```sql
+(timestamp_col AT TIME ZONE 'UTC' AT TIME ZONE user_tz)::date
+```
+
+The first `AT TIME ZONE 'UTC'` attaches a zone to the naked timestamp (now it's a `timestamptz`). The second `AT TIME ZONE user_tz` converts the zoned value to the user's local wall-clock. Then `::date` extracts the calendar date.
+
+**Symptom of this bug:** timezone-sensitive logic appears to work for UTC users and silently misfires for everyone else. There are no errors, no logs — just wrong dates leading to duplicate notifications, missed nudges, or off-by-one date bucketing.
+
+**First caught:** Sprint 3 BATCH 2 daily wellness nudge cron (2026-05-06). The "no nudge already today" anti-join used `n.created_at AT TIME ZONE tz`, which would have produced duplicate nudges for any non-UTC user. Caught during smoke testing because cross-timezone idempotency was explicitly verified.
+
+**Generalizes beyond wellness:** every cron in this codebase that does timezone-aware date bucketing — quiet-hours cleanup, re-engagement, future habit/insight crons — needs to know this. If a query mentions both `created_at` and a user's timezone, audit it.
+
 ---
 
 ---
