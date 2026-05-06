@@ -1,0 +1,64 @@
+Sprint 3 BATCH 7 — IDOR mutation test evidence
+==============================================
+
+Target: server/services/wellnessService.ts upsertTodayEntry SELECT-existing.
+
+Original code (load-bearing IDOR clause on the WHERE):
+    const [existing] = await db
+      .select()
+      .from(dailyWellnessLog)
+      .where(and(eq(dailyWellnessLog.userId, userId), eq(dailyWellnessLog.date, today)))
+      .limit(1);
+
+Mutation (remove the userId clause):
+    const [existing] = await db
+      .select()
+      .from(dailyWellnessLog)
+      .where(and(eq(dailyWellnessLog.date, today)))
+      .limit(1);
+
+Test invoked:
+    npx vitest run server/test/routes/wellness.test.ts \
+      -t "primary IDOR mutation target"
+
+Result with mutation applied:
+    FAIL  server/test/routes/wellness.test.ts > POST /api/wellness/log
+    > issues SELECT-existing with eq(dailyWellnessLog.userId, callerId)
+    > — primary IDOR mutation target
+
+    AssertionError: Expected eq(<column>, "user-A") in WHERE clause.
+      Got eq calls: ["2026-05-06","user-A","user-A","user-A","user-A","user-A"]
+      expected undefined to be defined
+
+    Test Files: 1 failed (1)
+    Tests:      1 failed | 20 skipped (21)
+
+The remaining "user-A" eq() calls land on the OTHER columns hit during the
+same request (userGamification.userId for streak read + state + UPDATE,
+users.id for audit-log email lookup). The column-aware
+expectOwnershipClause(dailyWellnessLog.userId, "user-A") correctly detects
+that none of them is on dailyWellnessLog.userId — the IDOR ownership clause
+that was removed.
+
+Result after reverting the mutation:
+    PASS  server/test/routes/wellness.test.ts (21 tests)
+    Test Files: 1 passed (1)
+    Tests:      1 passed | 20 skipped (21)
+
+Final full suite (after revert):
+    Test Files:  16 passed | 1 failed (17 — pre-existing aiService)
+    Tests:       324 passed | 15 failed (339 — 15 pre-existing aiService)
+
+Delta vs Sprint 3 BATCH 6 baseline (267 passing): +57 tests across 4 files.
+    server/test/services/wellnessService.test.ts          16 tests
+    server/test/routes/wellness.test.ts                   21 tests
+    server/test/jobs/dailyWellnessNudge.test.ts           10 tests
+    server/test/jobs/wellnessReengagement.test.ts         10 tests
+                                                         -----
+                                                          57 tests
+
+The expectOwnershipClause helper (introduced Sprint 1.5 BATCH 4 in
+biometrics.test.ts, reused Sprint 2 BATCH 7 in notifications.test.ts) is
+now the third verification site of the same mutation-test pattern —
+removing an IDOR ownership clause from a load-bearing WHERE causes the
+matching test to fail with a column-aware diagnostic.
