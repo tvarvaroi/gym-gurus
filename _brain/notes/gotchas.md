@@ -124,6 +124,20 @@ The first `AT TIME ZONE 'UTC'` attaches a zone to the naked timestamp (now it's 
 
 **Generalizes beyond wellness:** every cron in this codebase that does timezone-aware date bucketing — quiet-hours cleanup, re-engagement, future habit/insight crons — needs to know this. If a query mentions both `created_at` and a user's timezone, audit it.
 
+**Postgres lowercases unquoted column aliases — your JS access must match.**
+SQL like `SUM(...) AS lastN` returns the column as `lastn` in the result row. JS access via `r.lastN` is undefined, and `parseInt(undefined, 10) = NaN`.
+
+Two fixes:
+
+1. Keep aliases lowercase by convention (`AS last_null`, `AS curr0`). Recommended — simpler to remember, no escaping.
+2. Quote the alias in SQL: `SUM(...) AS "lastN"` (Postgres preserves quoted identifiers).
+
+**Symptom:** a load-bearing assertion appears to fail (NaN in output) even though the underlying data is correct. The verifier's diagnostic looks like a data integrity problem when it's actually a property-access typo.
+
+**First caught:** Sprint 3 post-013 prod migration verifier (2026-05-06). `scripts/verify-prod-migrations.ts` had `AS lastN` returning `lastn`; output read `last_wellness_check_in_date = NULL : NaN of 4 — UNEXPECTED` even though every row was correctly NULL. Bug surfaced because checkpoint discipline treats NaN as failure regardless of whether the indirect evidence (column default check + drift count + migration source) suggested correctness.
+
+**Generalizes:** anywhere in this codebase that builds raw SQL with aliases and reads back results — verifier scripts, ad-hoc admin queries, future migration runners. Audit any `AS [a-zA-Z]+` for uppercase letters in the alias.
+
 ---
 
 ---

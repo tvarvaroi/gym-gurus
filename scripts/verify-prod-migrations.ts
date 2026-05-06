@@ -1,4 +1,4 @@
-// One-shot verification script for migrations 010 + 011 + 012 against Railway prod.
+// One-shot verification script for migrations 010 + 011 + 012 + 013 against Railway prod.
 // Run via: railway run -- npx tsx scripts/verify-prod-migrations.ts <phase>
 //
 // Phases:
@@ -19,13 +19,28 @@
 //                   notifications.deliver_after + delivered_at + partial index,
 //                   AND CRITICAL: zero pre-existing notifications rows are
 //                   cron-claimable (would cause historical re-delivery)
+//   baseline-013  — pre-013 snapshot: confirm 013 artefacts ABSENT (daily_wellness_log
+//                   table + 2 indexes + 3 user_gamification wellness-streak columns),
+//                   capture row counts for drift detection
+//   post-013      — confirm daily_wellness_log table + UNIQUE (user_id,date) +
+//                   DESC index + 7 named CHECK constraints fire on probe inserts,
+//                   ON DELETE CASCADE on user_id wired, 3 user_gamification cols
+//                   present with default 0/0/NULL on every existing row, existing-
+//                   table row counts unchanged from baseline-013
 //
 // Designed to be safe to re-run. All queries are SELECT-only except the
 // transaction-wrapped CHECK constraint enforcement test in post-011.
 import { sql } from 'drizzle-orm';
 import { getDb } from '../server/db';
 
-type Phase = 'baseline' | 'post-010' | 'post-011' | 'baseline-012' | 'post-012';
+type Phase =
+  | 'baseline'
+  | 'post-010'
+  | 'post-011'
+  | 'baseline-012'
+  | 'post-012'
+  | 'baseline-013'
+  | 'post-013';
 
 const EXISTING_TABLES_TO_COUNT = [
   'users',
@@ -671,6 +686,271 @@ async function post012() {
   console.log(`  notifications (full count)   : ${totalNotifCount}`);
 }
 
+// ===========================================================================
+// Migration 013 — Daily Wellness Log (Sprint 3)
+// ===========================================================================
+
+async function baseline013() {
+  const db = await getDb();
+  console.log('=== BASELINE-013 (pre-013) ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db, version() AS v`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}`);
+  console.log(`Version : ${(ident.rows?.[0]?.v ?? ident[0]?.v ?? '').slice(0, 80)}\n`);
+
+  // 013 artefacts — must NOT exist pre-run
+  const dwlExists = await tableExists(db, 'daily_wellness_log');
+  const idxDateExists = await indexExists(db, 'idx_daily_wellness_user_date');
+  const idxRecentExists = await indexExists(db, 'idx_daily_wellness_user_recent');
+  const ugCurrentExists = await columnExists(
+    db,
+    'user_gamification',
+    'current_wellness_streak_days'
+  );
+  const ugLongestExists = await columnExists(
+    db,
+    'user_gamification',
+    'longest_wellness_streak_days'
+  );
+  const ugLastExists = await columnExists(db, 'user_gamification', 'last_wellness_check_in_date');
+
+  console.log('013 artefacts (must be absent before run):');
+  console.log(
+    `  daily_wellness_log table              : ${dwlExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  idx_daily_wellness_user_date          : ${idxDateExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  idx_daily_wellness_user_recent        : ${idxRecentExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  user_gamification.current_wellness_streak_days : ${ugCurrentExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  user_gamification.longest_wellness_streak_days : ${ugLongestExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  user_gamification.last_wellness_check_in_date  : ${ugLastExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  // user_gamification table itself MUST exist (pre-Sprint 3 schema)
+  const ugTableExists = await tableExists(db, 'user_gamification');
+  console.log(
+    `\n  user_gamification table exists        : ${ugTableExists ? 'yes ✓' : 'NO (UNEXPECTED — migration assumes this table is pre-existing)'}`
+  );
+
+  console.log('\nExisting-table row counts (snapshot for post-013 drift detection):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+  // Also capture user_gamification count — relevant since the migration adds
+  // columns to it; row count must NOT change.
+  if (ugTableExists) {
+    const ugCount: any = await db.execute(sql`SELECT COUNT(*)::text AS c FROM user_gamification`);
+    const ugc = parseInt(ugCount.rows?.[0]?.c ?? ugCount[0]?.c ?? '0', 10);
+    console.log(`  user_gamification (full count): ${ugc}`);
+  }
+
+  console.log('\nSAVE THESE NUMBERS — used as the baseline for post-013 drift checks.');
+}
+
+async function post013() {
+  const db = await getDb();
+  console.log('=== POST-013 ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}\n`);
+
+  // ─── (a) daily_wellness_log table + 7 named CHECK constraints ────────────
+  const dwlOk = await tableExists(db, 'daily_wellness_log');
+  console.log('(a) daily_wellness_log table:');
+  console.log(`  table                                 : ${dwlOk ? 'present ✓' : 'MISSING'}`);
+
+  const checkNames = [
+    'daily_wellness_energy_range',
+    'daily_wellness_mood_range',
+    'daily_wellness_stress_range',
+    'daily_wellness_sleep_range',
+    'daily_wellness_motivation_range',
+    'daily_wellness_soreness_range',
+    'daily_wellness_score_range',
+  ];
+  console.log('\n  Named CHECK constraints (must all exist):');
+  for (const n of checkNames) {
+    const ok = await constraintExists(db, n);
+    console.log(`    ${n.padEnd(40)} : ${ok ? 'present ✓' : 'MISSING'}`);
+  }
+
+  // ─── (b) Indexes ──────────────────────────────────────────────────────────
+  const idxDateOk = await indexExists(db, 'idx_daily_wellness_user_date');
+  const idxRecentOk = await indexExists(db, 'idx_daily_wellness_user_recent');
+  console.log('\n(b) Indexes:');
+  console.log(`  idx_daily_wellness_user_date (UNIQUE) : ${idxDateOk ? 'present ✓' : 'MISSING'}`);
+  if (idxDateOk) {
+    const def = (await indexDef(db, 'idx_daily_wellness_user_date')) ?? '';
+    const isUnique = /UNIQUE/i.test(def);
+    console.log(`  ↑ UNIQUE check                        : ${isUnique ? '✓' : 'NOT UNIQUE'}`);
+  }
+  console.log(`  idx_daily_wellness_user_recent (DESC) : ${idxRecentOk ? 'present ✓' : 'MISSING'}`);
+  if (idxRecentOk) {
+    const def = (await indexDef(db, 'idx_daily_wellness_user_recent')) ?? '';
+    const hasDesc = /DESC/i.test(def);
+    console.log(`  ↑ DESC ordering check                 : ${hasDesc ? '✓' : 'NO DESC'}`);
+  }
+
+  // ─── (c) ON DELETE CASCADE on user_id FK ─────────────────────────────────
+  // Read pg_constraint for the foreign key on daily_wellness_log.user_id
+  // and verify confdeltype = 'c' (cascade).
+  console.log('\n(c) user_id FK ON DELETE CASCADE:');
+  const fkRow: any = await db.execute(sql`
+    SELECT confdeltype FROM pg_constraint
+    WHERE conrelid = 'public.daily_wellness_log'::regclass AND contype = 'f'
+  `);
+  const fkRows = (fkRow.rows ?? fkRow) as Array<{ confdeltype: string }>;
+  const cascadeFk = fkRows.find((r) => r.confdeltype === 'c');
+  console.log(
+    `  user_id FK confdeltype = 'c' (cascade) : ${cascadeFk ? '✓' : 'NOT CASCADE (' + JSON.stringify(fkRows) + ')'}`
+  );
+
+  // ─── (d) Probe insert + CHECK enforcement (transactional, rolled back) ───
+  // Insert a probe row with energy_level=99 (out-of-range). Must throw the
+  // daily_wellness_energy_range constraint. Then probe with score=200 — must
+  // throw daily_wellness_score_range. Wrap in BEGIN/ROLLBACK so no rows persist.
+  console.log('\n(d) Probe CHECK constraint enforcement (rolled back):');
+  const userRow: any = await db.execute(sql`SELECT id FROM users WHERE deleted_at IS NULL LIMIT 1`);
+  const probeUserRows = (userRow.rows ?? userRow) as Array<{ id: string }>;
+  if (probeUserRows.length === 0) {
+    console.log('  ⚠ no user available to probe — skipping CHECK enforcement test');
+  } else {
+    const probeUserId = probeUserRows[0].id;
+    let energyBlocked = false;
+    let scoreBlocked = false;
+    let energyName = '';
+    let scoreName = '';
+    try {
+      await db.execute(sql`BEGIN`);
+      try {
+        await db.execute(sql`
+          INSERT INTO daily_wellness_log (user_id, date, energy_level)
+          VALUES (${probeUserId}, '1900-01-01', 99)
+        `);
+      } catch (e: any) {
+        energyBlocked = true;
+        energyName = e?.constraint ?? e?.message ?? '';
+      }
+      await db.execute(sql`ROLLBACK`);
+
+      await db.execute(sql`BEGIN`);
+      try {
+        await db.execute(sql`
+          INSERT INTO daily_wellness_log (user_id, date, readiness_score)
+          VALUES (${probeUserId}, '1900-01-02', 200)
+        `);
+      } catch (e: any) {
+        scoreBlocked = true;
+        scoreName = e?.constraint ?? e?.message ?? '';
+      }
+      await db.execute(sql`ROLLBACK`);
+    } catch (e) {
+      try {
+        await db.execute(sql`ROLLBACK`);
+      } catch {
+        // ignore
+      }
+      console.log(`  probe transaction wrapper error: ${(e as Error).message}`);
+    }
+    console.log(
+      `  energy=99 → CHECK fired                : ${energyBlocked ? '✓ ' + (energyName.includes('energy_range') ? '(by daily_wellness_energy_range)' : '(constraint: ' + energyName.slice(0, 60) + ')') : 'NOT BLOCKED — CATASTROPHIC'}`
+    );
+    console.log(
+      `  score=200 → CHECK fired                : ${scoreBlocked ? '✓ ' + (scoreName.includes('score_range') ? '(by daily_wellness_score_range)' : '(constraint: ' + scoreName.slice(0, 60) + ')') : 'NOT BLOCKED — CATASTROPHIC'}`
+    );
+  }
+
+  // ─── (e) daily_wellness_log row count = 0 ─────────────────────────────────
+  const dwlCount: any = await db.execute(sql`SELECT COUNT(*)::text AS c FROM daily_wellness_log`);
+  const dwlc = parseInt(dwlCount.rows?.[0]?.c ?? dwlCount[0]?.c ?? '0', 10);
+  console.log(
+    `\n(e) daily_wellness_log row count        : ${dwlc} ${dwlc === 0 ? '✓' : '— UNEXPECTED'}`
+  );
+
+  // ─── (f), (g), (h) user_gamification wellness streak columns ─────────────
+  const ugCurrentOk = await columnExists(db, 'user_gamification', 'current_wellness_streak_days');
+  const ugLongestOk = await columnExists(db, 'user_gamification', 'longest_wellness_streak_days');
+  const ugLastOk = await columnExists(db, 'user_gamification', 'last_wellness_check_in_date');
+  console.log('\n(f, g, h) user_gamification wellness streak columns:');
+  console.log(`  current_wellness_streak_days          : ${ugCurrentOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  longest_wellness_streak_days          : ${ugLongestOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  last_wellness_check_in_date           : ${ugLastOk ? 'present ✓' : 'MISSING'}`);
+
+  if (ugCurrentOk) {
+    const def = await columnDefault(db, 'user_gamification', 'current_wellness_streak_days');
+    console.log(
+      `  current default                       : ${def} ${def === '0' ? '✓' : '— UNEXPECTED'}`
+    );
+  }
+  if (ugLongestOk) {
+    const def = await columnDefault(db, 'user_gamification', 'longest_wellness_streak_days');
+    console.log(
+      `  longest default                       : ${def} ${def === '0' ? '✓' : '— UNEXPECTED'}`
+    );
+  }
+  if (ugLastOk) {
+    const def = await columnDefault(db, 'user_gamification', 'last_wellness_check_in_date');
+    console.log(
+      `  last default                          : ${def === null ? 'NULL ✓' : def + ' — UNEXPECTED'}`
+    );
+  }
+
+  // Confirm every existing user_gamification row has the defaults applied.
+  if (ugCurrentOk && ugLongestOk && ugLastOk) {
+    // NOTE: Postgres lowercases unquoted column aliases (`AS lastN` becomes
+    // `lastn` in the result row). Keep SQL aliases lowercase by convention
+    // so JS property access matches what Postgres actually returns. Caught
+    // 2026-05-06 in post-013 where `r.lastN` returned undefined → NaN.
+    const ugRows: any = await db.execute(sql`
+      SELECT
+        COUNT(*)::text AS total,
+        SUM(CASE WHEN current_wellness_streak_days = 0 THEN 1 ELSE 0 END)::text AS curr0,
+        SUM(CASE WHEN longest_wellness_streak_days = 0 THEN 1 ELSE 0 END)::text AS long0,
+        SUM(CASE WHEN last_wellness_check_in_date IS NULL THEN 1 ELSE 0 END)::text AS last_null
+      FROM user_gamification
+    `);
+    const r = (ugRows.rows ?? ugRows)[0] as {
+      total: string;
+      curr0: string;
+      long0: string;
+      last_null: string;
+    };
+    const total = parseInt(r.total, 10);
+    const curr0 = parseInt(r.curr0, 10);
+    const long0 = parseInt(r.long0, 10);
+    const lastN = parseInt(r.last_null, 10);
+    console.log('\n  Defaults applied to every existing row:');
+    console.log(
+      `  current_wellness_streak_days = 0      : ${curr0} of ${total} ${curr0 === total ? '✓' : '— UNEXPECTED'}`
+    );
+    console.log(
+      `  longest_wellness_streak_days = 0      : ${long0} of ${total} ${long0 === total ? '✓' : '— UNEXPECTED'}`
+    );
+    console.log(
+      `  last_wellness_check_in_date = NULL    : ${lastN} of ${total} ${lastN === total ? '✓' : '— UNEXPECTED'}`
+    );
+  }
+
+  // ─── (i) Existing-table row counts unchanged from baseline ───────────────
+  console.log('\n(i) Existing-table row counts (compare to baseline-013 — MUST match exactly):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+  const ugCount: any = await db.execute(sql`SELECT COUNT(*)::text AS c FROM user_gamification`);
+  const ugc = parseInt(ugCount.rows?.[0]?.c ?? ugCount[0]?.c ?? '0', 10);
+  console.log(`  user_gamification (full count): ${ugc}`);
+}
+
 const phase = (process.argv[2] ?? '') as Phase;
 const phases: Record<Phase, () => Promise<void>> = {
   baseline,
@@ -678,12 +958,14 @@ const phases: Record<Phase, () => Promise<void>> = {
   'post-011': post011,
   'baseline-012': baseline012,
   'post-012': post012,
+  'baseline-013': baseline013,
+  'post-013': post013,
 };
 
 const fn = phases[phase];
 if (!fn) {
   console.error(
-    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012>`
+    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012|baseline-013|post-013>`
   );
   process.exit(2);
 }
