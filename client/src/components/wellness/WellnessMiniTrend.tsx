@@ -16,6 +16,7 @@
  * imply "explore me" which would compete with the readiness hero above.
  */
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 import type { DailyWellnessLog } from '@shared/schema';
@@ -34,20 +35,22 @@ export function WellnessMiniTrend() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // Memoise the chart data array. Without this, every parent re-render
+  // (e.g. the post-submit count-up animation in ReadinessHero re-rendering
+  // its sibling tree) rebuilds `data`, triggering recharts re-layout. With
+  // useMemo, recharts skips work when query data is unchanged. Sprint 3
+  // BATCH 8 audit finding.
+  const data = useMemo(() => {
+    const all = historyQuery.data ?? [];
+    // Server returns DESC; chart wants ASC for time-axis sanity.
+    return [...all]
+      .filter((e) => e.readinessScore !== null && e.readinessScore !== undefined)
+      .reverse()
+      .map((e) => ({ date: e.date, score: e.readinessScore as number }));
+  }, [historyQuery.data]);
+
   if (historyQuery.isLoading) return null;
-
-  const all = historyQuery.data ?? [];
-  // Server returns DESC; chart wants ASC for time-axis sanity.
-  const ordered = [...all]
-    .filter((e) => e.readinessScore !== null && e.readinessScore !== undefined)
-    .reverse();
-
-  if (ordered.length < 2) return null;
-
-  const data = ordered.map((e) => ({
-    date: e.date,
-    score: e.readinessScore as number,
-  }));
+  if (data.length < 2) return null;
 
   return (
     <div

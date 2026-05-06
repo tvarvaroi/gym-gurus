@@ -687,6 +687,68 @@ export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
 
 ---
 
+## v0 readiness algorithm with labeled-factors output shape (2026-05-06, Sprint 3 BATCH 1+2)
+
+**Decided:** The wellness readiness score (`daily_wellness_log.readiness_score` 0–100) is computed by `computeReadinessScoreV0` over three components: subjective sliders (40% weight), training load via ACWR (30%), and muscle recovery via inverted fatigue (30%). The accompanying `readiness_score_factors` JSONB column carries the _labeled_ breakdown: `factors[]` for present components (label/score/weight/contribution) and `missingInputs[]` for absent ones, plus `algorithm: "v0"` and `computedAt` timestamp.
+
+**Why labeled, not raw:** the BATCH 5 UI (FactorCard) reads `factors[].label` directly. If the algorithm changes how it bundles components, the UI doesn't break — it just shows whatever labels the new algorithm emits. This insulates the UI from algorithm internals and gives Sprint 6 (Recovery Engine v2) a clean migration path: compute v2 alongside v0, switch the `algorithm` tag, and historical v0 entries stay queryable / explainable by their `algorithm: "v0"` provenance.
+
+**Rule:** Don't store raw component scores in separate columns "for queryability". The labeled-factors JSONB shape is the contract. Sprint 6 v2 should add fields without breaking v0 readers — bump the `algorithm` tag, expand `factors[]` shape if needed, never silently rewrite v0 rows.
+
+**See also:** `server/services/wellnessService.ts` `computeReadinessScoreV0` + `client/src/components/wellness/FactorCard.tsx`. Test coverage in `server/test/services/wellnessService.test.ts` exercises all 8 missing-input permutations and the inversion correctness on stress/soreness.
+
+---
+
+## XP idempotency: INSERT only, not UPDATE (2026-05-06, Sprint 3 BATCH 2)
+
+**Decided:** `grantWellnessXpIfFirstCheckInToday(userId, isNewInsert)` awards 10 XP only when `isNewInsert=true`. Same-day re-saves (the user edits their wellness entry and resubmits) return zero XP.
+
+**Why:** without this gate, a user could grind XP by re-submitting the same day's wellness entry repeatedly. The streak system already provides daily-cadence reinforcement; XP-on-edit would compound it into a farm.
+
+**How to apply:** any future "earn-on-action" wellness rewards should follow the same pattern — gate on `isNewInsert` from the upsert path, never on the route call alone. The schema-level UNIQUE (user_id, date) makes this guarantee load-bearing: only the FIRST POST per user per day produces an INSERT.
+
+**Test:** the BATCH 2 smoke confirmed `xp_transactions WHERE reason='wellness_check_in'` count = 1 after 2 POSTs same day. BATCH 7 mutation test would catch a regression that removes the `isNewInsert` gate.
+
+---
+
+## Streak-aware animation timing — first-time vs returning (2026-05-06, Sprint 3 BATCH 5)
+
+**Decided:** ReadinessHero reveal animation has TWO timing tiers, chosen by `streak.current` from the POST `/api/wellness/log` response:
+
+- `streakCurrent <= 1` → first-time tier: 1200ms total reveal (200ms form fade + 1000ms arc/count-up + 700ms headline at 70% overlap)
+- `streakCurrent > 1` → returning tier: 600ms total (100ms / 500ms / 350ms)
+- `prefers-reduced-motion: reduce` → instant, no count-up, no animation
+
+**Why two tiers:** a 1.5s reveal is delight on day 1 and friction on day 30. A returning streaker who's already seen the choreography ten times finds the slow version annoying. The fast tier preserves the visual identity (count-up, arc fill, headline fade) at half the duration so it still feels considered, not abrupt.
+
+**Rule (LOCKED):** DO NOT "harmonize" these timing tables in a future cleanup pass. They are intentionally different. The component header carries a `DO NOT harmonize` comment and the constants block is named `TIMING` with explicit `firstTime` and `returning` keys. Detect via `streak.current` from the POST response, not from a separate streak query (cuts a network round-trip).
+
+**See also:** `client/src/components/wellness/ReadinessHero.tsx` `TIMING` constants. The `DO NOT [refactor X as Y]` comment pattern (separate gotchas entry) was first established here.
+
+---
+
+## IDOR mutation testing pattern as architectural invariant (established 2026-05-06)
+
+**Pattern:** Every sprint that ships new resource-owning routes must include:
+
+1. `expectOwnershipClause` helper assertions on every IDOR-relevant route in the per-route test file
+2. Mutation testing — deliberately remove the ownership clause from one route, run the matching test, confirm failure with the column-aware diagnostic, revert
+3. Document the mutation evidence in the BATCH commit message + an `audit/mutation-test.log` file
+
+**Established at:**
+
+- Sprint 1.5 BATCH 4 — biometrics routes
+- Sprint 2 BATCH 7 — notifications routes
+- Sprint 3 BATCH 7 — wellness routes (sprint3-batch7/mutation-test.log)
+
+**Why mandatory going forward:** Three sprints of evidence shows the pattern catches real IDOR drift. The column-aware variant of `expectOwnershipClause(table.userId, expectedValue)` matters because it distinguishes "any `eq()` on userId" from "the load-bearing `eq()` on the data table being read" — a route can pass a generic "userId mentioned in WHERE" test while still missing IDOR on the resource itself. The Sprint 3 mutation test directly demonstrated this: 5 of 6 surviving `eq("user-A")` calls landed on `userGamification.userId` and `users.id`, leaving the regression on `dailyWellnessLog.userId` that the column-aware helper detected.
+
+**Rule:** Sprint 4 wearables, Sprint 5 program imports, and every future resource-owning sprint MUST include this gate. The pattern is now first-class architectural invariant rather than per-sprint reinvention. The pattern slot-in cost is near-zero — copy the vi.hoisted spy block from `server/test/routes/wellness.test.ts`, swap the column references, write the assertions.
+
+**See also:** `expectOwnershipClause` helper definition in `server/test/routes/biometrics.test.ts` (original site), `server/test/routes/notifications.test.ts` (Sprint 2), `server/test/routes/wellness.test.ts` (Sprint 3).
+
+---
+
 ## Wellness icon: HeartPulse, not Heart (2026-05-06, Sprint 3 BATCH 6)
 
 **Decided:** The Wellness sidebar entry uses lucide-react `HeartPulse`. Recovery uses `Heart`. They are intentionally different glyphs.

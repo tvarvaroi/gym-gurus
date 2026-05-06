@@ -1,0 +1,29 @@
+▶ host=ep-odd-base-agn1udbg-pooler.c-2.eu-central-1.aws.neon.tech
+
+=== Phase 1: baseline schema snapshot ===
+  daily_wellness_log table:                true
+  user_gamification.current_wellness_streak_days: true
+  user_gamification.longest_wellness_streak_days: true
+  user_gamification.last_wellness_check_in_date:  true
+  daily_wellness_log row count:            0
+
+=== Phase 2: re-run up() — should be idempotent ===
+[2026-05-06T15:30:22.260Z] [INFO] Attempting database connection...
+[2026-05-06T15:30:22.262Z] [INFO] Using DATABASE_URL for database connection
+[DB DEBUG] Attempt: ssl=true, no sslmode in URL
+[DB DEBUG] Connecting to: postgresql:****@ep-odd-base-agn1udbg-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
+[DB DEBUG] SSL config: {"rejectUnauthorized":false}
+[DB DEBUG] SUCCESS with: ssl=true, no sslmode in URL
+[2026-05-06T15:30:22.469Z] [INFO] Connected using standard PostgreSQL driver
+[2026-05-06T15:30:22.470Z] [INFO] Database connection established successfully
+[2026-05-06T15:30:22.500Z] [INFO] Found tables: {"tables":"body_metrics, progress_photos, push_subscriptions, exercises, ai_chat_conversations, ai_generated_workouts, client_intake, programs, clients, notifications"}
+[Migration 013] up() complete: daily_wellness_log table + user_gamification wellness streak columns
+  ✓ up() re-applied without error (idempotency confirmed)
+
+=== Phase 3: down() safety assertion ===
+  inserted probe row → daily_wellness_log count: 1
+  ✓ down() correctly BLOCKED with safety assertion
+      message: [Migration 013 down] BLOCKED: 1 daily_wellness_log rows exist. Dropping the table would destroy every wellness check-in …
+  probe row removed; final count: 0
+
+✅ Migration 013 dry-run COMPLETE: up() idempotent, down() safety holds.

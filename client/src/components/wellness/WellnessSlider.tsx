@@ -76,15 +76,25 @@ export function WellnessSlider({
         <Slider
           // Custom thumb sizing via className override.
           // Radix exposes the thumb through SliderPrimitive.Thumb, which the
-          // shadcn wrapper renders with `h-5 w-5` (20px). We bump to 24/32px
-          // via Tailwind's `[&>span:last-child]:h-6 [&>span:last-child]:w-6`
-          // selector against the slot element. The wellness-specific bump
-          // doesn't affect the body-metrics or other usages.
+          // shadcn wrapper renders with `h-5 w-5` (20px). We bump the visible
+          // dot to 24/32px AND extend the hit area to ≥44×44px (WCAG AA, AAA
+          // 48 honoured on mobile) via a `before:` pseudo-element extending
+          // outward 10/8px without affecting the visual size. The pseudo
+          // element's bounding box participates in pointer-event hit-testing,
+          // so taps anywhere in the 44/48px zone hit the thumb. Sprint 3 BATCH
+          // 8 audit finding — the visible dot is fine but a 24/32px hit area
+          // is below WCAG and tough on thumbs at speed.
           className="
             wellness-slider flex-1
             [&>span:last-child]:h-6 [&>span:last-child]:w-6
             md:[&>span:last-child]:h-6 md:[&>span:last-child]:w-6
             max-md:[&>span:last-child]:h-8 max-md:[&>span:last-child]:w-8
+            [&>span:last-child]:relative
+            [&>span:last-child]:before:content-['']
+            [&>span:last-child]:before:absolute
+            [&>span:last-child]:before:-inset-2.5
+            md:[&>span:last-child]:before:-inset-2.5
+            max-md:[&>span:last-child]:before:-inset-2
             [&>span:first-child]:h-1.5
           "
           min={1}
