@@ -98,6 +98,13 @@ interface ClientAPI {
   waistCircumference: string | null;
   hipCircumference: string | null;
   shareBodyMetricsWithTrainer: boolean;
+  // Sprint 4 — granular consent expansion (BATCH 1 schema; UI adoption in BATCH 6/7)
+  shareSleepWithTrainer: boolean;
+  shareHrvWithTrainer: boolean;
+  shareActivityWithTrainer: boolean;
+  shareProgressPhotosWithTrainer: boolean;
+  // Sprint 4 — clients.user_id FK (long-deferred Sprint 1 gotcha fix)
+  userId: string | null;
   deletedAt: string | null;
 }
 

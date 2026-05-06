@@ -207,9 +207,17 @@ export function createTestClient(options: TestClientOptions = {}): Client {
     neckCircumference: null,
     waistCircumference: null,
     hipCircumference: null,
+    shareBodyMetricsWithTrainer: true,
+    // Sprint 4 — granular consent expansion (BATCH 1 schema)
+    shareSleepWithTrainer: true,
+    shareHrvWithTrainer: true,
+    shareActivityWithTrainer: true,
+    shareProgressPhotosWithTrainer: false,
+    userId: null,
     createdAt: new Date('2025-01-15T00:00:00Z'),
     lastSession: null,
     nextSession: null,
+    deletedAt: null,
   };
 }
 

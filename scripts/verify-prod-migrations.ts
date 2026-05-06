@@ -1,4 +1,4 @@
-// One-shot verification script for migrations 010 + 011 + 012 + 013 against Railway prod.
+// One-shot verification script for migrations 010 + 011 + 012 + 013 + 014 against Railway prod.
 // Run via: railway run -- npx tsx scripts/verify-prod-migrations.ts <phase>
 //
 // Phases:
@@ -27,9 +27,20 @@
 //                   ON DELETE CASCADE on user_id wired, 3 user_gamification cols
 //                   present with default 0/0/NULL on every existing row, existing-
 //                   table row counts unchanged from baseline-013
+//   baseline-014  — pre-014 snapshot: confirm 014 artefacts ABSENT (4 wearable tables,
+//                   5 client cols, users.preferred_wearable_id), capture row counts
+//                   for drift detection
+//   post-014      — confirm 4 wearable tables + indexes (UNIQUE flags verified via
+//                   indexdef), CHECK constraints on provider/status fire on probe
+//                   inserts, clients.user_id + idx + FK to users, 4 consent cols
+//                   with verified defaults (true/true/true/false), backfill role
+//                   correctness check (every backfilled client links to users.role
+//                   = 'client', NOT trainer/solo — privacy violation prevention),
+//                   spot-check 5 random backfilled email pairs, drift on existing
+//                   tables matches baseline-014 exactly
 //
 // Designed to be safe to re-run. All queries are SELECT-only except the
-// transaction-wrapped CHECK constraint enforcement test in post-011.
+// transaction-wrapped CHECK constraint enforcement tests in post-011 and post-014.
 import { sql } from 'drizzle-orm';
 import { getDb } from '../server/db';
 
@@ -40,7 +51,9 @@ type Phase =
   | 'baseline-012'
   | 'post-012'
   | 'baseline-013'
-  | 'post-013';
+  | 'post-013'
+  | 'baseline-014'
+  | 'post-014';
 
 const EXISTING_TABLES_TO_COUNT = [
   'users',
@@ -951,6 +964,416 @@ async function post013() {
   console.log(`  user_gamification (full count): ${ugc}`);
 }
 
+// ===========================================================================
+// Migration 014 — Wearable Integration (Sprint 4)
+// ===========================================================================
+
+// Helper: look up FK target table for a given (table, column).
+async function fkTargetTable(
+  db: Awaited<ReturnType<typeof getDb>>,
+  table: string,
+  column: string
+): Promise<string | null> {
+  const r: any = await db.execute(sql`
+    SELECT ccu.table_name AS target
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+     AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage ccu
+      ON ccu.constraint_name = tc.constraint_name
+     AND ccu.table_schema = tc.table_schema
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+      AND tc.table_schema = 'public'
+      AND tc.table_name = ${table}
+      AND kcu.column_name = ${column}
+    LIMIT 1
+  `);
+  const v = r.rows?.[0]?.target ?? r[0]?.target;
+  return v ?? null;
+}
+
+async function baseline014() {
+  const db = await getDb();
+  console.log('=== BASELINE-014 (pre-014) ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db, version() AS v`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}`);
+  console.log(`Version : ${(ident.rows?.[0]?.v ?? ident[0]?.v ?? '').slice(0, 80)}\n`);
+
+  // 014 artefacts — 4 tables must NOT exist pre-run
+  const wcExists = await tableExists(db, 'wearable_connections');
+  const ssExists = await tableExists(db, 'sleep_sessions');
+  const dvExists = await tableExists(db, 'daily_vitals');
+  const asExists = await tableExists(db, 'activity_sessions');
+
+  console.log('014 tables (must be absent before run):');
+  console.log(
+    `  wearable_connections                : ${wcExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  sleep_sessions                      : ${ssExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  daily_vitals                        : ${dvExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  activity_sessions                   : ${asExists ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  // 5 client cols must NOT exist
+  const cUserId = await columnExists(db, 'clients', 'user_id');
+  const cSleep = await columnExists(db, 'clients', 'share_sleep_with_trainer');
+  const cHrv = await columnExists(db, 'clients', 'share_hrv_with_trainer');
+  const cActivity = await columnExists(db, 'clients', 'share_activity_with_trainer');
+  const cPhotos = await columnExists(db, 'clients', 'share_progress_photos_with_trainer');
+
+  console.log('\n014 clients columns (must be absent before run):');
+  console.log(
+    `  clients.user_id                     : ${cUserId ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  clients.share_sleep_with_trainer    : ${cSleep ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  clients.share_hrv_with_trainer      : ${cHrv ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  clients.share_activity_with_trainer : ${cActivity ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+  console.log(
+    `  clients.share_progress_photos_with… : ${cPhotos ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  // users.preferred_wearable_id must NOT exist
+  const uPwId = await columnExists(db, 'users', 'preferred_wearable_id');
+  console.log('\n014 users column (must be absent before run):');
+  console.log(
+    `  users.preferred_wearable_id         : ${uPwId ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  // idx_clients_user_id must NOT exist
+  const idxUid = await indexExists(db, 'idx_clients_user_id');
+  console.log('\n014 indexes (must be absent before run):');
+  console.log(
+    `  idx_clients_user_id                 : ${idxUid ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  console.log('\nExisting-table row counts (snapshot for post-014 drift detection):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+
+  // Capture clients full count + clients-with-deleted_at-null count — used for
+  // backfill correctness assertions in post-014.
+  const clientsTotal: any = await db.execute(sql`SELECT COUNT(*)::text AS c FROM clients`);
+  const clientsTotalCount = parseInt(clientsTotal.rows?.[0]?.c ?? clientsTotal[0]?.c ?? '0', 10);
+  const clientsLive: any = await db.execute(
+    sql`SELECT COUNT(*)::text AS c FROM clients WHERE deleted_at IS NULL`
+  );
+  const clientsLiveCount = parseInt(clientsLive.rows?.[0]?.c ?? clientsLive[0]?.c ?? '0', 10);
+  console.log(`  clients (full count)         : ${clientsTotalCount}`);
+  console.log(`  clients (deleted_at IS NULL) : ${clientsLiveCount}`);
+
+  console.log('\nSAVE THESE NUMBERS — used as the baseline for post-014 drift checks.');
+}
+
+async function post014() {
+  const db = await getDb();
+  console.log('=== POST-014 ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}\n`);
+
+  // ─── (a) 4 wearable tables + indexes ─────────────────────────────────────
+  const wcOk = await tableExists(db, 'wearable_connections');
+  const ssOk = await tableExists(db, 'sleep_sessions');
+  const dvOk = await tableExists(db, 'daily_vitals');
+  const asOk = await tableExists(db, 'activity_sessions');
+
+  console.log('(a) Wearable tables:');
+  console.log(`  wearable_connections                : ${wcOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  sleep_sessions                      : ${ssOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  daily_vitals                        : ${dvOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  activity_sessions                   : ${asOk ? 'present ✓' : 'MISSING'}`);
+
+  // Indexes: UNIQUE on connections (user_id, provider), sleep+activity
+  // (user_id, source, source_record_id), vitals (user_id, date, source).
+  // Plain idx on connections (status, last_sync_at), sleep (user_id, date),
+  // activity (user_id, started_at).
+  console.log('\n  Indexes (UNIQUE flag verified via indexdef):');
+  const indexChecks = [
+    {
+      name: 'idx_wearable_connections_user_provider',
+      mustBeUnique: true,
+    },
+    {
+      name: 'idx_wearable_connections_status_sync',
+      mustBeUnique: false,
+    },
+    {
+      name: 'idx_sleep_sessions_user_date',
+      mustBeUnique: false,
+    },
+    {
+      name: 'idx_sleep_sessions_user_source_record',
+      mustBeUnique: true,
+    },
+    {
+      name: 'idx_daily_vitals_user_date_source',
+      mustBeUnique: true,
+    },
+    {
+      name: 'idx_activity_sessions_user_started',
+      mustBeUnique: false,
+    },
+    {
+      name: 'idx_activity_sessions_user_source_record',
+      mustBeUnique: true,
+    },
+  ];
+  for (const { name, mustBeUnique } of indexChecks) {
+    const present = await indexExists(db, name);
+    if (!present) {
+      console.log(`    ${name.padEnd(44)} : MISSING`);
+      continue;
+    }
+    const def = (await indexDef(db, name)) ?? '';
+    const isUnique = /CREATE UNIQUE INDEX/i.test(def);
+    if (mustBeUnique) {
+      console.log(
+        `    ${name.padEnd(44)} : present ${isUnique ? '✓ (UNIQUE)' : '— NOT UNIQUE (' + def.slice(0, 80) + ')'}`
+      );
+    } else {
+      console.log(`    ${name.padEnd(44)} : present ✓ (non-unique as expected)`);
+    }
+  }
+
+  // ─── (b) CHECK constraints on wearable_connections ───────────────────────
+  // Probe insert with provider='unknown' — must throw with provider_check name.
+  // Probe with status='lol' — must throw with status_check name.
+  // BEGIN / ROLLBACK transactions per probe so nothing persists.
+  console.log('\n(b) CHECK constraint enforcement (rolled back, no data persisted):');
+  const userRow: any = await db.execute(sql`SELECT id FROM users WHERE deleted_at IS NULL LIMIT 1`);
+  const probeUserRows = (userRow.rows ?? userRow) as Array<{ id: string }>;
+  if (probeUserRows.length === 0) {
+    console.log('  ⚠ no user available to probe — skipping CHECK enforcement test');
+  } else {
+    const probeUserId = probeUserRows[0].id;
+    let providerBlocked = false;
+    let statusBlocked = false;
+    let providerName = '';
+    let statusName = '';
+    try {
+      await db.execute(sql`BEGIN`);
+      try {
+        await db.execute(sql`
+          INSERT INTO wearable_connections (user_id, provider)
+          VALUES (${probeUserId}, 'unknown')
+        `);
+      } catch (e: any) {
+        providerBlocked = true;
+        providerName = e?.constraint ?? e?.message ?? '';
+      }
+      await db.execute(sql`ROLLBACK`);
+
+      await db.execute(sql`BEGIN`);
+      try {
+        await db.execute(sql`
+          INSERT INTO wearable_connections (user_id, provider, status)
+          VALUES (${probeUserId}, 'whoop', 'lol')
+        `);
+      } catch (e: any) {
+        statusBlocked = true;
+        statusName = e?.constraint ?? e?.message ?? '';
+      }
+      await db.execute(sql`ROLLBACK`);
+    } catch (e) {
+      try {
+        await db.execute(sql`ROLLBACK`);
+      } catch {
+        // ignore
+      }
+      console.log(`  probe transaction wrapper error: ${(e as Error).message}`);
+    }
+    console.log(
+      `  provider='unknown' → CHECK fired      : ${providerBlocked ? '✓ ' + (providerName.includes('provider_check') ? '(by wearable_connections_provider_check)' : '(constraint: ' + providerName.slice(0, 60) + ')') : 'NOT BLOCKED — CATASTROPHIC'}`
+    );
+    console.log(
+      `  status='lol' → CHECK fired            : ${statusBlocked ? '✓ ' + (statusName.includes('status_check') ? '(by wearable_connections_status_check)' : '(constraint: ' + statusName.slice(0, 60) + ')') : 'NOT BLOCKED — CATASTROPHIC'}`
+    );
+  }
+
+  // ─── (c) clients.user_id column + idx + FK ───────────────────────────────
+  const cUserIdOk = await columnExists(db, 'clients', 'user_id');
+  const idxCUid = await indexExists(db, 'idx_clients_user_id');
+  const fkTarget = await fkTargetTable(db, 'clients', 'user_id');
+  console.log('\n(c) clients.user_id column + index + FK:');
+  console.log(`  clients.user_id column              : ${cUserIdOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  idx_clients_user_id index           : ${idxCUid ? 'present ✓' : 'MISSING'}`);
+  console.log(
+    `  FK target                           : ${fkTarget ?? '(none)'} ${fkTarget === 'users' ? '✓' : '— UNEXPECTED, expected users'}`
+  );
+
+  // ─── (d) 4 client consent columns + verified defaults ────────────────────
+  const cSleepOk = await columnExists(db, 'clients', 'share_sleep_with_trainer');
+  const cHrvOk = await columnExists(db, 'clients', 'share_hrv_with_trainer');
+  const cActivityOk = await columnExists(db, 'clients', 'share_activity_with_trainer');
+  const cPhotosOk = await columnExists(db, 'clients', 'share_progress_photos_with_trainer');
+
+  console.log('\n(d) clients consent columns + defaults:');
+  console.log(`  share_sleep_with_trainer            : ${cSleepOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  share_hrv_with_trainer              : ${cHrvOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  share_activity_with_trainer         : ${cActivityOk ? 'present ✓' : 'MISSING'}`);
+  console.log(`  share_progress_photos_with_trainer  : ${cPhotosOk ? 'present ✓' : 'MISSING'}`);
+
+  if (cSleepOk) {
+    const def = await columnDefault(db, 'clients', 'share_sleep_with_trainer');
+    console.log(
+      `  share_sleep default                 : ${def} ${def === 'true' ? '✓' : '— UNEXPECTED, expected true'}`
+    );
+  }
+  if (cHrvOk) {
+    const def = await columnDefault(db, 'clients', 'share_hrv_with_trainer');
+    console.log(
+      `  share_hrv default                   : ${def} ${def === 'true' ? '✓' : '— UNEXPECTED, expected true'}`
+    );
+  }
+  if (cActivityOk) {
+    const def = await columnDefault(db, 'clients', 'share_activity_with_trainer');
+    console.log(
+      `  share_activity default              : ${def} ${def === 'true' ? '✓' : '— UNEXPECTED, expected true'}`
+    );
+  }
+  if (cPhotosOk) {
+    const def = await columnDefault(db, 'clients', 'share_progress_photos_with_trainer');
+    console.log(
+      `  share_progress_photos default       : ${def} ${def === 'false' ? '✓' : '— UNEXPECTED, expected false (opt-IN)'}`
+    );
+  }
+
+  // ─── (e) users.preferred_wearable_id column + FK ─────────────────────────
+  const uPwIdOk = await columnExists(db, 'users', 'preferred_wearable_id');
+  const uFkTarget = await fkTargetTable(db, 'users', 'preferred_wearable_id');
+  console.log('\n(e) users.preferred_wearable_id column + FK:');
+  console.log(`  users.preferred_wearable_id column  : ${uPwIdOk ? 'present ✓' : 'MISSING'}`);
+  console.log(
+    `  FK target                           : ${uFkTarget ?? '(none)'} ${uFkTarget === 'wearable_connections' ? '✓' : '— UNEXPECTED, expected wearable_connections'}`
+  );
+
+  // ─── (f) Backfill correctness — role check (privacy violation prevention) ─
+  // CRITICAL: every backfilled client (user_id IS NOT NULL) must link to a
+  // users row with role='client'. If any backfilled client links to a trainer
+  // or solo, the backfill matched the wrong user and we have a privacy
+  // violation (trainer's clients table now silently links a different person).
+  //
+  // NOTE on aliases: Postgres lowercases unquoted column aliases (`AS lastN`
+  // becomes `lastn`). Keeping all aliases lowercase by convention so JS access
+  // matches what comes back. Caught 2026-05-06 in post-013, in gotchas.md.
+  console.log(
+    '\n(f) ⚠️  CRITICAL: backfill correctness — role check (privacy violation prevention):'
+  );
+  const backfillStats: any = await db.execute(sql`
+    SELECT
+      COUNT(*)::text AS backfilled_total,
+      SUM(CASE WHEN u.role = 'client' THEN 1 ELSE 0 END)::text AS role_client,
+      SUM(CASE WHEN u.role = 'trainer' THEN 1 ELSE 0 END)::text AS role_trainer,
+      SUM(CASE WHEN u.role = 'solo' THEN 1 ELSE 0 END)::text AS role_solo
+    FROM clients c
+    JOIN users u ON u.id = c.user_id
+    WHERE c.user_id IS NOT NULL
+      AND c.deleted_at IS NULL
+  `);
+  const bfRow = (backfillStats.rows ?? backfillStats)[0] as {
+    backfilled_total: string;
+    role_client: string;
+    role_trainer: string;
+    role_solo: string;
+  };
+  const bfTotal = parseInt(bfRow?.backfilled_total ?? '0', 10);
+  const bfClient = parseInt(bfRow?.role_client ?? '0', 10);
+  const bfTrainer = parseInt(bfRow?.role_trainer ?? '0', 10);
+  const bfSolo = parseInt(bfRow?.role_solo ?? '0', 10);
+
+  const orphanCount: any = await db.execute(sql`
+    SELECT COUNT(*)::text AS c FROM clients
+     WHERE user_id IS NULL AND deleted_at IS NULL
+  `);
+  const orphan = parseInt(orphanCount.rows?.[0]?.c ?? orphanCount[0]?.c ?? '0', 10);
+
+  console.log(`  total backfilled (user_id NOT NULL) : ${bfTotal}`);
+  console.log(
+    `  of which role = 'client'            : ${bfClient} ${bfClient === bfTotal ? '✓ (every backfilled row links to a Disciple)' : '— CATASTROPHIC: privacy violation, ' + (bfTotal - bfClient) + ' rows link to non-Disciple users'}`
+  );
+  console.log(
+    `  of which role = 'trainer'           : ${bfTrainer} ${bfTrainer === 0 ? '✓ (zero — no false positives)' : '— CATASTROPHIC: trainer-shaped rows in backfill'}`
+  );
+  console.log(
+    `  of which role = 'solo'              : ${bfSolo} ${bfSolo === 0 ? '✓ (zero — no false positives)' : '— CATASTROPHIC: solo-shaped rows in backfill'}`
+  );
+  console.log(
+    `  unmatched (user_id IS NULL)         : ${orphan} (prospects who haven't registered as Disciples — expected, NOT a failure)`
+  );
+
+  // ─── (g) Spot-check 5 random backfilled email pairs ──────────────────────
+  // Join clients → users by the FK and verify LOWER(c.email) = LOWER(u.email).
+  // Output ✓/✗ per row with truncated email pairs for log readability.
+  console.log('\n(g) Spot-check email match (5 random backfilled rows):');
+  const spotCheck: any = await db.execute(sql`
+    SELECT
+      c.email AS client_email,
+      u.email AS user_email,
+      LOWER(c.email) = LOWER(u.email) AS matches
+    FROM clients c
+    JOIN users u ON u.id = c.user_id
+    WHERE c.user_id IS NOT NULL
+      AND c.deleted_at IS NULL
+    ORDER BY RANDOM()
+    LIMIT 5
+  `);
+  const spotRows = (spotCheck.rows ?? spotCheck) as Array<{
+    client_email: string;
+    user_email: string;
+    matches: boolean;
+  }>;
+  if (spotRows.length === 0) {
+    console.log('  (no backfilled rows to spot-check)');
+  } else {
+    for (let i = 0; i < spotRows.length; i++) {
+      const r = spotRows[i];
+      const trunc = (e: string) =>
+        e.length > 32 ? e.slice(0, 14) + '…' + e.slice(-14) : e.padEnd(32);
+      console.log(
+        `    [${i + 1}] ${trunc(r.client_email)} ↔ ${trunc(r.user_email)} : ${r.matches ? '✓' : '✗ — UNEXPECTED, FK row is for a different email'}`
+      );
+    }
+  }
+
+  // ─── (h) Wearable tables row count = 0 ───────────────────────────────────
+  console.log('\n(h) Wearable tables row count (must be 0):');
+  for (const t of ['wearable_connections', 'sleep_sessions', 'daily_vitals', 'activity_sessions']) {
+    const r: any = await db.execute(sql.raw(`SELECT COUNT(*)::text AS c FROM ${t}`));
+    const c = r.rows?.[0]?.c ?? r[0]?.c ?? '?';
+    console.log(`  ${t.padEnd(28)} : ${c} ${c === '0' ? '✓' : '— UNEXPECTED'}`);
+  }
+
+  // ─── (i) Existing-table row counts unchanged from baseline ───────────────
+  console.log('\n(i) Existing-table row counts (compare to baseline-014 — MUST match exactly):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+  const clientsTotal: any = await db.execute(sql`SELECT COUNT(*)::text AS c FROM clients`);
+  const clientsTotalCount = parseInt(clientsTotal.rows?.[0]?.c ?? clientsTotal[0]?.c ?? '0', 10);
+  const clientsLive: any = await db.execute(
+    sql`SELECT COUNT(*)::text AS c FROM clients WHERE deleted_at IS NULL`
+  );
+  const clientsLiveCount = parseInt(clientsLive.rows?.[0]?.c ?? clientsLive[0]?.c ?? '0', 10);
+  console.log(`  clients (full count)         : ${clientsTotalCount}`);
+  console.log(`  clients (deleted_at IS NULL) : ${clientsLiveCount}`);
+}
+
 const phase = (process.argv[2] ?? '') as Phase;
 const phases: Record<Phase, () => Promise<void>> = {
   baseline,
@@ -960,12 +1383,14 @@ const phases: Record<Phase, () => Promise<void>> = {
   'post-012': post012,
   'baseline-013': baseline013,
   'post-013': post013,
+  'baseline-014': baseline014,
+  'post-014': post014,
 };
 
 const fn = phases[phase];
 if (!fn) {
   console.error(
-    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012|baseline-013|post-013>`
+    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012|baseline-013|post-013|baseline-014|post-014>`
   );
   process.exit(2);
 }

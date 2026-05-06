@@ -97,6 +97,11 @@ export const users = pgTable(
       .notNull()
       .default('metric')
       .$type<'metric' | 'imperial'>(),
+    // Sprint 4 — preferred wearable for this user (used for HRV/sleep dashboard).
+    // Bare varchar (no `.references(...)`) to avoid circular FK at the schema layer
+    // (wearableConnections.userId references users.id). FK is enforced at the DB
+    // level by migration 014 only.
+    preferredWearableId: varchar('preferred_wearable_id'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -160,6 +165,18 @@ export const clients = pgTable(
     // Disciple consent: defaults true so trainers see body data; granular siblings
     // (sleep / hrv / activity / cycle) arrive Sprint 4 alongside wearables.
     shareBodyMetricsWithTrainer: boolean('share_body_metrics_with_trainer').notNull().default(true),
+    // Sprint 4 — granular consent expansion. Sleep / HRV / activity default true
+    // (mirrors body-metrics default-on consent). Photos default false (opt-IN).
+    shareSleepWithTrainer: boolean('share_sleep_with_trainer').notNull().default(true),
+    shareHrvWithTrainer: boolean('share_hrv_with_trainer').notNull().default(true),
+    shareActivityWithTrainer: boolean('share_activity_with_trainer').notNull().default(true),
+    shareProgressPhotosWithTrainer: boolean('share_progress_photos_with_trainer')
+      .notNull()
+      .default(false),
+    // Sprint 4 — proper users.id FK closes the long-deferred Sprint 1 gotcha.
+    // Lazy `(): any =>` syntax mirrors users.trainerId pattern. ON DELETE SET NULL
+    // because client roster rows survive Disciple account deletion (trainer's data).
+    userId: varchar('user_id').references((): any => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     lastSession: timestamp('last_session'),
     nextSession: timestamp('next_session'),
@@ -170,6 +187,201 @@ export const clients = pgTable(
     index('idx_clients_status').on(table.status),
     index('idx_clients_email').on(table.email),
     index('idx_clients_deleted_at').on(table.deletedAt),
+    index('idx_clients_user_id').on(table.userId),
+  ]
+);
+
+// ─── Sprint 4 — Wearable Integration ─────────────────────────────────────────
+// Closed-set provider list. Adding a provider requires a migration (CHECK
+// constraint `wearable_connections_provider_check` enumerates these literally).
+export const WEARABLE_PROVIDERS = ['whoop', 'oura', 'garmin', 'strava', 'withings'] as const;
+export type WearableProvider = (typeof WEARABLE_PROVIDERS)[number];
+
+export const WEARABLE_STATUS = ['connected', 'disconnected', 'expired', 'revoked'] as const;
+export type WearableStatus = (typeof WEARABLE_STATUS)[number];
+
+// Per-data-type sync preferences. JSON-serialized in sync_preferences jsonb col.
+// Keep this interface in lockstep with the migration's JSONB default literal —
+// changing one without the other introduces row-shape drift.
+export interface WearableSyncPreferences {
+  sleep: boolean;
+  hrv: boolean;
+  workouts: boolean;
+  body: boolean;
+  activity: boolean;
+}
+export const DEFAULT_WEARABLE_SYNC_PREFERENCES: WearableSyncPreferences = {
+  sleep: true,
+  hrv: true,
+  workouts: true,
+  body: true,
+  activity: true,
+};
+
+// One row per (user, provider). Tokens are AES-256-GCM encrypted at rest
+// (see server/services/tokenEncryption.ts, BATCH 2). Status transitions:
+// disconnected → connected → expired → revoked. UNIQUE on (user_id, provider)
+// guarantees idempotent reconnect via UPSERT.
+export const wearableConnections = pgTable(
+  'wearable_connections',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: varchar('provider', { length: 32 }).notNull().$type<WearableProvider>(),
+    providerUserId: varchar('provider_user_id', { length: 255 }),
+    accessTokenEncrypted: text('access_token_encrypted'),
+    refreshTokenEncrypted: text('refresh_token_encrypted'),
+    tokenExpiresAt: timestamp('token_expires_at'),
+    status: varchar('status', { length: 32 })
+      .notNull()
+      .default('disconnected')
+      .$type<WearableStatus>(),
+    lastSyncAt: timestamp('last_sync_at'),
+    syncErrorCount: integer('sync_error_count').notNull().default(0),
+    lastSyncError: text('last_sync_error'),
+    capabilities: jsonb('capabilities').$type<string[]>().default([]),
+    syncPreferences: jsonb('sync_preferences')
+      .$type<WearableSyncPreferences>()
+      .notNull()
+      .default(DEFAULT_WEARABLE_SYNC_PREFERENCES),
+    connectedAt: timestamp('connected_at'),
+    disconnectedAt: timestamp('disconnected_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex('idx_wearable_connections_user_provider').on(table.userId, table.provider),
+    index('idx_wearable_connections_status_sync').on(table.status, table.lastSyncAt),
+  ]
+);
+
+// One sleep session per (user, source, source_record_id) — provider-side ID
+// makes UPSERT idempotent against repeat webhooks. `date` is wake date in the
+// user's tz, YYYY-MM-DD. Decimals (HRV, blood oxygen, body temp deviation)
+// preserve sub-integer precision.
+export const sleepSessions = pgTable(
+  'sleep_sessions',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: varchar('date', { length: 10 }).notNull(), // wake date in user tz, YYYY-MM-DD
+    bedtime: timestamp('bedtime'),
+    wakeTime: timestamp('wake_time'),
+    totalSleepMinutes: integer('total_sleep_minutes'),
+    deepMinutes: integer('deep_minutes'),
+    remMinutes: integer('rem_minutes'),
+    lightMinutes: integer('light_minutes'),
+    awakeMinutes: integer('awake_minutes'),
+    avgHeartRate: integer('avg_heart_rate'),
+    minHeartRate: integer('min_heart_rate'),
+    hrvOvernightMs: decimal('hrv_overnight_ms', { precision: 6, scale: 2 }),
+    respiratoryRate: decimal('respiratory_rate', { precision: 4, scale: 1 }),
+    bloodOxygenMin: decimal('blood_oxygen_min', { precision: 4, scale: 1 }),
+    bodyTemperatureDeviation: decimal('body_temperature_deviation', { precision: 3, scale: 2 }),
+    sleepScore: integer('sleep_score'),
+    source: varchar('source', { length: 32 }).notNull(),
+    sourceRecordId: varchar('source_record_id', { length: 255 }).notNull(),
+    rawPayload: jsonb('raw_payload'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index('idx_sleep_sessions_user_date').on(table.userId, table.date),
+    uniqueIndex('idx_sleep_sessions_user_source_record').on(
+      table.userId,
+      table.source,
+      table.sourceRecordId
+    ),
+  ]
+);
+
+// Daily aggregate vitals (resting HR, morning HRV, VO2max, BP, temp). One row
+// per (user, date, source) — multiple sources can coexist for the same date.
+export const dailyVitals = pgTable(
+  'daily_vitals',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    date: varchar('date', { length: 10 }).notNull(),
+    restingHeartRate: integer('resting_heart_rate'),
+    morningHrvRmssd: decimal('morning_hrv_rmssd', { precision: 6, scale: 2 }),
+    vo2max: decimal('vo2max', { precision: 4, scale: 1 }),
+    bloodPressureSystolic: integer('blood_pressure_systolic'),
+    bloodPressureDiastolic: integer('blood_pressure_diastolic'),
+    bloodOxygenAvg: decimal('blood_oxygen_avg', { precision: 4, scale: 1 }),
+    bodyTemperature: decimal('body_temperature', { precision: 4, scale: 2 }),
+    source: varchar('source', { length: 32 }).notNull(),
+    sourceRecordId: varchar('source_record_id', { length: 255 }).notNull(),
+    rawPayload: jsonb('raw_payload'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex('idx_daily_vitals_user_date_source').on(table.userId, table.date, table.source),
+  ]
+);
+
+// Activity sessions — runs, rides, strain workouts (anything time-bucketed
+// with a duration + optional route). Strain/training-load scores keyed off
+// provider semantics (Whoop strain, Garmin training load).
+export const activitySessions = pgTable(
+  'activity_sessions',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    startedAt: timestamp('started_at').notNull(),
+    durationMinutes: integer('duration_minutes'),
+    activityType: varchar('activity_type', { length: 64 }),
+    distanceMeters: integer('distance_meters'),
+    calories: integer('calories'),
+    avgHeartRate: integer('avg_heart_rate'),
+    maxHeartRate: integer('max_heart_rate'),
+    steps: integer('steps'),
+    elevationGainMeters: integer('elevation_gain_meters'),
+    strainScore: decimal('strain_score', { precision: 4, scale: 1 }),
+    trainingLoadScore: decimal('training_load_score', { precision: 5, scale: 1 }),
+    routePolyline: text('route_polyline'),
+    source: varchar('source', { length: 32 }).notNull(),
+    sourceRecordId: varchar('source_record_id', { length: 255 }).notNull(),
+    rawPayload: jsonb('raw_payload'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index('idx_activity_sessions_user_started').on(table.userId, table.startedAt),
+    uniqueIndex('idx_activity_sessions_user_source_record').on(
+      table.userId,
+      table.source,
+      table.sourceRecordId
+    ),
   ]
 );
 
@@ -2279,3 +2491,20 @@ export const insertProgressPhotoSchema = createInsertSchema(progressPhotos).omit
 });
 export type InsertProgressPhoto = z.infer<typeof insertProgressPhotoSchema>;
 export type ProgressPhoto = typeof progressPhotos.$inferSelect;
+
+// ─── Sprint 4 — Wearable Integration insertSchemas + types ───────────────────
+export const insertWearableConnectionSchema = createInsertSchema(wearableConnections);
+export type InsertWearableConnection = z.infer<typeof insertWearableConnectionSchema>;
+export type WearableConnection = typeof wearableConnections.$inferSelect;
+
+export const insertSleepSessionSchema = createInsertSchema(sleepSessions);
+export type InsertSleepSession = z.infer<typeof insertSleepSessionSchema>;
+export type SleepSession = typeof sleepSessions.$inferSelect;
+
+export const insertDailyVitalsSchema = createInsertSchema(dailyVitals);
+export type InsertDailyVitals = z.infer<typeof insertDailyVitalsSchema>;
+export type DailyVitals = typeof dailyVitals.$inferSelect;
+
+export const insertActivitySessionSchema = createInsertSchema(activitySessions);
+export type InsertActivitySession = z.infer<typeof insertActivitySessionSchema>;
+export type ActivitySession = typeof activitySessions.$inferSelect;

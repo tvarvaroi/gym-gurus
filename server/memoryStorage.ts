@@ -1538,6 +1538,12 @@ export class MemoryStorage implements IStorage {
       neckCircumference: insertClient.neckCircumference || null,
       waistCircumference: insertClient.waistCircumference || null,
       hipCircumference: insertClient.hipCircumference || null,
+      // Sprint 4 — granular consent expansion (BATCH 1 schema)
+      shareSleepWithTrainer: insertClient.shareSleepWithTrainer ?? true,
+      shareHrvWithTrainer: insertClient.shareHrvWithTrainer ?? true,
+      shareActivityWithTrainer: insertClient.shareActivityWithTrainer ?? true,
+      shareProgressPhotosWithTrainer: insertClient.shareProgressPhotosWithTrainer ?? false,
+      userId: insertClient.userId ?? null,
       createdAt: new Date(),
       lastSession: insertClient.lastSession || null,
       nextSession: insertClient.nextSession || null,
