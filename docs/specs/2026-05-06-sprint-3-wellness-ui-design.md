@@ -14,7 +14,7 @@ Six decisions below. Each presents the candidate options, the recommendation, an
 
 ## Decision 1 — Slider visual treatment
 
-The wellness check-in has 6 sliders (energy, stress, soreness, sleep quality, hunger, mood). All are 1–10 integer scales. The user must answer them quickly — the 30-second target is real.
+The wellness check-in has 6 sliders, mapped 1:1 to the locked schema columns from BATCH 1 (`shared/schema.ts:1100`): **energy** → `energyLevel`, **mood** → `moodScore`, **stress** → `stressLevel` (algorithm-inverted), **sleep quality** → `sleepQualitySubjective`, **motivation** → `motivationLevel`, **soreness** → `sorenessOverall` (algorithm-inverted). All are 1–10 integer scales. The user must answer them quickly — the 30-second target is real. _(Earlier draft of this paragraph mentioned "hunger" — that was a placeholder; schema is the canonical source of truth and contains no hunger field.)_
 
 **Options:**
 
@@ -48,7 +48,7 @@ A brief opacity transition (200ms) on the track range + a 1.05 scale on the thum
 
 ## Decision 2 — Toggle pill design
 
-Three behavior toggles below the sliders: caffeine, alcohol, ate breakfast. Each is on/off (3-state — on, off, untouched — would dilute the speed of the ritual).
+Three wellness-behavior toggles below the sliders, mapped to schema booleans (`shared/schema.ts:1117`): **Hit my water goal** → `hydrationGoalMet`, **Stepped outside** → `steppedOutside`, **Meditated** → `meditationCompleted`. Each is on/off (3-state — on, off, untouched — would dilute the speed of the ritual). _(Earlier draft mentioned "caffeine, alcohol, breakfast" — those were placeholder concepts; the schema models wellness behaviors users actively did, not consumption logging. Schema is the canonical source.)_
 
 The codebase already has a strong pill pattern in `PhotosTab.tsx:117-132` — a `<button role="radio">` with `aria-checked` + `bg-primary text-primary-foreground` (active) / `bg-card border-border/40 text-muted-foreground` (inactive). It's not a separate `FilterChip` component — it's an inline implementation. The visual is right; the question is whether to extract or duplicate.
 
@@ -362,3 +362,116 @@ After all locks above, BATCH 4 builds:
 - Sidebar wellness nav entry — BATCH 6
 - Dashboard hint card — BATCH 6
 - Cron go-live in dev — BATCH 6
+
+---
+
+## Implementation contract for BATCH 5 (State B — Readiness Hero)
+
+Approved 2026-05-06. State B replaces the BATCH 4 SummaryStub. The data flow is locked from BATCH 4 (`SubmitResponse` carries everything State B needs); BATCH 5 changes rendering only.
+
+### Locked band headline copy (final, do not drift)
+
+| Band              | Headline (locked)                       |
+| ----------------- | --------------------------------------- |
+| `score ≥ 80`      | **"Today's a green-light day."**        |
+| `50 ≤ score < 80` | **"Solid base — listen to your body."** |
+| `score < 50`      | **"Recovery first."**                   |
+
+(Same picks made in the BATCH 3 FQ3 lock — re-confirmed at BATCH 5 entry. Source-controlled in `ReadinessHero.tsx` constants block. Future copy A/B tests are a separate decision in a separate doc, not implementation-time edits.)
+
+### Streak-aware staged reveal animation (locked)
+
+| User state                                          | Total reveal | Per-step durations                                                                     |
+| --------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------- |
+| `streak.current ≤ 1` (first-time / no prior streak) | **1.2s**     | form-fade 200ms · arc+count 1000ms · headline 700ms · factor cards stagger 100ms beats |
+| `streak.current > 1` (returning user)               | **0.6s**     | form-fade 100ms · arc+count 500ms · headline 350ms · factor cards stagger 50ms beats   |
+| `prefers-reduced-motion: reduce`                    | **instant**  | no count-up, no stagger, final state rendered immediately                              |
+
+Detection: `streak.current` from the `POST /api/wellness/log` response (already present in BATCH 4's `SubmitResponse` shape). No extra fetch, no extra state.
+
+The constants block in `ReadinessHero.tsx` MUST carry this rationale comment so a future code-review pass doesn't "harmonize" the two tiers:
+
+```ts
+// Two-tier reveal timing. NOT a refactor target — the slow tier is for first-time
+// users (emotional payoff); the fast tier is for daily returners (a 1.5s reveal
+// every day for a year becomes friction, not delight). DO NOT "harmonize" these
+// values. Detect via streak.current from the POST /log response. See
+// docs/specs/2026-05-06-sprint-3-wellness-ui-design.md Decision 4.
+```
+
+### Typography rule (locked)
+
+| Surface                               | Font                                       | Sizing                     |
+| ------------------------------------- | ------------------------------------------ | -------------------------- |
+| `/wellness` State B hero ring         | **Playfair Display** light, tracking-tight | 80px desktop / 64px mobile |
+| Dashboard hint card preview (BATCH 6) | Inter tabular-nums                         | 28px                       |
+| Future analytics tiles, list views    | Inter tabular-nums                         | per-context                |
+
+Rule of thumb: **Playfair when the number is the moment, Inter when the number is data.**
+
+### Factor cards layout + missing-input treatment (locked)
+
+The v0 readiness algorithm output (`server/services/wellnessService.ts`) carries a `factors` array of present components plus a `missingInputs` array of absent component labels. BATCH 5 renders both — but visually distinct.
+
+**Layout:**
+
+- Mobile (`<md`): vertical stack of all factor cards
+- Desktop (`md+`): horizontal row of all factor cards (3 across when all 3 are known)
+
+**Present-factor card:** label + score number (text-2xl tabular-nums, role-color) + thin role-color bar at width = score% + footer "contributes N% to your readiness".
+
+**Missing-input card** (visually distinct from "low score"):
+
+- Label same as present
+- Number replaced by `—` (em-dash) in muted color
+- Footer line: **"Add data to refine."** (small, role-color link, links to relevant data source — wearables onboarding when those land in Phase B Sensor Web later sprints)
+- No band-color bar (would be misleading)
+
+**Why distinct:** "we don't know" must never read like "you scored low." The user with no wearable connected should never see a 35-score-shaped element where their training-load card would be — that creates anxiety from absent data and doesn't help us upsell wearables.
+
+### Streak rendering on summary (locked)
+
+| Streak state                                      | Rendering                                                |
+| ------------------------------------------------- | -------------------------------------------------------- |
+| `currentWellnessStreakDays === 0` (no streak yet) | **"Start a streak"** (no flame, muted color, no count)   |
+| `currentWellnessStreakDays === 1`                 | **"Day 1"** + flame icon (engaged but not "streaky" yet) |
+| `currentWellnessStreakDays >= 2`                  | **"Day N"** + flame icon (full streak treatment)         |
+
+Never render "Day 0" — that's a meaningless state. The `=== 0` case is the entry point, not a count.
+
+### 7-day mini-trend (locked)
+
+Inline recharts `LineChart` of last 7 readiness scores (from `GET /api/wellness/history?days=7`).
+
+- Role-colored stroke
+- Dot markers on each entry
+- No axis labels, no grid (just the trend)
+- ~60px tall, full width of the summary container
+- **Hide entirely if the user has fewer than 2 entries.** Don't render an empty state, don't render a placeholder; just absent. The chart is enrichment of an existing pattern, not a feature in itself.
+
+### Edit-existing-entry flow (locked)
+
+- Summary surfaces an **"Edit today's entry"** secondary CTA (text button, role-color)
+- Tap returns to State A (Ritual) **pre-populated** with the existing entry's slider values, toggle states, and notes
+- The `touched` flag on each slider is set to `true` for any field that was non-null in the existing entry — so the edit's payload includes those fields, not undefined
+- "See my readiness" submits via the same `POST /api/wellness/log` upsert path; backend's `isNewInsert: false` flag suppresses the XP grant and skips streak update
+- **Readiness recomputes on save only.** Live recomputation on every slider tick was considered and rejected — it creates a feedback loop where users start gaming the score instead of being honest about how they feel. Save-only computation keeps the ritual emotionally honest. Document this in the edit flow's component comment so future Claude doesn't "improve" it into live mode.
+
+### Implementation files
+
+1. `client/src/components/wellness/ReadinessHero.tsx` — circular ring + Playfair number + count-up + band headline copy + streak-aware timing
+2. `client/src/components/wellness/FactorCard.tsx` — present + missing-input variants
+3. `client/src/components/wellness/StreakBadge.tsx` — three states + locked copy
+4. `client/src/components/wellness/WellnessMiniTrend.tsx` — inline 7-day recharts (hide if <2 entries)
+5. `client/src/components/wellness/WellnessSummary.tsx` — composition: hero + factors + streak + mini-trend + edit CTA
+6. `client/src/components/wellness/WellnessRitual.tsx` — extend to accept `initial` prop for edit mode
+7. `client/src/pages/WellnessPage.tsx` — replace `SummaryStub` with `WellnessSummary`, wire edit transition
+
+### Screenshot pack for BATCH 5 checkpoint
+
+- State B mobile (390px) + desktop (1440px) — post-submit, ring rendered, factor cards visible, streak badge, mini-trend if present
+- A→B animation captured as 3 mid-frames showing the choreography (form-fade → ring grow + count-up partial → factor cards staggering in)
+- Edit flow: State B → tap "Edit today's entry" → State A pre-populated → adjust → save → State B updates with new score
+- Streak rendering at days 1, 3, 7, 30 (use `.git/`-scoped disposable script to flip `currentWellnessStreakDays`, deleted after use — same pattern as BATCH 4)
+- Missing-input factor card vs present-factor card side-by-side (DOM injection or fixture-based)
+- Pre-merge note: real iOS Safari verification of the textarea-focus / sticky-CTA interaction remains a BATCH 4 carry-over gate, not a BATCH 5 deliverable.
