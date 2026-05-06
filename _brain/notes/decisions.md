@@ -790,6 +790,101 @@ res.status(200).json({ ok: true });
 
 ---
 
+## Sprint 4 BATCH 4 D1 — Provider rollout: 2+3 stage (2026-05-07)
+
+**Decided:** Sprint 4 ships Whoop + Oura. Sprint 4.5 ships Garmin + Strava + Withings. Garmin developer portal application submitted on Sprint 4 BATCH 5 day 1 (non-coding deliverable) so the manual approval queue runs in parallel — landing during Sprint 4.5 BATCH 1 if approved on time, no-block if not (Sprint 4.5 has Strava + Withings to occupy early batches).
+
+**Rejected:**
+
+- All 5 in Sprint 4 — Garmin manual approval (3-7 days) blocks sprint close on a 3rd-party queue we can't control
+- Whoop-only — single provider can pass tests by accident if test fixtures match its payload shape; can't prove the abstraction layer works
+
+**Why:** The recovery cluster (Whoop + Oura) covers ~90% of data-shape variety — both ship sleep + HRV + readiness, and exercising the `wearableIngest` normalization layer with TWO providers proves the abstraction works (one provider could pass tests by accident because the fixtures match its shape). Strava-only-activity adds zero new shape. Withings adds smart-scale → bodyMetrics, already coded in BATCH 2 but unverified end-to-end. Diminishing returns past 2 providers.
+
+**Provider time costs:** Whoop ~1-2d, Oura ~1-2d, Garmin ~3-7d (incl. manual approval wait), Strava ~1-2d, Withings ~2-3d.
+
+**Garmin parallel-track rationale:** application submission is a non-coding BATCH 5 deliverable. If approval lands during Sprint 4.5 BATCH 1 — perfect. Earlier — Sprint 4.5 starts faster. Later — not blocked because Sprint 4.5 has Strava + Withings to occupy early batches.
+
+**First applied:** Sprint 4 BATCH 5 (Whoop POC), BATCH 6 (Oura). Sprint 4.5 picks up Garmin/Strava/Withings.
+
+---
+
+## Sprint 4 BATCH 4 D2 — Open Wearables: separate Railway project (2026-05-07)
+
+**Decided:** Open Wearables runs as a separate Railway project (`open-wearables` workspace), distinct from the `gym-gurus` project. Separate Postgres instance for OW's OAuth state + token storage.
+
+**Rejected:**
+
+- Sidecar in existing GymGurus Railway project — couples deploy lifecycles
+- Different platform (Fly.io, Render, self-hosted VPS) — diverges from all-Railway architecture for one service
+
+**Why (LOAD-BEARING — decoupled deploy lifecycles):** GymGurus deploys 5x/day during active development. Bouncing OW on every GymGurus deploy would drop in-flight webhooks (OW retries, but adds noise) and break in-flight OAuth state (user mid-flow gets a connection failure). Independent projects = independent deploy cadence. This is **continuous degradation**, not a one-time issue.
+
+**Why (secondary):** Independent scaling (OW load is webhook-driven, GymGurus load is user-traffic-driven); blast-radius isolation (OW outage doesn't bounce GymGurus health checks, vice versa); operational clarity (separate logs, separate metrics, separate deploy history).
+
+**Cost:** ~5 minutes admin to provision + one extra Postgres instance. Trivial vs ops clarity benefit.
+
+**Coupling between services:** Two env vars only — `OPEN_WEARABLES_INTERNAL_TOKEN` (auth bearer) + `OPEN_WEARABLES_WEBHOOK_SECRET` (HMAC). NO shared Postgres.
+
+**Rule for future maintainers:** Do NOT consolidate OW and GymGurus into the same Railway project as an "infrastructure simplification" later. The deploy-cadence argument is the load-bearing rationale — consolidation would re-introduce the in-flight-webhook-drop and OAuth-state-break problem on every GymGurus deploy. If future Claude proposes consolidation citing infra simplicity, point them here.
+
+---
+
+## Sprint 4 BATCH 4 D3 — OAuth callback URLs: path-based both legs (2026-05-07)
+
+**Decided:** Path-based OAuth callbacks on both legs of the OAuth flow.
+
+- **Provider → Open Wearables:** `https://<ow-prod-host>/oauth/callback/<provider>` (5 distinct URLs registered with each provider's developer portal, separate dev + prod = 10 total over Sprint 4 + 4.5)
+- **Open Wearables → GymGurus:** `https://gym-gurus-production.up.railway.app/api/wearables/oauth-callback?provider=<x>` (single route handler, provider in query parameter)
+
+**Provider Zod-enum validation REQUIRED on the GymGurus side.** The `oauth-callback` handler MUST validate the `provider` query parameter against `z.enum(WEARABLE_PROVIDERS)` at the top of the handler and reject (400) on mismatch. Without that validation, an attacker could craft a URL with `?provider=evil` and reach the handler with malformed input. Not a critical security issue (handler would lookup connection, not find it, return error) but it's defense-in-depth — single-line Zod parse, free correctness.
+
+**Rejected:**
+
+- Per-provider subdomain (`whoop.oauth.gymgurus.app`) — DNS + per-provider TLS overhead with no benefit (no cookie/CORS scope difference between providers)
+- Single callback with HMAC-signed state-encoded provider — adds load-bearing security primitive (state forgery prevention) only to solve a problem path-based already solves structurally
+
+**Why:** Standard ecosystem pattern (Plaid, Stripe Connect, Auth0 all use path-based). Provider portal UX matches expectations — registering "5 callback URLs, one per provider" is what every developer portal expects. State-encoded option's HMAC-signing requirement is a security primitive we'd have to test, document, and rotate; path-based avoids it entirely (provider identity is structural in the URL).
+
+**Dev/prod separation:** each provider's OAuth app is environment-specific anyway — most providers let you register multiple callback URLs per app, OR you register dev as one app + prod as another (Whoop the latter, Oura allows multiple URLs per app). Path-based handles both shapes naturally.
+
+**First applied:** Sprint 4 BATCH 5 (Whoop dev + prod), BATCH 6 (Oura dev + prod).
+
+---
+
+## Sprint 4 BATCH 4 D4 — Token encryption: env var + rotation script (2026-05-07)
+
+**Decided:** AES-256-GCM token encryption key lives in env var `WEARABLE_TOKEN_ENCRYPTION_KEY` on the GymGurus Railway service. Ciphertext envelope upgraded to embed key version (`v1:<iv>:<authTag>:<ct>`) so rotation can identify which rows still need re-encryption. Rotation via manual idempotent + resumable script with probe-decrypt-verify pre-rotation step.
+
+**Rejected:**
+
+- Managed KMS (AWS KMS / Cloudflare Workers KMS / GCP KMS) — over-engineering for v1 threat model + scale
+- Per-row envelope encryption with master key — flexibility we don't need yet; complexity at v1 launch
+
+**Why (threat model):** Sprint 4 v1 protects against database leak. Attacker dumps `wearable_connections` → gets ciphertexts but no key (key in Railway env vars, not in DB). Single env var on Railway is sufficient — Railway env var storage is encrypted at rest and access-controlled via project membership.
+
+**NOT protecting against:** compromised application server. If app server is compromised, attacker has both DB access AND env var. Encryption doesn't help — that requires HSM/hardware-isolated keys, a different control entirely. KMS alone wouldn't save you in that scenario either.
+
+**Why (operational):** Sprint 4 v1 = ~1000 tokens (hundreds of users × 2-5 connections). Re-encryption script processes ~1000 rows in ~30 seconds. Doesn't need automated rotation yet. Manual rotation 2-4x/year is fine.
+
+**Why (migration path stays open):** `getKey()` reads from env. Swapping in KMS-backed implementation is changing one function, not refactoring the whole module. We're not painting into a corner.
+
+**Critical operational requirements (BATCH 5 deliverables):**
+
+1. **Versioned ciphertext envelope.** Format: `v1:<iv-hex>:<authTag-hex>:<ct-hex>` (current version is `v1`). Rotation iterates rows whose envelope version differs from current; legacy rows without a version prefix (none currently in prod, but defensive) treated as `v1`. Crashes mid-batch are recoverable: re-running iterates only the non-current-version rows and continues.
+
+2. **Idempotent + resumable rotation script.** `scripts/rotate-wearable-tokens.ts`. Pattern: read all rows with non-current envelope version → decrypt with old key → encrypt with new key → write back. Each row processed atomically. Mid-batch crash leaves some rows on old version + some on new — re-running iterates only the still-old rows. Without idempotency a crash creates ambiguous state where you can't tell which rows used which key.
+
+3. **Probe-decrypt-verify pre-rotation step.** Generate new key, set as `WEARABLE_TOKEN_ENCRYPTION_KEY_NEW` (don't replace yet), encrypt one specific test row with the new key, decrypt it back, confirm plaintext matches expected — THEN start bulk rotation. Catches "I generated a malformed key" or "the encryption module has a bug with the new key" before destroying data. Probe row is a synthetic dummy connection inserted + deleted within the script run; never touches a real user row.
+
+4. **Document in `docs/runbooks/open-wearables-deployment.md`** with both the rotation procedure AND the recovery procedure (if rotation crashes mid-flight, what state is the DB in, how to inspect, how to resume).
+
+**Rotation cadence:** every 6 months OR on suspected compromise.
+
+**First applied:** Sprint 4 BATCH 5 — `tokenEncryption.ts` envelope upgraded to versioned `v1:<iv>:<tag>:<ct>` format; `scripts/rotate-wearable-tokens.ts` + runbook ship in BATCH 5 alongside Whoop POC.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
