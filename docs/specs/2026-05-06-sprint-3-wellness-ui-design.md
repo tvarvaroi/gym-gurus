@@ -1,6 +1,6 @@
 # Sprint 3 — Wellness Check-In UI Design Brainstorm
 
-**Status:** Awaiting approval. NO UI code is written until this document is approved.
+**Status:** APPROVED 2026-05-06. All 6 decisions + 4 follow-ups locked with amendments noted in the "Locked answers" sections. This is the canonical implementation contract for BATCH 4.
 **Sprint:** 3 (Daily Wellness Check-In) — keystone of Phase B Sensor Web.
 **Surface:** `/wellness` route + dashboard hint card.
 **State machine:** State A (Ritual) → State B (Summary) → State C (Empty).
@@ -74,6 +74,14 @@ Layout: the 3 toggles sit in a single horizontal row on desktop, single horizont
 
 **Trade-off accepted:** one more inline copy of the pattern. The §DS-7 entry compensates.
 
+**Implementation contract — leave a discoverability marker.** When the inline pill block lands in `WellnessRitual.tsx`, prefix it with this exact one-line comment:
+
+```tsx
+// TODO §DS-7: extract to <RolePill> when filter chips, toggle pills, and selection chips converge.
+```
+
+The same comment goes on the existing duplicates in `PhotosTab.tsx:117` and `BodyMetricsTrends.tsx` (wherever the time-range pills live) **as part of BATCH 4**. Three identical TODO markers means whoever does §DS-7 in a future sprint can `grep` for the marker and find every site at once. Without the markers, the §DS-7 work has to grep for visual patterns — slow and incomplete.
+
 ---
 
 ## Decision 3 — Readiness score hero composition (State B)
@@ -143,6 +151,30 @@ Sequence:
 
 **Trade-off accepted:** we don't do the continuous morph (option A). The staged reveal is 80% of the emotional payoff for 20% of the engineering effort, and is robust on mobile.
 
+### Streak-aware timing (locked)
+
+A daily ritual seen 365× per year cannot use a 1.5s reveal forever. After the user has seen the choreography 30 days in a row, "delight" becomes "friction." Timing scales by streak:
+
+| User state                                          | Total reveal | Step durations                                                                  |
+| --------------------------------------------------- | ------------ | ------------------------------------------------------------------------------- |
+| First-time / no prior streak (`streak.current ≤ 1`) | **1.2s**     | form-fade 200ms · arc+count 1000ms · headline 700ms · cards stagger 100ms beats |
+| Returning user with streak (`streak.current > 1`)   | **0.6s**     | form-fade 100ms · arc+count 500ms · headline 350ms · cards stagger 50ms beats   |
+| `prefers-reduced-motion: reduce`                    | **instant**  | no count-up, no stagger, final state rendered immediately                       |
+
+Detection: the `streak.current` field is already in the `POST /api/wellness/log` response shape (BATCH 2's `streakUpdate.current`). No extra state, no extra fetch — the same network round-trip that delivers the score also delivers the streak count. Branch on it client-side when picking timing constants.
+
+**Rationale comment required at the timing constants.** The two-tier timing exists for a specific reason that future Claude / future-us will not figure out from the code alone. Bake this comment into the constants block in `ReadinessHero.tsx` (BATCH 5):
+
+```ts
+// Two-tier reveal timing. NOT a refactor target — the slow tier is for first-time
+// users (emotional payoff); the fast tier is for daily returners (a 1.5s reveal
+// every day for a year becomes friction, not delight). DO NOT "harmonize" these
+// values. Detect via streak.current from the POST /log response. See
+// docs/specs/2026-05-06-sprint-3-wellness-ui-design.md Decision 4.
+```
+
+Without the comment, a future code-review pass will notice the inconsistency and "fix" it. With the comment, the inconsistency is documented intent.
+
 ---
 
 ## Decision 5 — Empty state copy variants per role (State C)
@@ -203,6 +235,17 @@ For the broader "is the CTA reachable when the keyboard is up" question, we add 
 
 **Trade-off accepted:** there's a 100ms delay before the textarea centers (intentional, lets the keyboard animation settle). Users typing fast won't notice. Slow-network or older devices may see the scroll pop slightly after the cursor — acceptable.
 
+### Real-device verification gate (locked)
+
+iOS Safari's keyboard timing has a specific window that desktop devtools mobile emulation does not replicate. Chrome devtools "iPhone" mode reports a viewport resize but does not actually animate a keyboard or fire the same `visualViewport.resize` cadence. A `scrollIntoView` that lands correctly in devtools emulation can land 200px off in real iOS Safari.
+
+**Pre-merge requirement for BATCH 4:** real iOS Safari verification of the textarea-focus → scroll → CTA-still-visible sequence. Acceptable evidence:
+
+- Screen recording on a real iOS device (or BrowserStack iOS Safari live session) showing focus → keyboard up → textarea centered → CTA visible.
+- OR a written confirmation from human review on a real iOS device, captured in the BATCH 4 checkpoint commentary.
+
+Devtools emulation does not satisfy this gate.
+
 ---
 
 ## Summary table — what BATCH 4 will build, given approval
@@ -227,11 +270,95 @@ For the broader "is the CTA reachable when the keyboard is up" question, we add 
 
 ---
 
-## Questions back to reviewer
+## Locked answers (was "Questions back to reviewer")
 
-1. **Slider anchor labels — text or icon-word combo?** Recommendation is icon+word (e.g. lucide `Battery` + "Drained" / `Zap` + "Charged"). Confirm or substitute.
-2. **Disciple privacy line "Currently kept private. Tap to share."** — does this follow the Sprint 1 Privacy section copy convention precisely, or do you want a different phrasing?
-3. **Band copy thresholds for the Summary headline ("Charging" / "Steady" / "Take it slow").** Recommendation: ≥80 / 50–79 / <50 (matches the established `CircularProgressRing` auto-color thresholds even though we're not using auto-color). Confirm or override.
-4. **Should the readiness number be Playfair Display or Inter tabular-nums?** Recommendation is Playfair — it's the emotional moment, and `BiometricsPage`/empty states already use Playfair for hero numerics. Inter would be more "stat tile" and less "ritual."
+### FQ1 — Slider anchor labels: ICONS ONLY (drop the words)
 
-After approval on these four refinements, BATCH 4 builds the page + ritual + slider/toggle/textarea form. **No code in BATCH 3.**
+**Locked:** 16px lucide icons at the two ends of each slider, no accompanying text labels. Icons tinted `text-muted-foreground` at base, brightening to `text-primary` at 50% opacity nearer the active range.
+
+**Rationale:** 6 sliders × 2 anchors × (icon + word) = 24 elements competing for attention on mobile 390px. The slider's own large value readout (text-3xl, tabular-nums) shows the user's pick — anchor word labels reinforcing what "low" means is redundant. Battery / Zap / Frown / Smile / Bed / Coffee / Wine icons are universally legible mobile vocabulary; if a user genuinely doesn't recognize one, they'll figure it out the moment the value readout responds to their slide.
+
+**Per-slider icon pairs (low → high):**
+| Question | Low icon | High icon |
+| -------- | -------- | --------- |
+| Energy | `BatteryLow` | `Zap` |
+| Stress | `Smile` | `Frown` (inverted — high stress is low score; see SUBJECTIVE_FIELDS map in `wellnessService.ts`) |
+| Soreness | `CheckCircle2` | `Flame` (inverted — high soreness is low score) |
+| Sleep quality | `Cloud` | `Moon` |
+| Hunger | `Battery` | `Utensils` |
+| Mood | `CloudRain` | `Sun` |
+
+(Inverted sliders: the icon set still flows low-icon → high-icon visually, but the readiness algorithm inverts the score contribution. The anchor icons themselves are NOT swapped — high stress shows the high-stress icon at the high end. Score inversion is a backend concern, not a UI one.)
+
+### FQ2 — Disciple privacy line: locked copy
+
+**Locked:** `"Currently private. Change in Settings → Privacy."`
+
+**Rendering:** small line, `text-xs text-muted-foreground`, below the primary CTA. Renders ONLY when `users.shareWellnessWithTrainer === false` (and only on the Disciple empty state).
+
+**Rationale:** matches the exact same wording used in the BiometricsPage Disciple empty state — same pattern means users learn the convention once. The proposed "Tap to share" was misleading because the line is informational, not the share toggle (the toggle lives in Settings → Privacy). "Currently private" beats "Currently kept private" — same meaning, fewer words, less defensive register.
+
+### FQ3 — Band thresholds + locked headline copy
+
+**Locked thresholds:** `score ≥ 80` (high) / `50 ≤ score < 80` (mid) / `score < 50` (low). Matches the existing `CircularProgressRing` auto-color split even though wellness uses role-locked color, not auto-color. Consistency with Recovery scoring elsewhere in the app — same numeric bands across surfaces.
+
+**Locked headline copy:**
+
+| Band            | Headline (locked)                       |
+| --------------- | --------------------------------------- |
+| score ≥ 80      | **"Today's a green-light day."**        |
+| 50 ≤ score < 80 | **"Solid base — listen to your body."** |
+| score < 50      | **"Recovery first."**                   |
+
+**Why these picks (vs. alternatives offered):**
+
+- `≥ 80`: "Today's a green-light day." beats "You're firing on all cylinders" — the latter is car-mechanic cliché that reads casual against Playfair Display; the former is concise, universally legible, and lands the "go" signal without leaning on a tired metaphor.
+- `50–79`: "Solid base — listen to your body." beats "You're recoverable." — "solid base" is rooted in training language (athletes say it daily), the em-dash gives it the dignified rhythm the dark-luxury aesthetic asks for, and "listen to your body" is universal recovery wisdom. "You're recoverable" reads like a medical-form line.
+- `< 50`: "Recovery first." beats "Take it easy today." — punchier, no condescension, and "Recovery" is the named notification category in our taxonomy. The same word does double duty (UI label + technical category) reinforces conceptual unity.
+
+**Locked. Do not drift these strings during implementation.** If a future sprint wants to A/B test alternate copy, that's a separate decision in a separate doc — not an implementation-time edit.
+
+### FQ4 — Readiness number font: Playfair on hero, Inter on hint cards
+
+**Locked typographic rule:**
+
+| Surface                                               | Font                                               | Sizing                     |
+| ----------------------------------------------------- | -------------------------------------------------- | -------------------------- |
+| `/wellness` hero ring (State B)                       | **Playfair Display**, `font-light`, tracking-tight | 80px desktop / 64px mobile |
+| Dashboard hint card "today's score" preview (BATCH 6) | **Inter** tabular-nums                             | 28px                       |
+| Future analytics tiles, list views, summaries         | **Inter** tabular-nums                             | per-context                |
+
+**Rationale:** the score number IS the emotional payoff of the ritual when shown at hero scale — Playfair earns its seriousness there. At hint-card size or in a list, the number is informational ("83 entries") not emotional ("your readiness today is 83") — Inter tabular-nums is the right choice. Playfair stays exclusive to the moment.
+
+This is the cleanest typographic rule we can write: **Playfair when the number is the moment, Inter when the number is data.** Locked.
+
+---
+
+## Implementation contract for BATCH 4
+
+After all locks above, BATCH 4 builds:
+
+1. `client/src/pages/WellnessPage.tsx` — route + state machine root (State A / State B / State C). State B is a stub for BATCH 5; BATCH 4 only ships State A + State C.
+2. `client/src/components/wellness/WellnessEmptyState.tsx` — three role-distinct copies + locked Disciple privacy line on `shareWellnessWithTrainer === false`.
+3. `client/src/components/wellness/WellnessSlider.tsx` — shadcn `Slider` wrapper with custom thumb sizing (24px / 32px), tap-to-set, icon-only anchors, large value readout above. Wellness-specific `className="wellness-slider"` token.
+4. `client/src/components/wellness/WellnessRitual.tsx` — 6 sliders + 3 inline toggle pills (with locked TODO §DS-7 marker) + notes accordion + sticky CTA on mobile.
+5. **§DS-7 TODO markers** added to `PhotosTab.tsx:117` pose-filter pills and `BodyMetricsTrends.tsx` time-range pills as part of this commit. Three identical markers → one grep in the future.
+6. Route wiring: `/wellness` added to `RouterConfig.tsx` + `isPublicPage` triple-check left untouched (route is auth-gated).
+7. NO sidebar entry (BATCH 6). NO dashboard hint card (BATCH 6). NO State B implementation (BATCH 5).
+
+**Screenshot pack for BATCH 4 checkpoint:**
+
+- Empty state per role × 3 (Ronin, Guru, Disciple — Disciple includes the privacy line)
+- Ritual mid-fill on mobile 390px (some sliders dragged, 2/3 toggles on, notes accordion expanded with text in textarea, sticky CTA visible)
+- Ritual mid-fill on desktop 1440px (same form state, desktop layout)
+- Save with truly empty form showing the inline hint
+- Mobile keyboard test (textarea focused, keyboard simulated visible, CTA still in viewport — devtools emulation, plus a written acknowledgment that real iOS Safari verification is the pre-merge gate)
+
+**Out of BATCH 4 / out of scope:**
+
+- State B / Readiness Hero rendering — BATCH 5
+- Edit-existing-entry flow — BATCH 5
+- Streak rendering on summary — BATCH 5
+- Sidebar wellness nav entry — BATCH 6
+- Dashboard hint card — BATCH 6
+- Cron go-live in dev — BATCH 6
