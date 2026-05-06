@@ -1,0 +1,33 @@
+[2026-05-06T01:16:46.491Z] [INFO] Attempting database connection...
+[2026-05-06T01:16:46.492Z] [INFO] Using DATABASE_URL for database connection
+[DB DEBUG] Attempt: ssl=true, no sslmode in URL
+[DB DEBUG] Connecting to: postgresql:****@ep-odd-base-agn1udbg-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
+[DB DEBUG] SSL config: {"rejectUnauthorized":false}
+[DB DEBUG] SUCCESS with: ssl=true, no sslmode in URL
+[2026-05-06T01:16:46.780Z] [INFO] Connected using standard PostgreSQL driver
+[2026-05-06T01:16:46.780Z] [INFO] Database connection established successfully
+[2026-05-06T01:16:46.806Z] [INFO] Found tables: {"tables":"body_metrics, progress_photos, push_subscriptions, exercises, ai_chat_conversations, ai_generated_workouts, client_intake, programs, clients, notifications"}
+=== SMOKE: cron go-live (BATCH 6) ===
+test user: b9e72487-f2ab-4ee6-8b81-bfc46d94cadc
+UTC now: 2026-05-06T01:16:46.838Z
+
+--- PHASE 1: nudge cron, in-window user (Asia/Tokyo) ---
+  tz=Asia/Tokyo → user-local hour: 10
+  tick1: { claimed: 1, dispatched: 1, errors: 0 }
+  re-engagement tick (unrelated): { claimed: 0, dispatched: 0, errors: 0 }
+  tick2 (idempotency): { claimed: 0, dispatched: 0, errors: 0 }
+
+--- PHASE 2: cross-timezone, user moved to America/New_York (out of window) ---
+  tz=America/New_York → user-local hour: 21
+  tick3 (NY afternoon): { claimed: 0, dispatched: 0, errors: 0 }
+
+--- PHASE 3: re-engagement cron, last entry exactly 7d ago in Tokyo ---
+  tz=Asia/Tokyo → user-local hour: 10
+  7-days-ago date in Tokyo: 2026-04-29
+  tick4 (re-engagement claim): { claimed: 1, dispatched: 1, errors: 0 }
+  tick5 (re-engagement idempotency, 30d rate limit): { claimed: 0, dispatched: 0, errors: 0 }
+
+--- CLEANUP ---
+  cleanup ok
+
+=== ALL PHASES PASSED ===

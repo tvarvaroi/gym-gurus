@@ -24,6 +24,9 @@ import { RecoveryBodyStatus } from '@/components/solo-dashboard/RecoveryBodyStat
 import { BodyIntelligencePanel } from '@/components/solo-dashboard/BodyIntelligencePanel';
 import { RecentActivityFeed } from '@/components/solo-dashboard/RecentActivityFeed';
 
+// Sprint 3 BATCH 6 — daily wellness check-in hint
+import { WellnessHintCard } from '@/components/wellness/WellnessHintCard';
+
 function OnboardingPrompt() {
   const prefersReducedMotion = useReducedMotion();
   const animProps = prefersReducedMotion
@@ -88,6 +91,13 @@ export function SoloDashboard() {
       {/* Phase 2: Full-width workout CTA — above fold */}
       <BlurFade delay={0.1}>
         <ActionZone />
+      </BlurFade>
+
+      {/* Sprint 3 BATCH 6 — Daily wellness check-in prompt or "today's readiness"
+          summary, depending on whether user has checked in today. Sits high in
+          the dashboard so it serves as a morning ritual nudge. */}
+      <BlurFade delay={0.12}>
+        <WellnessHintCard />
       </BlurFade>
 
       {/* Phase 2: Horizontal scroll stat strip (mobile only — desktop uses WeeklyOverview) */}

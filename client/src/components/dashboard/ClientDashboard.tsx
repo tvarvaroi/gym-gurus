@@ -49,6 +49,7 @@ import { getRankForLevel } from '@/lib/constants/xpRewards';
 import { AchievementGrid } from '../AchievementBadge';
 import { CelebrationOverlay, useCelebration } from '../CelebrationOverlay';
 import { QueryErrorState } from '@/components/query-states/QueryErrorState';
+import { WellnessHintCard } from '@/components/wellness/WellnessHintCard';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -454,6 +455,14 @@ export default function ClientDashboard() {
           </motion.div>
         </div>
       </div>
+
+      {/* Sprint 3 BATCH 6 — Daily wellness check-in prompt or "today's readiness"
+          summary. Sits between hero and stat cards so the Disciple sees it
+          first thing after their personal stats. Intentionally NOT rendered
+          for Guru — see WellnessHintCard component header for the role-shape
+          rationale (Guru dashboard mental model is roster status, not self-
+          tracking). */}
+      <WellnessHintCard />
 
       {/* ─── Stat Cards ───────────────────────────────────────────────────── */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-in fade-in duration-300">

@@ -9,6 +9,7 @@ import {
   Sparkles,
   Trophy,
   Heart,
+  HeartPulse,
   Wand2,
   CreditCard,
   Settings,
@@ -73,6 +74,16 @@ const trainerMenuItems = [
     url: '/biometrics',
     icon: Activity,
   },
+  // Sprint 3 BATCH 6 — Wellness sits between Body and Schedule in all 3 role
+  // menus (self-tracking cluster: Progress → Body → Wellness → Schedule).
+  // Using HeartPulse, not Heart (Heart is already taken by Recovery in the
+  // Ronin menu — keeping icons distinct prevents the sidebar from showing
+  // two near-identical glyphs back to back).
+  {
+    title: 'Wellness',
+    url: '/wellness',
+    icon: HeartPulse,
+  },
   {
     title: 'Schedule',
     url: '/schedule',
@@ -131,6 +142,16 @@ const clientMenuItems = [
     title: 'Body',
     url: '/biometrics',
     icon: Activity,
+  },
+  // Sprint 3 BATCH 6 — Wellness sits between Body and Schedule in all 3 role
+  // menus (self-tracking cluster: Progress → Body → Wellness → Schedule).
+  // Using HeartPulse, not Heart (Heart is already taken by Recovery in the
+  // Ronin menu — keeping icons distinct prevents the sidebar from showing
+  // two near-identical glyphs back to back).
+  {
+    title: 'Wellness',
+    url: '/wellness',
+    icon: HeartPulse,
   },
   {
     title: 'Schedule',
@@ -200,6 +221,16 @@ const soloMenuItems = [
     title: 'Body',
     url: '/biometrics',
     icon: Activity,
+  },
+  // Sprint 3 BATCH 6 — Wellness sits between Body and Schedule in all 3 role
+  // menus (self-tracking cluster: Progress → Body → Wellness → Schedule).
+  // Using HeartPulse, not Heart (Heart is already taken by Recovery in the
+  // Ronin menu — keeping icons distinct prevents the sidebar from showing
+  // two near-identical glyphs back to back).
+  {
+    title: 'Wellness',
+    url: '/wellness',
+    icon: HeartPulse,
   },
   {
     title: 'Schedule',
