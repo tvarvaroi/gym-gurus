@@ -51,6 +51,7 @@ import {
   startWellnessReengagementCron,
   stopWellnessReengagementCron,
 } from './jobs/wellnessReengagement';
+import { startWearableSyncMonitor, stopWearableSyncMonitor } from './jobs/wearableSyncMonitor';
 
 // Initialize Sentry error monitoring (production only)
 initSentry();
@@ -380,6 +381,15 @@ app.use(performanceMonitor);
     // push fan-out is a best-effort secondary).
     startWellnessNudgeCron();
     startWellnessReengagementCron();
+
+    // Sprint 4: wearable sync monitor. 1-hour tick, claims stale connections
+    // via SKIP LOCKED, asks Open Wearables to refresh; on triggerSync failure
+    // markSyncError increments the strike count and fires the lifecycle
+    // notifications (wearable_sync_failed / wearable_expired) per the
+    // fire-and-forget decision in _brain/notes/decisions.md (Sprint 4 BATCH 2).
+    // Safe even when OPEN_WEARABLES_BASE_URL is unset — the call throws,
+    // markSyncError absorbs the throw, the cron logs and continues.
+    startWearableSyncMonitor();
   });
 
   // Graceful shutdown — clear the cron interval so the process exits cleanly.
@@ -389,6 +399,7 @@ app.use(performanceMonitor);
     stopQuietHoursCron();
     stopWellnessNudgeCron();
     stopWellnessReengagementCron();
+    stopWearableSyncMonitor();
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(1), 10000).unref();
   };
