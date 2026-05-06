@@ -42,6 +42,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { performanceMonitor, getPerformanceStats } from './middleware/performanceMonitor';
 import webhookRoutes from './routes/webhooks';
+import wearableWebhookRouter from './routes/webhooks/wearables';
 import { isR2Configured } from './services/fileUpload';
 import { isPushConfigured } from './services/pushService';
 import { startQuietHoursCron, stopQuietHoursCron } from './jobs/cleanupExpiredQuietHours';
@@ -130,6 +131,26 @@ app.use(
 
 // Stripe webhooks need raw body for signature verification — mount BEFORE express.json()
 app.use('/api/webhooks', express.raw({ type: 'application/json' }), webhookRoutes);
+
+// Open Wearables webhooks need raw body for HMAC verification — same pattern as Stripe.
+// Sprint 4 BATCH 2 reviewer item 1 — fold into amend (router was created in c2e3997 but
+// the mount was missed; without this line, prod deliveries from Open Wearables 404).
+// preserveRawBody parses JSON for handler ergonomics while keeping the raw bytes on
+// req.rawBody for verifyWearableSignature's HMAC recompute.
+app.use(
+  '/webhooks/wearables',
+  express.raw({ type: 'application/json' }),
+  (req: Request, _res: Response, next: NextFunction) => {
+    (req as any).rawBody = req.body;
+    try {
+      req.body = JSON.parse((req.body as Buffer).toString('utf8'));
+    } catch {
+      req.body = {};
+    }
+    next();
+  },
+  wearableWebhookRouter
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

@@ -761,6 +761,35 @@ export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
 
 ---
 
+## Webhook → notification dispatch: fire-and-forget pattern (Sprint 4 BATCH 2)
+
+**Decided:** Webhook handlers MUST fire downstream notifications as fire-and-forget side effects, not in the webhook's load-bearing try/catch path.
+
+**Pattern:**
+
+```ts
+// After the load-bearing DB update succeeds (inside the route's try/catch),
+// the webhook returns 200. Notifications fire AFTER, attached via .catch().
+dispatch(userId, 'event_type', payload).catch((err) =>
+  logger.warn('dispatch failed', { err: String(err) })
+);
+res.status(200).json({ ok: true });
+```
+
+**Why:** A webhook's load-bearing job is acknowledging the source-of-truth state change (the DB row update). Notification failures must NOT 500 the webhook — provider retries would cause delivery storms against an already-applied DB update, wasting provider quota and our compute, and the idempotency layer would just dedupe each retry into a no-op anyway. Notifications are downstream consumers; the DB row is the contract. If a notification fails to deliver, log the warning and move on; the user will discover the state change via the UI on next visit.
+
+**Rejected — dispatch inside the route's main try/catch:** Couples webhook ack semantics to notification infrastructure failures. A transient dispatcher problem (push subscription DB down, web-push service rate-limited, etc.) becomes a 500 → provider retries → repeat. Wrong tradeoff: notification failure is a courtesy gap; webhook 5xx is a delivery storm.
+
+**Rejected — throwing-and-letting-it-bubble:** Same problem as above, plus it produces noisy 500s in logs that hide real DB-update failures.
+
+**Scope:** Every Sprint 4+ webhook → notification path uses this pattern. The notification dispatcher (`server/services/notificationDispatcher.ts`) itself can throw freely; only the call sites in webhook handlers need the fire-and-forget wrapper. User-facing routes (POST /api/wearables/connect, etc.) can still await dispatch normally — those have HTTP semantics tied to user action, not provider retry semantics.
+
+**First applied:** Sprint 4 BATCH 2 amend, `wearable_expired` on connection-status webhook with `status='expired'` or `status='revoked'` ([server/routes/webhooks/wearables.ts](server/routes/webhooks/wearables.ts)). Regression net: [server/test/routes/webhooks/wearables.test.ts](server/test/routes/webhooks/wearables.test.ts) — `'dispatch rejects → webhook still 200, warning logged'` test mocks dispatch to reject, asserts response is 200, asserts warning was logged.
+
+**Rule for future maintainers:** Do NOT refactor the dispatch call back into the route's main try/catch in a future "tidy the error handling" pass. The orphan `.catch()` looks unusual; the regression test exists specifically to catch that refactor. If a future reviewer flags the pattern as "weird", point them here.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]

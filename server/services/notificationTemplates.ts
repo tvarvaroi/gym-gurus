@@ -53,6 +53,11 @@ export const NOTIFICATION_TYPES = [
   // New (Sprint 3 — wellness check-in)
   'wellness_daily_nudge',
   'wellness_reengagement_7day',
+  // New (Sprint 4 — wearable integration)
+  'wearable_connected',
+  'wearable_sync_failed',
+  'wearable_expired',
+  'wearable_first_sync_complete',
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -84,6 +89,14 @@ export const TYPE_TO_CATEGORY = {
   // as recovery alerts. Quiet hours apply naturally via the dispatcher.
   wellness_daily_nudge: 'recovery',
   wellness_reengagement_7day: 'recovery',
+  // Sprint 4 wearable lifecycle notifications. All map to 'social' per Sprint 4
+  // BATCH 2 spec — they're informational events about the user's accounts
+  // (parallel to client_joined and message), not workout/recovery/billing.
+  // Users can mute the whole 'social' category to silence them.
+  wearable_connected: 'social',
+  wearable_sync_failed: 'social',
+  wearable_expired: 'social',
+  wearable_first_sync_complete: 'social',
 } as const satisfies Record<NotificationType, NotificationCategory>;
 
 export function categoryForType(type: NotificationType): NotificationCategory {
@@ -154,6 +167,8 @@ const n = (d: NotificationData, key: string, fallback = 0): number => {
   const v = d[key];
   return typeof v === 'number' ? v : fallback;
 };
+// Capitalize first letter of provider/dataType strings for display.
+const capitalize = (str: string): string => (str ? str[0].toUpperCase() + str.slice(1) : str);
 
 export const NOTIFICATION_TEMPLATES = {
   workout_assigned: (d) => ({
@@ -266,6 +281,33 @@ export const NOTIFICATION_TEMPLATES = {
     body: '7 days since your last check-in. We miss the data.',
     actionUrl: '/wellness',
     tag: 'wellness_reengagement_7day',
+  }),
+  // Sprint 4 — wearable lifecycle notifications. Tag uses provider so different
+  // providers get distinct entries on the OS notification tray (a Whoop expiry
+  // banner shouldn't replace an Oura sync-failed banner).
+  wearable_connected: (d) => ({
+    title: `${capitalize(s(d, 'provider'))} connected`,
+    body: "We'll start syncing your sleep, HRV, and recovery.",
+    actionUrl: '/settings?tab=integrations',
+    tag: `wearable_connected:${s(d, 'provider')}`,
+  }),
+  wearable_sync_failed: (d) => ({
+    title: `${capitalize(s(d, 'provider'))} sync failed`,
+    body: `Reconnect ${capitalize(s(d, 'provider'))} in Settings.`,
+    actionUrl: '/settings?tab=integrations',
+    tag: `wearable_sync_failed:${s(d, 'provider')}`,
+  }),
+  wearable_expired: (d) => ({
+    title: `${capitalize(s(d, 'provider'))} connection expired`,
+    body: 'Reconnect to keep your data flowing.',
+    actionUrl: '/settings?tab=integrations',
+    tag: `wearable_expired:${s(d, 'provider')}`,
+  }),
+  wearable_first_sync_complete: (d) => ({
+    title: 'First sync complete',
+    body: `We pulled ${n(d, 'days', 1)} days of your ${s(d, 'dataType', 'wearable')} data. View it now.`,
+    actionUrl: '/biometrics?tab=trends',
+    tag: `wearable_first_sync_complete:${s(d, 'dataType')}`,
   }),
 } as const satisfies Record<NotificationType, Renderer>;
 

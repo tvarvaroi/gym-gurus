@@ -138,6 +138,21 @@ Two fixes:
 
 **Generalizes:** anywhere in this codebase that builds raw SQL with aliases and reads back results — verifier scripts, ad-hoc admin queries, future migration runners. Audit any `AS [a-zA-Z]+` for uppercase letters in the alias.
 
+**Webhook idempotency LRU sweep is O(N) per request.**
+`server/routes/webhooks/wearables.ts:49-60` currently runs `Array.from(map.entries()).forEach` for stale-entry cleanup on every webhook call. Acceptable at v1 volumes (Sprint 4 launch). Becomes a hotspot at 5 providers × thousands of users × multiple syncs/day.
+
+Threshold to fix: webhook P50 latency exceeds ~50ms OR LRU map size exceeds ~10k entries.
+
+Fix options when threshold hit:
+
+1. Amortize sweep — only sweep every Nth call (e.g., every 100th)
+2. Batch-sweep on a setInterval timer (e.g., every 5 minutes)
+3. Move idempotency to a Redis SET with TTL (true LRU semantics, multi-process safe)
+
+Note: webhook-level LRU is a fast path. The correctness floor is the UPSERT layer (`ON CONFLICT (user_id, source, source_record_id)` for sleep + activity, `ON CONFLICT (user_id, date, source)` for vitals). Even if the LRU is bypassed by a server restart or skipped by a perf optimization, the UPSERT still dedupes — a duplicate webhook produces an UPDATE not a duplicate row. The first-sync-complete dispatch and bodyMetrics insert paths both gate on `inserted=true`, so duplicate webhooks fire neither.
+
+First captured: Sprint 4 BATCH 2 reviewer (2026-05-06).
+
 ---
 
 ---
