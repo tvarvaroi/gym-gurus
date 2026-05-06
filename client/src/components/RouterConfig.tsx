@@ -86,6 +86,7 @@ const DiscipleLoginPage = lazy(() => import('@/pages/DiscipleLoginPage'));
 const PricingPage = lazy(() => import('@/pages/PricingPage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 const BiometricsPage = lazy(() => import('@/pages/BiometricsPage'));
+const WellnessPage = lazy(() => import('@/pages/WellnessPage'));
 const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess'));
 const PaymentCancelled = lazy(() => import('@/pages/PaymentCancelled'));
 
@@ -311,6 +312,9 @@ export function RouterConfig() {
 
           {/* Biometrics — Sprint 1 (Body Metrics tab live; Photos + Trends in BATCH 4-5) */}
           <Route path="/biometrics" component={lazyRoute(BiometricsPage)} />
+
+          {/* Wellness — Sprint 3 (State A + State C ship in BATCH 4; State B in BATCH 5) */}
+          <Route path="/wellness" component={lazyRoute(WellnessPage)} />
 
           {/* Payment result pages (public — Stripe redirects here) */}
           <Route path="/payment-success" component={lazyRoute(PaymentSuccess)} />

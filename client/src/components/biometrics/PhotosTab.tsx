@@ -109,6 +109,7 @@ export function PhotosTab({ units }: PhotosTabProps) {
 
       {/* Header row: filter chips + add CTA (desktop) */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
+        {/* TODO §DS-7: extract to <RolePill> when filter chips, toggle pills, and selection chips converge. */}
         <div
           className="flex flex-wrap gap-2 flex-1 min-w-0"
           role="radiogroup"

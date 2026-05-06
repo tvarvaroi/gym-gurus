@@ -353,6 +353,7 @@ export function BodyMetricsTrends({
 
       {/* Range chips */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
+        {/* TODO §DS-7: extract to <RolePill> when filter chips, toggle pills, and selection chips converge. */}
         <div role="radiogroup" aria-label="Time range" className="flex gap-2">
           {(Object.keys(RANGE_LABELS) as Range[]).map((r) => (
             <button
