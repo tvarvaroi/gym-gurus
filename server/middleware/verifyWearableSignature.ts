@@ -1,5 +1,11 @@
 /**
- * Wearable Webhook Signature Verification — Sprint 4 BATCH 2
+ * Wearable Webhook Signature Verification — Sprint 4 BATCH 2 (kept for non-Svix sources)
+ *
+ * NOTE (Sprint 4 BATCH 5a, 2026-05-07): For Open Wearables webhooks, use the official
+ * `svix` npm package — see `server/routes/webhooks/wearables.ts`. This module is preserved
+ * for any future webhook source that does NOT use Svix (e.g., service-to-service notifications,
+ * direct provider integrations bypassing OW). The HMAC primitive below is correct as a
+ * standalone — only the OW assumption was wrong.
  *
  * Open Wearables (our self-hosted bridge to the 5 wearable providers) signs
  * every outbound webhook with HMAC-SHA256 over `<unix-ts>.<raw-body>` using

@@ -1,209 +1,265 @@
 /**
- * Wearable Webhook Routes — Sprint 4 BATCH 2
+ * Wearable Webhook Routes — Sprint 4 BATCH 5a (rewrite — Svix-signed dispatch)
  *
- * Receives Open Wearables outbound webhooks. The HMAC + timestamp middleware
- * (verifyWearableSignature) authenticates the sender; from there we Zod-
- * validate the payload, dedupe via in-memory LRU on `webhookId`, and route
- * to the appropriate ingest function.
+ * Receives Open Wearables outbound webhooks. OW signs every webhook via Svix
+ * (the official open-source webhook gateway it embeds). Svix sets three headers
+ * on every delivery — `svix-id`, `svix-timestamp`, `svix-signature` — and the
+ * `Webhook` class from the `svix` npm package verifies them in one call.
  *
- * Idempotency: every webhook payload includes a `webhookId` field. Dedupe
- * via in-memory LRU (24h TTL) for v1. Returns `{ ok: true, deduped: true }`
- * on duplicate within window. Server restart clears the LRU; a webhook that
- * arrives both before AND after a restart could ingest twice — but the
- * UPSERT layer (wearableIngest) ALSO handles idempotency via UNIQUE
- * (user_id, source, source_record_id). Two-layer defense: LRU dedup is the
- * fast path, UPSERT is the correctness floor.
+ * Replaces BATCH 2's hand-rolled HMAC + 4-routes (`/sleep`, `/vitals`,
+ * `/activity`, `/connection-status`) shape with a single endpoint
+ * (`POST /webhooks/wearables`) that switches on `event.type`. OW upstream's
+ * canonical event types are: `workout.created`, `sleep.created`,
+ * `connection.created`, `body_composition.created` (per OW's webhooks guide).
  *
- * Failure handling: if ingest throws, we call markSyncError on the
- * connection (which will fire wearable_sync_failed at count===1 or
- * wearable_expired at count===3). The webhook returns 500 so Open Wearables
- * retries; idempotency layer dedupes the eventual successful delivery.
+ * Idempotency: keyed on `svix-id` header (Svix guarantees stability across
+ * retries of the same logical event). 24h LRU. The cryptographic anti-replay
+ * defense is in `wh.verify()` — it rejects timestamps outside Svix's 5-minute
+ * window. The LRU is a short-window dedupe layer only.
+ *
+ * Failure handling: signature/timestamp/envelope failures → 401 (no body, no
+ * retry). Schema-mismatch on the per-event payload → 200 + log warning (Svix
+ * shouldn't retry a malformed payload, it'd fail identically). Ingest throws
+ * → 500 (Svix retries; idempotency layer dedupes the eventual successful
+ * delivery).
  *
  * Mount in server/index.ts BEFORE express.json() global middleware:
  *   app.use('/webhooks/wearables',
  *     express.raw({ type: 'application/json' }),
- *     (req, _res, next) => {
- *       (req as any).rawBody = req.body;
- *       try { req.body = JSON.parse(req.body.toString('utf8')); }
- *       catch { req.body = {}; }
- *       next();
- *     },
  *     wearableWebhookRouter);
+ *
+ * Connection-status route deletion (intentional, NOT an oversight): OW
+ * upstream does NOT emit `connection.expired` / `connection.revoked` /
+ * `connection.disconnected` events — only `connection.created` exists in OW's
+ * canonical event types list. Provider-side revoke detection moves to the
+ * connection-list polling cron (server/jobs/wearableSyncMonitor.ts, BATCH 5a).
+ *
+ * Carry-forward gotcha (deferred tech debt from BATCH 2): the LRU sweep is
+ * O(N) per call. Refactor when active connections * delivery rate makes the
+ * sweep cost visible (mirror condition: same threshold as the cron's N+1
+ * escape — 500 connections).
  */
 import { Router, type Request, type Response } from 'express';
+import { Webhook, WebhookVerificationError } from 'svix';
 import { z } from 'zod';
-import { verifyWearableSignature } from '../../middleware/verifyWearableSignature';
 import * as ingest from '../../services/wearableIngest';
-import { markSyncError } from '../../services/wearableConnections';
-import { dispatch } from '../../services/notificationDispatcher';
-import { getDb } from '../../db';
-import { wearableConnections, type WearableStatus } from '../../../shared/schema';
-import { eq, and } from 'drizzle-orm';
 import { logger } from '../../logger';
 
 const router = Router();
 
-// ─── In-memory idempotency LRU ──────────────────────────────────────────────
-const recentWebhookIds = new Map<string, number>();
+// ─── Per-endpoint signing secret (set fail-fast at module load) ─────────────
+// OW returns a `whsec_<base64>` per-endpoint secret when we register the
+// endpoint via POST /api/v1/webhooks/endpoints. Stored as
+// OPEN_WEARABLES_WEBHOOK_SECRET (env var name preserved from BATCH 2 for
+// continuity, but the value format and source are different — was a global
+// HMAC secret, now a per-endpoint Svix signing secret).
+//
+// Lazy initialization via a getter so test code can set the env var BEFORE
+// the SUT module is imported (BATCH 2 set it eagerly at module load and
+// tests broke when the test setUp ordering shifted). The first verified
+// request constructs the Webhook instance; from then on it's cached.
+let _wh: Webhook | null = null;
+function getWebhook(): Webhook {
+  if (_wh) return _wh;
+  const secret = process.env.OPEN_WEARABLES_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error(
+      'OPEN_WEARABLES_WEBHOOK_SECRET must be set (whsec_<base64> format from OW endpoint registration)'
+    );
+  }
+  _wh = new Webhook(secret);
+  return _wh;
+}
+
+// ─── In-memory idempotency LRU keyed on svix-id ─────────────────────────────
+const recentSvixIds = new Map<string, number>();
 const WEBHOOK_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
-function isDuplicate(id: string): boolean {
+// Sweep stale entries — same O(N)-per-call implementation as BATCH 2
+// (deferred tech debt per `_brain/notes/gotchas.md` "Webhook idempotency LRU
+// sweep is O(N)"). Carried forward verbatim. Refactor when active connections
+// + delivery rate make the sweep cost visible.
+function sweepStale(): void {
   const now = Date.now();
-  // Sweep stale entries inline (cheap; map size cap implicit via TTL).
-  // Array.from snapshot avoids iterator-target compatibility issues on
-  // older TS targets and is safe to mutate the underlying Map mid-iter.
-  Array.from(recentWebhookIds.entries()).forEach(([k, t]) => {
-    if (now - t > WEBHOOK_TTL_MS) recentWebhookIds.delete(k);
+  Array.from(recentSvixIds.entries()).forEach(([k, t]) => {
+    if (now - t > WEBHOOK_TTL_MS) recentSvixIds.delete(k);
   });
-  if (recentWebhookIds.has(id)) return true;
-  recentWebhookIds.set(id, now);
-  return false;
 }
 
 // Test-only reset hook. Not exported in production usage; keeps ingest tests
 // independent of cross-test LRU bleed.
 export function __resetWebhookIdempotency(): void {
-  recentWebhookIds.clear();
+  recentSvixIds.clear();
+  _wh = null;
 }
 
-// ─── Payload schemas ────────────────────────────────────────────────────────
+// ─── Per-event-type Zod schemas at the trust boundary ───────────────────────
+// `.passthrough()` allows unknown fields (forward compat with OW schema
+// additions). The codebase pattern from Sprints 2-3 is "Zod-validate at the
+// system boundary, trust internally past it."
 
-const baseSchema = z.object({
-  webhookId: z.string().min(1),
-  userId: z.string().min(1),
-  connectionId: z.string().min(1),
-  source: z.string().min(1),
-  payload: z.unknown(),
+const WorkoutCreatedDataSchema = z
+  .object({
+    id: z.string(),
+    user_id: z.string(),
+    type: z.string(),
+    start_time: z.string().datetime(),
+    end_time: z.string().datetime(),
+    source: z.object({ provider: z.string() }).passthrough(),
+  })
+  .passthrough();
+
+const SleepCreatedDataSchema = z
+  .object({
+    id: z.string(),
+    user_id: z.string(),
+    start_time: z.string().datetime(),
+    end_time: z.string().datetime(),
+    source: z.object({ provider: z.string() }).passthrough(),
+  })
+  .passthrough();
+
+const ConnectionCreatedDataSchema = z
+  .object({
+    user_id: z.string(),
+    provider: z.string(),
+    connection_id: z.string(),
+    connected_at: z.string().datetime(),
+  })
+  .passthrough();
+
+const BodyCompositionCreatedDataSchema = z
+  .object({
+    user_id: z.string(),
+    provider: z.string(),
+    series_type: z.string(),
+    samples: z.array(
+      z
+        .object({
+          timestamp: z.string().datetime(),
+          type: z.string(),
+          value: z.number(),
+          unit: z.string(),
+        })
+        .passthrough()
+    ),
+  })
+  .passthrough();
+
+const EventEnvelopeSchema = z.object({
+  type: z.string(),
+  data: z.unknown(),
 });
 
-const connectionStatusSchema = z.object({
-  webhookId: z.string().min(1),
-  userId: z.string().min(1),
-  connectionId: z.string().min(1),
-  source: z.string().min(1),
-  status: z.enum(['connected', 'disconnected', 'expired', 'revoked']),
-});
+// ─── Single dispatch route ──────────────────────────────────────────────────
 
-// ─── Routes ─────────────────────────────────────────────────────────────────
+router.post('/wearables', async (req: Request, res: Response) => {
+  // 1) Signature verification — must run BEFORE any other use of req.body or
+  //    req.headers (don't trust unverified `svix-id` for idempotency keying).
+  let envelope: { type: string; data?: unknown };
+  try {
+    // express.raw leaves req.body as a Buffer; svix.verify accepts Buffer or string.
+    const rawBody = req.body as Buffer | string;
+    const wh = getWebhook();
+    const verified = wh.verify(
+      typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8'),
+      req.headers as Record<string, string>
+    );
+    envelope = EventEnvelopeSchema.parse(verified);
+  } catch (err) {
+    // WebhookVerificationError covers stale-timestamp + bad-signature.
+    // Zod parse errors hit the same branch (envelope shape mismatch).
+    const isVerifyError = err instanceof WebhookVerificationError;
+    logger.warn('webhook signature verification or envelope parse failed', {
+      err: String(err),
+      isVerifyError,
+    });
+    return res.status(401).end();
+  }
 
-router.post('/sleep', verifyWearableSignature, async (req: Request, res: Response) => {
-  const parsed = baseSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'invalid payload' });
-  if (isDuplicate(parsed.data.webhookId)) {
+  // 2) Idempotency check — `svix-id` is stable across retries of the same
+  //    logical event.
+  sweepStale();
+  const svixId = (req.headers['svix-id'] as string | undefined) ?? '';
+  if (svixId && recentSvixIds.has(svixId)) {
     return res.status(200).json({ ok: true, deduped: true });
   }
+  if (svixId) recentSvixIds.set(svixId, Date.now());
+  // NOTE: Replay-attack defense relies on Svix's built-in 5-minute timestamp
+  // window inside wh.verify() above. The LRU is a short-window dedupe layer
+  // only; the cryptographic anti-replay defense is in Svix.
+
+  // 3) Per-event-type Zod validation + dispatch. `.safeParse` returning false
+  //    means OW sent us a payload that doesn't match our expected shape
+  //    (schema drift, partial deploy, etc.). Ack with 200 — Svix shouldn't
+  //    retry a malformed payload, it'll fail identically. Log warning so we
+  //    notice OW schema drift.
   try {
-    await ingest.ingestSleepSession(
-      parsed.data.userId,
-      parsed.data.connectionId,
-      parsed.data.source,
-      parsed.data.payload
-    );
+    switch (envelope.type) {
+      case 'workout.created': {
+        const parsed = WorkoutCreatedDataSchema.safeParse(envelope.data);
+        if (!parsed.success) {
+          logger.warn('workout.created payload schema mismatch', {
+            errors: parsed.error.errors,
+            svixId,
+          });
+          return res.status(200).json({ ok: true, schema_mismatch: true });
+        }
+        await ingest.ingestWorkoutCreated(parsed.data);
+        break;
+      }
+      case 'sleep.created': {
+        const parsed = SleepCreatedDataSchema.safeParse(envelope.data);
+        if (!parsed.success) {
+          logger.warn('sleep.created payload schema mismatch', {
+            errors: parsed.error.errors,
+            svixId,
+          });
+          return res.status(200).json({ ok: true, schema_mismatch: true });
+        }
+        await ingest.ingestSleepCreated(parsed.data);
+        break;
+      }
+      case 'connection.created': {
+        const parsed = ConnectionCreatedDataSchema.safeParse(envelope.data);
+        if (!parsed.success) {
+          logger.warn('connection.created payload schema mismatch', {
+            errors: parsed.error.errors,
+            svixId,
+          });
+          return res.status(200).json({ ok: true, schema_mismatch: true });
+        }
+        await ingest.ingestConnectionCreated(parsed.data);
+        break;
+      }
+      case 'body_composition.created': {
+        const parsed = BodyCompositionCreatedDataSchema.safeParse(envelope.data);
+        if (!parsed.success) {
+          logger.warn('body_composition.created payload schema mismatch', {
+            errors: parsed.error.errors,
+            svixId,
+          });
+          return res.status(200).json({ ok: true, schema_mismatch: true });
+        }
+        await ingest.ingestBodyCompositionCreated(parsed.data);
+        break;
+      }
+      default:
+        logger.info('webhook event type not subscribed; ignoring', {
+          type: envelope.type,
+          svixId,
+        });
+        return res.status(200).json({ ok: true, ignored: true });
+    }
     res.status(200).json({ ok: true });
   } catch (err) {
-    logger.error('sleep webhook ingest failed', { err: String(err) });
-    await markSyncError(parsed.data.connectionId, String(err)).catch(() => {});
-    res.status(500).json({ error: 'ingest failed' });
+    logger.error('webhook ingest failed', {
+      err: String(err),
+      type: envelope.type,
+      svixId,
+    });
+    res.status(500).end();
   }
-});
-
-router.post('/vitals', verifyWearableSignature, async (req: Request, res: Response) => {
-  const parsed = baseSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'invalid payload' });
-  if (isDuplicate(parsed.data.webhookId)) {
-    return res.status(200).json({ ok: true, deduped: true });
-  }
-  try {
-    await ingest.ingestDailyVitals(
-      parsed.data.userId,
-      parsed.data.connectionId,
-      parsed.data.source,
-      parsed.data.payload
-    );
-    res.status(200).json({ ok: true });
-  } catch (err) {
-    logger.error('vitals webhook ingest failed', { err: String(err) });
-    await markSyncError(parsed.data.connectionId, String(err)).catch(() => {});
-    res.status(500).json({ error: 'ingest failed' });
-  }
-});
-
-router.post('/activity', verifyWearableSignature, async (req: Request, res: Response) => {
-  const parsed = baseSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'invalid payload' });
-  if (isDuplicate(parsed.data.webhookId)) {
-    return res.status(200).json({ ok: true, deduped: true });
-  }
-  try {
-    await ingest.ingestActivity(
-      parsed.data.userId,
-      parsed.data.connectionId,
-      parsed.data.source,
-      parsed.data.payload
-    );
-    res.status(200).json({ ok: true });
-  } catch (err) {
-    logger.error('activity webhook ingest failed', { err: String(err) });
-    await markSyncError(parsed.data.connectionId, String(err)).catch(() => {});
-    res.status(500).json({ error: 'ingest failed' });
-  }
-});
-
-/**
- * Provider-side connection-status events (revoke, re-auth required, etc.).
- * Open Wearables forwards these so we can keep our local wearable_connections
- * row in sync. This route does NOT call ingest — it just updates the status
- * and dispatches wearable_expired when the provider has flipped the connection
- * to 'expired' or 'revoked' (Sprint 4 BATCH 2 reviewer item 2 — original
- * implementation silently updated the DB without notifying the user, eroding
- * trust on provider-side revoke; the notification template already exists).
- */
-router.post('/connection-status', verifyWearableSignature, async (req: Request, res: Response) => {
-  const parsed = connectionStatusSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'invalid payload' });
-  if (isDuplicate(parsed.data.webhookId)) {
-    return res.status(200).json({ ok: true, deduped: true });
-  }
-
-  // The webhook's load-bearing responsibility is the DB row update — that's the
-  // source-of-truth state change Open Wearables is reporting. The try/catch
-  // protects ONLY that update; if it fails, we 500 so Open Wearables retries
-  // (idempotency layer dedupes the eventual successful delivery).
-  try {
-    const db = await getDb();
-    await db
-      .update(wearableConnections)
-      .set({
-        status: parsed.data.status as WearableStatus,
-        ...(parsed.data.status === 'disconnected' || parsed.data.status === 'revoked'
-          ? { disconnectedAt: new Date() }
-          : {}),
-      })
-      .where(
-        and(
-          eq(wearableConnections.id, parsed.data.connectionId),
-          eq(wearableConnections.userId, parsed.data.userId)
-        )
-      );
-  } catch (err) {
-    logger.error('connection-status webhook update failed', { err: String(err) });
-    return res.status(500).json({ error: 'update failed' });
-  }
-
-  // Fire-and-forget downstream notification. See _brain/notes/decisions.md
-  // "Webhook → notification dispatch: fire-and-forget pattern (Sprint 4 BATCH 2)".
-  // The dispatch must NOT 500 the webhook even if it throws — Open Wearables
-  // would retry an already-applied DB update, causing a delivery storm.
-  // Notifications are downstream consumers; the DB row is the contract.
-  // 'disconnected' is the user's own action via the UI (they already know);
-  // only 'expired' and 'revoked' are surprise events worth a notification.
-  if (parsed.data.status === 'expired' || parsed.data.status === 'revoked') {
-    dispatch(parsed.data.userId, 'wearable_expired', {
-      provider: parsed.data.source,
-    }).catch((err) => logger.warn('wearable_expired dispatch failed', { err: String(err) }));
-  }
-
-  res.status(200).json({ ok: true });
 });
 
 export default router;
