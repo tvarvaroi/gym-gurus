@@ -1602,12 +1602,10 @@ async function getClientUserIdForTrainer(
     return null;
   }
   if (!client[dataField]) {
-    res
-      .status(403)
-      .json({
-        error: 'Client has not consented to sharing this data type',
-        code: 'CONSENT_NOT_GRANTED',
-      });
+    res.status(403).json({
+      error: 'Client has not consented to sharing this data type',
+      code: 'CONSENT_NOT_GRANTED',
+    });
     return null;
   }
   if (!client.userId) {
@@ -1984,45 +1982,172 @@ const wh = new Webhook(WEBHOOK_SECRET);
 const recentSvixIds = new Map<string, number>();
 const WEBHOOK_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Sweep stale entries — same O(N)-per-call implementation as BATCH 2
+// (deferred tech debt per `_brain/notes/gotchas.md` "Webhook idempotency LRU
+// sweep is O(N)"). Carried forward verbatim from the BATCH 2 implementation
+// of `server/routes/webhooks/wearables.ts`. Refactor when active connections
+// + delivery rate make the sweep cost visible (mirror condition: same
+// threshold as the wearableSyncMonitor cron's N+1 escape — 500 connections).
+function sweepStale(): void {
+  const now = Date.now();
+  Array.from(recentSvixIds.entries()).forEach(([k, t]) => {
+    if (now - t > WEBHOOK_TTL_MS) recentSvixIds.delete(k);
+  });
+}
+
+// Per-event-type Zod schemas at the trust boundary. `.passthrough()` allows
+// unknown fields (forward compat with OW schema additions). The schemas catch
+// malformed payloads from OW that the type-dispatch switch wouldn't catch on
+// its own — the codebase pattern from Sprints 2-3 is "Zod-validate at the
+// system boundary, trust internally past it."
+const WorkoutCreatedDataSchema = z
+  .object({
+    id: z.string(),
+    user_id: z.string(),
+    type: z.string(),
+    start_time: z.string().datetime(),
+    end_time: z.string().datetime(),
+    source: z.object({ provider: z.string() }).passthrough(),
+  })
+  .passthrough();
+
+const SleepCreatedDataSchema = z
+  .object({
+    id: z.string(),
+    user_id: z.string(),
+    start_time: z.string().datetime(),
+    end_time: z.string().datetime(),
+    source: z.object({ provider: z.string() }).passthrough(),
+  })
+  .passthrough();
+
+const ConnectionCreatedDataSchema = z
+  .object({
+    user_id: z.string(),
+    provider: z.string(),
+    connection_id: z.string(),
+    connected_at: z.string().datetime(),
+  })
+  .passthrough();
+
+const BodyCompositionCreatedDataSchema = z
+  .object({
+    user_id: z.string(),
+    provider: z.string(),
+    series_type: z.string(),
+    samples: z.array(
+      z
+        .object({
+          timestamp: z.string().datetime(),
+          type: z.string(),
+          value: z.number(),
+          unit: z.string(),
+        })
+        .passthrough()
+    ),
+  })
+  .passthrough();
+
+const EventEnvelopeSchema = z.object({
+  type: z.string(),
+  data: z.unknown(),
+});
+
 router.post('/wearables', async (req: Request, res: Response) => {
-  // Idempotency check — must come AFTER signature verification (don't trust unverified `svix-id`).
-  let event: { type: string; data: any };
+  // 1) Signature verification — must run BEFORE any other use of req.body or
+  //    req.headers (don't trust unverified `svix-id` for idempotency keying).
+  let envelope: { type: string; data: unknown };
   try {
-    event = wh.verify(req.body, req.headers as Record<string, string>) as any;
+    const verified = wh.verify(req.body, req.headers as Record<string, string>);
+    envelope = EventEnvelopeSchema.parse(verified);
   } catch (err) {
-    logger.warn('webhook signature verification failed', { err: String(err) });
+    logger.warn('webhook signature verification or envelope parse failed', {
+      err: String(err),
+    });
     return res.status(401).end();
   }
 
+  // 2) Idempotency check — `svix-id` is stable across retries of the same
+  //    logical event.
+  sweepStale();
   const svixId = req.headers['svix-id'] as string;
   if (recentSvixIds.has(svixId)) {
     return res.status(200).json({ ok: true, deduped: true });
   }
   recentSvixIds.set(svixId, Date.now());
+  // NOTE: Replay-attack defense relies on Svix's built-in 5-minute timestamp
+  // window inside wh.verify() above. The LRU is a short-window dedupe layer
+  // only; the cryptographic anti-replay defense is in Svix.
 
-  // Type-dispatch — only 4 subscribed event types should arrive (filtering is enforced at endpoint registration).
-  // Defense-in-depth: log + ignore any other type that somehow arrives.
+  // 3) Per-event-type Zod validation + dispatch. `.safeParse` returning false
+  //    means OW sent us a payload that doesn't match our expected shape
+  //    (schema drift, partial deploy, etc.). Ack with 200 — Svix shouldn't
+  //    retry a malformed payload, it'll fail identically. Log warning so we
+  //    notice OW schema drift.
   try {
-    switch (event.type) {
-      case 'workout.created':
-        await ingest.ingestWorkoutCreated(event.data);
+    switch (envelope.type) {
+      case 'workout.created': {
+        const parsed = WorkoutCreatedDataSchema.safeParse(envelope.data);
+        if (!parsed.success) {
+          logger.warn('workout.created payload schema mismatch', {
+            errors: parsed.error.errors,
+            svixId,
+          });
+          return res.status(200).json({ ok: true, schema_mismatch: true });
+        }
+        await ingest.ingestWorkoutCreated(parsed.data);
         break;
-      case 'sleep.created':
-        await ingest.ingestSleepCreated(event.data);
+      }
+      case 'sleep.created': {
+        const parsed = SleepCreatedDataSchema.safeParse(envelope.data);
+        if (!parsed.success) {
+          logger.warn('sleep.created payload schema mismatch', {
+            errors: parsed.error.errors,
+            svixId,
+          });
+          return res.status(200).json({ ok: true, schema_mismatch: true });
+        }
+        await ingest.ingestSleepCreated(parsed.data);
         break;
-      case 'connection.created':
-        await ingest.ingestConnectionCreated(event.data);
+      }
+      case 'connection.created': {
+        const parsed = ConnectionCreatedDataSchema.safeParse(envelope.data);
+        if (!parsed.success) {
+          logger.warn('connection.created payload schema mismatch', {
+            errors: parsed.error.errors,
+            svixId,
+          });
+          return res.status(200).json({ ok: true, schema_mismatch: true });
+        }
+        await ingest.ingestConnectionCreated(parsed.data);
         break;
-      case 'body_composition.created':
-        await ingest.ingestBodyCompositionCreated(event.data);
+      }
+      case 'body_composition.created': {
+        const parsed = BodyCompositionCreatedDataSchema.safeParse(envelope.data);
+        if (!parsed.success) {
+          logger.warn('body_composition.created payload schema mismatch', {
+            errors: parsed.error.errors,
+            svixId,
+          });
+          return res.status(200).json({ ok: true, schema_mismatch: true });
+        }
+        await ingest.ingestBodyCompositionCreated(parsed.data);
         break;
+      }
       default:
-        logger.info('webhook event type not subscribed; ignoring', { type: event.type, svixId });
+        logger.info('webhook event type not subscribed; ignoring', {
+          type: envelope.type,
+          svixId,
+        });
         return res.status(200).json({ ok: true, ignored: true });
     }
     res.status(200).json({ ok: true });
   } catch (err) {
-    logger.error('webhook ingest failed', { err: String(err), type: event.type, svixId });
+    logger.error('webhook ingest failed', {
+      err: String(err),
+      type: envelope.type,
+      svixId,
+    });
     res.status(500).end();
   }
 });
@@ -2057,12 +2182,12 @@ git commit -m "feat(wearables): SPRINT 4 BATCH 5a Task 3 — Svix verification +
 
 > **NOTE:** Field-level shapes documented below are based on OW's canonical webhook guide ([docs/api-reference/guides/webhooks.mdx](https://github.com/the-momentum/open-wearables/blob/main/docs/api-reference/guides/webhooks.mdx)). Final validation pends the Garmin spike — workout summary metric placement (inline vs separate timeseries) is the most consequential open question. The plan documents the expected default; the spike confirms.
 
-| Event Type                 | Table                                           | Idempotency Key                                                          | Notes                                                                                                                                                                                                                                                                                                                                                                                                      |
-| -------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `workout.created`          | `activity_sessions`                             | `(user_id, source, source_record_id)` where `source_record_id = data.id` | Expected to include inline summary metrics: `duration_seconds`, `calories_kcal`, `distance_meters`, `avg_heart_rate_bpm`, `max_heart_rate_bpm`, `avg_pace_sec_per_km`, `elevation_gain_meters`. **Spike-validated assumption** — if OW emits HR/calories only via separate `heart_rate.created` events, we'd need to subscribe to that event type too (out-of-scope for v1 unless this assumption breaks). |
-| `sleep.created`            | `sleep_sessions`                                | `(user_id, source, source_record_id)` where `source_record_id = data.id` | Expected fields: `start_time`, `end_time`, `duration_seconds`, `efficiency_percent`, `stages.deep_minutes`, `stages.rem_minutes`, `stages.light_minutes`, `stages.awake_minutes`, `is_nap`.                                                                                                                                                                                                                |
-| `connection.created`       | `wearable_connections` (UPSERT on existing row) | `(user_id, provider)`                                                    | Maps user's OW connection to our `wearable_connections` row. UPSERT semantics: if our row exists with `status='disconnected'`, transition to `'connected'`; if doesn't exist, INSERT (this should be rare — usually our row is created first via OAuth callback, then OW emits `connection.created` to confirm). Dispatch `wearable_connected` notification on transition.                                 |
-| `body_composition.created` | `bodyMetrics` (the smart-scale path)            | `(user_id, source, recorded_at::date)` (one entry per day per source)    | Expected: `data.samples` array with `weight`, `body_fat_percentage`, `body_mass_index`, `lean_body_mass` per sample. Iterate samples, UPSERT on `(user_id, source, date)` to bodyMetrics table. **Sprint 1 BATCH 4 audit decision:** weight/body-comp from wearables flows through `bodyMetrics` so the Disciple sees one unified body view.                                                               |
+| Event Type                 | Table                                           | Idempotency Key                                                                                                                                                       | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workout.created`          | `activity_sessions`                             | `(user_id, source, source_record_id)` where `source_record_id = data.id`                                                                                              | Expected to include inline summary metrics: `duration_seconds`, `calories_kcal`, `distance_meters`, `avg_heart_rate_bpm`, `max_heart_rate_bpm`, `avg_pace_sec_per_km`, `elevation_gain_meters`. **Spike-validated assumption** — if OW emits HR/calories only via separate `heart_rate.created` events, we'd need to subscribe to that event type too (out-of-scope for v1 unless this assumption breaks).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `sleep.created`            | `sleep_sessions`                                | `(user_id, source, source_record_id)` where `source_record_id = data.id`                                                                                              | Expected fields: `start_time`, `end_time`, `duration_seconds`, `efficiency_percent`, `stages.deep_minutes`, `stages.rem_minutes`, `stages.light_minutes`, `stages.awake_minutes`, `is_nap`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `connection.created`       | `wearable_connections` (UPSERT on existing row) | `(user_id, provider)`                                                                                                                                                 | Maps user's OW connection to our `wearable_connections` row. UPSERT semantics: if our row exists with `status='disconnected'`, transition to `'connected'`; if doesn't exist, INSERT (this should be rare — usually our row is created first via OAuth callback, then OW emits `connection.created` to confirm). Dispatch `wearable_connected` notification on transition.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `body_composition.created` | `bodyMetrics` (the smart-scale path)            | `(user_id, source_provider, (recorded_at::date)) WHERE source IN ('wearable', 'smart_scale')` — partial UNIQUE index added in **migration 014.5** (Task 5a.6.5 below) | Expected: `data.samples` array with `weight`, `body_fat_percentage`, `body_mass_index`, `lean_body_mass` per sample. Iterate samples, UPSERT on the partial-unique key. **Sprint 1 BATCH 4 audit decision:** weight/body-comp from wearables flows through `bodyMetrics` so the Disciple sees one unified body view. **2026-05-07 plan-review amendment:** original idempotency key `(user_id, source, recorded_at::date)` was unimplementable — `bodyMetrics` from Sprint 1 has only `idx_body_metrics_user_id` and `idx_body_metrics_user_recorded_at` indexes, no UNIQUE constraint. ON CONFLICT requires a unique index; without one the body_composition path silently inserts duplicates on retry. Migration 014.5 below adds the partial UNIQUE that gives the UPSERT a real conflict target while preserving Sprint 1 manual-entry semantics (multiple `source='manual'` rows per day still allowed). |
 
 #### Function signatures
 
@@ -2130,6 +2255,135 @@ OW assigns its own user UUIDs to users registered via its API. Our `wearable_con
 - **Path B (fallback):** OW does not support external_id lookup. We need to store OW's user UUID in a new `wearable_connections.open_wearables_user_id` column (migration 015 = single column add, ~30 lines). When OW emits `data.user_id` (their UUID), we look up our `userId` via the column.
 
 The spike validates which path applies. If Path A works, no migration 015. If Path B is needed, migration 015 lands at the end of 5a.
+
+### Task 5a.4.5: Add partial UNIQUE on bodyMetrics for wearable dedup (Migration 014.5)
+
+**Files:**
+
+- Create: `server/migrations/014_5_body_metrics_wearable_dedup.ts`
+- Update: `shared/schema.ts` (add the partial UNIQUE index to the `bodyMetrics` `(table) => [...]` array)
+- Update: `scripts/verify-prod-migrations.ts` (add baseline-014.5 + post-014.5 phases — 1 new index, no rows affected)
+
+**Why this task exists** (2026-05-07 plan-review finding):
+
+`bodyMetrics` from Sprint 1 has only `idx_body_metrics_user_id` and `idx_body_metrics_user_recorded_at` — no UNIQUE constraint. The `body_composition.created` ingest path in Task 5a.4 needs an UPSERT (`ON CONFLICT ... DO UPDATE`) to be idempotent against Svix retries. ON CONFLICT requires a unique index targeting the conflict columns. Without one, every retry of the same logical event silently inserts a duplicate row — exactly the failure mode BATCH 2's amend Item 3 fixed for vitals.
+
+**Why partial UNIQUE (not table-wide)** — Sprint 1's `bodyMetrics` allows multiple manual entries per user per day (a user can log weight at 7am and 5pm and both rows persist). A table-wide UNIQUE on `(user_id, source_provider, (recorded_at::date))` would break that semantic. Partial UNIQUE filtered on `source IN ('wearable', 'smart_scale')` enforces dedup ONLY for wearable-sourced rows, leaves manual entries untouched. Same partial-index pattern proven in Sprint 1's `progress_entries` polymorphic CHECK constraint (`progress_entries_user_or_client_check`).
+
+#### Migration body
+
+```ts
+import { sql } from 'drizzle-orm';
+import type { Database } from '../db';
+
+export const NAME = '014_5_body_metrics_wearable_dedup';
+
+export async function up(db: Database): Promise<void> {
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_body_metrics_wearable_dedup
+      ON body_metrics (user_id, source_provider, (recorded_at::date))
+      WHERE source IN ('wearable', 'smart_scale');
+  `);
+}
+
+export async function down(db: Database): Promise<void> {
+  // Safety gate: refuse if any body_metrics rows currently rely on the dedup index
+  // (i.e. any wearable-sourced rows). Manual entries are unaffected by the index
+  // existing or not, so they don't gate the down-migration.
+  const result: any = await db.execute(sql`
+    SELECT COUNT(*)::int AS count FROM body_metrics
+    WHERE source IN ('wearable', 'smart_scale')
+  `);
+  const count = result?.rows?.[0]?.count ?? result?.[0]?.count ?? 0;
+  if (count > 0) {
+    throw new Error(
+      `BLOCKED: ${count} wearable-sourced body_metrics rows exist. ` +
+        `Dropping idx_body_metrics_wearable_dedup would re-enable duplicate inserts. ` +
+        `Verify these rows are not load-bearing before forcing rollback.`
+    );
+  }
+  await db.execute(sql`DROP INDEX IF EXISTS idx_body_metrics_wearable_dedup;`);
+}
+```
+
+#### Schema update
+
+Add to the `bodyMetrics` table-level array in `shared/schema.ts:2433`:
+
+```ts
+(table) => [
+  index('idx_body_metrics_user_id').on(table.userId),
+  index('idx_body_metrics_user_recorded_at').on(table.userId, table.recordedAt),
+  // Sprint 4 BATCH 5a — partial UNIQUE for wearable-sourced dedup. Only
+  // enforces uniqueness for `source IN ('wearable', 'smart_scale')`; manual
+  // entries keep multi-per-day semantics.
+  uniqueIndex('idx_body_metrics_wearable_dedup')
+    .on(table.userId, table.sourceProvider, sql`(${table.recordedAt}::date)`)
+    .where(sql`${table.source} IN ('wearable', 'smart_scale')`),
+],
+```
+
+(`uniqueIndex` import from `drizzle-orm/pg-core`. Drizzle's partial-index API takes a `.where()` clause; if the API doesn't fully support `(recorded_at::date)` expression-indexes ergonomically, fall back to documenting the index in raw SQL via `drizzle-kit generate` skip + manual migration body — same pattern as Sprint 3's body composition checks.)
+
+#### Verifier phases
+
+```ts
+// scripts/verify-prod-migrations.ts — baseline-014.5
+await assertIndexExists('idx_body_metrics_wearable_dedup', 'body_metrics');
+await assertIndexIsUnique('idx_body_metrics_wearable_dedup');
+await assertIndexIsPartial(
+  'idx_body_metrics_wearable_dedup',
+  `source IN ('wearable', 'smart_scale')`
+);
+// post-014.5 — UPSERT idempotency probe
+const before = await rowCount(
+  'body_metrics',
+  `source = 'wearable' AND source_provider = 'verifier_probe'`
+);
+await db.execute(sql`
+  INSERT INTO body_metrics (user_id, recorded_at, weight_kg, source, source_provider)
+  VALUES ('verifier-probe-user', NOW()::date, 75.0, 'wearable', 'verifier_probe')
+  ON CONFLICT (user_id, source_provider, (recorded_at::date)) WHERE source IN ('wearable', 'smart_scale')
+  DO UPDATE SET weight_kg = EXCLUDED.weight_kg, updated_at = NOW();
+`);
+await db.execute(sql`/* same INSERT again — should UPSERT, not insert */`);
+const after = await rowCount(
+  'body_metrics',
+  `source = 'wearable' AND source_provider = 'verifier_probe'`
+);
+assert(after === before + 1, `Expected exactly 1 row, got ${after - before}`);
+// Cleanup
+await db.execute(sql`DELETE FROM body_metrics WHERE source_provider = 'verifier_probe';`);
+```
+
+- [ ] **Step 1: Write migration body** — `server/migrations/014_5_body_metrics_wearable_dedup.ts`
+- [ ] **Step 2: Update schema definition** — partial unique index in `shared/schema.ts` `bodyMetrics` table
+- [ ] **Step 3: Add verifier phases** — baseline + post + UPSERT probe
+- [ ] **Step 4: Run on dev** — `tsx server/migrations/014_5_body_metrics_wearable_dedup.ts up`
+- [ ] **Step 5: Run verifier** — confirms partial UNIQUE present + UPSERT semantic correct
+- [ ] **Step 6: Probe down() safety gate** — insert a wearable-sourced probe row, run down() (must throw BLOCKED), delete the row, re-run down() (must succeed), re-run up() to leave dev migrated
+- [ ] **Step 7: Update Task 5a.4 ingest body_composition handler to use the conflict target**
+
+```ts
+await db.execute(sql`
+  INSERT INTO body_metrics (user_id, recorded_at, weight_kg, body_fat_percentage, source, source_provider, ...)
+  VALUES (...)
+  ON CONFLICT (user_id, source_provider, (recorded_at::date)) WHERE source IN ('wearable', 'smart_scale')
+  DO UPDATE SET
+    weight_kg = EXCLUDED.weight_kg,
+    body_fat_percentage = EXCLUDED.body_fat_percentage,
+    updated_at = NOW();
+`);
+```
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add server/migrations/014_5_body_metrics_wearable_dedup.ts shared/schema.ts scripts/verify-prod-migrations.ts
+git commit -m "feat(wearables): SPRINT 4 BATCH 5a Task 4.5 — migration 014.5 partial UNIQUE on body_metrics for wearable dedup (UPSERT conflict target)"
+```
+
+**Production migration runs in BATCH 5b** (alongside the rest of any 5a-side migrations) via `scripts/run-prod-migration.ts up 014_5_body_metrics_wearable_dedup` — same Railway-host fail-safe + 3-second pause as 010/011/012/013.
 
 ### Task 5a.5: Rewrite openWearablesClient with auth fallback
 
@@ -2214,10 +2468,19 @@ For each row in wearable_connections WHERE status IN ('connected', 'expired', 'e
       → UPDATE wearable_connections SET status='expired', disconnectedAt=null (token expired ≠ disconnected)
       → DISPATCH wearable_expired notification (user needs to know)
 
-    Case 3: matching && matching.status === 'error' && (sync_error_count_increased)
+    Case 3: matching && matching.status === 'error'
       → OW has logged sync errors for this connection
-      → INCREMENT row.sync_error_count
-      → at threshold (3 consecutive), DISPATCH wearable_sync_failed notification + transition row.status='error'
+      → spike-decided semantic (lock at spike completion):
+         (a) If GET /api/v1/users/{id}/connections exposes per-connection sync_error_count,
+             MIRROR OW's count to our row (treating OW as authoritative). Threshold check:
+             OW's count >= 3 → DISPATCH wearable_sync_failed.
+         (b) If OW exposes only `status` (no count), INCREMENT our counter on each tick where
+             status === 'error'. Threshold check: 3 consecutive error-status ticks → DISPATCH.
+      → at threshold, DISPATCH wearable_sync_failed notification + transition row.status='error'
+      → 2026-05-07 plan-review note: this ambiguity is intentionally unresolved at plan-write
+        time. The verification target is captured in the spike findings placeholder
+        (decisions.md line ~963 Q6.5). Locking the semantic at spike completion alongside
+        Path A/B and auth mode keeps the cron design honest about what we don't yet know.
 
     Case 4: !matching (OW returned no connection for this provider)
       → user disconnected on OW side OR was deleted from OW
@@ -2327,8 +2590,22 @@ Assuming per-container Railway services (our default plan):
 # Core
 ENVIRONMENT=production
 SECRET_KEY=<openssl rand -hex 32>  # Used as SVIX_JWT_SECRET internally per docker-compose entrypoint
+# WARNING: SECRET_KEY and SVIX_JWT_SECRET (svix-server service, see below) MUST
+# rotate together. Decoupling them mid-flight breaks Svix authentication —
+# webhooks stop signing/verifying because the JWT minted by the OW backend can
+# no longer be validated by the svix-server. Rotation procedure: coordinate
+# redeploys of `app` + `svix-server` with both new values atomically. See the
+# "Secrets rotation" section of the runbook (Task 5b.7) for the step-by-step.
 ADMIN_EMAIL=<operator email — used for first login on portal>
-ADMIN_PASSWORD=<openssl rand -hex 32>  # Captured securely; rotate after first login
+ADMIN_PASSWORD=<openssl rand -hex 32>  # Bootstrap password — captured securely; rotate after first login (see procedure below)
+# ADMIN_PASSWORD lifecycle: this env var seeds the FIRST login only. After the
+# operator logs in via the OW frontend and changes the password through the
+# portal (Account → Change Password), the portal-stored password takes
+# precedence. Do NOT update the env var afterward — leaving the bootstrap value
+# in place is intentional (it doesn't grant access once the portal password is
+# set). To rotate the operator password later, change it through the portal,
+# NOT via env var. See Task 5b.7 runbook section "OW operator password
+# management" for full procedure.
 
 # DB
 DB_HOST=<railway-postgres-host>
@@ -2410,7 +2687,22 @@ Run with `--run-migrations` flag on first deploy (per docker-compose entrypoint)
 - [ ] **Step 1: Set all env vars on each service**
 - [ ] **Step 2: Deploy all 6 services + verify health**
 - [ ] **Step 3: First operator login** — open OW frontend Railway domain, log in with `ADMIN_EMAIL` + `ADMIN_PASSWORD`, **change password immediately**
-- [ ] **Step 4: Verify svix-server reachable** — `curl http://<svix-server>:8071/health` from inside Railway network
+- [ ] **Step 4: Verify svix-server reachable from inside Railway network**
+
+  Svix-server is internal-only (no Railway public domain). Curl from your laptop will fail by design — exposing Svix externally would be a security hole. To reach it, exec into one of the running services that lives on the same Railway internal network:
+
+  ```bash
+  # Option A — railway run (executes in app service container; replace internal hostname per Railway's pattern)
+  railway run --service app -- curl -sf http://<svix-server-internal-host>:8071/health || echo FAIL
+
+  # Option B — railway shell, then curl
+  railway shell --service app
+  > curl -sf http://<svix-server-internal-host>:8071/health
+  ```
+
+  The `<svix-server-internal-host>` value comes from Railway's per-project internal DNS (typically `<service-name>.railway.internal` or the literal container name). Confirm the exact pattern in Railway's docs at deploy time — if uncertain, check the Railway dashboard's Variables tab on the app service for any `*_HOST` env vars Railway auto-populates for cross-service references.
+
+  Expected response: `{"status":"ok"}` or HTTP 200 with empty body. Failure modes: connection refused (svix-server not yet up — wait + retry), DNS resolution failure (wrong internal hostname — check Railway docs).
 
 ### Task 5b.3: Generate API key + register webhook endpoint
 
@@ -2485,6 +2777,19 @@ Sections to add:
 - Log access via Railway dashboard
 - Webhook delivery debugging via OW's `GET /api/v1/webhooks/messages` + `GET /api/v1/webhooks/endpoints/{id}/attempts`
 - Recovery procedures (mid-deploy crash, env var rollback, R2 connectivity loss)
+- **Secrets rotation — SECRET_KEY ↔ SVIX_JWT_SECRET coordinated rotation:**
+  1. Generate new value: `openssl rand -hex 32` → call this `SECRET_KEY_NEW`
+  2. In Railway dashboard, prepare BOTH services for atomic update:
+     - On `app` service: queue `SECRET_KEY=<SECRET_KEY_NEW>` (do NOT deploy yet)
+     - On `svix-server` service: queue `SVIX_JWT_SECRET=<SECRET_KEY_NEW>` (do NOT deploy yet)
+  3. Deploy both services in same window (Railway dashboard "Apply Variables" → wait for both green)
+  4. Verify webhook signing works: trigger a synthetic event via `POST /api/v1/webhooks/endpoints/{id}/test`, confirm 200 received at GymGurus, check Svix delivery history (no auth errors)
+  5. **Failure mode:** if step 3 deploys are NOT atomic (one service redeploys before the other), Svix authentication breaks for the gap — webhooks queue in OW, retry on backoff, eventually deliver once the second deploy lands. Acceptable for short gaps (<5 min); longer gaps risk hitting Svix's retry-exhaustion threshold (consult Svix docs at rotation time for current values).
+- **OW operator password management:**
+  1. **First login (post-deploy):** open OW frontend, log in with bootstrap `ADMIN_EMAIL` + `ADMIN_PASSWORD` env-var values
+  2. **Immediately change password:** Account → Change Password → set new password from password manager
+  3. **Do NOT update `ADMIN_PASSWORD` env var.** The portal-stored password takes precedence after first set; the env var is bootstrap-only. Leaving the env var as the original bootstrap value is intentional (it doesn't grant access once portal password is set; rotating it would do nothing).
+  4. **To rotate operator password later:** change through portal, NOT env var. The env var only matters if all admin accounts are deleted from the portal — in that case, the next deploy re-seeds with the env-var values (which is why the bootstrap value should ideally be rotated to a known-fresh value periodically as defense-in-depth, even though not strictly required).
 
 ### Task 5b.8: Commit BATCH 5b
 
@@ -2552,7 +2857,7 @@ Sprint 4 closes via BATCH 5 if and only if:
 
 - ✅ Three v1 providers (Garmin + Polar + Suunto) demonstrate **end-to-end** working flows: OAuth connect → first webhook arrives within 5 minutes → DB row written → `/biometrics` renders the data → disconnect/reconnect work cleanly
 - ✅ Connection-list polling cron detects provider-side revoke within 1 hour and dispatches `wearable_expired` notification
-- ✅ Connection-list polling cron silently handles user-side OW disconnects (no false notifications)
+- ✅ Connection-list polling cron silently handles user-side OW disconnects — verified via test scenario: disconnect a connection from the OW portal manually, observe next cron tick marks `wearable_connections.status='disconnected'` WITHOUT dispatching `wearable_expired` or `wearable_sync_failed` notification (test asserts notifications table has no new rows for that user/type during the cron tick)
 - ✅ Webhook signature verification using the official `svix` npm package — verified test cases (positive, tampered signature, replayed timestamp, unknown event type) all behave correctly
 - ✅ One webhook endpoint registered with OW with `filter_types: ["workout.created", "sleep.created", "connection.created", "body_composition.created"]` — the other 16 OW event types are filtered out at registration
 - ✅ Auth mode locked at spike completion (API key OR JWT) — `OPEN_WEARABLES_AUTH_MODE` env var set on GymGurus production; both code paths implemented and tested
@@ -2562,6 +2867,7 @@ Sprint 4 closes via BATCH 5 if and only if:
 - ✅ Reviewer subagent passed E2E artifacts for all 3 providers
 - ✅ Decisions captured: α pivot (already done), spike findings (during 5a/5b), N+1 cron limitation gotcha (after first deploy)
 - ✅ Migration 015 (if needed per Path B) applied and verified; OR Path A confirmed (no migration)
+- ✅ Migration 014.5 applied (partial UNIQUE on `body_metrics` for wearable dedup) — verifier asserts index exists, is UNIQUE, is partial with the correct WHERE clause; **body_composition.created webhook idempotency proven** — same `data` payload (or same logical event re-delivered with the same `svix-id`) results in exactly one `body_metrics` row for the user / source_provider / date triple, verified via integration test that ingests the same payload twice and asserts `count(*) = 1` afterward
 
 ---
 

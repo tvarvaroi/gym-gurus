@@ -933,7 +933,7 @@ Garmin/Polar/Suunto scanned for analogous bugs at the same scan time:
 
 1. **Cross-provider issue scan reconfirmation** — re-run `gh issue list --search "session committed in:title,body"` against OW upstream at spike start. Confirm the bug class is still provider-specific to Whoop/Oura sync code paths (not surfacing in Garmin/Polar/Suunto). If a new `session committed` issue lands against α providers between α-pivot decision (2026-05-07) and spike start, STOP and re-evaluate the α substrate choice.
 
-2. **OW user identity bridge** — does OW support `external_id` lookup on user creation? Test: `POST /api/v1/users` with `{external_id: <our user UUID>}`, then `GET /api/v1/users/by-external-id/<our user UUID>`. If yes (Path A): no schema change needed. If no (Path B): migration 015 ships at end of BATCH 5a adding `wearable_connections.open_wearables_user_id` column.
+2. **OW user identity bridge** — does OW support `external_id` lookup on user creation? Test sequence: (a) `POST /api/v1/users` with `{external_id: <our user UUID>}` — does OW accept the `external_id` field at all, or reject the request? (b) If accepted, what's the lookup endpoint pattern? Try `GET /api/v1/users/by-external-id/<our user UUID>` first; if 404, check OW source for the actual route — likely candidates: `GET /api/v1/users?external_id=<id>` query-param OR `GET /api/v1/users/external/<id>` OR a different convention entirely. Document the actual OW source location of the lookup route in the spike findings. If yes (Path A): no schema change needed. If no (Path B): migration 015 ships at end of BATCH 5a adding `wearable_connections.open_wearables_user_id` column.
 
 3. **Auth approach for runtime API** — does OW's Credentials tab generate long-lived API keys usable for runtime API calls? OR is API key generation only for the `replay_raw_payloads.py` operator script? Test: generate API key via Credentials tab, attempt `GET /api/v1/users` with `Authorization: Bearer <api-key>`. If 200: Path A (API key) — set `OPEN_WEARABLES_AUTH_MODE=api_key`. If 401/403: Path B (JWT) — set `OPEN_WEARABLES_AUTH_MODE=jwt`, document refresh-on-expiry logic.
 
@@ -943,6 +943,12 @@ Garmin/Polar/Suunto scanned for analogous bugs at the same scan time:
 
 6. **Connection-list polling endpoint** — does `GET /api/v1/users/{ow_user_id}/connections` return per-connection `status` (`connected` / `expired` / `error`) AND a `last_sync_error` field, or just the connection existence? Connection-polling cron design assumes both fields available; if not, either polling logic adapts to the available signal OR we file an upstream feature request.
 
+6.5. **Connection-list response shape — sync_error_count semantic for cron Case 3** (BATCH 5a Task 5a.6 unresolved at plan-write time): does the response include a per-connection `sync_error_count` field that mirrors OW's internal sync error counter? Two semantics for our cron's Case 3 (matching && status === 'error') depend on the answer:
+
+- **Semantic (a) — OW is authoritative:** If response includes `sync_error_count` (e.g., `{"provider": "garmin", "status": "error", "sync_error_count": 3, ...}`), MIRROR the count to our `wearable_connections.syncErrorCount` column on each tick (treating OW's value as truth). Threshold check: `ow_count >= 3` → DISPATCH `wearable_sync_failed`. Cleanest: OW already tracks the actual sync attempt count.
+- **Semantic (b) — we count consecutive error ticks:** If response only exposes `status` (no count), INCREMENT our column on each tick where `status === 'error'`. Threshold: 3 consecutive error-status ticks → DISPATCH. Different metric (consecutive cron observations vs. OW sync attempts), but works without OW exposing the count.
+- **Decision lock:** capture which semantic applies in this entry's "Decision lock at spike completion" section. Update the BATCH 5a Task 5a.6 cron Case 3 logic to match. If OW's response shape changes between v1 and a future version, revisit at that time.
+
 7. **OW developer portal approval timing** — Garmin (3-7 days expected per BATCH 4 D1), Polar (1-2 days expected), Suunto (variable). Capture actual approval timestamps to inform Sprint 4.5 timing.
 
 **Decision lock at spike completion:**
@@ -951,6 +957,8 @@ Garmin/Polar/Suunto scanned for analogous bugs at the same scan time:
 - Migration 015 needed (yes/no) — if yes, ships at end of BATCH 5a
 - Subscribed event types (`["workout.created", "sleep.created", "connection.created", "body_composition.created"]` OR expanded to include `heart_rate.created` / `calories.created` if needed for workout summary)
 - Cross-provider scan reconfirmation result (locked α stays, OR re-evaluation triggered)
+- **Cron Case 3 semantic** — (a) mirror OW's `sync_error_count` OR (b) count consecutive error-status ticks (per Q6.5 above). Update BATCH 5a Task 5a.6 cron implementation to match the spike-confirmed available signal.
+- **External_id lookup endpoint pattern** — exact OW route for `external_id → ow_user_uuid` resolution (per Q2 above), if Path A applies. Document in spike findings; reference from `openWearablesClient.ts`.
 
 **Spike artifacts to capture:**
 
