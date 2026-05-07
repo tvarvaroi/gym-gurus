@@ -1649,27 +1649,50 @@ async function post015() {
   }
 
   // ─── (c) Bridge round-trip probe ───────────────────────────────────────
-  // INSERT a probe row with non-NULL open_wearables_user_id, SELECT by that
-  // field (exercises the index), assert the round-trip works, DELETE the
-  // probe row. Bounded by a probe provider value so cleanup is precise.
+  // INSERT a probe row with non-NULL open_wearables_user_id, SELECT by
+  // that field (exercises the index), assert the round-trip works, DELETE
+  // the probe row. The probe is bounded by a known PROBE_OW_UUID so
+  // cleanup is precise — we DELETE only rows carrying that UUID.
+  //
+  // The provider must be a real enum value (the
+  // `wearable_connections_provider_check` CHECK constraint enumerates
+  // them literally — see `shared/schema.ts` WEARABLE_PROVIDERS). We use
+  // 'garmin' as the probe provider and require the chosen user has no
+  // existing 'garmin' row already (UNIQUE(userId, provider) collision
+  // would mask the bridge test). If they do, we skip with a note.
   console.log('\n(c) Bridge round-trip probe (open_wearables_user_id resolver path):');
 
-  const userRow: any = await db.execute(sql`SELECT id FROM users WHERE deleted_at IS NULL LIMIT 1`);
-  const probeUserRows = (userRow.rows ?? userRow) as Array<{ id: string }>;
-  if (probeUserRows.length === 0) {
-    console.log('  ⚠ no user available to probe — skipping bridge round-trip test');
+  const PROBE_OW_UUID = 'probe-ow-uuid-015';
+  const PROBE_PROVIDER = 'garmin';
+
+  // Find a user with no existing (user_id, provider='garmin') row so the
+  // INSERT doesn't collide with real data. Cap at 5 candidates so we
+  // don't loop forever on a fully-populated DB.
+  const candidates: any = await db.execute(sql`
+    SELECT u.id
+    FROM users u
+    LEFT JOIN wearable_connections wc
+      ON wc.user_id = u.id AND wc.provider = ${PROBE_PROVIDER}
+    WHERE u.deleted_at IS NULL AND wc.id IS NULL
+    LIMIT 5
+  `);
+  const candidateRows = (candidates.rows ?? candidates) as Array<{ id: string }>;
+  if (candidateRows.length === 0) {
+    console.log(
+      '  ⚠ no probe-eligible user (every user has a garmin row already) — skipping bridge round-trip test'
+    );
   } else {
-    const probeUserId = probeUserRows[0].id;
-    const PROBE_PROVIDER = 'verifier_probe_015';
-    const PROBE_OW_UUID = 'probe-ow-uuid-015';
+    const probeUserId = candidateRows[0].id;
 
     try {
       // Cleanup any leftover probe rows from a previous abandoned run
+      // (matched by ow_user_id, since provider='garmin' alone would
+      // delete real rows).
       await db.execute(sql`
-        DELETE FROM wearable_connections WHERE provider = ${PROBE_PROVIDER}
+        DELETE FROM wearable_connections WHERE open_wearables_user_id = ${PROBE_OW_UUID}
       `);
 
-      // INSERT probe row
+      // INSERT probe row (provider='garmin' satisfies the enum check)
       await db.execute(sql`
         INSERT INTO wearable_connections (
           user_id, provider, status, open_wearables_user_id
@@ -1689,9 +1712,9 @@ async function post015() {
         `  bridge lookup (ow_uuid → user_id)    : ${found ? '✓ (returned the probe user_id)' : `— UNEXPECTED, found ${lookup.length} rows`}`
       );
 
-      // Cleanup
+      // Cleanup — match by the probe ow_user_id so we never touch real rows
       const cleanupR: any = await db.execute(sql`
-        DELETE FROM wearable_connections WHERE provider = ${PROBE_PROVIDER}
+        DELETE FROM wearable_connections WHERE open_wearables_user_id = ${PROBE_OW_UUID}
       `);
       const deleted = cleanupR.rowCount ?? cleanupR?.rows?.length ?? 1;
       console.log(`  cleanup                              : ${deleted} probe row(s) deleted ✓`);
@@ -1699,7 +1722,7 @@ async function post015() {
       // Always attempt cleanup even on failure
       try {
         await db.execute(sql`
-          DELETE FROM wearable_connections WHERE provider = 'verifier_probe_015'
+          DELETE FROM wearable_connections WHERE open_wearables_user_id = ${PROBE_OW_UUID}
         `);
       } catch {
         // ignore

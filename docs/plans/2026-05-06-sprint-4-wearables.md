@@ -2249,6 +2249,18 @@ git commit -m "feat(wearables): SPRINT 4 BATCH 5a Task 4 — refactor wearableIn
 
 #### OW user ID bridge — verification target for spike
 
+> **AMENDED 2026-05-07 (Q2 spike completion):** Path B is locked. The
+> framing below documented Path A as preferred and Path B as fallback;
+> Q2 confirmed Path B is the only working path (OW's `external_user_id`
+> field is deprecated and not accepted by data-fetching endpoints). The
+> bridge implementation lives in **Task 5a.10** (post-BATCH-5a follow-up)
+> — see `_brain/notes/decisions.md` "Sprint 4 BATCH 5 spike findings —
+> Q2 LOCKED Path B" for full rationale. Migration 015 ships
+> (`server/migrations/015_wearable_connections_ow_user_id.ts`). The
+> `external_user_id` field is set on user creation only as a portal-debug
+> convenience and is not load-bearing. The original Path A/B framing
+> below is preserved as historical record of the spike question.
+
 OW assigns its own user UUIDs to users registered via its API. Our `wearable_connections.userId` is GymGurus's internal user UUID. The bridge between them needs verification:
 
 - **Path A (preferred, lower-cost):** OW supports `external_id` lookup. We POST `/api/v1/users` with `{external_id: <our user UUID>}` when a Disciple first connects, and OW resolves `external_id → ow_user_uuid` for us. Our `wearable_connections` table doesn't need a new column.

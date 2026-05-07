@@ -1004,11 +1004,11 @@ JWT path (POST /api/v1/auth/login → bearer token) is preserved in code as a fa
 **Decision lock at spike completion:**
 
 - `OPEN_WEARABLES_AUTH_MODE` value (api_key OR jwt) — sets BATCH 5b Task 5b.0 decision lock
-- Migration 015 needed (yes/no) — if yes, ships at end of BATCH 5a
+- **Migration 015 — LOCKED YES (Path B, Q2 spike close 2026-05-07).** Shipped as Task 5a.10 (`server/migrations/015_wearable_connections_ow_user_id.ts`): adds `wearable_connections.open_wearables_user_id varchar(36)` + partial index `WHERE open_wearables_user_id IS NOT NULL`. Bridge resolver `resolveUserIdFromOwUserId` in `server/services/wearableIngest.ts` is the runtime translation point.
 - Subscribed event types (`["workout.created", "sleep.created", "connection.created", "body_composition.created"]` OR expanded to include `heart_rate.created` / `calories.created` if needed for workout summary)
 - Cross-provider scan reconfirmation result (locked α stays, OR re-evaluation triggered)
 - **Cron Case 3 semantic** — (a) mirror OW's `sync_error_count` OR (b) count consecutive error-status ticks (per Q6.5 above). Update BATCH 5a Task 5a.6 cron implementation to match the spike-confirmed available signal.
-- **External_id lookup endpoint pattern** — exact OW route for `external_id → ow_user_uuid` resolution (per Q2 above), if Path A applies. Document in spike findings; reference from `openWearablesClient.ts`.
+- **External_id lookup endpoint pattern — N/A under Path B.** OW's `external_user_id` field is deprecated and not a runtime lookup mechanism. The runtime bridge is our local SELECT on `wearable_connections.open_wearables_user_id` (no OW route involved at lookup time). The portal-debug convenience of setting `external_user_id` on `createUser` remains, but it's not load-bearing.
 
 **Spike artifacts to capture:**
 
