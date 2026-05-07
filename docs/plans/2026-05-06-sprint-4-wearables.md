@@ -1,5 +1,9 @@
 # Sprint 4 — Wearable Integration via Open Wearables — Implementation Plan
 
+> **STATUS: PAUSED 2026-05-07** — Sprint 4 deliberately paused before BATCH 5b deploy. Wearable integration is ahead of user demand at current scale (6 production users, no documented user requests for wearable support). Cost picture (Open Wearables ~$30-80/month on Railway, Terra ~$499/month) does not match current value-per-user. See `_brain/notes/decisions.md` "Sprint 4 PAUSED (demand-driven resumption) (2026-05-07)" for full rationale, resumption criteria, and what is preserved on origin/main.
+>
+> Work on origin/main through BATCH 5a + 5a.10 (token encryption with rotation, webhook receiver, ingest layer, cron scaffolding, Path B identity bridge, IDOR + mutation tests, schema migrations 014 + 014.5 + 015) is preserved. Migrations 014, 014.5, 015 are **dev-applied only** and **must NOT be run on prod** until Sprint 4 resumes. Provider portal applications (Garmin / Polar / Suunto) were not submitted; no abandoned credentials exist. BATCH 5b (Open Wearables deployment + OAuth registration), BATCH 5c (E2E), BATCH 7-12 (consent UI expansion, IntegrationsTab UI, audits, prod migration) are all unstarted.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Two HARD brainstorm gates exist at BATCH 4 and BATCH 7 — STOP at each, present decisions, wait for explicit approval before continuing.
 
 **Goal:** Ship the wearable integration layer end-to-end. Three OAuth-based providers (Garmin, Polar, Suunto) connect via a self-hosted Open Wearables service. Their data flows via Svix-signed webhooks into normalized GymGurus tables. The Privacy section expands from one consent flag to five sibling per-data-type toggles.

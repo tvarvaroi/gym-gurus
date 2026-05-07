@@ -1021,6 +1021,54 @@ JWT path (POST /api/v1/auth/login → bearer token) is preserved in code as a fa
 
 ---
 
+## Sprint 4 PAUSED (demand-driven resumption) (2026-05-07)
+
+**Decided**: Pause Sprint 4 (Wearable Integration via Open Wearables) before BATCH 5b deploy. Resume when documented user demand justifies the spend.
+
+**Status at pause**: BATCH 5a complete + Task 5a.10 complete + Phase A (token encryption with versioned envelope + rotation script) complete. Last commit on `main`: `d3f97e8` (FRAGILE comment on bridge-test SQL walker). Migrations 014 (4 wearable tables + clients.user_id FK + 4 consent flags), 014.5 (body_metrics partial UNIQUE), and 015 (wearable_connections.open_wearables_user_id) applied to dev only — NOT prod-applied. Spike findings (Q1, Q2, Q3, Q5, Q6.5) locked in this file's "Sprint 4 BATCH 5 spike findings" entry. Bridge tests + mutation evidence prove Path B correctness.
+
+**Trigger to resume**: documented user demand for wearable integration. Specifically any of:
+
+1. ≥3 distinct production users requesting wearable support in feedback
+2. A paying-tier upgrade gated on wearable support (e.g., a new "Athlete" tier that requires wearable data)
+3. A strategic decision to lead with wearable-tracker brand positioning (e.g., a marketing pivot toward "data-driven training" requiring proof-of-integration)
+
+**Decision point to re-litigate when resumed**: Open Wearables vs Terra. Cost analysis snapshot at pause:
+
+- **Open Wearables on Railway**: ~$30-80/month base infrastructure (postgres + redis + app + celery-worker + celery-beat + flower + svix-server + frontend, multi-container per locked decision D2). Scales sub-linearly with users — adding wearable users does not proportionally increase infra cost until the celery-worker concurrency tier needs bumping.
+- **Terra**: $399-499/month minimum subscription, includes 100k credits, scales with usage above. Includes Whoop/Oura/Apple Health/Garmin/Polar/Suunto/Strava/Fitbit etc. as a unified API surface, no self-hosting.
+- **Crossover for cost**: Terra wins only if user count drives Open Wearables infrastructure beyond ~$500/month (estimated at thousands of active wearable users), which is far beyond current scale.
+- **Crossover for value**: Terra wins if Whoop/Oura/Apple Health support generates sufficient user conversion / upgrade to offset the $5K/year premium AND the engineering time saved on operating OW (postgres backups, celery monitoring, svix-server uptime, OAuth app maintenance per provider) is non-trivial. Whoop/Oura were originally Sprint 4 v1 targets but blocked by upstream OW bugs ([#930](https://github.com/the-momentum/open-wearables/issues/930), [#948](https://github.com/the-momentum/open-wearables/issues/948)) — Terra would unblock those without needing upstream fixes.
+
+Numbers may shift over time. Refresh the cost analysis at resumption — Railway pricing, Terra pricing, OW upstream bug status, and competitor landscape (Vital, Spike, Wearipedia API gateways) all evolve. Don't trust the snapshot blindly.
+
+**What is preserved on origin/main** (continues to compile, lint clean, all 485 tests pass):
+
+- `shared/schema.ts` — wearable_connections, activity_sessions, sleep_sessions, wearable_sync_failures tables + clients.user_id FK + 4 consent flags + clients.body_metrics_share_with_trainer + body_metrics partial UNIQUE
+- `server/migrations/014_wearable_integration.ts`, `014.5_body_metrics_partial_unique.ts`, `015_wearable_connections_ow_user_id.ts` — dev-applied, prod-pending
+- `server/services/tokenEncryption.ts` — provider-agnostic AES-256-GCM with versioned envelope. Useful for any future encrypted-at-rest token storage regardless of which integration approach future-Sprint-4 takes.
+- `scripts/rotate-wearable-tokens.ts` — provider-agnostic token rotation with probe-decrypt-verify safety gate. Reusable.
+- `server/middleware/verifyWearableSignature.ts` — hand-rolled HMAC primitive for any non-Svix webhook source.
+- `server/services/openWearablesClient.ts`, `wearableConnections.ts`, `wearableIngest.ts`, `server/jobs/wearableSyncMonitor.ts`, `server/routes/webhooks.ts` — written against Open Wearables / Svix today; the architecture (Zod schemas at boundary, fire-and-forget dispatch, IDOR-safe routes, Path B identity bridge, mutation-tested) translates to Terra or any other webhook source with **adaptation work, not rewrite**.
+- `server/test/services/wearableIngest.bridge.test.ts` — proves Path B identity bridge prevents Path-A FK violations. Stays useful regardless of provider stack.
+- All spike findings in this file's "Sprint 4 BATCH 5 spike findings" entry.
+
+**What is NOT done**:
+
+- BATCH 5b (Open Wearables Railway deployment, OAuth app registration with providers, OAuth-init E2E test, prod webhook subscription registration)
+- BATCH 5c (full E2E flow with at least one real provider sync)
+- BATCH 6 was REMOVED from the plan during BATCH 5 split (was redundant under α). Do not resurrect.
+- BATCH 7-12 (consent UI expansion from one toggle to five sibling toggles, IntegrationsTab UI for connect/disconnect, pre-delivery audits, prod migration runs)
+
+**Provider portal applications**: not submitted. Garmin / Polar / Suunto remain available for future application when sprint resumes. No abandoned credentials, no leaked intent.
+
+**Critical pre-resumption gate**: Before any Sprint 4 code path goes to prod, migrations 014 + 014.5 + 015 must run on prod via `scripts/run-prod-migration.ts`. The wearable_connections table does not exist on prod yet; deploying BATCH 5a code without those migrations would 500 on every webhook.
+
+**Rejected**: Continuing through BATCH 5b on the assumption "we already started, may as well finish."
+**Why**: That's a sunk-cost argument. The work shipped is reusable; the work remaining (provider portal applications, Railway multi-container deploy, prod migration execution, OAuth E2E debugging) is non-trivial AND becomes wasted infrastructure if user demand stays at zero. Better to pause cleanly with intact resumption criteria than to ship infrastructure for users who haven't asked.
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
