@@ -65,6 +65,7 @@ import {
 } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
 import { ActionButton } from '@/components/ui/premium/ActionButton';
+import { RolePill } from '@/components/ui/premium/RolePill';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { WellnessSlider } from './WellnessSlider';
@@ -335,26 +336,34 @@ export function WellnessRitual({ onSubmitted, initial }: WellnessRitualProps) {
         <h3 className="text-xs uppercase tracking-wider text-muted-foreground font-medium px-1">
           Today
         </h3>
-        {/* TODO §DS-7: extract to <RolePill> when filter chips, toggle pills, and selection chips converge. */}
         <div className="flex flex-wrap gap-2">
-          <BehaviorToggle
-            on={form.hydrationGoalMet}
-            onChange={() => toggleBehavior('hydrationGoalMet')}
+          <RolePill
+            role="switch"
+            size="md"
+            active={form.hydrationGoalMet}
+            onSelect={() => toggleBehavior('hydrationGoalMet')}
             icon={Droplet}
-            label="Hit my water goal"
-          />
-          <BehaviorToggle
-            on={form.steppedOutside}
-            onChange={() => toggleBehavior('steppedOutside')}
+          >
+            Hit my water goal
+          </RolePill>
+          <RolePill
+            role="switch"
+            size="md"
+            active={form.steppedOutside}
+            onSelect={() => toggleBehavior('steppedOutside')}
             icon={Wind}
-            label="Stepped outside"
-          />
-          <BehaviorToggle
-            on={form.meditationCompleted}
-            onChange={() => toggleBehavior('meditationCompleted')}
+          >
+            Stepped outside
+          </RolePill>
+          <RolePill
+            role="switch"
+            size="md"
+            active={form.meditationCompleted}
+            onSelect={() => toggleBehavior('meditationCompleted')}
             icon={Brain}
-            label="Meditated"
-          />
+          >
+            Meditated
+          </RolePill>
         </div>
       </div>
 
@@ -416,32 +425,5 @@ export function WellnessRitual({ onSubmitted, initial }: WellnessRitualProps) {
         {submitMutation.isPending ? 'Saving…' : 'See my readiness'}
       </button>
     </div>
-  );
-}
-
-// ─── Inline pill toggle ────────────────────────────────────────────────────
-// TODO §DS-7: extract to <RolePill> when filter chips, toggle pills, and selection chips converge.
-interface BehaviorToggleProps {
-  on: boolean;
-  onChange: () => void;
-  icon: typeof Droplet;
-  label: string;
-}
-function BehaviorToggle({ on, onChange, icon: Icon, label }: BehaviorToggleProps) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      onClick={onChange}
-      className={`min-h-[44px] px-4 rounded-full text-sm font-medium transition-colors cursor-pointer flex items-center gap-2 ${
-        on
-          ? 'bg-primary text-primary-foreground'
-          : 'bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40'
-      }`}
-    >
-      <Icon className={`w-4 h-4 ${on ? '' : 'opacity-70'}`} aria-hidden="true" />
-      {label}
-    </button>
   );
 }

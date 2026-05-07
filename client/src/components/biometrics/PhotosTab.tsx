@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format, isThisYear } from 'date-fns';
 import { Lock, Link2, Plus, X } from 'lucide-react';
 import { ActionButton } from '@/components/ui/premium/ActionButton';
+import { RolePill } from '@/components/ui/premium/RolePill';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ProgressPhoto } from '@shared/schema';
 import type { UnitSystem } from '@/lib/units';
@@ -109,27 +110,21 @@ export function PhotosTab({ units }: PhotosTabProps) {
 
       {/* Header row: filter chips + add CTA (desktop) */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        {/* TODO §DS-7: extract to <RolePill> when filter chips, toggle pills, and selection chips converge. */}
         <div
           className="flex flex-wrap gap-2 flex-1 min-w-0"
           role="radiogroup"
           aria-label="Filter by pose"
         >
           {POSE_FILTERS.map((f) => (
-            <button
+            <RolePill
               key={f.value}
-              type="button"
               role="radio"
-              aria-checked={poseFilter === f.value}
-              onClick={() => setPoseFilter(f.value)}
-              className={`min-h-[36px] px-3.5 rounded-full text-xs font-medium transition-colors cursor-pointer ${
-                poseFilter === f.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40'
-              }`}
+              size="sm"
+              active={poseFilter === f.value}
+              onSelect={() => setPoseFilter(f.value)}
             >
               {f.label}
-            </button>
+            </RolePill>
           ))}
         </div>
         <ActionButton

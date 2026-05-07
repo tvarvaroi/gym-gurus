@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { PremiumCard } from '@/components/ui/premium/PremiumCard';
 import { ActionButton } from '@/components/ui/premium/ActionButton';
+import { RolePill } from '@/components/ui/premium/RolePill';
 import { displayWeight, displayPercent, type UnitSystem } from '@/lib/units';
 import type { BodyMetrics } from '@shared/schema';
 
@@ -353,23 +354,17 @@ export function BodyMetricsTrends({
 
       {/* Range chips */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        {/* TODO §DS-7: extract to <RolePill> when filter chips, toggle pills, and selection chips converge. */}
         <div role="radiogroup" aria-label="Time range" className="flex gap-2">
           {(Object.keys(RANGE_LABELS) as Range[]).map((r) => (
-            <button
+            <RolePill
               key={r}
-              type="button"
               role="radio"
-              aria-checked={range === r}
-              onClick={() => setRange(r)}
-              className={`min-h-[36px] px-4 rounded-full text-xs font-medium transition-colors cursor-pointer ${
-                range === r
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40'
-              }`}
+              size="sm"
+              active={range === r}
+              onSelect={() => setRange(r)}
             >
               {RANGE_LABELS[r]}
-            </button>
+            </RolePill>
           ))}
         </div>
         <span className="text-xs text-muted-foreground tabular-nums">
