@@ -1077,16 +1077,37 @@ Numbers may shift over time. Refresh the cost analysis at resumption — Railway
 
 **Why**: Three sites had truly identical active/inactive treatment (`bg-primary text-primary-foreground` / `bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40`). The divergences map cleanly to four required + two optional props — each prop ties to a real difference, no speculative API surface. The extraction also fixed a latent accessibility issue: filter-site pills rendered visually at 36px (below WCAG 2.5.5 44×44), now expose ≥44px effective tap area via `before:absolute before:-inset-1 before:content-[""]` while preserving the visual size. No regression to the wellness ritual (already 44px native).
 
-**Visual parity outcome**:
-
-- PhotosTab (pose filter): pixel-equivalent. The `before:-inset-1` is invisible.
-- WellnessRitual (behavior toggle): pixel-equivalent.
-- BodyMetricsTrends (range chips): 4px tighter horizontal padding per pill (was `px-4`, now `px-3.5` matching the sm variant). 30d/90d/1y labels are short — no layout impact, no wrap change. Intentional consistency between sm filter sites.
+**Note on visual parity**: PhotosTab + WellnessRitual are pixel-equivalent post-refactor. BodyMetricsTrends had `px-4` → `px-3.5` (4px tighter horizontal padding, intentional sm-variant consistency). Labels are short ("30d", "90d", "1y") — no wrap or layout impact. Accepted as part of the unification rather than carrying a third padding variant. Truthful headline: not pixel-equivalent across the board; one site has a 4px-per-side intentional tightening.
 
 **Related**:
 
 - The Sprint 3 spec at `docs/specs/2026-05-06-sprint-3-wellness-ui-design.md` §DS-7 entry deferred this work explicitly. That deferral was correct discipline; the inline copy was 13 lines and Sprint 3 was focused elsewhere. Extraction at deck-clearing is exactly the right time — small focused PR with the head fresh.
-- The `before:-inset-1` hit-area pattern is the same Sprint 3 BATCH 8 audit fix applied to slider thumbs (24/32 → 44/48px effective via pseudo-element padding).
+- The `before:-inset-1` hit-area pattern is the same Sprint 3 BATCH 8 audit fix applied to slider thumbs (24/32 → 44/48px effective via pseudo-element padding). See "Touch target hit areas via pseudo-element padding — established convention" below.
+
+---
+
+## Touch target hit areas via pseudo-element padding — established convention
+
+Sprint 3 BATCH 8 (slider thumbs) and deck-clearing Item 2 (RolePill sm variant) both apply `before:-inset-*` to expand sub-44px visible elements to WCAG-compliant 44×44 hit areas without changing the visual design. Pattern:
+
+```
+relative before:absolute before:-inset-{N} before:content-['']
+```
+
+Use this whenever visual constraints require sub-44px rendered elements that need to be tappable. The pseudo-element is invisible (no background, no content, no border) — only the click target expands.
+
+**Two uses to date:**
+
+1. Sprint 3 BATCH 8 — slider thumbs (24/32px visual → 44/48px effective via `before:-inset-2` / `before:-inset-3`)
+2. Deck-clearing Item 2 — `RolePill` sm variant (36px visual → 44px effective via `before:-inset-1`)
+
+**When to use vs. when not to:**
+
+- Use when the visible element MUST be smaller than 44px for design reasons (compact filter chips, small slider thumbs, dense control panels) AND the element is interactive.
+- Don't use when the visible element is large enough to comfortably contain a 44px hit area natively. Adding `before:-inset-*` to an already-44px button is overhead with no benefit.
+- Don't use when the expanded hit area would overlap a sibling interactive element. Check parent gap — `gap-2` (8px) accommodates `-inset-1` (4px each side, no overlap). `gap-1` (4px) doesn't — pseudo-elements would touch.
+
+**Promote a third site to this pattern when surfaced.** When a future sprint introduces a sub-44px tappable element, the right move is to apply this pattern, not to carry a fourth one-off fix. If three or more sites adopt the pattern with consistent `relative before:absolute before:-inset-{N} before:content-['']` shape, extract to a shared `useExpandedHitArea` className helper or a `TapTargetExpander` wrapper. Don't extract eagerly — two sites with consistent shape isn't enough yet.
 
 ---
 
