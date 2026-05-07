@@ -210,6 +210,16 @@ describe('runSyncMonitorTick — claim semantics', () => {
     expect(joined).toContain("'expired'");
     expect(joined).toContain("'error'");
   });
+
+  it('SQL skips rows in OAuth-init intermediate state (open_wearables_user_id IS NOT NULL filter — Path B)', async () => {
+    spyState.queueResults({ rows: [] });
+    await runSyncMonitorTick();
+    const joined = spyState.executeCalls[0].sqlChunks.join(' ');
+    // Path B (Task 5a.10): the cron's data-fetching call requires OW's
+    // UUID, so rows with open_wearables_user_id IS NULL (OAuth-init
+    // intermediate state) cannot be polled and must be skipped.
+    expect(joined).toContain('open_wearables_user_id IS NOT NULL');
+  });
 });
 
 // ===========================================================================
@@ -232,6 +242,7 @@ describe('Case 1 — re-healthy (OW=connected, our!=connected)', () => {
           provider: 'garmin',
           status: 'expired',
           sync_error_count: 0,
+          open_wearables_user_id: 'ow-user-A',
         },
       ],
     });
@@ -250,6 +261,39 @@ describe('Case 1 — re-healthy (OW=connected, our!=connected)', () => {
       c.sqlChunks.join('').includes('UPDATE wearable_connections')
     );
     expect(updateCalls.length).toBeGreaterThan(0);
+  });
+
+  it('Path B (Q2 spike close): cron passes OW UUID to getConnections, NOT our user_id', async () => {
+    spyState.queueResults({
+      rows: [
+        {
+          id: 'conn-pathb',
+          user_id: 'gg-user-A', // our internal user UUID
+          provider: 'garmin',
+          status: 'connected',
+          sync_error_count: 0,
+          open_wearables_user_id: 'ow-uuid-pathb', // OW's UUID
+        },
+      ],
+    });
+    owMocks.getConnections.mockResolvedValueOnce({
+      connections: [
+        {
+          id: 'ow-c-1',
+          user_id: 'ow-uuid-pathb',
+          provider: 'garmin',
+          status: 'connected',
+        },
+      ],
+    });
+
+    await runSyncMonitorTick();
+
+    // Path B: getConnections must be called with OW's UUID, not our user_id.
+    // This is the load-bearing assertion against the BATCH 5a Path A
+    // mistake (passing r.user_id directly to OW).
+    expect(owMocks.getConnections).toHaveBeenCalledWith('ow-uuid-pathb');
+    expect(owMocks.getConnections).not.toHaveBeenCalledWith('gg-user-A');
   });
 });
 
@@ -273,6 +317,7 @@ describe('Case 2 — token expired (OW=expired, our!=expired)', () => {
           provider: 'garmin',
           status: 'connected',
           sync_error_count: 0,
+          open_wearables_user_id: 'ow-user-A',
         },
       ],
     });
@@ -309,6 +354,7 @@ describe('Case 3 — sync error counter (Semantic (b) — count ourselves)', () 
           provider: 'garmin',
           status: 'connected',
           sync_error_count: 2,
+          open_wearables_user_id: 'ow-user-A',
         },
       ],
     });
@@ -333,6 +379,7 @@ describe('Case 3 — sync error counter (Semantic (b) — count ourselves)', () 
           provider: 'garmin',
           status: 'connected',
           sync_error_count: 0,
+          open_wearables_user_id: 'ow-user-A',
         },
       ],
     });
@@ -367,6 +414,7 @@ describe('Case 4 — missing matching connection (disconnected on OW side)', () 
           provider: 'garmin',
           status: 'connected',
           sync_error_count: 0,
+          open_wearables_user_id: 'ow-user-A',
         },
       ],
     });
@@ -408,6 +456,7 @@ describe('OW unreachable — pollErrors counter (no dispatch on transient outage
           provider: 'garmin',
           status: 'connected',
           sync_error_count: 0,
+          open_wearables_user_id: 'ow-user-A',
         },
       ],
     });
@@ -442,6 +491,7 @@ describe('runSyncMonitorTick — re-entrancy guard', () => {
           provider: 'garmin',
           status: 'connected',
           sync_error_count: 0,
+          open_wearables_user_id: 'ow-user-A',
         },
       ],
     });

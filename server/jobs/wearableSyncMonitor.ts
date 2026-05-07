@@ -18,10 +18,16 @@
  * Tick semantics (4 cases):
  *
  *   For each row in wearable_connections WHERE status IN ('connected',
- *     'expired', 'error') ORDER BY last_sync_at ASC NULLS FIRST LIMIT 50
- *     FOR UPDATE SKIP LOCKED:
+ *     'expired', 'error') AND open_wearables_user_id IS NOT NULL ORDER BY
+ *     last_sync_at ASC NULLS FIRST LIMIT 50 FOR UPDATE SKIP LOCKED:
  *
- *     ow_user_id = row.userId  (Path A — external_id is our UUID, OW echoes back)
+ *     ow_user_id = row.open_wearables_user_id  (Path B — OW's UUID, persisted
+ *                                                during OAuth-init by
+ *                                                wearableConnections.initiateOAuth)
+ *
+ *     Rows in OAuth-init intermediate state (open_wearables_user_id IS NULL)
+ *     are skipped — no OW UUID = nothing to poll.
+ *
  *     try {
  *       response = await openWearablesClient.getConnections(ow_user_id)
  *       matching = response.connections.find(c => c.provider === row.provider)
@@ -202,6 +208,10 @@ async function runTickUnsafe(): Promise<{
   // recovery → connected). We exclude 'disconnected' rows (terminal until
   // a new OAuth flow creates a fresh connected row via UPSERT).
   //
+  // Path B (Q2 spike close, Task 5a.10): also skip rows in OAuth-init
+  // intermediate state (open_wearables_user_id IS NULL) — they have no OW
+  // UUID and OW's data-fetching endpoints can't be called for them.
+  //
   // ORDER BY last_sync_at ASC NULLS FIRST — never-polled rows win the race
   // (initial poll is more important than a routine re-check).
   const claimed = await db.execute<{
@@ -210,9 +220,12 @@ async function runTickUnsafe(): Promise<{
     provider: string;
     status: string;
     sync_error_count: number;
+    open_wearables_user_id: string;
   }>(
-    sql`SELECT id, user_id, provider, status, sync_error_count FROM wearable_connections
+    sql`SELECT id, user_id, provider, status, sync_error_count, open_wearables_user_id
+        FROM wearable_connections
         WHERE status IN ('connected', 'expired', 'error')
+          AND open_wearables_user_id IS NOT NULL
         ORDER BY last_sync_at ASC NULLS FIRST
         LIMIT ${BATCH_SIZE}
         FOR UPDATE SKIP LOCKED`
@@ -223,6 +236,7 @@ async function runTickUnsafe(): Promise<{
     provider: string;
     status: string;
     sync_error_count: number;
+    open_wearables_user_id: string;
   }>;
 
   if (rows.length === 0) {
@@ -244,9 +258,11 @@ async function runTickUnsafe(): Promise<{
 
   for (const r of rows) {
     try {
-      // Path A: OW user_id is OUR internal user UUID (external_id mapping).
-      // Path B (fallback) would lookup the OW UUID via a stored column.
-      const owUserId = r.user_id;
+      // Path B (Q2 spike close): OW's data-fetching endpoints require OW's
+      // UUID, NOT our internal user UUID. Persisted during OAuth-init.
+      // Row claim filtered to open_wearables_user_id IS NOT NULL above so
+      // this is non-null by construction.
+      const owUserId = r.open_wearables_user_id;
       const response = await ow.getConnections(owUserId);
       const matching = response.connections?.find((c) => c.provider === r.provider);
 
