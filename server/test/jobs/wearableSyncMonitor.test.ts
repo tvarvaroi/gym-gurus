@@ -1,19 +1,25 @@
 /**
- * Wearable Sync Monitor Cron Tests — Sprint 4 BATCH 3
+ * Wearable Sync Monitor Cron Tests — Sprint 4 BATCH 5a
  *
- * Behaviors covered:
- *   - SELECT FOR UPDATE SKIP LOCKED contract (cross-process concurrency)
- *   - 24-hour stale window in SQL
- *   - Empty-batch path: claimed=0 recovered=0 errors=0
- *   - Happy path: each claimed row routed to ow.triggerSync +
- *     recordSuccessfulSync; recovered counter increments
- *   - Per-row triggerSync failure → markSyncError called with error message,
- *     errors counter increments, batch continues
- *   - In-process re-entrancy guard: a second concurrent invocation returns
- *     instantly without re-querying the DB
- *   - Cron lifecycle: getCronStatus reflects start/stop, env override
- *     respected, sub-second intervals clamped to default
- *   - SIGTERM handler clears the interval
+ * New state-diff semantics: the cron polls OW's getConnections() per row and
+ * diffs against our local state. 4 cases:
+ *
+ *   Case 1: re-healthy (OW='connected', our!='connected') → UPDATE no dispatch
+ *   Case 2: token expired (OW='expired', our!='expired') → UPDATE + dispatch wearable_expired
+ *   Case 3: sync error (OW='error') → counter increment via determineSyncErrorState
+ *           threshold transition → UPDATE status='error' + dispatch wearable_sync_failed
+ *   Case 4: missing matching connection → UPDATE status='disconnected' no dispatch
+ *
+ * Concurrency-safety tests preserved from BATCH 3:
+ *   - SELECT FOR UPDATE SKIP LOCKED contract
+ *   - In-process re-entrancy guard via inFlight
+ *   - Lifecycle: start/stop/getCronStatus, env-overridable interval, sub-second clamp
+ *
+ * Plus determineSyncErrorState abstraction unit tests:
+ *   - Semantic (a) preferred when sync_error_count present in OW response
+ *   - Semantic (b) fallback when sync_error_count absent (current OW reality)
+ *   - Reset to 0 when OW.status === 'connected' (or anything non-error)
+ *   - Threshold transition at 3 consecutive error ticks
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -21,7 +27,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Hoisted spy state
 // ---------------------------------------------------------------------------
 
-const { spyState, makeDbWrapper, owMocks, wcMocks } = vi.hoisted(() => {
+const { spyState, makeDbWrapper, owMocks, dispatchMock } = vi.hoisted(() => {
   const spyState = {
     executeCalls: [] as Array<{ sqlChunks: string[]; params: unknown[] }>,
     queue: [] as unknown[],
@@ -62,22 +68,22 @@ const { spyState, makeDbWrapper, owMocks, wcMocks } = vi.hoisted(() => {
   }
 
   const owMocks = {
+    getConnections: vi.fn(async () => ({ connections: [] })),
     triggerSync: vi.fn(async () => ({ ok: true })),
     requestConnectUrl: vi.fn(),
     getConnectionStatus: vi.fn(),
     revokeConnection: vi.fn(),
+    disconnectProvider: vi.fn(),
+    createUser: vi.fn(),
+    registerWebhookEndpoint: vi.fn(),
   };
 
-  const wcMocks = {
-    markSyncError: vi.fn(async () => undefined),
-    recordSuccessfulSync: vi.fn(async () => undefined),
-    listConnections: vi.fn(),
-    initiateOAuth: vi.fn(),
-    handleOAuthCallback: vi.fn(),
-    disconnect: vi.fn(),
-  };
+  const dispatchMock = vi.fn(async () => ({
+    notificationId: 'n1',
+    outcome: 'sent' as const,
+  }));
 
-  return { spyState, makeDbWrapper, owMocks, wcMocks };
+  return { spyState, makeDbWrapper, owMocks, dispatchMock };
 });
 
 // ---------------------------------------------------------------------------
@@ -95,7 +101,9 @@ vi.mock('../../db', () => {
 });
 
 vi.mock('../../services/openWearablesClient', () => owMocks);
-vi.mock('../../services/wearableConnections', () => wcMocks);
+vi.mock('../../services/notificationDispatcher', () => ({
+  dispatch: dispatchMock,
+}));
 
 vi.mock('../../logger', () => ({
   logger: {
@@ -113,32 +121,79 @@ import {
   startWearableSyncMonitor,
   stopWearableSyncMonitor,
   getCronStatus,
+  determineSyncErrorState,
 } from '../../jobs/wearableSyncMonitor';
 
-// ---------------------------------------------------------------------------
-// Tick semantics
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// determineSyncErrorState — unit tests
+// ===========================================================================
+
+describe('determineSyncErrorState — Cron Case 3 abstraction', () => {
+  it('Semantic (a): OW exposes sync_error_count → mirror it', () => {
+    const r = determineSyncErrorState(
+      { status: 'error', sync_error_count: 5 },
+      { syncErrorCount: 0 }
+    );
+    expect(r.newCount).toBe(5);
+    expect(r.statusFromCount).toBe('errored');
+  });
+
+  it('Semantic (a): OW count below threshold → healthy', () => {
+    const r = determineSyncErrorState(
+      { status: 'error', sync_error_count: 1 },
+      { syncErrorCount: 0 }
+    );
+    expect(r.newCount).toBe(1);
+    expect(r.statusFromCount).toBe('healthy');
+  });
+
+  it('Semantic (b): OW does NOT expose sync_error_count, status=error → increment our counter', () => {
+    const r = determineSyncErrorState({ status: 'error' }, { syncErrorCount: 1 });
+    expect(r.newCount).toBe(2);
+    expect(r.statusFromCount).toBe('healthy');
+  });
+
+  it('Semantic (b): increment hits threshold (3) → errored', () => {
+    const r = determineSyncErrorState({ status: 'error' }, { syncErrorCount: 2 });
+    expect(r.newCount).toBe(3);
+    expect(r.statusFromCount).toBe('errored');
+  });
+
+  it('Semantic (b): OW.status non-error → reset counter to 0', () => {
+    const r = determineSyncErrorState({ status: 'connected' }, { syncErrorCount: 5 });
+    expect(r.newCount).toBe(0);
+    expect(r.statusFromCount).toBe('healthy');
+  });
+});
+
+// ===========================================================================
+// runSyncMonitorTick — claim semantics
+// ===========================================================================
 
 describe('runSyncMonitorTick — claim semantics', () => {
   beforeEach(() => {
     spyState.reset();
-    owMocks.triggerSync.mockReset();
-    wcMocks.markSyncError.mockReset();
-    wcMocks.recordSuccessfulSync.mockReset();
-    // Default: triggerSync resolves OK
-    owMocks.triggerSync.mockResolvedValue({ ok: true });
+    owMocks.getConnections.mockReset();
+    dispatchMock.mockReset();
+    owMocks.getConnections.mockResolvedValue({ connections: [] });
   });
 
-  it('returns zeros when no candidate rows match the stale window', async () => {
+  it('returns zeros when no candidate rows match', async () => {
     spyState.queueResults({ rows: [] });
     const result = await runSyncMonitorTick();
-    expect(result).toEqual({ claimed: 0, recovered: 0, errors: 0 });
-    expect(owMocks.triggerSync).not.toHaveBeenCalled();
-    expect(wcMocks.recordSuccessfulSync).not.toHaveBeenCalled();
-    expect(wcMocks.markSyncError).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      claimed: 0,
+      recovered: 0,
+      expired: 0,
+      errored: 0,
+      disconnected: 0,
+      pollErrors: 0,
+    });
+    expect(owMocks.getConnections).not.toHaveBeenCalled();
+    expect(dispatchMock).not.toHaveBeenCalled();
   });
 
-  it('issues a SELECT ... FOR UPDATE SKIP LOCKED query — concurrency safety contract', async () => {
+  it('issues SELECT FOR UPDATE SKIP LOCKED — concurrency safety contract', async () => {
     spyState.queueResults({ rows: [] });
     await runSyncMonitorTick();
     expect(spyState.executeCalls.length).toBe(1);
@@ -146,123 +201,278 @@ describe('runSyncMonitorTick — claim semantics', () => {
     expect(joined).toContain('FOR UPDATE SKIP LOCKED');
   });
 
-  it('SQL filters by status=connected AND last_sync_at < NOW() - 24 hours window', async () => {
+  it('SQL filters status IN connected/expired/error (NOT just connected)', async () => {
     spyState.queueResults({ rows: [] });
     await runSyncMonitorTick();
     const joined = spyState.executeCalls[0].sqlChunks.join(' ');
     expect(joined).toContain('wearable_connections');
-    expect(joined).toContain("status = 'connected'");
-    expect(joined).toContain('last_sync_at IS NULL');
-    expect(joined).toContain('24 hours');
-  });
-
-  it('happy path: each claimed row triggers ow.triggerSync + recordSuccessfulSync; recovered counter increments', async () => {
-    spyState.queueResults({
-      rows: [
-        { id: 'conn-1', user_id: 'user-A', provider: 'whoop' },
-        { id: 'conn-2', user_id: 'user-B', provider: 'oura' },
-      ],
-    });
-    owMocks.triggerSync.mockResolvedValue({ ok: true });
-
-    const result = await runSyncMonitorTick();
-    expect(result).toEqual({ claimed: 2, recovered: 2, errors: 0 });
-    expect(owMocks.triggerSync).toHaveBeenCalledTimes(2);
-    expect(owMocks.triggerSync).toHaveBeenCalledWith('whoop', 'user-A');
-    expect(owMocks.triggerSync).toHaveBeenCalledWith('oura', 'user-B');
-    expect(wcMocks.recordSuccessfulSync).toHaveBeenCalledWith('conn-1');
-    expect(wcMocks.recordSuccessfulSync).toHaveBeenCalledWith('conn-2');
-    expect(wcMocks.markSyncError).not.toHaveBeenCalled();
-  });
-
-  it('per-row triggerSync failure → markSyncError called, errors increments, batch continues', async () => {
-    spyState.queueResults({
-      rows: [
-        { id: 'conn-1', user_id: 'user-A', provider: 'whoop' },
-        { id: 'conn-2', user_id: 'user-B', provider: 'oura' },
-        { id: 'conn-3', user_id: 'user-C', provider: 'garmin' },
-      ],
-    });
-    owMocks.triggerSync
-      .mockResolvedValueOnce({ ok: true })
-      .mockRejectedValueOnce(new Error('OW 502 bad gateway'))
-      .mockResolvedValueOnce({ ok: true });
-
-    const result = await runSyncMonitorTick();
-    expect(result).toEqual({ claimed: 3, recovered: 2, errors: 1 });
-    expect(wcMocks.markSyncError).toHaveBeenCalledTimes(1);
-    // markSyncError gets the connection id + error message
-    const [connId, errMsg] = wcMocks.markSyncError.mock.calls[0] as [string, string];
-    expect(connId).toBe('conn-2');
-    expect(errMsg).toContain('OW 502 bad gateway');
-    // Other two recovered normally
-    expect(wcMocks.recordSuccessfulSync).toHaveBeenCalledWith('conn-1');
-    expect(wcMocks.recordSuccessfulSync).toHaveBeenCalledWith('conn-3');
-  });
-
-  it('markSyncError is the dispatcher of wearable_sync_failed / wearable_expired — cron does NOT call dispatch directly', async () => {
-    // Architectural invariant: BATCH 3 cron must not import notificationDispatcher.
-    // The lifecycle notifications (sync_failed at count===1, expired at count===3)
-    // fire INSIDE wearableConnections.markSyncError per the fire-and-forget
-    // decision. This test guards against a future refactor that bypasses the
-    // service and calls dispatch from the cron — which would double-dispatch on
-    // the next ingest webhook.
-    spyState.queueResults({
-      rows: [{ id: 'conn-1', user_id: 'user-A', provider: 'whoop' }],
-    });
-    owMocks.triggerSync.mockRejectedValueOnce(new Error('boom'));
-    await runSyncMonitorTick();
-    expect(wcMocks.markSyncError).toHaveBeenCalledTimes(1);
-    // The cron's responsibility ends at markSyncError. dispatch invocation is
-    // the service's job and is tested in wearableConnections tests.
+    expect(joined).toContain("'connected'");
+    expect(joined).toContain("'expired'");
+    expect(joined).toContain("'error'");
   });
 });
 
-// ---------------------------------------------------------------------------
-// Re-entrancy guard
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Case 1: re-healthy
+// ===========================================================================
+
+describe('Case 1 — re-healthy (OW=connected, our!=connected)', () => {
+  beforeEach(() => {
+    spyState.reset();
+    owMocks.getConnections.mockReset();
+    dispatchMock.mockReset();
+  });
+
+  it('row was expired, OW reports connected → UPDATE status=connected, NO dispatch', async () => {
+    spyState.queueResults({
+      rows: [
+        {
+          id: 'conn-1',
+          user_id: 'user-A',
+          provider: 'garmin',
+          status: 'expired',
+          sync_error_count: 0,
+        },
+      ],
+    });
+    owMocks.getConnections.mockResolvedValueOnce({
+      connections: [{ id: 'ow-c-1', user_id: 'user-A', provider: 'garmin', status: 'connected' }],
+    });
+
+    const result = await runSyncMonitorTick();
+
+    expect(result.recovered).toBe(1);
+    expect(result.expired).toBe(0);
+    expect(result.errored).toBe(0);
+    expect(dispatchMock).not.toHaveBeenCalled();
+    // Confirm an UPDATE was issued with status=connected
+    const updateCalls = spyState.executeCalls.filter((c) =>
+      c.sqlChunks.join('').includes('UPDATE wearable_connections')
+    );
+    expect(updateCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// ===========================================================================
+// Case 2: token expired
+// ===========================================================================
+
+describe('Case 2 — token expired (OW=expired, our!=expired)', () => {
+  beforeEach(() => {
+    spyState.reset();
+    owMocks.getConnections.mockReset();
+    dispatchMock.mockReset();
+  });
+
+  it('row was connected, OW reports expired → UPDATE status=expired + dispatch wearable_expired', async () => {
+    spyState.queueResults({
+      rows: [
+        {
+          id: 'conn-1',
+          user_id: 'user-A',
+          provider: 'garmin',
+          status: 'connected',
+          sync_error_count: 0,
+        },
+      ],
+    });
+    owMocks.getConnections.mockResolvedValueOnce({
+      connections: [{ id: 'ow-c-1', user_id: 'user-A', provider: 'garmin', status: 'expired' }],
+    });
+
+    const result = await runSyncMonitorTick();
+
+    expect(result.expired).toBe(1);
+    expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_expired', {
+      provider: 'garmin',
+    });
+  });
+});
+
+// ===========================================================================
+// Case 3: sync error with counter threshold
+// ===========================================================================
+
+describe('Case 3 — sync error counter (Semantic (b) — count ourselves)', () => {
+  beforeEach(() => {
+    spyState.reset();
+    owMocks.getConnections.mockReset();
+    dispatchMock.mockReset();
+  });
+
+  it('row connected with syncErrorCount=2, OW reports error → count→3, dispatch sync_failed, status=error', async () => {
+    spyState.queueResults({
+      rows: [
+        {
+          id: 'conn-1',
+          user_id: 'user-A',
+          provider: 'garmin',
+          status: 'connected',
+          sync_error_count: 2,
+        },
+      ],
+    });
+    owMocks.getConnections.mockResolvedValueOnce({
+      connections: [{ id: 'ow-c-1', user_id: 'user-A', provider: 'garmin', status: 'error' }],
+    });
+
+    const result = await runSyncMonitorTick();
+
+    expect(result.errored).toBe(1);
+    expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_sync_failed', {
+      provider: 'garmin',
+    });
+  });
+
+  it('row connected with syncErrorCount=0, OW reports error → count→1 (below threshold), NO dispatch yet', async () => {
+    spyState.queueResults({
+      rows: [
+        {
+          id: 'conn-1',
+          user_id: 'user-A',
+          provider: 'garmin',
+          status: 'connected',
+          sync_error_count: 0,
+        },
+      ],
+    });
+    owMocks.getConnections.mockResolvedValueOnce({
+      connections: [{ id: 'ow-c-1', user_id: 'user-A', provider: 'garmin', status: 'error' }],
+    });
+
+    const result = await runSyncMonitorTick();
+
+    expect(result.errored).toBe(0);
+    expect(dispatchMock).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// Case 4: disconnected on OW side
+// ===========================================================================
+
+describe('Case 4 — missing matching connection (disconnected on OW side)', () => {
+  beforeEach(() => {
+    spyState.reset();
+    owMocks.getConnections.mockReset();
+    dispatchMock.mockReset();
+  });
+
+  it('OW returns no connection for our provider → status=disconnected, NO dispatch', async () => {
+    spyState.queueResults({
+      rows: [
+        {
+          id: 'conn-1',
+          user_id: 'user-A',
+          provider: 'garmin',
+          status: 'connected',
+          sync_error_count: 0,
+        },
+      ],
+    });
+    // OW's connections list has Polar but not Garmin — user disconnected Garmin on OW side
+    owMocks.getConnections.mockResolvedValueOnce({
+      connections: [{ id: 'ow-c-2', user_id: 'user-A', provider: 'polar', status: 'connected' }],
+    });
+
+    const result = await runSyncMonitorTick();
+
+    expect(result.disconnected).toBe(1);
+    // No dispatch — user-initiated disconnect from OW side; they already know.
+    expect(dispatchMock).not.toHaveBeenCalled();
+    // Confirm an UPDATE was issued with status=disconnected
+    const updateCalls = spyState.executeCalls.filter((c) =>
+      c.sqlChunks.join('').includes('disconnected_at')
+    );
+    expect(updateCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// ===========================================================================
+// OW unreachable — pollErrors counter
+// ===========================================================================
+
+describe('OW unreachable — pollErrors counter (no dispatch on transient outage)', () => {
+  beforeEach(() => {
+    spyState.reset();
+    owMocks.getConnections.mockReset();
+    dispatchMock.mockReset();
+  });
+
+  it('getConnections throws → pollErrors increments, NO dispatch', async () => {
+    spyState.queueResults({
+      rows: [
+        {
+          id: 'conn-1',
+          user_id: 'user-A',
+          provider: 'garmin',
+          status: 'connected',
+          sync_error_count: 0,
+        },
+      ],
+    });
+    owMocks.getConnections.mockRejectedValueOnce(new Error('OW 502 bad gateway'));
+
+    const result = await runSyncMonitorTick();
+
+    expect(result.pollErrors).toBe(1);
+    expect(result.expired).toBe(0);
+    expect(result.errored).toBe(0);
+    expect(dispatchMock).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// Re-entrancy guard (preserved from BATCH 3)
+// ===========================================================================
 
 describe('runSyncMonitorTick — re-entrancy guard', () => {
   beforeEach(() => {
     spyState.reset();
-    owMocks.triggerSync.mockReset();
-    wcMocks.markSyncError.mockReset();
-    wcMocks.recordSuccessfulSync.mockReset();
+    owMocks.getConnections.mockReset();
+    dispatchMock.mockReset();
   });
 
   it('returns instantly when a previous tick is still in flight', async () => {
     spyState.queueResults({
-      rows: [{ id: 'conn-1', user_id: 'user-A', provider: 'whoop' }],
+      rows: [
+        {
+          id: 'conn-1',
+          user_id: 'user-A',
+          provider: 'garmin',
+          status: 'connected',
+          sync_error_count: 0,
+        },
+      ],
     });
     let release: (() => void) | undefined;
-    const slow = new Promise<{ ok: boolean }>((resolve) => {
-      release = () => resolve({ ok: true });
+    const slow = new Promise<{ connections: any[] }>((resolve) => {
+      release = () => resolve({ connections: [] });
     });
-    owMocks.triggerSync.mockReturnValueOnce(slow);
+    owMocks.getConnections.mockReturnValueOnce(slow);
 
     const first = runSyncMonitorTick();
     // Yield so first invocation enters the inFlight branch
     await new Promise((r) => setImmediate(r));
 
     const second = await runSyncMonitorTick();
-    expect(second).toEqual({ claimed: 0, recovered: 0, errors: 0 });
+    expect(second.claimed).toBe(0);
     // Only the FIRST tick hit the DB
     expect(spyState.executeCalls).toHaveLength(1);
 
     release!();
-    const firstResult = await first;
-    expect(firstResult.claimed).toBe(1);
+    await first;
   });
 });
 
-// ---------------------------------------------------------------------------
-// Lifecycle: start / stop / status / interval clamp
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Lifecycle (preserved from BATCH 3)
+// ===========================================================================
 
 describe('startWearableSyncMonitor / stopWearableSyncMonitor / getCronStatus', () => {
   beforeEach(() => {
     spyState.reset();
-    owMocks.triggerSync.mockReset();
+    owMocks.getConnections.mockReset();
     stopWearableSyncMonitor();
     delete process.env.WEARABLE_SYNC_MONITOR_INTERVAL_MS;
   });
