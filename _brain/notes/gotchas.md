@@ -456,6 +456,45 @@ First captured: Sprint 3 BATCH 5 (animation timing, 2026-05-06) and BATCH 6 (Gur
 
 ---
 
+## Tests that mock at the system boundary mask identity-bridge bugs
+
+**When integrating with an external system that has its own identity domain (UUIDs, IDs, user codes) that maps to our internal identity, integration tests MUST exercise the bridge step explicitly. Tests that mock at the function-call boundary inject internal IDs directly, bypassing the bridge and hiding bridge bugs.**
+
+Surfaced during Sprint 4 BATCH 5a → spike Q2 follow-up. The BATCH 5a `wearableIngest` test suite passed all 19 tests against the rewritten ingest functions. Every test passed. Production would have FK-violated on the first webhook.
+
+The bug: ingest functions treated `data.user_id` from the webhook payload as our internal GymGurus user UUID. In reality, `data.user_id` is Open Wearables' internal user UUID (a separate identity domain). Without the bridge (lookup `wearable_connections.open_wearables_user_id` → our `userId`), the INSERT statements would fail with a foreign-key violation against `users.id`.
+
+Why the tests didn't catch it: the `wearableIngest.test.ts` file mocked the database query layer and called `ingestWorkoutCreated({user_id: 'some-uuid', ...})` directly with a UUID that was assumed to be our internal one. The test never exercised:
+
+1. A real `wearable_connections` row with both `userId` (our domain) and `open_wearables_user_id` (OW's domain)
+2. A webhook payload where `data.user_id` is OW's UUID, not ours
+3. The bridge function that maps OW's UUID → our UUID before the INSERT
+
+The mocked tests passed because the test framework injected our-domain UUIDs at the function-call boundary, which is exactly where the bridge translation should happen but wasn't.
+
+**Rule:** for any integration with a system that has its own identity domain, write at least one integration test that:
+
+1. INSERTs a row in our DB establishing the mapping (e.g., `wearable_connections` with both `userId='gymgurus-user-1'` and `open_wearables_user_id='ow-uuid-abc'`)
+2. Submits the external input through the FULL pipeline using the EXTERNAL identifier (e.g., a Svix-signed webhook with `data.user_id='ow-uuid-abc'`)
+3. Asserts the resulting database state uses the INTERNAL identifier (e.g., `activity_sessions.user_id='gymgurus-user-1'`, NOT `'ow-uuid-abc'`)
+
+Plus a negative test: external input arrives with an unknown external ID. Assert the documented behavior (skip-with-log + 200 ack vs throw + retry — pick one and lock it).
+
+**Don't bypass the front of the pipeline.** If the integration is webhook-based, sign the test fixture with the same `whsec_*` test secret the production verifier accepts. If the integration is API-based, exercise the real auth header. The whole point is to catch the bridge bug; bypassing the verifier weakens the test.
+
+**Future surfaces in this codebase** — any sprint that integrates an external system with its own identity domain:
+
+- Sprint 5 Apple Health (if we use OW's Apple provider, OW assigns its own internal IDs)
+- Sprint 12 Capacitor native push registration (the OS assigns push tokens that map to our user)
+- Stripe customer ID → our user ID bridge (already in place, but worth a bridge test if it isn't)
+- Any future MCP integration that creates its own object IDs
+
+First applied: Sprint 4 Task 5a.10 — three positive bridge tests (workout/sleep/body_composition) + at least one negative unknown-user test, all using real Svix-signed fixtures.
+
+First captured: Sprint 4 Q2 spike completion (2026-05-07).
+
+---
+
 ## Related Notes
 
 - [[decisions]]
