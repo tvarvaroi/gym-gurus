@@ -66,6 +66,8 @@ type Phase =
   | 'post-014'
   | 'baseline-014.5'
   | 'post-014.5'
+  | 'baseline-014.6'
+  | 'post-014.6'
   | 'baseline-015'
   | 'post-015';
 
@@ -1556,6 +1558,228 @@ async function post0145() {
   console.log(`  body_metrics (wearable-sourced) : ${wearableCount}`);
 }
 
+// ─── Migration 014.6 verifier phases (Sprint 5 BATCH 1, Path C) ─────────────
+// 014.6 replaces 014.5's day-bucketed partial UNIQUE with a per-record partial
+// UNIQUE keyed on source_record_id. Up() does THREE things:
+//   (1) ALTER TABLE ADD COLUMN source_record_id varchar(255)  -- nullable
+//   (2) CREATE UNIQUE INDEX idx_body_metrics_per_record_dedup
+//         ON body_metrics (user_id, source, source_record_id)
+//         WHERE source != 'manual'
+//   (3) DROP INDEX idx_body_metrics_wearable_dedup  (subsumed by new index)
+//
+// Post-014.6 verifier asserts ALL three transitions occurred AND adds a
+// fresh probe-INSERT-twice round-trip exercising the new partial UNIQUE
+// (different conflict columns vs 014.5 — now (user_id, source, source_record_id)
+// instead of (user_id, source_provider, recorded_at::date)).
+
+async function baseline0146() {
+  const db = await getDb();
+  console.log('=== BASELINE-014.6 ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}\n`);
+
+  // Old 014.5 index MUST be present pre-014.6 (will be dropped by 014.6 up)
+  const oldIdxOk = await indexExists(db, 'idx_body_metrics_wearable_dedup');
+  console.log('014.5 index (must be PRESENT before 014.6 run, will be dropped by it):');
+  console.log(
+    `  idx_body_metrics_wearable_dedup     : ${oldIdxOk ? 'present ✓' : 'ABSENT (UNEXPECTED — 014.5 must apply before 014.6)'}`
+  );
+
+  // source_record_id column must NOT exist yet
+  const colOk = await columnExists(db, 'body_metrics', 'source_record_id');
+  console.log('\n014.6 column (must be absent before run):');
+  console.log(
+    `  body_metrics.source_record_id       : ${colOk ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  // New 014.6 index must NOT exist yet
+  const newIdxOk = await indexExists(db, 'idx_body_metrics_per_record_dedup');
+  console.log('\n014.6 index (must be absent before run):');
+  console.log(
+    `  idx_body_metrics_per_record_dedup   : ${newIdxOk ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  // Snapshot non-manual row count (must match exactly post-014.6 since up()
+  // is column+index only — no row writes/deletes).
+  const r: any = await db.execute(sql`
+    SELECT COUNT(*)::text AS c FROM body_metrics
+    WHERE source != 'manual'
+  `);
+  const nonManualCount = parseInt(r.rows?.[0]?.c ?? r[0]?.c ?? '0', 10);
+  console.log(
+    `\nbody_metrics non-manual rows (snapshot for post-014.6 drift check): ${nonManualCount}`
+  );
+
+  console.log('\nExisting-table row counts (snapshot for post-014.6 drift detection):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+  console.log('\nSAVE THESE NUMBERS — used as the baseline for post-014.6 drift checks.');
+}
+
+async function post0146() {
+  const db = await getDb();
+  console.log('=== POST-014.6 ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}\n`);
+
+  // ─── (a) source_record_id column exists with correct type ───────────────
+  const colOk = await columnExists(db, 'body_metrics', 'source_record_id');
+  console.log('(a) body_metrics.source_record_id column:');
+  console.log(`  exists?                             : ${colOk ? '✓' : 'MISSING — CATASTROPHIC'}`);
+
+  if (colOk) {
+    const typeR: any = await db.execute(sql`
+      SELECT data_type, character_maximum_length::text AS len, is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'body_metrics'
+        AND column_name = 'source_record_id'
+    `);
+    const row = typeR.rows?.[0] ?? typeR[0] ?? {};
+    const dataType = row.data_type ?? '?';
+    const len = row.len ?? '?';
+    const nullable = row.is_nullable ?? '?';
+    const typeOk = dataType === 'character varying' && len === '255' && nullable === 'YES';
+    console.log(
+      `  type=${dataType} length=${len} nullable=${nullable} : ${typeOk ? '✓ (varchar(255), nullable)' : '— UNEXPECTED, expected nullable varchar(255)'}`
+    );
+  }
+
+  // ─── (b) New 014.6 index present + UNIQUE + partial WHERE clause ────────
+  const newIdxOk = await indexExists(db, 'idx_body_metrics_per_record_dedup');
+  console.log('\n(b) New per-record partial UNIQUE index:');
+  console.log(
+    `  idx_body_metrics_per_record_dedup   : ${newIdxOk ? 'present ✓' : 'MISSING — CATASTROPHIC'}`
+  );
+
+  if (newIdxOk) {
+    const def = (await indexDef(db, 'idx_body_metrics_per_record_dedup')) ?? '';
+    const isUnique = /CREATE UNIQUE INDEX/i.test(def);
+    const hasPartialWhere =
+      /WHERE\s*\(?\s*\(?source\)?\s*::\s*text/i.test(def) || /WHERE\s+source/i.test(def);
+    const hasSourceRecordId = /source_record_id/i.test(def);
+    console.log(
+      `  is UNIQUE?                          : ${isUnique ? '✓' : 'NO — index is NOT unique'}`
+    );
+    console.log(
+      `  has partial WHERE clause?           : ${hasPartialWhere ? '✓' : 'NO — index is full-table (BREAKS manual-entry semantics)'}`
+    );
+    console.log(
+      `  references source_record_id?        : ${hasSourceRecordId ? '✓' : 'NO — index does not include source_record_id'}`
+    );
+    console.log(`  raw indexdef                        : ${def.slice(0, 200)}`);
+  }
+
+  // ─── (c) Old 014.5 index DROPPED — load-bearing for 014.6's correctness ─
+  // 014.6 up() drops idx_body_metrics_wearable_dedup as Stage 3. If still
+  // present, the migration only partially applied and is in an inconsistent
+  // state.
+  const oldIdxOk = await indexExists(db, 'idx_body_metrics_wearable_dedup');
+  console.log('\n(c) Old 014.5 index (must be DROPPED by 014.6):');
+  console.log(
+    `  idx_body_metrics_wearable_dedup     : ${oldIdxOk ? 'STILL PRESENT — 014.6 PARTIALLY APPLIED' : 'absent ✓ (dropped by 014.6 as designed)'}`
+  );
+
+  // ─── (d) UPSERT round-trip probe (per-record dedup behavior) ────────────
+  // Insert a probe row twice with same (user, source, source_record_id).
+  // Second insert MUST UPSERT not duplicate. Cleanup at end.
+  console.log('\n(d) UPSERT round-trip probe (per-record dedup behavior):');
+
+  const userRow: any = await db.execute(sql`SELECT id FROM users WHERE deleted_at IS NULL LIMIT 1`);
+  const probeUserRows = (userRow.rows ?? userRow) as Array<{ id: string }>;
+  if (probeUserRows.length === 0) {
+    console.log('  ⚠ no user available to probe — skipping UPSERT round-trip test');
+  } else {
+    const probeUserId = probeUserRows[0].id;
+    const PROBE_SOURCE = 'apple_health';
+    const PROBE_RECORD_ID = 'verifier-probe-014_6-stable-record-id';
+    const PROBE_PROVIDER = 'verifier_probe_146';
+
+    try {
+      // Cleanup any leftover probe rows from a previous abandoned run
+      await db.execute(sql`
+        DELETE FROM body_metrics WHERE source_record_id = ${PROBE_RECORD_ID}
+      `);
+
+      const beforeR: any = await db.execute(sql`
+        SELECT COUNT(*)::text AS c FROM body_metrics WHERE source_record_id = ${PROBE_RECORD_ID}
+      `);
+      const before = parseInt(beforeR.rows?.[0]?.c ?? beforeR[0]?.c ?? '0', 10);
+
+      // INSERT 1
+      await db.execute(sql`
+        INSERT INTO body_metrics (user_id, recorded_at, weight_kg, source, source_provider, source_record_id)
+        VALUES (${probeUserId}, NOW(), 75.0, ${PROBE_SOURCE}, ${PROBE_PROVIDER}, ${PROBE_RECORD_ID})
+        ON CONFLICT (user_id, source, source_record_id)
+          WHERE source != 'manual'
+        DO UPDATE SET weight_kg = EXCLUDED.weight_kg, updated_at = NOW();
+      `);
+      // INSERT 2 — same (user, source, record_id), should UPSERT not insert
+      await db.execute(sql`
+        INSERT INTO body_metrics (user_id, recorded_at, weight_kg, source, source_provider, source_record_id)
+        VALUES (${probeUserId}, NOW(), 76.0, ${PROBE_SOURCE}, ${PROBE_PROVIDER}, ${PROBE_RECORD_ID})
+        ON CONFLICT (user_id, source, source_record_id)
+          WHERE source != 'manual'
+        DO UPDATE SET weight_kg = EXCLUDED.weight_kg, updated_at = NOW();
+      `);
+
+      const afterR: any = await db.execute(sql`
+        SELECT COUNT(*)::text AS c FROM body_metrics WHERE source_record_id = ${PROBE_RECORD_ID}
+      `);
+      const after = parseInt(afterR.rows?.[0]?.c ?? afterR[0]?.c ?? '0', 10);
+
+      // Verify the value was updated (76.0, not 75.0)
+      const valueR: any = await db.execute(sql`
+        SELECT weight_kg::text AS w FROM body_metrics WHERE source_record_id = ${PROBE_RECORD_ID}
+      `);
+      const finalWeight = valueR.rows?.[0]?.w ?? valueR[0]?.w ?? '?';
+
+      console.log(`  before INSERTs                      : ${before} rows (probe namespace)`);
+      console.log(
+        `  after 2 INSERTs (same source_record_id) : ${after} rows ${after === before + 1 ? '✓ (UPSERTed correctly)' : '— UNEXPECTED, dedup BROKEN'}`
+      );
+      console.log(
+        `  final weight_kg value               : ${finalWeight} ${finalWeight === '76.00' || finalWeight === '76' ? '✓ (UPDATE took)' : `— UNEXPECTED, expected 76.00 got ${finalWeight}`}`
+      );
+
+      // Cleanup
+      await db.execute(sql`
+        DELETE FROM body_metrics WHERE source_record_id = ${PROBE_RECORD_ID}
+      `);
+      console.log(`  cleanup                             : probe row deleted ✓`);
+    } catch (e: any) {
+      // Always attempt cleanup even on failure
+      try {
+        await db.execute(sql`
+          DELETE FROM body_metrics WHERE source_record_id = ${PROBE_RECORD_ID}
+        `);
+      } catch {
+        // ignore
+      }
+      console.log(`  ⚠ UPSERT probe error: ${e?.message ?? e}`);
+    }
+  }
+
+  // ─── (e) Existing-table row counts unchanged from baseline ──────────────
+  console.log('\n(e) Existing-table row counts (compare to baseline-014.6 — MUST match exactly):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+  // Non-manual body_metrics count (must match baseline-014.6 exactly —
+  // up() is column+index only, no row writes)
+  const r: any = await db.execute(sql`
+    SELECT COUNT(*)::text AS c FROM body_metrics
+    WHERE source != 'manual'
+  `);
+  const nonManualCount = parseInt(r.rows?.[0]?.c ?? r[0]?.c ?? '0', 10);
+  console.log(`  body_metrics (non-manual)       : ${nonManualCount}`);
+}
+
 // ===========================================================================
 // 015 — wearable_connections.open_wearables_user_id (Sprint 4 Task 5a.10)
 // ===========================================================================
@@ -1752,6 +1976,8 @@ const phases: Record<Phase, () => Promise<void>> = {
   'post-014': post014,
   'baseline-014.5': baseline0145,
   'post-014.5': post0145,
+  'baseline-014.6': baseline0146,
+  'post-014.6': post0146,
   'baseline-015': baseline015,
   'post-015': post015,
 };
@@ -1759,7 +1985,7 @@ const phases: Record<Phase, () => Promise<void>> = {
 const fn = phases[phase];
 if (!fn) {
   console.error(
-    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012|baseline-013|post-013|baseline-014|post-014|baseline-014.5|post-014.5|baseline-015|post-015>`
+    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012|baseline-013|post-013|baseline-014|post-014|baseline-014.5|post-014.5|baseline-014.6|post-014.6|baseline-015|post-015>`
   );
   process.exit(2);
 }

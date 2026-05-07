@@ -4,6 +4,7 @@ import {
   text,
   varchar,
   integer,
+  bigint,
   timestamp,
   decimal,
   doublePrecision,
@@ -400,6 +401,87 @@ export const activitySessions = pgTable(
     ),
   ]
 );
+
+// Apple Health import tracking — Sprint 5. One row per upload operation,
+// tracks status + counters. The actual imported records (workouts/sleep/
+// body/vitals) live in the existing wearable schema (sleep_sessions,
+// daily_vitals, activity_sessions, body_metrics) with source='apple_health'.
+//
+// Status state machine:
+//   uploaded → parsing → completed
+//                     ↘ failed
+//                     ↘ cancelled (user cancelled mid-parse)
+//
+// file_r2_key may be cleared after successful processing to free R2 storage,
+// but stays populated for failed/cancelled imports so the user can re-trigger
+// processing without re-uploading.
+
+export const APPLE_HEALTH_IMPORT_STATUSES = [
+  'uploaded',
+  'parsing',
+  'completed',
+  'failed',
+  'cancelled',
+] as const;
+export type AppleHealthImportStatus = (typeof APPLE_HEALTH_IMPORT_STATUSES)[number];
+
+export const appleHealthImports = pgTable(
+  'apple_health_imports',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    fileSizeBytes: bigint('file_size_bytes', { mode: 'number' }).notNull(),
+    fileR2Key: varchar('file_r2_key', { length: 512 }),
+    status: varchar('status', { length: 16 })
+      .notNull()
+      .default('uploaded')
+      .$type<AppleHealthImportStatus>(),
+    recordsParsed: integer('records_parsed').notNull().default(0),
+    recordsIngestedWorkout: integer('records_ingested_workout').notNull().default(0),
+    recordsIngestedSleep: integer('records_ingested_sleep').notNull().default(0),
+    recordsIngestedVitals: integer('records_ingested_vitals').notNull().default(0),
+    recordsIngestedBody: integer('records_ingested_body').notNull().default(0),
+    recordsSkippedDuplicate: integer('records_skipped_duplicate').notNull().default(0),
+    recordsSkippedUnparseable: integer('records_skipped_unparseable').notNull().default(0),
+    errorMessage: text('error_message'),
+    dateRangeStart: varchar('date_range_start', { length: 10 }),
+    dateRangeEnd: varchar('date_range_end', { length: 10 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+    completedAt: timestamp('completed_at'),
+  },
+  (table) => [
+    index('idx_apple_health_imports_user_status').on(table.userId, table.status),
+    index('idx_apple_health_imports_user_recent').on(table.userId, sql`${table.createdAt} DESC`),
+  ]
+);
+
+export const appleHealthImportsRelations = relations(appleHealthImports, ({ one }) => ({
+  user: one(users, { fields: [appleHealthImports.userId], references: [users.id] }),
+}));
+
+export const insertAppleHealthImportSchema = createInsertSchema(appleHealthImports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+  recordsParsed: true,
+  recordsIngestedWorkout: true,
+  recordsIngestedSleep: true,
+  recordsIngestedVitals: true,
+  recordsIngestedBody: true,
+  recordsSkippedDuplicate: true,
+  recordsSkippedUnparseable: true,
+});
+export type InsertAppleHealthImport = z.infer<typeof insertAppleHealthImportSchema>;
+export type AppleHealthImport = typeof appleHealthImports.$inferSelect;
 
 // Exercise Type Enum
 export const EXERCISE_TYPES = [
@@ -2439,6 +2521,13 @@ export const bodyMetrics = pgTable(
     bodyWaterPercentage: decimal('body_water_percentage', { precision: 4, scale: 2 }),
     source: varchar('source', { length: 30 }).notNull().default('manual'), // manual | wearable | apple_health | smart_scale
     sourceProvider: varchar('source_provider', { length: 50 }), // whoop | withings | manual | ...
+    // Sprint 5 BATCH 1 (migration 014.6, Path C) — per-record idempotency key.
+    // For Apple Health imports: HKAttributeKeyExternalUUID if present, else
+    // sha256(sourceName || startDate || value || recordType). For wearables
+    // when Sprint 4 resumes: provider's stable record ID. NULL for manual
+    // entries (manual rows are excluded from the per-record partial UNIQUE
+    // via WHERE source != 'manual').
+    sourceRecordId: varchar('source_record_id', { length: 255 }),
     notes: text('notes'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
@@ -2449,14 +2538,16 @@ export const bodyMetrics = pgTable(
   (table) => [
     index('idx_body_metrics_user_id').on(table.userId),
     index('idx_body_metrics_user_recorded_at').on(table.userId, table.recordedAt),
-    // Sprint 4 BATCH 5a — partial UNIQUE for wearable-sourced dedup. Only
-    // enforces uniqueness for `source IN ('wearable', 'smart_scale')`; manual
-    // entries keep multi-per-day semantics. Conflict target for the
-    // body_composition.created ingest UPSERT path. Migration 014.5 creates
-    // the underlying CREATE UNIQUE INDEX ... WHERE expression.
-    uniqueIndex('idx_body_metrics_wearable_dedup')
-      .on(table.userId, table.sourceProvider, sql`(${table.recordedAt}::date)`)
-      .where(sql`${table.source} IN ('wearable', 'smart_scale')`),
+    // Sprint 5 BATCH 1 (migration 014.6, Path C) — per-record partial UNIQUE
+    // for non-manual sources. Replaces the day-bucketed 014.5 index
+    // (idx_body_metrics_wearable_dedup), which Sprint 5's 014.6 migration
+    // drops. Manual entries keep multi-per-day semantics via the
+    // `source != 'manual'` filter. Conflict target for the per-record UPSERT
+    // path used by Apple Health ingest (Sprint 5) and future wearable ingest
+    // (when Sprint 4 resumes). See migration body for full rationale.
+    uniqueIndex('idx_body_metrics_per_record_dedup')
+      .on(table.userId, table.source, table.sourceRecordId)
+      .where(sql`${table.source} != 'manual'`),
   ]
 );
 

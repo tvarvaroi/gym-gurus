@@ -524,6 +524,27 @@ function getPgErrorCode(err: any): string | undefined {
 
 ---
 
+## Apple Health record UUIDs are not always present, and not always stable across re-exports
+
+Newer Apple Health exports (post-iOS 15-ish) include `HKAttributeKeyExternalUUID` per record. Older exports often don't. Sprint 5 ingest derives `source_record_id` via:
+
+1. `HKAttributeKeyExternalUUID` if present
+2. Fallback hash: `sha256(sourceName || startDate || value || recordType)`
+
+**Stability guarantee:** identical input export → identical `source_record_id` → re-import is idempotent (no-op).
+
+**Stability LIMIT:** if a user edits records in the Health app (correcting a wrong weight reading, deleting a phantom workout) and re-exports, the corrected records produce different hashes than the originals. Re-import sees them as new records, ingests them alongside the originals.
+
+**Implication:** "edit and re-export" workflow produces ghost duplicates in the user's data. UI in Sprint 5 BATCH 4 brainstorm should set duplicate-counter expectations honestly: "duplicates detected" reflects re-uploads of the same export, not edited-and-re-exported scenarios. Also consider documenting in the import help text:
+
+> "If you've edited records in Apple Health since your last import, those edits may appear as additional records rather than corrections."
+
+**No good fix at the parser level.** Apple Health doesn't expose a record-edit lineage in the export format. We could heuristically detect "near-duplicates" (same user / source / day / very-close value) but that introduces false-positive risk on users with legitimately near-duplicate records (e.g., back-to-back blood pressure readings 30 seconds apart). Better to be honest about the limitation than to silently merge.
+
+**First captured:** Sprint 5 BATCH 1 (2026-05-08). Surfaced during the Path C decision for the `body_metrics` partial UNIQUE strategy — the per-record `source_record_id` design depends on stable derivation, and the edit-and-re-export edge is the documented limit of that stability.
+
+---
+
 ## Related Notes
 
 - [[decisions]]
