@@ -1,10 +1,10 @@
 /**
- * Wearable Ingest Service — Sprint 4 BATCH 5a (rewrite — OW canonical event types)
+ * Wearable Ingest Service — Sprint 4 BATCH 5a (Path B refactor — Task 5a.10)
  *
  * Four exported ingest functions, one per Open Wearables canonical event type:
  *   - ingestWorkoutCreated         (writes activity_sessions)
  *   - ingestSleepCreated           (writes sleep_sessions)
- *   - ingestConnectionCreated      (UPSERTs wearable_connections + dispatches wearable_connected)
+ *   - ingestConnectionCreated      (UPDATEs wearable_connections + dispatches wearable_connected)
  *   - ingestBodyCompositionCreated (writes bodyMetrics — smart-scale path)
  *
  * Replaces BATCH 2's three functions (ingestSleepSession, ingestDailyVitals,
@@ -14,23 +14,46 @@
  * canonical webhooks guide (the-momentum/open-wearables docs/api-reference/
  * guides/webhooks.mdx).
  *
- * OW user ID bridge — Path A assumption (verification target Q2 in spike):
- * OW supports `external_id` lookup. When a Disciple first connects via the
- * wearables OAuth flow we POST /api/v1/users with {external_id: <our user
- * UUID>}; OW stores the bridge and echoes our UUID back in `data.user_id`
- * on every webhook. Path B fallback (separate column on wearable_connections
- * + lookup) is held in reserve pending live spike confirmation. For BATCH 5a
- * the code assumes Path A — `data.user_id` is OUR internal user UUID.
+ * Path B (locked at Q2 spike completion 2026-05-07): OW emits its own UUID
+ * in webhook payloads as `data.user_id`. We store the OW UUID in
+ * `wearable_connections.open_wearables_user_id` (set during OAuth flow init
+ * via openWearablesClient.createUser). Each ingest function resolves OW's
+ * UUID to our internal user UUID via resolveUserIdFromOwUserId() before any
+ * DB write referencing user_id.
+ *
+ * Why Path B (not Path A): OW's external_user_id field is officially
+ * deprecated and not wired into data-fetching endpoints (workouts, sleep,
+ * timeseries). Per OW's integration guide we MUST store OW's UUID. See
+ * decisions.md "Sprint 4 BATCH 5 spike findings — Q2 LOCKED Path B" and
+ * gotchas.md "Tests that mock at the system boundary mask identity-bridge bugs".
+ *
+ * Unknown-user policy (data webhooks — workout / sleep / body_composition):
+ *   skip-with-log + 200 ack. The bridge resolver returned null (no
+ *   wearable_connections row carries the OW UUID). Recoverable failure
+ *   mode: user disconnected mid-sync, OAuth-init txn rolled back, etc.
+ *   Retrying produces the same outcome — DON'T throw 5xx (Svix would
+ *   retry indefinitely, retry storm). Always 200 ack.
+ *
+ * Unknown-user policy (connection.created):
+ *   log at ERROR level + 200 ack. Logged at the highest level the project's
+ *   logger exposes ('error' — there is no native ALERT level; see
+ *   server/logger.ts) because this case should be IMPOSSIBLE if our
+ *   OAuth-init flow is correct. The transaction in
+ *   wearableConnections.initiateOAuth atomically INSERTs the local row +
+ *   sets open_wearables_user_id BEFORE the user redirects to the provider —
+ *   so by the time connection.created fires, the bridge row must exist.
+ *   Surfacing it lets us notice broken state. 200 ack stays for the same
+ *   reason: retrying produces the same outcome.
  *
  * Each function:
- *   1. Maps OW canonical fields → our column names
- *   2. UPSERT via raw SQL with `RETURNING (xmax = 0) AS inserted` to detect
+ *   1. Resolves OW's UUID → our user_id via the wearable_connections bridge
+ *   2. Maps OW canonical fields → our column names
+ *   3. UPSERT via raw SQL with `RETURNING (xmax = 0) AS inserted` to detect
  *      first-row vs conflict-update path (BATCH 2 pattern preserved)
- *   3. If `inserted=true` AND this is the user's FIRST row of this dataType
+ *   4. If `inserted=true` AND this is the user's FIRST row of this dataType
  *      ever → fires `wearable_first_sync_complete`
- *   4. Calls recordSuccessfulSync on the matching wearable_connections row
- *      (looked up by userId + provider; the row exists because OAuth runs
- *      before any data event)
+ *   5. Calls recordSuccessfulSync on the matching wearable_connections row
+ *      (the row exists because the bridge resolution succeeded)
  *
  * Idempotency:
  *   - workout/sleep: UNIQUE (user_id, source, source_record_id) — pre-existing
@@ -222,15 +245,51 @@ async function findConnectionId(userId: string, provider: string): Promise<strin
   return rows[0]?.id ?? null;
 }
 
+/**
+ * Bridge resolver — Path B (Q2 spike close). Maps OW's internal user UUID
+ * (carried in webhook `data.user_id`) → our internal user UUID via
+ * `wearable_connections.open_wearables_user_id`. Returns null when no row
+ * matches; the caller decides skip-vs-throw per the unknown-user policy
+ * (see header comment).
+ *
+ * This is the load-bearing surface for the bridge integration tests
+ * (server/test/services/wearableIngest.bridge.test.ts). Removing the eq()
+ * clause OR mocking this function in the test file would mask the bridge
+ * bug — see _brain/notes/gotchas.md "Tests that mock at the system boundary
+ * mask identity-bridge bugs".
+ */
+export async function resolveUserIdFromOwUserId(owUserId: string): Promise<string | null> {
+  const db = await getDb();
+  const rows = await db
+    .select({ userId: wearableConnections.userId })
+    .from(wearableConnections)
+    .where(eq(wearableConnections.openWearablesUserId, owUserId))
+    .limit(1);
+  return rows[0]?.userId ?? null;
+}
+
 // ─── Ingest functions ───────────────────────────────────────────────────────
 
 export async function ingestWorkoutCreated(
   data: WorkoutCreatedData
-): Promise<{ inserted: boolean }> {
+): Promise<{ inserted: boolean; skipped?: 'unknown_user' }> {
   const db = await getDb();
-  const userId = data.user_id;
+  const owUserId = data.user_id;
   const provider = data.source?.provider ?? 'unknown';
   const sourceRecordId = data.id;
+
+  // Bridge resolution: OW's UUID → our user_id. Skip-with-log + 200 ack on
+  // null per the unknown-user policy.
+  const userId = await resolveUserIdFromOwUserId(owUserId);
+  if (!userId) {
+    logger.warn('workout.created received for unknown OW user (no bridge row)', {
+      owUserId,
+      source: 'wearable',
+      eventType: 'workout.created',
+      provider,
+    });
+    return { inserted: false, skipped: 'unknown_user' };
+  }
 
   const startedAt = asDate(data.start_time);
   if (!startedAt) {
@@ -298,11 +357,25 @@ export async function ingestWorkoutCreated(
   return { inserted };
 }
 
-export async function ingestSleepCreated(data: SleepCreatedData): Promise<{ inserted: boolean }> {
+export async function ingestSleepCreated(
+  data: SleepCreatedData
+): Promise<{ inserted: boolean; skipped?: 'unknown_user' }> {
   const db = await getDb();
-  const userId = data.user_id;
+  const owUserId = data.user_id;
   const provider = data.source?.provider ?? 'unknown';
   const sourceRecordId = data.id;
+
+  // Bridge resolution: OW's UUID → our user_id.
+  const userId = await resolveUserIdFromOwUserId(owUserId);
+  if (!userId) {
+    logger.warn('sleep.created received for unknown OW user (no bridge row)', {
+      owUserId,
+      source: 'wearable',
+      eventType: 'sleep.created',
+      provider,
+    });
+    return { inserted: false, skipped: 'unknown_user' };
+  }
 
   const bedtime = asDate(data.start_time);
   const wakeTime = asDate(data.end_time);
@@ -382,53 +455,64 @@ export async function ingestSleepCreated(data: SleepCreatedData): Promise<{ inse
   return { inserted };
 }
 
-export async function ingestConnectionCreated(data: ConnectionCreatedData): Promise<void> {
+export async function ingestConnectionCreated(
+  data: ConnectionCreatedData
+): Promise<{ skipped?: 'unknown_user' } | void> {
   const db = await getDb();
-  const userId = data.user_id;
+  const owUserId = data.user_id;
   const provider = data.provider;
   const connectedAt = asDate(data.connected_at) ?? new Date();
 
-  // OW reports the user's connection is healthy. Two possibilities:
-  //   (a) Our row exists (OAuth callback already fired handleOAuthCallback).
-  //       The webhook is a confirmation/idempotent ack — flip status if it's
-  //       not 'connected' yet (rare, but defends against OAuth-callback race).
-  //   (b) Our row doesn't exist (rare in v1 — would mean OW created the
-  //       connection ahead of us). INSERT a 'connected' row.
-  //
-  // UPSERT on the existing UNIQUE (user_id, provider) index — Sprint 4 BATCH 2
-  // already created this index for idempotent reconnect.
-  const before = await db
-    .select({ status: wearableConnections.status })
+  // Path B: with Path-B-correct OAuth-init, the local row already exists at
+  // this point — the wearableConnections.initiateOAuth transaction
+  // INSERTed it and persisted open_wearables_user_id BEFORE the user
+  // redirected to the provider's OAuth screen. Look up the existing row
+  // directly by open_wearables_user_id.
+  const existing = await db
+    .select({
+      id: wearableConnections.id,
+      userId: wearableConnections.userId,
+      status: wearableConnections.status,
+    })
     .from(wearableConnections)
-    .where(
-      and(
-        eq(wearableConnections.userId, userId),
-        eq(wearableConnections.provider, provider as WearableProvider)
-      )
-    );
-  const previousStatus: WearableStatus | null = (before[0]?.status as WearableStatus) ?? null;
+    .where(eq(wearableConnections.openWearablesUserId, owUserId))
+    .limit(1);
 
+  // Unknown-user policy for connection.created: log at ERROR level (highest
+  // available — the project logger has no native ALERT level) + 200 ack.
+  // This case should be impossible if OAuth-init is wired correctly;
+  // surfacing it lets us notice broken state. Don't throw — Svix retry
+  // would produce the same outcome (retry storm).
+  if (existing.length === 0) {
+    logger.error(
+      'connection.created received for unknown OW user (no bridge row) — OAuth-init flow may be broken',
+      {
+        owUserId,
+        source: 'wearable',
+        eventType: 'connection.created',
+        provider,
+      }
+    );
+    return { skipped: 'unknown_user' };
+  }
+
+  const { id: connectionId, userId, status: previousStatus } = existing[0];
+
+  // UPDATE the existing row to status='connected'. This is a confirmation/
+  // idempotent ack — Path B's atomic OAuth-init already ensured the row
+  // exists; we just flip status (and clear sync-error tracking) if it
+  // isn't 'connected' yet.
   await db
-    .insert(wearableConnections)
-    .values({
-      userId,
-      provider: provider as WearableProvider,
+    .update(wearableConnections)
+    .set({
       status: 'connected' as WearableStatus,
+      provider: provider as WearableProvider,
       connectedAt,
       disconnectedAt: null,
       syncErrorCount: 0,
       lastSyncError: null,
     })
-    .onConflictDoUpdate({
-      target: [wearableConnections.userId, wearableConnections.provider],
-      set: {
-        status: 'connected' as WearableStatus,
-        connectedAt,
-        disconnectedAt: null,
-        syncErrorCount: 0,
-        lastSyncError: null,
-      },
-    });
+    .where(eq(wearableConnections.id, connectionId));
 
   // Dispatch on transition (not on idempotent ack of an already-connected row).
   if (previousStatus !== 'connected') {
@@ -438,10 +522,22 @@ export async function ingestConnectionCreated(data: ConnectionCreatedData): Prom
 
 export async function ingestBodyCompositionCreated(
   data: BodyCompositionCreatedData
-): Promise<{ inserted_count: number }> {
+): Promise<{ inserted_count: number; skipped?: 'unknown_user' }> {
   const db = await getDb();
-  const userId = data.user_id;
+  const owUserId = data.user_id;
   const provider = data.provider;
+
+  // Bridge resolution: OW's UUID → our user_id.
+  const userId = await resolveUserIdFromOwUserId(owUserId);
+  if (!userId) {
+    logger.warn('body_composition.created received for unknown OW user (no bridge row)', {
+      owUserId,
+      source: 'wearable',
+      eventType: 'body_composition.created',
+      provider,
+    });
+    return { inserted_count: 0, skipped: 'unknown_user' };
+  }
   let insertedCount = 0;
 
   // Each sample becomes (or updates) one bodyMetrics row keyed on
