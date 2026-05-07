@@ -250,6 +250,16 @@ export const wearableConnections = pgTable(
       .default(DEFAULT_WEARABLE_SYNC_PREFERENCES),
     connectedAt: timestamp('connected_at'),
     disconnectedAt: timestamp('disconnected_at'),
+    // Sprint 4 Task 5a.10 (Q2 spike close, Path B) — OW's internal user UUID.
+    // Set during OAuth-init by `wearableConnections.initiateOAuth` after
+    // `openWearablesClient.createUser` returns. Used by webhook-ingest to
+    // translate `data.user_id` (OW's UUID) → our internal `userId` before
+    // any DB write referencing user_id, and by `wearableSyncMonitor` to call
+    // OW's data-fetching endpoints (which don't accept our UUID, only OW's).
+    // Nullable: rows in the OAuth-init intermediate state (between INSERT and
+    // createUser response) have null until UPDATE completes inside the
+    // transaction. Migration 015 creates the column + partial index.
+    openWearablesUserId: varchar('open_wearables_user_id', { length: 36 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -259,6 +269,12 @@ export const wearableConnections = pgTable(
   (table) => [
     uniqueIndex('idx_wearable_connections_user_provider').on(table.userId, table.provider),
     index('idx_wearable_connections_status_sync').on(table.status, table.lastSyncAt),
+    // Sprint 4 Task 5a.10 — partial index on OW's UUID. Filtered to non-null
+    // rows so OAuth-init intermediate state is excluded. Migration 015
+    // creates the underlying CREATE INDEX ... WHERE expression.
+    index('idx_wearable_connections_ow_user_id')
+      .on(table.openWearablesUserId)
+      .where(sql`${table.openWearablesUserId} IS NOT NULL`),
   ]
 );
 

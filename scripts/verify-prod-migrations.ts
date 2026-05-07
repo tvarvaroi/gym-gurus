@@ -38,6 +38,16 @@
 //                   = 'client', NOT trainer/solo — privacy violation prevention),
 //                   spot-check 5 random backfilled email pairs, drift on existing
 //                   tables matches baseline-014 exactly
+//   baseline-015  — pre-015 snapshot: confirm 015 artefacts ABSENT (the
+//                   wearable_connections.open_wearables_user_id column +
+//                   idx_wearable_connections_ow_user_id partial index)
+//   post-015      — confirm column exists with type varchar(36), partial
+//                   index exists + IS partial (WHERE clause present), bridge
+//                   round-trip probe (INSERT row with non-NULL ow_user_id,
+//                   SELECT by ow_user_id finds the probe row, DELETE probe)
+//                   — all in one wearable_connections row scoped to a probe
+//                   provider so cleanup is bounded; existing-table row
+//                   counts unchanged from baseline-015.
 //
 // Designed to be safe to re-run. All queries are SELECT-only except the
 // transaction-wrapped CHECK constraint enforcement tests in post-011 and post-014.
@@ -55,7 +65,9 @@ type Phase =
   | 'baseline-014'
   | 'post-014'
   | 'baseline-014.5'
-  | 'post-014.5';
+  | 'post-014.5'
+  | 'baseline-015'
+  | 'post-015';
 
 const EXISTING_TABLES_TO_COUNT = [
   'users',
@@ -1544,6 +1556,166 @@ async function post0145() {
   console.log(`  body_metrics (wearable-sourced) : ${wearableCount}`);
 }
 
+// ===========================================================================
+// 015 — wearable_connections.open_wearables_user_id (Sprint 4 Task 5a.10)
+// ===========================================================================
+// 015 adds the OW user-ID bridge column + a partial index on it. This is the
+// load-bearing piece behind Path B (Q2 spike LOCKED): every webhook ingest
+// translates `data.user_id` (OW's UUID) → our internal `userId` via this
+// column. Without it, INSERTs would FK-violate against users.id.
+//
+// Index def example:
+//   CREATE INDEX idx_wearable_connections_ow_user_id
+//     ON public.wearable_connections USING btree (open_wearables_user_id)
+//     WHERE (open_wearables_user_id IS NOT NULL);
+
+async function baseline015() {
+  const db = await getDb();
+  console.log('=== BASELINE-015 ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}\n`);
+
+  // Column must NOT exist yet
+  const colOk = await columnExists(db, 'wearable_connections', 'open_wearables_user_id');
+  console.log('015 column (must be absent before run):');
+  console.log(
+    `  wearable_connections.open_wearables_user_id : ${colOk ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  // Index must NOT exist yet
+  const idxOk = await indexExists(db, 'idx_wearable_connections_ow_user_id');
+  console.log('015 index (must be absent before run):');
+  console.log(
+    `  idx_wearable_connections_ow_user_id          : ${idxOk ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  console.log('\nExisting-table row counts (snapshot for post-015 drift detection):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+  console.log('\nSAVE THESE NUMBERS — used as the baseline for post-015 drift checks.');
+}
+
+async function post015() {
+  const db = await getDb();
+  console.log('=== POST-015 ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}\n`);
+
+  // ─── (a) Column exists with correct type ────────────────────────────────
+  const colOk = await columnExists(db, 'wearable_connections', 'open_wearables_user_id');
+  console.log('(a) wearable_connections.open_wearables_user_id column:');
+  console.log(`  exists?                              : ${colOk ? '✓' : 'MISSING — CATASTROPHIC'}`);
+
+  if (colOk) {
+    const typeR: any = await db.execute(sql`
+      SELECT data_type, character_maximum_length::text AS len, is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'wearable_connections'
+        AND column_name = 'open_wearables_user_id'
+    `);
+    const row = typeR.rows?.[0] ?? typeR[0] ?? {};
+    const dataType = row.data_type ?? '?';
+    const len = row.len ?? '?';
+    const nullable = row.is_nullable ?? '?';
+    const typeOk = dataType === 'character varying' && len === '36';
+    console.log(
+      `  type=${dataType} length=${len} nullable=${nullable} : ${typeOk ? '✓ (varchar(36))' : '— UNEXPECTED, expected varchar(36)'}`
+    );
+  }
+
+  // ─── (b) Partial index exists + WHERE clause + non-unique ───────────────
+  const idxOk = await indexExists(db, 'idx_wearable_connections_ow_user_id');
+  console.log('\n(b) Partial index on open_wearables_user_id:');
+  console.log(
+    `  idx_wearable_connections_ow_user_id  : ${idxOk ? 'present ✓' : 'MISSING — CATASTROPHIC'}`
+  );
+
+  if (idxOk) {
+    const def = (await indexDef(db, 'idx_wearable_connections_ow_user_id')) ?? '';
+    const isUnique = /CREATE UNIQUE INDEX/i.test(def);
+    const hasPartialWhere = /WHERE\s*\(?\s*open_wearables_user_id/i.test(def);
+    console.log(
+      `  is non-unique?                       : ${!isUnique ? '✓' : 'NO — index is UNIQUE (multiple connections per OW user is the design — this BREAKS that)'}`
+    );
+    console.log(
+      `  has partial WHERE IS NOT NULL?       : ${hasPartialWhere ? '✓' : 'NO — index includes NULL rows (wastes index, OAuth-init intermediate rows would index)'}`
+    );
+    console.log(`  raw indexdef                         : ${def.slice(0, 200)}`);
+  }
+
+  // ─── (c) Bridge round-trip probe ───────────────────────────────────────
+  // INSERT a probe row with non-NULL open_wearables_user_id, SELECT by that
+  // field (exercises the index), assert the round-trip works, DELETE the
+  // probe row. Bounded by a probe provider value so cleanup is precise.
+  console.log('\n(c) Bridge round-trip probe (open_wearables_user_id resolver path):');
+
+  const userRow: any = await db.execute(sql`SELECT id FROM users WHERE deleted_at IS NULL LIMIT 1`);
+  const probeUserRows = (userRow.rows ?? userRow) as Array<{ id: string }>;
+  if (probeUserRows.length === 0) {
+    console.log('  ⚠ no user available to probe — skipping bridge round-trip test');
+  } else {
+    const probeUserId = probeUserRows[0].id;
+    const PROBE_PROVIDER = 'verifier_probe_015';
+    const PROBE_OW_UUID = 'probe-ow-uuid-015';
+
+    try {
+      // Cleanup any leftover probe rows from a previous abandoned run
+      await db.execute(sql`
+        DELETE FROM wearable_connections WHERE provider = ${PROBE_PROVIDER}
+      `);
+
+      // INSERT probe row
+      await db.execute(sql`
+        INSERT INTO wearable_connections (
+          user_id, provider, status, open_wearables_user_id
+        ) VALUES (
+          ${probeUserId}, ${PROBE_PROVIDER}, 'connected', ${PROBE_OW_UUID}
+        )
+      `);
+
+      // SELECT by open_wearables_user_id — this is the bridge resolver path
+      const lookupR: any = await db.execute(sql`
+        SELECT user_id FROM wearable_connections
+        WHERE open_wearables_user_id = ${PROBE_OW_UUID}
+      `);
+      const lookup = (lookupR.rows ?? lookupR) as Array<{ user_id: string }>;
+      const found = lookup.length === 1 && lookup[0].user_id === probeUserId;
+      console.log(
+        `  bridge lookup (ow_uuid → user_id)    : ${found ? '✓ (returned the probe user_id)' : `— UNEXPECTED, found ${lookup.length} rows`}`
+      );
+
+      // Cleanup
+      const cleanupR: any = await db.execute(sql`
+        DELETE FROM wearable_connections WHERE provider = ${PROBE_PROVIDER}
+      `);
+      const deleted = cleanupR.rowCount ?? cleanupR?.rows?.length ?? 1;
+      console.log(`  cleanup                              : ${deleted} probe row(s) deleted ✓`);
+    } catch (e: any) {
+      // Always attempt cleanup even on failure
+      try {
+        await db.execute(sql`
+          DELETE FROM wearable_connections WHERE provider = 'verifier_probe_015'
+        `);
+      } catch {
+        // ignore
+      }
+      console.log(`  ⚠ bridge probe error: ${e?.message ?? e}`);
+    }
+  }
+
+  // ─── (d) Existing-table row counts unchanged from baseline ──────────────
+  console.log('\n(d) Existing-table row counts (compare to baseline-015 — MUST match exactly):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+}
+
 const phase = (process.argv[2] ?? '') as Phase;
 const phases: Record<Phase, () => Promise<void>> = {
   baseline,
@@ -1557,12 +1729,14 @@ const phases: Record<Phase, () => Promise<void>> = {
   'post-014': post014,
   'baseline-014.5': baseline0145,
   'post-014.5': post0145,
+  'baseline-015': baseline015,
+  'post-015': post015,
 };
 
 const fn = phases[phase];
 if (!fn) {
   console.error(
-    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012|baseline-013|post-013|baseline-014|post-014|baseline-014.5|post-014.5>`
+    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012|baseline-013|post-013|baseline-014|post-014|baseline-014.5|post-014.5|baseline-015|post-015>`
   );
   process.exit(2);
 }
