@@ -954,6 +954,27 @@ JWT path (POST /api/v1/auth/login → bearer token) is preserved in code as a fa
 
 **Provider implementations confirmed in OW source** (`backend/app/services/providers/`): `apple, fitbit, garmin, google, oura, polar, samsung, strava, suunto, ultrahuman` (plus `templates`). **No `withings` directory** — confirms the Withings → Fitbit substitution captured in α pivot. Fitbit / Strava / Ultrahuman are scaffolded in source even though the README marks them less prominently than Garmin / Polar / Suunto; readiness for Sprint 4.5 expansion is partial-source-confirmed.
 
+**Q2 — LOCKED: Path B is the required production path. Migration 015 ships. Path A is a deprecated debug-convenience only, not a real lookup bypass.** Source confirms (2026-05-07 inspection of OW master HEAD `34df8a5`):
+
+- The User model has a field — but it's named **`external_user_id`**, NOT `external_id`. The plan's Task 5a.5 description (and the BATCH 5a subagent's `createUser` implementation at `e64d1db`) use the wrong field name. **Follow-up needed:** rename `external_id` → `external_user_id` in `server/services/openWearablesClient.ts:createUser` + tests.
+- The field IS deprecated. Source: `backend/app/schemas/model_crud/user_management/user.py` defines `_EXTERNAL_USER_ID_DEPRECATION` and applies it via Pydantic's `deprecated=True` flag on UserCreate / UserRead / UserUpdate / UserQueryParams. The deprecation message reads verbatim: _"Deprecated: no data-fetching endpoint (timeseries, workouts, sleep, summaries, health-scores, etc.) accepts external_user_id - they all require the Open Wearables UUID. This field was added early in the project but never wired into those endpoints, so it only works as a filter on GET /users. Store the UUID returned by POST /users in your own system instead."_
+- OW's official integration guide (`docs/dev-guides/integration-guide.mdx`) reinforces: _"The legacy `external_user_id` column does still carry a DB-level unique constraint, so sending a duplicate value there will fail with an integrity error. **The field is deprecated** and no data-fetching endpoint accepts it — do not rely on it for deduplication. Use the pattern above (store the Open Wearables UUID on your side) instead."_
+- The OW iOS / Flutter SDK integration guides explicitly warn: _"The `userId` parameter is the **Open Wearables User ID** (UUID) — the `id` returned by the [Create User] endpoint. Do **not** pass your own `external_user_id` here."_
+
+**Architectural implication:** every data-fetching call we make to OW (timeseries, workouts, sleep, summaries, connections-list) requires OW's internal user UUID, not our `external_user_id`. We MUST store the OW UUID in our DB. Path B's `wearable_connections.open_wearables_user_id` column is required.
+
+**Path A residual value:** setting `external_user_id` on user creation is still useful as a **debug-convenience** (the OW operator can find a Disciple in the OW portal by our internal user UUID), but it's NOT a runtime lookup mechanism. The plan's framing of "Path A = no schema change needed" was wrong; there's no way to avoid storing OW's UUID once we want to fetch data.
+
+**Two BATCH 5a follow-ups required before BATCH 5b:**
+
+1. **Migration 015** — single-column add to `wearable_connections`: `open_wearables_user_id varchar(36)` (UUID), nullable (existing rows pre-OW have no OW user yet), no UNIQUE on this column alone (multiple connections per OW user is the design). Add an index `idx_wearable_connections_ow_user_id ON (open_wearables_user_id)` for the polling cron's lookups. ~30-line migration in the Sprint 4 BATCH 1 / 014.5 pattern. Down-migration safety: refuse if any non-NULL `open_wearables_user_id` rows exist.
+2. **`openWearablesClient.ts` adjust:**
+   - Rename field on `createUser`: `external_id` → `external_user_id` in body + return type
+   - `createUser` returns `{id, external_user_id?}` — caller must persist `id` to `wearable_connections.open_wearables_user_id` (this row already exists in our DB from the OAuth-init flow; the wearable_connections row was inserted before we knew OW's user UUID, so we UPDATE it with `open_wearables_user_id` after `createUser` returns)
+   - All other client methods (`getConnections`, `triggerSync`, `disconnectProvider`) take `owUserId` as their input — already correct in subagent's `e64d1db` implementation
+
+**Decision lock:** Q2 → **Path B**. Migration 015 ships as a Task 5a.10 follow-up commit. The `external_user_id` field is set on user creation as a portal-debug convenience but is not load-bearing; if a future plan author wants to drop it, that's fine.
+
 ### Still in flight (require live-OW spike with running docker-compose)
 
 **Spike target:** Garmin OAuth + sync + webhook delivery against `the-momentum/open-wearables` master HEAD (commit captured at spike start). Polar substitutes if Garmin developer portal approval lags.
