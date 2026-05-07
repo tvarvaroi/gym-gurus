@@ -885,6 +885,84 @@ res.status(200).json({ ok: true });
 
 ---
 
+## Sprint 4 v1: pivot to README-Available providers (Option α) (2026-05-07)
+
+**Amends:** D1 from Sprint 4 BATCH 4 brainstorm (provider rollout strategy). Supersedes "Sprint 4 v1 ships Whoop + Oura" with "Sprint 4 v1 ships Garmin + Polar + Suunto."
+
+**Decided:** Sprint 4 v1 ships **Garmin + Polar + Suunto** (Open Wearables README "Available" list). Whoop + Oura + Strava + Fitbit deferred to Sprint 4.5+ pending upstream stability. Withings is not in OW upstream — Sprint 4.5 substitutes Fitbit for Withings (smart-scale path covered by Fitbit Aria when upstream stabilizes Fitbit).
+
+**Why:** Open Wearables upstream has open critical bugs blocking the original v1 providers — both deterministic, both unfixed for 2-3 weeks at scan time, both unassigned with zero comments:
+
+- [#930](https://github.com/the-momentum/open-wearables/issues/930) — Whoop historical sync crashes with `InvalidRequestError: This session is in 'committed' state` on `db.commit()` in `app/services/providers/whoop/workouts.py:381` whenever sync pulls workouts with `strain_scores`. Cascading failure: workouts step blocks `data_type=all`, so sleep + recovery + activity + body are also never fetched. Workaround `data_type=247` skips workouts entirely.
+- [#948](https://github.com/the-momentum/open-wearables/issues/948) — Oura sync fails with the same SQLAlchemy session-state error on first `db.commit()` after fetching fresh data. Cascades through every subsequent data_type. No documented workaround.
+
+Stacked operational issues compound the risk: [#933](https://github.com/the-momentum/open-wearables/issues/933) (no auto-renewal of Oura/Fitbit webhook subscriptions — connections silently lapse on TTL expiry), [#1009](https://github.com/the-momentum/open-wearables/issues/1009) (Whoop emits duplicate sleep scores per session), [#461](https://github.com/the-momentum/open-wearables/issues/461) (Whoop is poll-based today with up to 1h latency, not webhook-driven), [#720](https://github.com/the-momentum/open-wearables/issues/720) (multi-provider sleep merging silently drops sessions), [#856](https://github.com/the-momentum/open-wearables/issues/856) (Oura missing/incorrect sleep — maintainer comment "TBC if still happens — I think fixed").
+
+Garmin/Polar/Suunto scanned for analogous bugs at the same scan time:
+
+- Cross-provider search for `session committed` returned ONLY #930 + #948 — confirms the bug class is provider-specific to Whoop and Oura sync code paths, not a base-class bug affecting α providers.
+- Garmin: minor timeseries field-mapping bugs in `respiratory_rate` ([#760](https://github.com/the-momentum/open-wearables/issues/760)) and `body_battery` ([#758](https://github.com/the-momentum/open-wearables/issues/758)) — both **outside v1 scope** (v1 subscribes to session events + `body_composition.created` only). Backfill edge case [#644](https://github.com/the-momentum/open-wearables/issues/644) — intermittent (1/4 cycles), historical date range limit, workaround = retry with shorter range.
+- Polar: [#113](https://github.com/the-momentum/open-wearables/issues/113) "second-user OAuth fails after first" — reporter himself notes "not critical, in practice won't occur" (developer-only edge case with sequential users in same browser). Historical sleep/activity/body backfill features open ([#610](https://github.com/the-momentum/open-wearables/issues/610) / [#611](https://github.com/the-momentum/open-wearables/issues/611) / [#612](https://github.com/the-momentum/open-wearables/issues/612)) — non-blocker for v1 (we ingest forward, not backwards).
+- Suunto: no functional bugs found, only docs gaps.
+
+**Rejected:**
+
+- **Ship Whoop + Oura with bugs (β):** promising users data we can't reliably deliver. The cascading nature of #930/#948 means even sleep ingestion is non-functional during fresh-data sync runs.
+- **Upstream contribution path (Option C):** investigating + fixing #930/#948 + sending PRs to Momentum was technically tractable (~1 day investigation + 1 day fix per bug, FastAPI/SQLAlchemy/Celery stack). Rejected because it would couple Sprint 4's close date to Momentum's PR review queue (days-to-weeks, not under our control) and would establish a precedent of provider-bug-fixing-by-upstream-contribution that becomes load-bearing for every future sprint touching OW. Sprints 1-3 closed on our own schedule with our own quality gates against our own production deploys; Sprint 4 must close the same way. Drive-by contributions during normal Sprint 4+ work are fine; sprint-blocking contributions are a pattern we won't establish.
+- **Pause Sprint 4 entirely:** unnecessary — α providers are demonstrably workable substrate per the bug scan, and v1 ships sooner with α than waiting on β fixes that have no announced ETA.
+
+**Brand positioning consideration:** the original β framing held that Whoop + Oura were "load-bearing for the brand positioning" (recovery-tracker halo). On reflection, GymGurus is a fitness coaching platform with strength-training and personal-coaching DNA — not a recovery-optimization product. Garmin's user base among serious athletes is meaningfully larger than Whoop's; Polar has deep cycling/triathlon penetration; Suunto has multisport/outdoor legitimacy. α is **different positioning, not weaker positioning.**
+
+**Validation plan:** 1-day Garmin spike against OW master HEAD (`34df8a5` at scan time). Goal: confirm Garmin OAuth + sync flow + `workout.created` + `sleep.created` webhook delivery work cleanly end-to-end, with svix npm SDK signature verification. If Garmin has structural issues comparable to Whoop/Oura, STOP-AND-SURFACE — at that point we'd re-evaluate D2 (separate Open Wearables project deployment topology).
+
+**Withings substitution:** Withings (originally chosen for the smart-scale → bodyMetrics path) is **not** in OW upstream — no `WITHINGS_*` env vars in `backend/config/.env.example`, no provider implementation in `backend/app/services/providers/`, no GitHub label. Sprint 4.5 substitutes Fitbit (Aria scales) when upstream Fitbit is stable. If a customer specifically requests Withings, evaluate at that time (could be PR upstream, could be add our own integration if volume justifies).
+
+**Future:** monitor #930 + #948 passively. When upstream merges fixes, evaluate adding Whoop + Oura in a focused mini-sprint. **No pre-commitment** — the "stick with α" path is a complete product on its own.
+
+**First applied:** Sprint 4 BATCH 5a (provider-agnostic code adaptation: Svix SDK + 4-routes-to-1 + JWT/API-key auth + ingest refactor + connection-polling cron) proceeds in parallel with Garmin developer portal application (3-7 day async wait). BATCH 5b (deploy + register Garmin/Polar/Suunto OAuth apps + E2E) starts after spike validates α and BATCH 5a completes.
+
+---
+
+## Sprint 4 BATCH 5 spike findings (PLACEHOLDER — fill in on spike completion)
+
+**Status:** placeholder. Spike has not yet run as of 2026-05-07. This entry is reserved so the spike findings have a documented home — the alternative (capture in MEMORY.md or in a one-off plan-doc note) loses them as institutional knowledge. When the spike completes, replace this placeholder with the actual findings.
+
+**Spike target:** Garmin OAuth + sync + webhook delivery against `the-momentum/open-wearables` master HEAD (capture commit SHA at spike start). Polar substitutes if Garmin developer portal approval lags.
+
+**Verification targets (must be answered by spike):**
+
+1. **Cross-provider issue scan reconfirmation** — re-run `gh issue list --search "session committed in:title,body"` against OW upstream at spike start. Confirm the bug class is still provider-specific to Whoop/Oura sync code paths (not surfacing in Garmin/Polar/Suunto). If a new `session committed` issue lands against α providers between α-pivot decision (2026-05-07) and spike start, STOP and re-evaluate the α substrate choice.
+
+2. **OW user identity bridge** — does OW support `external_id` lookup on user creation? Test: `POST /api/v1/users` with `{external_id: <our user UUID>}`, then `GET /api/v1/users/by-external-id/<our user UUID>`. If yes (Path A): no schema change needed. If no (Path B): migration 015 ships at end of BATCH 5a adding `wearable_connections.open_wearables_user_id` column.
+
+3. **Auth approach for runtime API** — does OW's Credentials tab generate long-lived API keys usable for runtime API calls? OR is API key generation only for the `replay_raw_payloads.py` operator script? Test: generate API key via Credentials tab, attempt `GET /api/v1/users` with `Authorization: Bearer <api-key>`. If 200: Path A (API key) — set `OPEN_WEARABLES_AUTH_MODE=api_key`. If 401/403: Path B (JWT) — set `OPEN_WEARABLES_AUTH_MODE=jwt`, document refresh-on-expiry logic.
+
+4. **`workout.created` payload shape** — does OW emit summary HR/calories/distance INLINE in the workout.created event payload, or are those only available via separate `heart_rate.created` / `calories.created` timeseries events? Test: trigger a Garmin workout sync, capture the actual webhook payload, inspect for `avg_heart_rate_bpm`, `max_heart_rate_bpm`, `calories_kcal`, `distance_meters` fields. If inline: BATCH 5a's ingest layer is sufficient as-planned. If separate: add `heart_rate.created` + `calories.created` to the subscribed `filter_types` and expand ingestWorkoutCreated logic to merge timeseries summaries into the activity_sessions row.
+
+5. **Suunto subscription key runtime usage** — does OW require `SUUNTO_SUBSCRIPTION_KEY` only at OAuth registration time, or does it reach back into Suunto's API on every sync request (in which case the subscription key needs to be present and rotatable on the OW backend env)? Confirm OW source uses the env var consistently in `backend/app/services/providers/suunto/`.
+
+6. **Connection-list polling endpoint** — does `GET /api/v1/users/{ow_user_id}/connections` return per-connection `status` (`connected` / `expired` / `error`) AND a `last_sync_error` field, or just the connection existence? Connection-polling cron design assumes both fields available; if not, either polling logic adapts to the available signal OR we file an upstream feature request.
+
+7. **OW developer portal approval timing** — Garmin (3-7 days expected per BATCH 4 D1), Polar (1-2 days expected), Suunto (variable). Capture actual approval timestamps to inform Sprint 4.5 timing.
+
+**Decision lock at spike completion:**
+
+- `OPEN_WEARABLES_AUTH_MODE` value (api_key OR jwt) — sets BATCH 5b Task 5b.0 decision lock
+- Migration 015 needed (yes/no) — if yes, ships at end of BATCH 5a
+- Subscribed event types (`["workout.created", "sleep.created", "connection.created", "body_composition.created"]` OR expanded to include `heart_rate.created` / `calories.created` if needed for workout summary)
+- Cross-provider scan reconfirmation result (locked α stays, OR re-evaluation triggered)
+
+**Spike artifacts to capture:**
+
+- `git rev-parse HEAD` of `the-momentum/open-wearables` clone at spike start
+- Captured `workout.created` payload from real Garmin sync
+- Captured `sleep.created` payload (if test user has Garmin sleep tracking)
+- Screen recording of OAuth flow + first webhook delivery
+- OW Credentials tab screenshot (with API key value redacted) showing what the portal exposes
+- Cross-provider issue scan output at spike start (json output of the gh CLI command)
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
