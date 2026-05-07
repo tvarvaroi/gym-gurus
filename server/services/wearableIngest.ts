@@ -1,32 +1,55 @@
 /**
- * Wearable Ingest Service — Sprint 4 BATCH 2
+ * Wearable Ingest Service — Sprint 4 BATCH 5a (rewrite — OW canonical event types)
  *
- * Three exported ingest functions, one per data type:
- *   - ingestSleepSession      (writes sleep_sessions)
- *   - ingestDailyVitals       (writes daily_vitals; smart-scale path also writes body_metrics)
- *   - ingestActivity          (writes activity_sessions)
+ * Four exported ingest functions, one per Open Wearables canonical event type:
+ *   - ingestWorkoutCreated         (writes activity_sessions)
+ *   - ingestSleepCreated           (writes sleep_sessions)
+ *   - ingestConnectionCreated      (UPSERTs wearable_connections + dispatches wearable_connected)
+ *   - ingestBodyCompositionCreated (writes bodyMetrics — smart-scale path)
+ *
+ * Replaces BATCH 2's three functions (ingestSleepSession, ingestDailyVitals,
+ * ingestActivity) which were keyed off our own `(userId, connectionId,
+ * source, payload)` envelope. The new shape matches OW upstream's webhook
+ * payload — `data.id`, `data.user_id`, `data.source.provider`, etc. Per OW's
+ * canonical webhooks guide (the-momentum/open-wearables docs/api-reference/
+ * guides/webhooks.mdx).
+ *
+ * OW user ID bridge — Path A assumption (verification target Q2 in spike):
+ * OW supports `external_id` lookup. When a Disciple first connects via the
+ * wearables OAuth flow we POST /api/v1/users with {external_id: <our user
+ * UUID>}; OW stores the bridge and echoes our UUID back in `data.user_id`
+ * on every webhook. Path B fallback (separate column on wearable_connections
+ * + lookup) is held in reserve pending live spike confirmation. For BATCH 5a
+ * the code assumes Path A — `data.user_id` is OUR internal user UUID.
  *
  * Each function:
- *   1. Normalizes the provider's payload into our canonical shape
- *   2. UPSERT via raw SQL (Drizzle's ORM doesn't yet expose RETURNING (xmax=0)
- *      cleanly in the upsert chain; raw SQL gives us first-row detection)
+ *   1. Maps OW canonical fields → our column names
+ *   2. UPSERT via raw SQL with `RETURNING (xmax = 0) AS inserted` to detect
+ *      first-row vs conflict-update path (BATCH 2 pattern preserved)
  *   3. If `inserted=true` AND this is the user's FIRST row of this dataType
- *      ever (count===1 across all sources) → fire `wearable_first_sync_complete`
- *   4. recordSuccessfulSync(connectionId) at the end
+ *      ever → fires `wearable_first_sync_complete`
+ *   4. Calls recordSuccessfulSync on the matching wearable_connections row
+ *      (looked up by userId + provider; the row exists because OAuth runs
+ *      before any data event)
  *
- * `inserted` detection: PostgreSQL's `xmax` system column is 0 when the row
- * was newly INSERTed. On UPDATE-via-conflict it's the txid that updated the
- * row (non-zero). `RETURNING (xmax = 0) AS inserted` yields a clean boolean
- * per row.
+ * Idempotency:
+ *   - workout/sleep: UNIQUE (user_id, source, source_record_id) — pre-existing
+ *     in Sprint 4 BATCH 2 schema (see shared/schema.ts).
+ *   - body_composition: partial UNIQUE (user_id, source_provider,
+ *     (recorded_at::date)) WHERE source IN ('wearable', 'smart_scale') —
+ *     migration 014.5 (Task 5a.4.5). Without this, retries would silently
+ *     insert duplicates.
  *
- * SQL alias rule: every alias is lowercase (`inserted`, `source_record_id`).
- * Postgres folds unquoted identifiers to lowercase; capitalized aliases would
- * silently lose-the-case in the result key.
+ * SQL alias rule (carried over from BATCH 2): every alias is lowercase
+ * (`inserted`, `source_record_id`). Postgres folds unquoted identifiers to
+ * lowercase; capitalized aliases would silently lose-the-case in the result
+ * key.
  *
- * First-sync-complete dispatch is per-(user, dataType) — NOT per-connection.
- * If a user connects Whoop and gets sleep data, then later connects Garmin
- * and Garmin's first sleep ingest also writes a row, the notification does
- * NOT re-fire (count is already ≥1).
+ * First-sync-complete dispatch: per-(user, dataType). If a user connects
+ * Garmin and gets workout data, then later connects Polar and Polar's first
+ * activity also writes a row, the notification does NOT re-fire (count is
+ * already ≥1). Per-data-type counter so a Disciple gets a separate banner
+ * for their first workout vs first sleep vs first body-composition row.
  *
  * Race-condition acceptance: two simultaneous webhooks for the same
  * (user, dataType) could both pass the inserted-AND-count===1 gate before
@@ -35,76 +58,96 @@
  * notifications table will have two rows. Accepted for v1 (low-frequency,
  * low-cost duplication; documented).
  */
-import { sql, eq } from 'drizzle-orm';
+import { sql, eq, and } from 'drizzle-orm';
 import { getDb } from '../db';
-import { sleepSessions, dailyVitals, activitySessions, bodyMetrics } from '../../shared/schema';
+import {
+  sleepSessions,
+  activitySessions,
+  bodyMetrics,
+  wearableConnections,
+  type WearableProvider,
+  type WearableStatus,
+} from '../../shared/schema';
 import { recordSuccessfulSync } from './wearableConnections';
 import { dispatch } from './notificationDispatcher';
+import { logger } from '../logger';
 
-// ─── Normalized payload shapes ──────────────────────────────────────────────
+// ─── OW canonical event payload shapes ──────────────────────────────────────
+// These mirror OW upstream's webhook payload contracts. `Record<string,
+// unknown>` index lets us stash future fields without recompile (OW emits
+// unknown extras forward-compat).
 
-interface NormalizedSleep {
-  date: string; // YYYY-MM-DD wake date in user tz
-  bedtime: Date | null;
-  wakeTime: Date | null;
-  totalSleepMinutes: number | null;
-  deepMinutes: number | null;
-  remMinutes: number | null;
-  lightMinutes: number | null;
-  awakeMinutes: number | null;
-  avgHeartRate: number | null;
-  minHeartRate: number | null;
-  hrvOvernightMs: string | null;
-  respiratoryRate: string | null;
-  bloodOxygenMin: string | null;
-  bodyTemperatureDeviation: string | null;
-  sleepScore: number | null;
-  sourceRecordId: string;
+export interface WorkoutCreatedData {
+  id: string;
+  user_id: string;
+  type: string; // e.g. 'running', 'cycling', 'strength_training'
+  start_time: string; // ISO8601
+  end_time: string; // ISO8601
+  source: { provider: string; device?: string | null };
+  duration_seconds?: number | null;
+  calories_kcal?: number | null;
+  distance_meters?: number | null;
+  avg_heart_rate_bpm?: number | null;
+  max_heart_rate_bpm?: number | null;
+  steps?: number | null;
+  elevation_gain_meters?: number | null;
+  strain_score?: number | null;
+  training_load_score?: number | null;
+  route_polyline?: string | null;
+  [k: string]: unknown;
 }
 
-interface NormalizedVitals {
-  date: string;
-  restingHeartRate: number | null;
-  morningHrvRmssd: string | null;
-  vo2max: string | null;
-  bloodPressureSystolic: number | null;
-  bloodPressureDiastolic: number | null;
-  bloodOxygenAvg: string | null;
-  bodyTemperature: string | null;
-  weightKg: string | null; // smart-scale path
-  bodyFatPercentage: string | null; // smart-scale path
-  sourceRecordId: string;
+export interface SleepCreatedData {
+  id: string;
+  user_id: string;
+  start_time: string; // ISO8601 — bedtime
+  end_time: string; // ISO8601 — wake
+  source: { provider: string; device?: string | null };
+  total_sleep_seconds?: number | null;
+  efficiency_percent?: number | null;
+  stages?: {
+    deep_seconds?: number | null;
+    rem_seconds?: number | null;
+    light_seconds?: number | null;
+    awake_seconds?: number | null;
+  };
+  avg_heart_rate_bpm?: number | null;
+  min_heart_rate_bpm?: number | null;
+  hrv_overnight_ms?: number | null;
+  respiratory_rate_bpm?: number | null;
+  spo2_min_percent?: number | null;
+  body_temperature_deviation_c?: number | null;
+  sleep_score?: number | null;
+  is_nap?: boolean | null;
+  [k: string]: unknown;
 }
 
-interface NormalizedActivity {
-  startedAt: Date;
-  durationMinutes: number | null;
-  activityType: string | null;
-  distanceMeters: number | null;
-  calories: number | null;
-  avgHeartRate: number | null;
-  maxHeartRate: number | null;
-  steps: number | null;
-  elevationGainMeters: number | null;
-  strainScore: string | null;
-  trainingLoadScore: string | null;
-  routePolyline: string | null;
-  sourceRecordId: string;
+export interface ConnectionCreatedData {
+  user_id: string;
+  provider: string;
+  connection_id: string;
+  connected_at: string; // ISO8601
+  [k: string]: unknown;
 }
 
-// ─── Normalization helpers ──────────────────────────────────────────────────
-// Provider-side schemas vary; for v1 we accept already-canonical payloads
-// (Open Wearables does the per-provider mapping) and just defensively coerce
-// types. BATCH 5+ may add per-provider normalize functions when we wire each
-// provider end-to-end.
+export interface BodyCompositionSample {
+  timestamp: string; // ISO8601
+  type: string; // 'weight' | 'body_fat' | 'lean_mass' | 'muscle_mass' | 'bone_mass' | 'body_water' | 'visceral_fat' | 'bmi'
+  value: number;
+  unit: string; // 'kg' | 'percent' | 'rating' | ...
+  [k: string]: unknown;
+}
 
-type AnyPayload = Record<string, unknown>;
-const asPayload = (p: unknown): AnyPayload => (p && typeof p === 'object' ? (p as AnyPayload) : {});
+export interface BodyCompositionCreatedData {
+  user_id: string;
+  provider: string;
+  series_type: string;
+  samples: BodyCompositionSample[];
+  [k: string]: unknown;
+}
 
-const asString = (v: unknown): string | null =>
-  typeof v === 'string' ? v : typeof v === 'number' ? String(v) : null;
-const asNumber = (v: unknown): number | null =>
-  typeof v === 'number' && Number.isFinite(v) ? v : null;
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
 const asDate = (v: unknown): Date | null => {
   if (v instanceof Date) return v;
   if (typeof v === 'string' || typeof v === 'number') {
@@ -113,250 +156,95 @@ const asDate = (v: unknown): Date | null => {
   }
   return null;
 };
-const asDecimalString = (v: unknown): string | null => {
-  const n = asNumber(v);
-  return n === null ? (asString(v) ?? null) : String(n);
+
+const asInt = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : null;
+
+const asDecimalString = (v: unknown): string | null =>
+  typeof v === 'number' && Number.isFinite(v) ? String(v) : null;
+
+const secondsToMinutes = (s: unknown): number | null => {
+  const n = asInt(s);
+  return n === null ? null : Math.round(n / 60);
 };
-
-function normalizeSleepPayload(payload: unknown, _source: string): NormalizedSleep {
-  const p = asPayload(payload);
-  return {
-    date: asString(p.date) ?? '',
-    bedtime: asDate(p.bedtime),
-    wakeTime: asDate(p.wakeTime ?? p.wake_time),
-    totalSleepMinutes: asNumber(p.totalSleepMinutes ?? p.total_sleep_minutes),
-    deepMinutes: asNumber(p.deepMinutes ?? p.deep_minutes),
-    remMinutes: asNumber(p.remMinutes ?? p.rem_minutes),
-    lightMinutes: asNumber(p.lightMinutes ?? p.light_minutes),
-    awakeMinutes: asNumber(p.awakeMinutes ?? p.awake_minutes),
-    avgHeartRate: asNumber(p.avgHeartRate ?? p.avg_heart_rate),
-    minHeartRate: asNumber(p.minHeartRate ?? p.min_heart_rate),
-    hrvOvernightMs: asDecimalString(p.hrvOvernightMs ?? p.hrv_overnight_ms),
-    respiratoryRate: asDecimalString(p.respiratoryRate ?? p.respiratory_rate),
-    bloodOxygenMin: asDecimalString(p.bloodOxygenMin ?? p.blood_oxygen_min),
-    bodyTemperatureDeviation: asDecimalString(
-      p.bodyTemperatureDeviation ?? p.body_temperature_deviation
-    ),
-    sleepScore: asNumber(p.sleepScore ?? p.sleep_score),
-    sourceRecordId: asString(p.sourceRecordId ?? p.source_record_id ?? p.id) ?? '',
-  };
-}
-
-function normalizeVitalsPayload(payload: unknown, _source: string): NormalizedVitals {
-  const p = asPayload(payload);
-  return {
-    date: asString(p.date) ?? '',
-    restingHeartRate: asNumber(p.restingHeartRate ?? p.resting_heart_rate),
-    morningHrvRmssd: asDecimalString(p.morningHrvRmssd ?? p.morning_hrv_rmssd),
-    vo2max: asDecimalString(p.vo2max),
-    bloodPressureSystolic: asNumber(p.bloodPressureSystolic ?? p.blood_pressure_systolic),
-    bloodPressureDiastolic: asNumber(p.bloodPressureDiastolic ?? p.blood_pressure_diastolic),
-    bloodOxygenAvg: asDecimalString(p.bloodOxygenAvg ?? p.blood_oxygen_avg),
-    bodyTemperature: asDecimalString(p.bodyTemperature ?? p.body_temperature),
-    weightKg: asDecimalString(p.weightKg ?? p.weight_kg),
-    bodyFatPercentage: asDecimalString(p.bodyFatPercentage ?? p.body_fat_percentage),
-    sourceRecordId: asString(p.sourceRecordId ?? p.source_record_id ?? p.id) ?? '',
-  };
-}
-
-function normalizeActivityPayload(payload: unknown, _source: string): NormalizedActivity {
-  const p = asPayload(payload);
-  return {
-    startedAt: asDate(p.startedAt ?? p.started_at) ?? new Date(0),
-    durationMinutes: asNumber(p.durationMinutes ?? p.duration_minutes),
-    activityType: asString(p.activityType ?? p.activity_type),
-    distanceMeters: asNumber(p.distanceMeters ?? p.distance_meters),
-    calories: asNumber(p.calories),
-    avgHeartRate: asNumber(p.avgHeartRate ?? p.avg_heart_rate),
-    maxHeartRate: asNumber(p.maxHeartRate ?? p.max_heart_rate),
-    steps: asNumber(p.steps),
-    elevationGainMeters: asNumber(p.elevationGainMeters ?? p.elevation_gain_meters),
-    strainScore: asDecimalString(p.strainScore ?? p.strain_score),
-    trainingLoadScore: asDecimalString(p.trainingLoadScore ?? p.training_load_score),
-    routePolyline: asString(p.routePolyline ?? p.route_polyline),
-    sourceRecordId: asString(p.sourceRecordId ?? p.source_record_id ?? p.id) ?? '',
-  };
-}
 
 // ─── First-sync-complete dispatch helper ────────────────────────────────────
 
-type WearableDataType = 'sleep' | 'vitals' | 'activity';
+type WearableDataType = 'workout' | 'sleep' | 'body_composition';
 
 /**
  * Fires `wearable_first_sync_complete` exactly once per (userId, dataType)
  * pair, the first time the user has any row of that data type from any
  * wearable source.
- *
- * The "inserted=true" gate at each call site is the primary defense: it
- * prevents the notification firing on a re-delivered webhook (the conflict-
- * update path of the UPSERT). The count===1 check here is the SECONDARY
- * defense — it ensures we only fire on the actual first row.
- *
- * Race window note: Postgres MVCC means two simultaneous INSERTs for the
- * same (user, dataType) could both see count===0 then both pass the gate
- * → notification fires twice. The notification `tag` collapses duplicates
- * on the OS notification tray; the user sees one banner. Server-side
- * notifications-table row count of 2 is accepted for v1 — see file header.
  */
 async function maybeDispatchFirstSyncComplete(
   userId: string,
   dataType: WearableDataType
 ): Promise<void> {
   const db = await getDb();
-  const tableMap = {
-    sleep: sleepSessions,
-    vitals: dailyVitals,
-    activity: activitySessions,
-  };
-  const table = tableMap[dataType];
+  let table: typeof sleepSessions | typeof activitySessions | typeof bodyMetrics;
+  if (dataType === 'sleep') {
+    table = sleepSessions;
+  } else if (dataType === 'workout') {
+    table = activitySessions;
+  } else {
+    table = bodyMetrics;
+  }
   // Count includes the row we just inserted (already committed); we want
   // exactly 1 → "first row ever for this dataType".
-  const [{ c }] = await db
+  const result = await db
     .select({ c: sql<number>`count(*)::int` })
     .from(table)
     .where(eq(table.userId, userId));
+  const c = result[0]?.c ?? 0;
   if (c === 1) {
-    // v1: we know the user has exactly 1 row right now. Future enrichment
-    // (Sprint 4.5) may count distinct dates from the last 30 days for a
-    // richer "X days of data pulled" body — for now `days = 1`.
     await dispatch(userId, 'wearable_first_sync_complete', { dataType, days: c });
   }
 }
 
+/**
+ * Resolve a user's wearable_connections row by (userId, provider). Used by
+ * each ingest path to call recordSuccessfulSync. Returns null if no row
+ * exists (which would mean OW emitted a data event for a user who never
+ * connected — log + ignore the sync record but don't fail the ingest).
+ */
+async function findConnectionId(userId: string, provider: string): Promise<string | null> {
+  const db = await getDb();
+  const rows = await db
+    .select({ id: wearableConnections.id })
+    .from(wearableConnections)
+    .where(
+      and(
+        eq(wearableConnections.userId, userId),
+        eq(wearableConnections.provider, provider as WearableProvider)
+      )
+    );
+  return rows[0]?.id ?? null;
+}
+
 // ─── Ingest functions ───────────────────────────────────────────────────────
 
-export async function ingestSleepSession(
-  userId: string,
-  connectionId: string,
-  source: string,
-  payload: unknown
-): Promise<{ inserted: boolean; recordId: string }> {
-  const normalized = normalizeSleepPayload(payload, source);
+export async function ingestWorkoutCreated(
+  data: WorkoutCreatedData
+): Promise<{ inserted: boolean }> {
   const db = await getDb();
-  const result = await db.execute(sql`
-    INSERT INTO sleep_sessions (
-      user_id, date, bedtime, wake_time, total_sleep_minutes,
-      deep_minutes, rem_minutes, light_minutes, awake_minutes,
-      avg_heart_rate, min_heart_rate, hrv_overnight_ms,
-      respiratory_rate, blood_oxygen_min, body_temperature_deviation,
-      sleep_score, source, source_record_id, raw_payload
-    ) VALUES (
-      ${userId}, ${normalized.date}, ${normalized.bedtime}, ${normalized.wakeTime},
-      ${normalized.totalSleepMinutes}, ${normalized.deepMinutes}, ${normalized.remMinutes},
-      ${normalized.lightMinutes}, ${normalized.awakeMinutes}, ${normalized.avgHeartRate},
-      ${normalized.minHeartRate}, ${normalized.hrvOvernightMs},
-      ${normalized.respiratoryRate}, ${normalized.bloodOxygenMin},
-      ${normalized.bodyTemperatureDeviation}, ${normalized.sleepScore},
-      ${source}, ${normalized.sourceRecordId}, ${JSON.stringify(payload)}::jsonb
-    )
-    ON CONFLICT (user_id, source, source_record_id) DO UPDATE SET
-      bedtime = EXCLUDED.bedtime,
-      wake_time = EXCLUDED.wake_time,
-      total_sleep_minutes = EXCLUDED.total_sleep_minutes,
-      deep_minutes = EXCLUDED.deep_minutes,
-      rem_minutes = EXCLUDED.rem_minutes,
-      light_minutes = EXCLUDED.light_minutes,
-      awake_minutes = EXCLUDED.awake_minutes,
-      avg_heart_rate = EXCLUDED.avg_heart_rate,
-      min_heart_rate = EXCLUDED.min_heart_rate,
-      hrv_overnight_ms = EXCLUDED.hrv_overnight_ms,
-      respiratory_rate = EXCLUDED.respiratory_rate,
-      blood_oxygen_min = EXCLUDED.blood_oxygen_min,
-      body_temperature_deviation = EXCLUDED.body_temperature_deviation,
-      sleep_score = EXCLUDED.sleep_score,
-      raw_payload = EXCLUDED.raw_payload,
-      updated_at = NOW()
-    RETURNING (xmax = 0) AS inserted, source_record_id
-  `);
-  const row = (result.rows?.[0] ?? {}) as { inserted?: boolean; source_record_id?: string };
-  const inserted = Boolean(row.inserted);
-  const recordId = row.source_record_id ?? normalized.sourceRecordId;
+  const userId = data.user_id;
+  const provider = data.source?.provider ?? 'unknown';
+  const sourceRecordId = data.id;
 
-  if (inserted) {
-    await maybeDispatchFirstSyncComplete(userId, 'sleep');
+  const startedAt = asDate(data.start_time);
+  if (!startedAt) {
+    throw new Error(`workout.created: invalid start_time '${data.start_time}'`);
+  }
+  // Prefer explicit duration_seconds; otherwise compute from end - start.
+  let durationMinutes = secondsToMinutes(data.duration_seconds);
+  if (durationMinutes === null) {
+    const endAt = asDate(data.end_time);
+    if (endAt) {
+      durationMinutes = Math.round((endAt.getTime() - startedAt.getTime()) / 60_000);
+    }
   }
 
-  await recordSuccessfulSync(connectionId);
-  return { inserted, recordId };
-}
-
-export async function ingestDailyVitals(
-  userId: string,
-  connectionId: string,
-  source: string,
-  payload: unknown
-): Promise<{ inserted: boolean; recordId: string }> {
-  const normalized = normalizeVitalsPayload(payload, source);
-  const db = await getDb();
-  const result = await db.execute(sql`
-    INSERT INTO daily_vitals (
-      user_id, date, resting_heart_rate, morning_hrv_rmssd, vo2max,
-      blood_pressure_systolic, blood_pressure_diastolic, blood_oxygen_avg,
-      body_temperature, source, source_record_id, raw_payload
-    ) VALUES (
-      ${userId}, ${normalized.date}, ${normalized.restingHeartRate},
-      ${normalized.morningHrvRmssd}, ${normalized.vo2max},
-      ${normalized.bloodPressureSystolic}, ${normalized.bloodPressureDiastolic},
-      ${normalized.bloodOxygenAvg}, ${normalized.bodyTemperature},
-      ${source}, ${normalized.sourceRecordId}, ${JSON.stringify(payload)}::jsonb
-    )
-    ON CONFLICT (user_id, date, source) DO UPDATE SET
-      resting_heart_rate = EXCLUDED.resting_heart_rate,
-      morning_hrv_rmssd = EXCLUDED.morning_hrv_rmssd,
-      vo2max = EXCLUDED.vo2max,
-      blood_pressure_systolic = EXCLUDED.blood_pressure_systolic,
-      blood_pressure_diastolic = EXCLUDED.blood_pressure_diastolic,
-      blood_oxygen_avg = EXCLUDED.blood_oxygen_avg,
-      body_temperature = EXCLUDED.body_temperature,
-      source_record_id = EXCLUDED.source_record_id,
-      raw_payload = EXCLUDED.raw_payload,
-      updated_at = NOW()
-    RETURNING (xmax = 0) AS inserted, source_record_id
-  `);
-  const row = (result.rows?.[0] ?? {}) as { inserted?: boolean; source_record_id?: string };
-  const inserted = Boolean(row.inserted);
-  const recordId = row.source_record_id ?? normalized.sourceRecordId;
-
-  if (inserted) {
-    await maybeDispatchFirstSyncComplete(userId, 'vitals');
-  }
-
-  // Smart-scale path: if the vitals payload includes a weight reading, ALSO
-  // insert into bodyMetrics so the user's body-metrics chart picks up the
-  // wearable-sourced point alongside manual entries. We tag source='wearable'
-  // and sourceProvider=<source> so the UI can disambiguate origin.
-  //
-  // Sprint 4 BATCH 2 reviewer items 3 + 4 — fold into amend:
-  //   3. Gate on `inserted` to prevent duplicate bodyMetrics rows on
-  //      re-delivery. The vitals UPSERT collapses duplicates via
-  //      UNIQUE(user_id, date, source); without the gate, the bodyMetrics
-  //      insert (which has no analogous UNIQUE) would accumulate.
-  //   4. Pass recordedAt from the vitals date so a smart-scale reading
-  //      arriving 6h late doesn't display on the wrong day. Midpoint UTC
-  //      (12:00) avoids both midnight-edge timezones biasing one direction.
-  if (inserted && normalized.weightKg) {
-    await db.insert(bodyMetrics).values({
-      userId,
-      weightKg: normalized.weightKg,
-      bodyFatPercentage: normalized.bodyFatPercentage ?? undefined,
-      source: 'wearable',
-      sourceProvider: source,
-      recordedAt: new Date(`${normalized.date}T12:00:00Z`),
-    });
-  }
-
-  await recordSuccessfulSync(connectionId);
-  return { inserted, recordId };
-}
-
-export async function ingestActivity(
-  userId: string,
-  connectionId: string,
-  source: string,
-  payload: unknown
-): Promise<{ inserted: boolean; recordId: string }> {
-  const normalized = normalizeActivityPayload(payload, source);
-  const db = await getDb();
   const result = await db.execute(sql`
     INSERT INTO activity_sessions (
       user_id, started_at, duration_minutes, activity_type,
@@ -364,13 +252,14 @@ export async function ingestActivity(
       steps, elevation_gain_meters, strain_score, training_load_score,
       route_polyline, source, source_record_id, raw_payload
     ) VALUES (
-      ${userId}, ${normalized.startedAt}, ${normalized.durationMinutes},
-      ${normalized.activityType}, ${normalized.distanceMeters},
-      ${normalized.calories}, ${normalized.avgHeartRate},
-      ${normalized.maxHeartRate}, ${normalized.steps},
-      ${normalized.elevationGainMeters}, ${normalized.strainScore},
-      ${normalized.trainingLoadScore}, ${normalized.routePolyline},
-      ${source}, ${normalized.sourceRecordId}, ${JSON.stringify(payload)}::jsonb
+      ${userId}, ${startedAt}, ${durationMinutes},
+      ${data.type ?? null}, ${asInt(data.distance_meters)},
+      ${asInt(data.calories_kcal)}, ${asInt(data.avg_heart_rate_bpm)},
+      ${asInt(data.max_heart_rate_bpm)}, ${asInt(data.steps)},
+      ${asInt(data.elevation_gain_meters)},
+      ${asDecimalString(data.strain_score)}, ${asDecimalString(data.training_load_score)},
+      ${data.route_polyline ?? null},
+      ${provider}, ${sourceRecordId}, ${JSON.stringify(data)}::jsonb
     )
     ON CONFLICT (user_id, source, source_record_id) DO UPDATE SET
       started_at = EXCLUDED.started_at,
@@ -387,16 +276,281 @@ export async function ingestActivity(
       route_polyline = EXCLUDED.route_polyline,
       raw_payload = EXCLUDED.raw_payload,
       updated_at = NOW()
-    RETURNING (xmax = 0) AS inserted, source_record_id
+    RETURNING (xmax = 0) AS inserted
   `);
-  const row = (result.rows?.[0] ?? {}) as { inserted?: boolean; source_record_id?: string };
+  const row = (result.rows?.[0] ?? {}) as { inserted?: boolean };
   const inserted = Boolean(row.inserted);
-  const recordId = row.source_record_id ?? normalized.sourceRecordId;
 
   if (inserted) {
-    await maybeDispatchFirstSyncComplete(userId, 'activity');
+    await maybeDispatchFirstSyncComplete(userId, 'workout');
   }
 
-  await recordSuccessfulSync(connectionId);
-  return { inserted, recordId };
+  const connectionId = await findConnectionId(userId, provider);
+  if (connectionId) {
+    await recordSuccessfulSync(connectionId);
+  } else {
+    logger.warn('workout.created received for user with no matching wearable_connection', {
+      userId,
+      provider,
+    });
+  }
+
+  return { inserted };
+}
+
+export async function ingestSleepCreated(data: SleepCreatedData): Promise<{ inserted: boolean }> {
+  const db = await getDb();
+  const userId = data.user_id;
+  const provider = data.source?.provider ?? 'unknown';
+  const sourceRecordId = data.id;
+
+  const bedtime = asDate(data.start_time);
+  const wakeTime = asDate(data.end_time);
+  // Wake date in user's tz — for v1 we use UTC date of end_time. Future:
+  // store wake date in user's locally-configured tz once that's wired.
+  const wakeDate = wakeTime
+    ? wakeTime.toISOString().slice(0, 10)
+    : (asDate(data.start_time)?.toISOString().slice(0, 10) ?? '');
+
+  let totalSleepMinutes = secondsToMinutes(data.total_sleep_seconds);
+  if (totalSleepMinutes === null && bedtime && wakeTime) {
+    totalSleepMinutes = Math.round((wakeTime.getTime() - bedtime.getTime()) / 60_000);
+  }
+
+  const stages = data.stages ?? {};
+  const deepMinutes = secondsToMinutes(stages.deep_seconds);
+  const remMinutes = secondsToMinutes(stages.rem_seconds);
+  const lightMinutes = secondsToMinutes(stages.light_seconds);
+  const awakeMinutes = secondsToMinutes(stages.awake_seconds);
+
+  const result = await db.execute(sql`
+    INSERT INTO sleep_sessions (
+      user_id, date, bedtime, wake_time, total_sleep_minutes,
+      deep_minutes, rem_minutes, light_minutes, awake_minutes,
+      avg_heart_rate, min_heart_rate, hrv_overnight_ms,
+      respiratory_rate, blood_oxygen_min, body_temperature_deviation,
+      sleep_score, source, source_record_id, raw_payload
+    ) VALUES (
+      ${userId}, ${wakeDate}, ${bedtime}, ${wakeTime},
+      ${totalSleepMinutes}, ${deepMinutes}, ${remMinutes},
+      ${lightMinutes}, ${awakeMinutes},
+      ${asInt(data.avg_heart_rate_bpm)}, ${asInt(data.min_heart_rate_bpm)},
+      ${asDecimalString(data.hrv_overnight_ms)},
+      ${asDecimalString(data.respiratory_rate_bpm)},
+      ${asDecimalString(data.spo2_min_percent)},
+      ${asDecimalString(data.body_temperature_deviation_c)},
+      ${asInt(data.sleep_score)}, ${provider}, ${sourceRecordId},
+      ${JSON.stringify(data)}::jsonb
+    )
+    ON CONFLICT (user_id, source, source_record_id) DO UPDATE SET
+      date = EXCLUDED.date,
+      bedtime = EXCLUDED.bedtime,
+      wake_time = EXCLUDED.wake_time,
+      total_sleep_minutes = EXCLUDED.total_sleep_minutes,
+      deep_minutes = EXCLUDED.deep_minutes,
+      rem_minutes = EXCLUDED.rem_minutes,
+      light_minutes = EXCLUDED.light_minutes,
+      awake_minutes = EXCLUDED.awake_minutes,
+      avg_heart_rate = EXCLUDED.avg_heart_rate,
+      min_heart_rate = EXCLUDED.min_heart_rate,
+      hrv_overnight_ms = EXCLUDED.hrv_overnight_ms,
+      respiratory_rate = EXCLUDED.respiratory_rate,
+      blood_oxygen_min = EXCLUDED.blood_oxygen_min,
+      body_temperature_deviation = EXCLUDED.body_temperature_deviation,
+      sleep_score = EXCLUDED.sleep_score,
+      raw_payload = EXCLUDED.raw_payload,
+      updated_at = NOW()
+    RETURNING (xmax = 0) AS inserted
+  `);
+  const row = (result.rows?.[0] ?? {}) as { inserted?: boolean };
+  const inserted = Boolean(row.inserted);
+
+  if (inserted) {
+    await maybeDispatchFirstSyncComplete(userId, 'sleep');
+  }
+
+  const connectionId = await findConnectionId(userId, provider);
+  if (connectionId) {
+    await recordSuccessfulSync(connectionId);
+  } else {
+    logger.warn('sleep.created received for user with no matching wearable_connection', {
+      userId,
+      provider,
+    });
+  }
+
+  return { inserted };
+}
+
+export async function ingestConnectionCreated(data: ConnectionCreatedData): Promise<void> {
+  const db = await getDb();
+  const userId = data.user_id;
+  const provider = data.provider;
+  const connectedAt = asDate(data.connected_at) ?? new Date();
+
+  // OW reports the user's connection is healthy. Two possibilities:
+  //   (a) Our row exists (OAuth callback already fired handleOAuthCallback).
+  //       The webhook is a confirmation/idempotent ack — flip status if it's
+  //       not 'connected' yet (rare, but defends against OAuth-callback race).
+  //   (b) Our row doesn't exist (rare in v1 — would mean OW created the
+  //       connection ahead of us). INSERT a 'connected' row.
+  //
+  // UPSERT on the existing UNIQUE (user_id, provider) index — Sprint 4 BATCH 2
+  // already created this index for idempotent reconnect.
+  const before = await db
+    .select({ status: wearableConnections.status })
+    .from(wearableConnections)
+    .where(
+      and(
+        eq(wearableConnections.userId, userId),
+        eq(wearableConnections.provider, provider as WearableProvider)
+      )
+    );
+  const previousStatus: WearableStatus | null = (before[0]?.status as WearableStatus) ?? null;
+
+  await db
+    .insert(wearableConnections)
+    .values({
+      userId,
+      provider: provider as WearableProvider,
+      status: 'connected' as WearableStatus,
+      connectedAt,
+      disconnectedAt: null,
+      syncErrorCount: 0,
+      lastSyncError: null,
+    })
+    .onConflictDoUpdate({
+      target: [wearableConnections.userId, wearableConnections.provider],
+      set: {
+        status: 'connected' as WearableStatus,
+        connectedAt,
+        disconnectedAt: null,
+        syncErrorCount: 0,
+        lastSyncError: null,
+      },
+    });
+
+  // Dispatch on transition (not on idempotent ack of an already-connected row).
+  if (previousStatus !== 'connected') {
+    await dispatch(userId, 'wearable_connected', { provider });
+  }
+}
+
+export async function ingestBodyCompositionCreated(
+  data: BodyCompositionCreatedData
+): Promise<{ inserted_count: number }> {
+  const db = await getDb();
+  const userId = data.user_id;
+  const provider = data.provider;
+  let insertedCount = 0;
+
+  // Each sample becomes (or updates) one bodyMetrics row keyed on
+  // (user_id, source_provider, recorded_at::date) WHERE source IN
+  // ('wearable', 'smart_scale') — the partial UNIQUE added in migration 014.5.
+  // Multiple samples on the same calendar day collapse to one row (last write
+  // wins for that day's reading per provider).
+  for (const sample of data.samples) {
+    const recordedAt = asDate(sample.timestamp);
+    if (!recordedAt) {
+      logger.warn('body_composition.created: invalid sample timestamp; skipping', {
+        userId,
+        provider,
+        timestamp: sample.timestamp,
+      });
+      continue;
+    }
+
+    // Map sample.type → bodyMetrics column. Multi-sample payloads for the
+    // same day fold into one row via the UPSERT — the COALESCE on the
+    // EXCLUDED side preserves earlier-set fields when later samples don't
+    // include them.
+    let weightKg: string | null = null;
+    let bodyFatPercentage: string | null = null;
+    let muscleMassKg: string | null = null;
+    let boneMassKg: string | null = null;
+    let bodyWaterPercentage: string | null = null;
+    let visceralFatRating: number | null = null;
+
+    switch (sample.type) {
+      case 'weight':
+        weightKg = sample.unit === 'kg' ? String(sample.value) : null;
+        break;
+      case 'body_fat':
+      case 'body_fat_percentage':
+        bodyFatPercentage = sample.unit === 'percent' ? String(sample.value) : null;
+        break;
+      case 'muscle_mass':
+      case 'lean_mass':
+      case 'lean_body_mass':
+        muscleMassKg = sample.unit === 'kg' ? String(sample.value) : null;
+        break;
+      case 'bone_mass':
+        boneMassKg = sample.unit === 'kg' ? String(sample.value) : null;
+        break;
+      case 'body_water':
+      case 'body_water_percentage':
+        bodyWaterPercentage = sample.unit === 'percent' ? String(sample.value) : null;
+        break;
+      case 'visceral_fat':
+      case 'visceral_fat_rating':
+        visceralFatRating = typeof sample.value === 'number' ? Math.round(sample.value) : null;
+        break;
+      default:
+        // Unknown sample type; log + skip (forward-compat with OW additions).
+        logger.info('body_composition.created: unknown sample type; skipping', {
+          userId,
+          provider,
+          sampleType: sample.type,
+        });
+        continue;
+    }
+
+    // UPSERT against the partial UNIQUE index from migration 014.5
+    // (idx_body_metrics_wearable_dedup ON body_metrics (user_id,
+    // source_provider, (recorded_at::date)) WHERE source IN ('wearable',
+    // 'smart_scale')). The conflict target spec MUST match the index's
+    // expression including the WHERE clause for Postgres to use it.
+    const result = await db.execute(sql`
+      INSERT INTO body_metrics (
+        user_id, recorded_at, weight_kg, body_fat_percentage,
+        muscle_mass_kg, bone_mass_kg, body_water_percentage,
+        visceral_fat_rating, source, source_provider
+      ) VALUES (
+        ${userId}, ${recordedAt}, ${weightKg}, ${bodyFatPercentage},
+        ${muscleMassKg}, ${boneMassKg}, ${bodyWaterPercentage},
+        ${visceralFatRating}, 'wearable', ${provider}
+      )
+      ON CONFLICT (user_id, source_provider, (recorded_at::date))
+        WHERE source IN ('wearable', 'smart_scale')
+      DO UPDATE SET
+        weight_kg = COALESCE(EXCLUDED.weight_kg, body_metrics.weight_kg),
+        body_fat_percentage = COALESCE(EXCLUDED.body_fat_percentage, body_metrics.body_fat_percentage),
+        muscle_mass_kg = COALESCE(EXCLUDED.muscle_mass_kg, body_metrics.muscle_mass_kg),
+        bone_mass_kg = COALESCE(EXCLUDED.bone_mass_kg, body_metrics.bone_mass_kg),
+        body_water_percentage = COALESCE(EXCLUDED.body_water_percentage, body_metrics.body_water_percentage),
+        visceral_fat_rating = COALESCE(EXCLUDED.visceral_fat_rating, body_metrics.visceral_fat_rating),
+        updated_at = NOW()
+      RETURNING (xmax = 0) AS inserted
+    `);
+    const row = (result.rows?.[0] ?? {}) as { inserted?: boolean };
+    if (row.inserted) {
+      insertedCount += 1;
+    }
+  }
+
+  if (insertedCount > 0) {
+    await maybeDispatchFirstSyncComplete(userId, 'body_composition');
+  }
+
+  const connectionId = await findConnectionId(userId, provider);
+  if (connectionId) {
+    await recordSuccessfulSync(connectionId);
+  } else {
+    logger.warn('body_composition.created received for user with no matching wearable_connection', {
+      userId,
+      provider,
+    });
+  }
+
+  return { inserted_count: insertedCount };
 }

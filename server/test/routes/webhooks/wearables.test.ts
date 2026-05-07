@@ -1,41 +1,41 @@
 /**
- * Wearable Webhook Routes Tests — Sprint 4 BATCH 2
+ * Wearable Webhook Routes Tests — Sprint 4 BATCH 5a
  *
- * 10 cases covering HMAC + timestamp + replay defense:
- *   1. Valid timestamp + valid signature + valid payload → 200 ok:true
- *   2. Stale timestamp (now - 600s) → 401 stale timestamp
- *   3. Future timestamp (now + 600s) → 401 stale timestamp
- *   4. Missing X-Webhook-Timestamp → 401 missing or invalid timestamp
- *   5. Non-numeric X-Webhook-Timestamp → 401 missing or invalid timestamp
- *   6. Valid timestamp + invalid signature → 401 invalid signature
- *   7. Valid timestamp + tampered body → 401 invalid signature
- *   8. Replay (same webhookId twice within window) → 200 deduped:true
- *   9. Missing OPEN_WEARABLES_WEBHOOK_SECRET → 500 webhook signature secret not configured
- *  10. timingSafeEqual length mismatch (extra char in signature) → 401 invalid signature
+ * Replaces BATCH 2's hand-rolled HMAC tests with Svix-signed delivery
+ * coverage:
+ *
+ *   1. Valid signed envelope + workout.created → 200 + ingestWorkoutCreated called
+ *   2. Valid signed envelope + sleep.created → 200 + ingestSleepCreated called
+ *   3. Valid signed envelope + connection.created → 200 + ingestConnectionCreated called
+ *   4. Valid signed envelope + body_composition.created → 200 + ingestBodyCompositionCreated called
+ *   5. Unknown event type → 200 ignored:true (forward-compat)
+ *   6. Schema mismatch on per-event-type Zod parse → 200 schema_mismatch:true
+ *      (Svix shouldn't retry malformed payload)
+ *   7. Bad signature (svix.verify throws) → 401 (no body, no retry)
+ *   8. Stale timestamp (svix.verify throws on >5min skew) → 401
+ *   9. Replay (same svix-id twice within window) → 200 deduped:true; ingest fires once
+ *  10. Ingest throws → 500 (Svix retries; idempotency layer dedupes)
+ *  11. Missing OPEN_WEARABLES_WEBHOOK_SECRET → throws on first request (fail-fast)
+ *
+ * Strategy: use the real `svix` Webhook to sign in tests (whsec_<base64> format),
+ * mock all four ingest functions, mock logger. Mount mirrors prod
+ * (express.raw → router with route POST /wearables).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
-import { createHmac } from 'node:crypto';
+import { Webhook } from 'svix';
 
 // ---------------------------------------------------------------------------
 // Mocks for downstream services (tested elsewhere)
 // ---------------------------------------------------------------------------
 
-const { ingestMocks, markSyncErrorMock, dispatchMock, dbMock, loggerMock } = vi.hoisted(() => ({
+const { ingestMocks, loggerMock } = vi.hoisted(() => ({
   ingestMocks: {
-    ingestSleepSession: vi.fn(async () => ({ inserted: true, recordId: 'r' })),
-    ingestDailyVitals: vi.fn(async () => ({ inserted: true, recordId: 'r' })),
-    ingestActivity: vi.fn(async () => ({ inserted: true, recordId: 'r' })),
-  },
-  markSyncErrorMock: vi.fn(async () => undefined),
-  dispatchMock: vi.fn(async () => undefined),
-  dbMock: {
-    update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: vi.fn(async () => undefined),
-      })),
-    })),
+    ingestWorkoutCreated: vi.fn(async () => ({ inserted: true })),
+    ingestSleepCreated: vi.fn(async () => ({ inserted: true })),
+    ingestConnectionCreated: vi.fn(async () => undefined),
+    ingestBodyCompositionCreated: vi.fn(async () => ({ inserted_count: 1 })),
   },
   loggerMock: {
     debug: vi.fn(),
@@ -47,83 +47,91 @@ const { ingestMocks, markSyncErrorMock, dispatchMock, dbMock, loggerMock } = vi.
 }));
 
 vi.mock('../../../services/wearableIngest', () => ingestMocks);
-vi.mock('../../../services/wearableConnections', () => ({
-  markSyncError: markSyncErrorMock,
-}));
-vi.mock('../../../services/notificationDispatcher', () => ({
-  dispatch: dispatchMock,
-}));
-vi.mock('../../../db', () => ({
-  getDb: vi.fn(async () => dbMock),
-  db: dbMock,
-  getPool: vi.fn(),
-  pool: null,
-}));
 vi.mock('../../../logger', () => ({
   logger: loggerMock,
   log: vi.fn(),
 }));
 
 // ---------------------------------------------------------------------------
-// AFTER mocks — import the SUT
+// AFTER mocks — the SUT module is dynamically imported per-test so the
+// fail-fast getWebhook() reads the env var set by each test.
 // ---------------------------------------------------------------------------
 
-import wearableWebhookRouter, {
-  __resetWebhookIdempotency,
-} from '../../../routes/webhooks/wearables';
+// whsec_<base64> per Svix's documented secret format. This is a literal Svix
+// signing secret (the prefix is required by the Webhook constructor).
+const SECRET = 'whsec_' + Buffer.from('test-webhook-secret-key-32-chars').toString('base64');
 
-// ---------------------------------------------------------------------------
-// Test app factory mirrors the production mount
-// ---------------------------------------------------------------------------
+async function makeTestApp() {
+  // Import after env is set, with module reset so the cached `_wh` resets.
+  const mod = await import('../../../routes/webhooks/wearables');
+  mod.__resetWebhookIdempotency();
+  const wearableWebhookRouter = mod.default;
 
-const SECRET = 'test-webhook-secret-key';
-
-function makeTestApp() {
   const app = express();
-  app.use(
-    '/webhooks/wearables',
-    express.raw({ type: 'application/json' }),
-    (req, _res, next) => {
-      // Mirror server/index.ts mount: copy raw buffer, then JSON-parse for
-      // handler convenience. The raw buffer is what HMAC is computed over.
-      (req as unknown as { rawBody: Buffer }).rawBody = req.body as Buffer;
-      try {
-        req.body = JSON.parse((req.body as Buffer).toString('utf8'));
-      } catch {
-        req.body = {};
-      }
-      next();
-    },
-    wearableWebhookRouter
-  );
+  app.use('/webhooks', express.raw({ type: 'application/json' }), wearableWebhookRouter);
   return app;
 }
 
-function signPayload(timestampSec: number, body: string, secret = SECRET): string {
-  return createHmac('sha256', secret).update(`${timestampSec}.${body}`).digest('hex');
-}
-
-function makeSleepPayload(webhookId = 'wh-test-1') {
+function signEnvelope(envelope: object): {
+  body: string;
+  headers: { 'svix-id': string; 'svix-timestamp': string; 'svix-signature': string };
+} {
+  const body = JSON.stringify(envelope);
+  const wh = new Webhook(SECRET);
+  const svixId = `msg-${Math.random().toString(36).slice(2, 10)}`;
+  const ts = new Date();
+  const signature = wh.sign(svixId, ts, body);
   return {
-    webhookId,
-    userId: 'user-A',
-    connectionId: 'conn-1',
-    source: 'whoop',
-    payload: {
-      date: '2026-05-06',
-      sourceRecordId: 'whoop-sleep-1',
-      totalSleepMinutes: 420,
+    body,
+    headers: {
+      'svix-id': svixId,
+      'svix-timestamp': String(Math.floor(ts.getTime() / 1000)),
+      'svix-signature': signature,
     },
   };
 }
 
+const WORKOUT_DATA = {
+  id: 'garmin-workout-1',
+  user_id: 'user-A',
+  type: 'running',
+  start_time: '2026-05-06T07:00:00Z',
+  end_time: '2026-05-06T07:45:00Z',
+  source: { provider: 'garmin' },
+};
+
+const SLEEP_DATA = {
+  id: 'garmin-sleep-1',
+  user_id: 'user-A',
+  start_time: '2026-05-05T23:00:00Z',
+  end_time: '2026-05-06T07:00:00Z',
+  source: { provider: 'garmin' },
+};
+
+const CONNECTION_DATA = {
+  user_id: 'user-A',
+  provider: 'garmin',
+  connection_id: 'ow-conn-1',
+  connected_at: '2026-05-06T06:55:00Z',
+};
+
+const BODY_COMP_DATA = {
+  user_id: 'user-A',
+  provider: 'garmin',
+  series_type: 'body_composition',
+  samples: [{ timestamp: '2026-05-06T07:00:00Z', type: 'weight', value: 75.5, unit: 'kg' }],
+};
+
 beforeEach(() => {
   process.env.OPEN_WEARABLES_WEBHOOK_SECRET = SECRET;
-  __resetWebhookIdempotency();
-  ingestMocks.ingestSleepSession.mockClear();
-  ingestMocks.ingestDailyVitals.mockClear();
-  ingestMocks.ingestActivity.mockClear();
-  markSyncErrorMock.mockClear();
+  vi.resetModules();
+  ingestMocks.ingestWorkoutCreated.mockClear();
+  ingestMocks.ingestSleepCreated.mockClear();
+  ingestMocks.ingestConnectionCreated.mockClear();
+  ingestMocks.ingestBodyCompositionCreated.mockClear();
+  loggerMock.warn.mockClear();
+  loggerMock.error.mockClear();
+  loggerMock.info.mockClear();
 });
 
 afterEach(() => {
@@ -131,352 +139,283 @@ afterEach(() => {
 });
 
 // ===========================================================================
-// 1. Valid timestamp + valid signature + valid payload → 200
+// 1-4. Type-dispatch happy paths
 // ===========================================================================
 
-describe('HMAC webhook receiver — happy path', () => {
-  it('valid timestamp + valid signature + valid sleep payload → 200 ok:true', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify(makeSleepPayload());
-    const sig = signPayload(ts, body);
+describe('Svix webhook receiver — type-dispatch happy paths', () => {
+  it('workout.created → 200 + ingestWorkoutCreated called', async () => {
+    const app = await makeTestApp();
+    const { body, headers } = signEnvelope({ type: 'workout.created', data: WORKOUT_DATA });
 
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
+    const res = await request(app)
+      .post('/webhooks/wearables')
       .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
+      .set(headers)
       .send(body);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
-    expect(ingestMocks.ingestSleepSession).toHaveBeenCalledWith(
-      'user-A',
-      'conn-1',
-      'whoop',
-      expect.objectContaining({ date: '2026-05-06' })
+    expect(ingestMocks.ingestWorkoutCreated).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'garmin-workout-1', user_id: 'user-A' })
     );
   });
 
-  it('vitals route mirror: valid timestamp + signature + payload → 200', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify({
-      ...makeSleepPayload('wh-vitals-1'),
-      payload: { date: '2026-05-06', restingHeartRate: 58 },
-    });
-    const sig = signPayload(ts, body);
+  it('sleep.created → 200 + ingestSleepCreated called', async () => {
+    const app = await makeTestApp();
+    const { body, headers } = signEnvelope({ type: 'sleep.created', data: SLEEP_DATA });
 
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/vitals')
+    const res = await request(app)
+      .post('/webhooks/wearables')
       .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
+      .set(headers)
       .send(body);
 
     expect(res.status).toBe(200);
-    expect(ingestMocks.ingestDailyVitals).toHaveBeenCalled();
+    expect(ingestMocks.ingestSleepCreated).toHaveBeenCalled();
   });
 
-  it('activity route mirror: valid timestamp + signature + payload → 200', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify({
-      ...makeSleepPayload('wh-activity-1'),
-      payload: { startedAt: '2026-05-06T10:00:00Z', durationMinutes: 30 },
-    });
-    const sig = signPayload(ts, body);
+  it('connection.created → 200 + ingestConnectionCreated called', async () => {
+    const app = await makeTestApp();
+    const { body, headers } = signEnvelope({ type: 'connection.created', data: CONNECTION_DATA });
 
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/activity')
+    const res = await request(app)
+      .post('/webhooks/wearables')
       .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
+      .set(headers)
       .send(body);
 
     expect(res.status).toBe(200);
-    expect(ingestMocks.ingestActivity).toHaveBeenCalled();
-  });
-});
-
-// ===========================================================================
-// 2-3. Replay defense: stale and future timestamps
-// ===========================================================================
-
-describe('HMAC webhook receiver — replay defense (timestamp window)', () => {
-  it('stale timestamp (now - 600s) → 401 stale timestamp', async () => {
-    const ts = Math.floor(Date.now() / 1000) - 600;
-    const body = JSON.stringify(makeSleepPayload());
-    const sig = signPayload(ts, body);
-
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
-      .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
-      .send(body);
-
-    expect(res.status).toBe(401);
-    expect(res.body.error).toMatch(/stale timestamp/);
-    expect(ingestMocks.ingestSleepSession).not.toHaveBeenCalled();
+    expect(ingestMocks.ingestConnectionCreated).toHaveBeenCalled();
   });
 
-  it('future timestamp (now + 600s) → 401 stale timestamp', async () => {
-    const ts = Math.floor(Date.now() / 1000) + 600;
-    const body = JSON.stringify(makeSleepPayload());
-    const sig = signPayload(ts, body);
-
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
-      .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
-      .send(body);
-
-    expect(res.status).toBe(401);
-    expect(res.body.error).toMatch(/stale timestamp/);
-  });
-});
-
-// ===========================================================================
-// 4-5. Missing / non-numeric timestamp
-// ===========================================================================
-
-describe('HMAC webhook receiver — timestamp parsing', () => {
-  it('missing X-Webhook-Timestamp → 401 missing or invalid timestamp', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify(makeSleepPayload());
-    const sig = signPayload(ts, body);
-
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
-      .set('Content-Type', 'application/json')
-      .set('X-Webhook-Signature', sig)
-      .send(body);
-
-    expect(res.status).toBe(401);
-    expect(res.body.error).toMatch(/missing or invalid timestamp/);
-  });
-
-  it('non-numeric X-Webhook-Timestamp → 401 missing or invalid timestamp', async () => {
-    const body = JSON.stringify(makeSleepPayload());
-    const sig = signPayload(0, body);
-
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
-      .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', 'abc-not-a-number')
-      .set('X-Webhook-Signature', sig)
-      .send(body);
-
-    expect(res.status).toBe(401);
-    expect(res.body.error).toMatch(/missing or invalid timestamp/);
-  });
-});
-
-// ===========================================================================
-// 6-7. Invalid signature, tampered body
-// ===========================================================================
-
-describe('HMAC webhook receiver — signature verification', () => {
-  it('valid timestamp + invalid signature → 401 invalid signature', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify(makeSleepPayload());
-    // Wrong signature — same length as a valid hex digest, but not the real one
-    const fakeSig = 'a'.repeat(64);
-
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
-      .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', fakeSig)
-      .send(body);
-
-    expect(res.status).toBe(401);
-    expect(res.body.error).toMatch(/invalid signature/);
-  });
-
-  it('valid timestamp + tampered body (signature was over original) → 401 invalid signature', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const original = JSON.stringify(makeSleepPayload());
-    const sig = signPayload(ts, original);
-    // Send a DIFFERENT body with the signature for the original. HMAC fails.
-    const tamperedBody = JSON.stringify({
-      ...makeSleepPayload(),
-      userId: 'user-attacker',
+  it('body_composition.created → 200 + ingestBodyCompositionCreated called', async () => {
+    const app = await makeTestApp();
+    const { body, headers } = signEnvelope({
+      type: 'body_composition.created',
+      data: BODY_COMP_DATA,
     });
 
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
+    const res = await request(app)
+      .post('/webhooks/wearables')
       .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
+      .set(headers)
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(ingestMocks.ingestBodyCompositionCreated).toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// 5. Unknown event type — forward-compat
+// ===========================================================================
+
+describe('Svix webhook receiver — unknown event types', () => {
+  it('unknown event type → 200 ignored:true', async () => {
+    const app = await makeTestApp();
+    const { body, headers } = signEnvelope({
+      type: 'heart_rate.created',
+      data: { user_id: 'user-A' },
+    });
+
+    const res = await request(app)
+      .post('/webhooks/wearables')
+      .set('Content-Type', 'application/json')
+      .set(headers)
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, ignored: true });
+    // No ingest called
+    expect(ingestMocks.ingestWorkoutCreated).not.toHaveBeenCalled();
+    expect(ingestMocks.ingestSleepCreated).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// 6. Schema mismatch — Zod safeParse failure → 200 schema_mismatch
+// ===========================================================================
+
+describe('Svix webhook receiver — per-event-type schema validation', () => {
+  it('workout.created with missing required fields → 200 schema_mismatch:true (no retry)', async () => {
+    const app = await makeTestApp();
+    // Missing required fields like `id`, `user_id`, `start_time`
+    const { body, headers } = signEnvelope({
+      type: 'workout.created',
+      data: { type: 'running' },
+    });
+
+    const res = await request(app)
+      .post('/webhooks/wearables')
+      .set('Content-Type', 'application/json')
+      .set(headers)
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, schema_mismatch: true });
+    expect(ingestMocks.ingestWorkoutCreated).not.toHaveBeenCalled();
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      'workout.created payload schema mismatch',
+      expect.anything()
+    );
+  });
+});
+
+// ===========================================================================
+// 7. Bad signature → 401
+// ===========================================================================
+
+describe('Svix webhook receiver — signature verification', () => {
+  it('valid envelope but tampered signature → 401, no body', async () => {
+    const app = await makeTestApp();
+    const { body, headers } = signEnvelope({ type: 'workout.created', data: WORKOUT_DATA });
+    const tamperedSig = headers['svix-signature'].replace(/.$/, 'X');
+
+    const res = await request(app)
+      .post('/webhooks/wearables')
+      .set('Content-Type', 'application/json')
+      .set('svix-id', headers['svix-id'])
+      .set('svix-timestamp', headers['svix-timestamp'])
+      .set('svix-signature', tamperedSig)
+      .send(body);
+
+    expect(res.status).toBe(401);
+    expect(ingestMocks.ingestWorkoutCreated).not.toHaveBeenCalled();
+  });
+
+  it('tampered body (signature was over original) → 401', async () => {
+    const app = await makeTestApp();
+    const { body: original, headers } = signEnvelope({
+      type: 'workout.created',
+      data: WORKOUT_DATA,
+    });
+    // Tamper the body — same signature won't validate
+    const tamperedBody = original.replace('user-A', 'user-attacker');
+    expect(tamperedBody).not.toBe(original);
+
+    const res = await request(app)
+      .post('/webhooks/wearables')
+      .set('Content-Type', 'application/json')
+      .set(headers)
       .send(tamperedBody);
 
     expect(res.status).toBe(401);
-    expect(res.body.error).toMatch(/invalid signature/);
-    expect(ingestMocks.ingestSleepSession).not.toHaveBeenCalled();
+    expect(ingestMocks.ingestWorkoutCreated).not.toHaveBeenCalled();
+  });
+
+  it('missing svix headers entirely → 401', async () => {
+    const app = await makeTestApp();
+    const { body } = signEnvelope({ type: 'workout.created', data: WORKOUT_DATA });
+
+    const res = await request(app)
+      .post('/webhooks/wearables')
+      .set('Content-Type', 'application/json')
+      .send(body);
+
+    expect(res.status).toBe(401);
   });
 });
 
 // ===========================================================================
-// 8. Replay (same webhookId twice within window) → deduped
+// 8. Stale timestamp — svix enforces 5-minute window inside .verify()
 // ===========================================================================
 
-describe('HMAC webhook receiver — idempotency dedup', () => {
-  it('replay (same webhookId twice within window) → second call returns deduped:true; ingest fires only once', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify(makeSleepPayload('wh-replay-1'));
-    const sig = signPayload(ts, body);
+describe('Svix webhook receiver — replay defense (timestamp window)', () => {
+  it('stale timestamp (now - 10min) → 401 (svix.verify rejects)', async () => {
+    const app = await makeTestApp();
+    const body = JSON.stringify({ type: 'workout.created', data: WORKOUT_DATA });
+    const wh = new Webhook(SECRET);
+    const staleTs = new Date(Date.now() - 10 * 60 * 1000); // 10 minutes ago
+    const svixId = 'msg-stale';
+    const sig = wh.sign(svixId, staleTs, body);
 
-    const app = makeTestApp();
-    const r1 = await request(app)
-      .post('/webhooks/wearables/sleep')
+    const res = await request(app)
+      .post('/webhooks/wearables')
       .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
+      .set('svix-id', svixId)
+      .set('svix-timestamp', String(Math.floor(staleTs.getTime() / 1000)))
+      .set('svix-signature', sig)
+      .send(body);
+
+    expect(res.status).toBe(401);
+    expect(ingestMocks.ingestWorkoutCreated).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// 9. Idempotency dedup on svix-id
+// ===========================================================================
+
+describe('Svix webhook receiver — idempotency dedup on svix-id', () => {
+  it('same svix-id twice → second call returns deduped:true; ingest fires once', async () => {
+    const app = await makeTestApp();
+    const { body, headers } = signEnvelope({ type: 'workout.created', data: WORKOUT_DATA });
+
+    const r1 = await request(app)
+      .post('/webhooks/wearables')
+      .set('Content-Type', 'application/json')
+      .set(headers)
       .send(body);
     expect(r1.status).toBe(200);
     expect(r1.body).toEqual({ ok: true });
 
     const r2 = await request(app)
-      .post('/webhooks/wearables/sleep')
+      .post('/webhooks/wearables')
       .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
+      .set(headers)
       .send(body);
     expect(r2.status).toBe(200);
     expect(r2.body).toEqual({ ok: true, deduped: true });
 
-    // Ingest should fire exactly once across both calls.
-    expect(ingestMocks.ingestSleepSession).toHaveBeenCalledTimes(1);
+    expect(ingestMocks.ingestWorkoutCreated).toHaveBeenCalledTimes(1);
   });
 });
 
 // ===========================================================================
-// 9. Missing webhook secret → 500
+// 10. Ingest throws → 500 (Svix retries)
 // ===========================================================================
 
-describe('HMAC webhook receiver — secret configuration', () => {
-  it('OPEN_WEARABLES_WEBHOOK_SECRET unset → 500 webhook signature secret not configured', async () => {
-    delete process.env.OPEN_WEARABLES_WEBHOOK_SECRET;
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify(makeSleepPayload());
+describe('Svix webhook receiver — ingest failure', () => {
+  it('ingest function throws → 500 (Svix will retry)', async () => {
+    ingestMocks.ingestWorkoutCreated.mockRejectedValueOnce(new Error('db crashed'));
+    const app = await makeTestApp();
+    const { body, headers } = signEnvelope({ type: 'workout.created', data: WORKOUT_DATA });
 
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
+    const res = await request(app)
+      .post('/webhooks/wearables')
       .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', 'a'.repeat(64))
+      .set(headers)
       .send(body);
 
     expect(res.status).toBe(500);
-    expect(res.body.error).toMatch(/webhook signature secret not configured/);
-  });
-});
-
-// ===========================================================================
-// 10. timingSafeEqual length mismatch guard
-// ===========================================================================
-
-describe('HMAC webhook receiver — length-mismatch guard', () => {
-  it('signature with wrong length (extra char) → 401 invalid signature, no thrown error', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify(makeSleepPayload());
-    const sig = signPayload(ts, body) + 'X'; // 65 chars instead of 64
-
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
-      .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
-      .send(body);
-
-    expect(res.status).toBe(401);
-    expect(res.body.error).toMatch(/invalid signature/);
-  });
-
-  it('signature missing entirely → 401 invalid signature', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify(makeSleepPayload());
-
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/sleep')
-      .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .send(body);
-
-    expect(res.status).toBe(401);
-    expect(res.body.error).toMatch(/invalid signature/);
-  });
-});
-
-// ===========================================================================
-// 11. Connection-status webhook (provider-side revoke)
-// ===========================================================================
-
-describe('connection-status webhook', () => {
-  it('valid signed revoke event → 200 + DB update + dispatch wearable_expired', async () => {
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify({
-      webhookId: 'wh-cs-1',
-      userId: 'user-A',
-      connectionId: 'conn-1',
-      source: 'whoop',
-      status: 'revoked',
-    });
-    const sig = signPayload(ts, body);
-
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/connection-status')
-      .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
-      .send(body);
-
-    expect(res.status).toBe(200);
-    expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_expired', {
-      provider: 'whoop',
-    });
-  });
-
-  // ─── Fire-and-forget regression net ────────────────────────────────────────
-  // Per _brain/notes/decisions.md "Webhook → notification dispatch:
-  // fire-and-forget pattern (Sprint 4 BATCH 2)". Webhook ack is the load-
-  // bearing contract; notification is a downstream side-effect. If dispatch
-  // fails, the webhook MUST still 200 so Open Wearables doesn't retry an
-  // already-applied DB update (delivery storm). This test prevents future
-  // refactors from re-coupling dispatch into the route's main try/catch.
-  it('dispatch rejects → webhook still 200, warning logged (fire-and-forget regression net)', async () => {
-    dispatchMock.mockRejectedValueOnce(new Error('dispatch boom'));
-
-    const ts = Math.floor(Date.now() / 1000);
-    const body = JSON.stringify({
-      webhookId: 'wh-cs-2',
-      userId: 'user-A',
-      connectionId: 'conn-1',
-      source: 'whoop',
-      status: 'expired',
-    });
-    const sig = signPayload(ts, body);
-
-    const res = await request(makeTestApp())
-      .post('/webhooks/wearables/connection-status')
-      .set('Content-Type', 'application/json')
-      .set('X-Webhook-Timestamp', String(ts))
-      .set('X-Webhook-Signature', sig)
-      .send(body);
-
-    // 1. Webhook acks 200 despite dispatch failure — load-bearing contract
-    expect(res.status).toBe(200);
-    // 2. Dispatch was called with correct args (proving the call SITE fires)
-    expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_expired', {
-      provider: 'whoop',
-    });
-    // 3. Warning was logged (proving the .catch handler runs).
-    //    Wait one microtask tick so the unawaited promise rejection has
-    //    settled and the .catch handler has executed before assertion.
-    await new Promise((r) => setImmediate(r));
-    expect(loggerMock.warn).toHaveBeenCalledWith(
-      'wearable_expired dispatch failed',
-      expect.objectContaining({ err: expect.stringContaining('dispatch boom') })
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      'webhook ingest failed',
+      expect.objectContaining({ err: expect.stringContaining('db crashed') })
     );
+  });
+});
+
+// ===========================================================================
+// 11. Missing OPEN_WEARABLES_WEBHOOK_SECRET → throws (fail-fast)
+// ===========================================================================
+
+describe('Svix webhook receiver — missing secret', () => {
+  it('OPEN_WEARABLES_WEBHOOK_SECRET unset → 401 (Webhook ctor throws inside getWebhook)', async () => {
+    delete process.env.OPEN_WEARABLES_WEBHOOK_SECRET;
+    const app = await makeTestApp();
+    const body = JSON.stringify({ type: 'workout.created', data: WORKOUT_DATA });
+
+    // No real signing — but the secret-missing branch trips before signature.
+    // The route's try/catch around getWebhook() + verify catches the throw and
+    // returns 401 with no body.
+    const res = await request(app)
+      .post('/webhooks/wearables')
+      .set('Content-Type', 'application/json')
+      .set('svix-id', 'x')
+      .set('svix-timestamp', String(Math.floor(Date.now() / 1000)))
+      .set('svix-signature', 'v1,whatever')
+      .send(body);
+
+    expect(res.status).toBe(401);
   });
 });

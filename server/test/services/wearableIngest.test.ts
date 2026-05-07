@@ -1,10 +1,12 @@
 /**
- * Wearable Ingest Service Tests — Sprint 4 BATCH 2
+ * Wearable Ingest Service Tests — Sprint 4 BATCH 5a
  *
- * Coverage:
- *   1. Idempotent UPSERT on (userId, source, source_record_id)
- *   2. Smart-scale: vitals with weightKg writes ALSO to bodyMetrics
- *   3. Partial payload tolerance (only some fields present)
+ * Coverage of the four new OW canonical event-type ingest functions:
+ *
+ *   1. Idempotent UPSERT on (userId, source, source_record_id) — workout + sleep
+ *   2. body_composition iterates samples + UPSERTs against partial UNIQUE index
+ *   3. connection.created UPSERTs wearable_connections + dispatches wearable_connected
+ *      ONLY on transition (not on idempotent ack of an already-connected row)
  *   4. **Dispatch condition #1 (happy path)**: inserted=true + zero prior →
  *      first_sync_complete fires
  *   5. **Dispatch condition #2 (re-delivery)**: inserted=false + zero prior →
@@ -12,14 +14,15 @@
  *      the `if (inserted)` gate must FAIL this test.
  *   6. **Dispatch condition #3 (already had data)**: inserted=true + count > 1 →
  *      no notification
- *   7. **Dispatch condition #4 (per-data-type)**: user has sleep rows, ingests
- *      first vitals → notification fires for vitals (separate counter)
- *   8. recordSuccessfulSync called at end of every ingest path
+ *   7. **Dispatch condition #4 (per-data-type)**: separate counter per dataType
+ *   8. recordSuccessfulSync called at end of every ingest path WHEN a matching
+ *      connection row exists; absence is logged + tolerated (not thrown)
  *
  * Strategy: db.execute is mocked. The first execute() call returns the UPSERT
  * RETURNING row (controls `inserted`); subsequent select queries control the
  * count returned to maybeDispatchFirstSyncComplete. dispatch + recordSuccessfulSync
- * are direct vi.fn mocks.
+ * + findConnectionId path are direct vi.fn mocks where possible; the
+ * select-from-wearable_connections lookup uses queueSelectRow.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -32,17 +35,25 @@ const { spyState, makeDbWrapper, dispatchMock, recordSuccessfulSyncMock } = vi.h
     executeReturns: [] as Array<{ rows: unknown[] }>,
     selectReturns: [] as unknown[],
     insertCalls: [] as Array<{ values: unknown }>,
+    onConflictDoUpdateCalls: [] as Array<{ args: unknown[] }>,
     operations: [] as Array<{ op: string; args: unknown[] }>,
     queueExecuteRow(row: unknown) {
       this.executeReturns.push({ rows: [row] });
     },
+    queueExecuteRows(...rows: unknown[]) {
+      this.executeReturns.push({ rows });
+    },
     queueSelectRow(row: unknown) {
       this.selectReturns.push([row]);
+    },
+    queueSelectEmpty() {
+      this.selectReturns.push([]);
     },
     reset() {
       this.executeReturns = [];
       this.selectReturns = [];
       this.insertCalls = [];
+      this.onConflictDoUpdateCalls = [];
       this.operations = [];
     },
   };
@@ -61,6 +72,15 @@ const { spyState, makeDbWrapper, dispatchMock, recordSuccessfulSyncMock } = vi.h
       if (opType === 'insert') {
         spyState.insertCalls.push({ values: vals });
       }
+      return qb;
+    };
+    qb.onConflictDoUpdate = (...args: unknown[]) => {
+      spyState.operations.push({ op: 'onConflictDoUpdate', args });
+      spyState.onConflictDoUpdateCalls.push({ args });
+      return qb;
+    };
+    qb.onConflictDoNothing = (...args: unknown[]) => {
+      spyState.operations.push({ op: 'onConflictDoNothing', args });
       return qb;
     };
     qb.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) => {
@@ -136,55 +156,126 @@ vi.mock('../../logger', () => ({
 }));
 
 import {
-  ingestSleepSession,
-  ingestDailyVitals,
-  ingestActivity,
+  ingestWorkoutCreated,
+  ingestSleepCreated,
+  ingestConnectionCreated,
+  ingestBodyCompositionCreated,
 } from '../../services/wearableIngest';
 
+// ---------------------------------------------------------------------------
+// Canonical event payload fixtures (mirror OW upstream's webhooks guide)
+// ---------------------------------------------------------------------------
+
+const WORKOUT_PAYLOAD = {
+  id: 'garmin-workout-1',
+  user_id: 'user-A',
+  type: 'running',
+  start_time: '2026-05-06T07:00:00Z',
+  end_time: '2026-05-06T07:45:00Z',
+  duration_seconds: 2700,
+  source: { provider: 'garmin', device: 'fenix-7' },
+  calories_kcal: 420,
+  distance_meters: 6800,
+  avg_heart_rate_bpm: 152,
+  max_heart_rate_bpm: 168,
+};
+
+const SLEEP_PAYLOAD = {
+  id: 'garmin-sleep-1',
+  user_id: 'user-A',
+  start_time: '2026-05-05T23:00:00Z',
+  end_time: '2026-05-06T07:00:00Z',
+  total_sleep_seconds: 25200,
+  source: { provider: 'garmin' },
+  stages: { deep_seconds: 5400, rem_seconds: 7200, light_seconds: 12600, awake_seconds: 0 },
+  sleep_score: 84,
+};
+
+const CONNECTION_PAYLOAD = {
+  user_id: 'user-A',
+  provider: 'garmin',
+  connection_id: 'ow-conn-uuid-1',
+  connected_at: '2026-05-06T06:55:00Z',
+};
+
+const BODY_COMP_PAYLOAD = {
+  user_id: 'user-A',
+  provider: 'garmin',
+  series_type: 'body_composition',
+  samples: [
+    { timestamp: '2026-05-06T07:00:00Z', type: 'weight', value: 75.5, unit: 'kg' },
+    { timestamp: '2026-05-06T07:00:00Z', type: 'body_fat', value: 18.2, unit: 'percent' },
+  ],
+};
+
 // ===========================================================================
-// Idempotency
+// Workout: Idempotency
 // ===========================================================================
 
-describe('ingest idempotency', () => {
+describe('ingestWorkoutCreated — idempotency', () => {
   beforeEach(() => {
     spyState.reset();
     dispatchMock.mockClear();
     recordSuccessfulSyncMock.mockClear();
   });
 
-  const sleepPayload = {
-    date: '2026-05-06',
-    bedtime: '2026-05-05T23:00:00Z',
-    wakeTime: '2026-05-06T07:00:00Z',
-    totalSleepMinutes: 420,
-    sourceRecordId: 'whoop-sleep-1',
-  };
-
   it('first call (inserted=true) → returns inserted=true; second call (inserted=false on conflict) → inserted=false', async () => {
     // First call: UPSERT INSERT path
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'whoop-sleep-1' });
+    spyState.queueExecuteRow({ inserted: true });
     spyState.queueSelectRow({ c: 1 }); // count → 1, dispatch fires
+    spyState.queueSelectRow({ id: 'wc-1' }); // findConnectionId
 
-    const r1 = await ingestSleepSession('user-A', 'conn-1', 'whoop', sleepPayload);
+    const r1 = await ingestWorkoutCreated(WORKOUT_PAYLOAD);
     expect(r1.inserted).toBe(true);
-    expect(r1.recordId).toBe('whoop-sleep-1');
 
     spyState.reset();
     dispatchMock.mockClear();
 
     // Second call (re-delivery): UPSERT UPDATE path
-    spyState.queueExecuteRow({ inserted: false, source_record_id: 'whoop-sleep-1' });
+    spyState.queueExecuteRow({ inserted: false });
+    spyState.queueSelectRow({ id: 'wc-1' });
 
-    const r2 = await ingestSleepSession('user-A', 'conn-1', 'whoop', sleepPayload);
+    const r2 = await ingestWorkoutCreated(WORKOUT_PAYLOAD);
     expect(r2.inserted).toBe(false);
-    expect(r2.recordId).toBe('whoop-sleep-1');
-    // No dispatch — neither maybeDispatchFirstSyncComplete (gate=false)
     expect(dispatchMock).not.toHaveBeenCalled();
   });
 });
 
 // ===========================================================================
-// Dispatch condition #1: inserted=true + zero prior → fires
+// Sleep: Idempotency
+// ===========================================================================
+
+describe('ingestSleepCreated — idempotency', () => {
+  beforeEach(() => {
+    spyState.reset();
+    dispatchMock.mockClear();
+    recordSuccessfulSyncMock.mockClear();
+  });
+
+  it('first call (inserted=true) → returns inserted=true', async () => {
+    spyState.queueExecuteRow({ inserted: true });
+    spyState.queueSelectRow({ c: 1 });
+    spyState.queueSelectRow({ id: 'wc-1' });
+
+    const r = await ingestSleepCreated(SLEEP_PAYLOAD);
+    expect(r.inserted).toBe(true);
+  });
+
+  it('re-delivery (inserted=false) → no first_sync_complete dispatch', async () => {
+    spyState.queueExecuteRow({ inserted: false });
+    spyState.queueSelectRow({ id: 'wc-1' });
+
+    await ingestSleepCreated(SLEEP_PAYLOAD);
+    expect(dispatchMock).not.toHaveBeenCalledWith(
+      'user-A',
+      'wearable_first_sync_complete',
+      expect.anything()
+    );
+  });
+});
+
+// ===========================================================================
+// First-sync-complete dispatch — happy path
 // ===========================================================================
 
 describe('first_sync_complete dispatch — happy path', () => {
@@ -194,50 +285,45 @@ describe('first_sync_complete dispatch — happy path', () => {
     recordSuccessfulSyncMock.mockClear();
   });
 
-  it('inserted=true AND user has zero prior sleep rows (count===1 after insert) → fires wearable_first_sync_complete', async () => {
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'rec-1' });
+  it('workout: inserted=true AND count===1 → fires wearable_first_sync_complete with dataType=workout', async () => {
+    spyState.queueExecuteRow({ inserted: true });
     spyState.queueSelectRow({ c: 1 });
+    spyState.queueSelectRow({ id: 'wc-1' });
 
-    await ingestSleepSession('user-A', 'conn-1', 'whoop', {
-      date: '2026-05-06',
-      sourceRecordId: 'rec-1',
+    await ingestWorkoutCreated(WORKOUT_PAYLOAD);
+
+    expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_first_sync_complete', {
+      dataType: 'workout',
+      days: 1,
     });
+    expect(recordSuccessfulSyncMock).toHaveBeenCalledWith('wc-1');
+  });
+
+  it('sleep: inserted=true AND count===1 → fires with dataType=sleep', async () => {
+    spyState.queueExecuteRow({ inserted: true });
+    spyState.queueSelectRow({ c: 1 });
+    spyState.queueSelectRow({ id: 'wc-1' });
+
+    await ingestSleepCreated(SLEEP_PAYLOAD);
 
     expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_first_sync_complete', {
       dataType: 'sleep',
       days: 1,
     });
-    expect(recordSuccessfulSyncMock).toHaveBeenCalledWith('conn-1');
   });
 
-  it('vitals first-sync-complete fires for vitals (separate per-dataType counter)', async () => {
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'rec-v1' });
+  it('body_composition: inserted_count > 0 → fires with dataType=body_composition', async () => {
+    // 2 samples → 2 execute calls (both inserted=true)
+    spyState.queueExecuteRow({ inserted: true });
+    spyState.queueExecuteRow({ inserted: false });
     spyState.queueSelectRow({ c: 1 });
+    spyState.queueSelectRow({ id: 'wc-1' });
 
-    await ingestDailyVitals('user-A', 'conn-1', 'whoop', {
-      date: '2026-05-06',
-      restingHeartRate: 58,
-      sourceRecordId: 'rec-v1',
-    });
+    const r = await ingestBodyCompositionCreated(BODY_COMP_PAYLOAD);
+    expect(r.inserted_count).toBe(1);
 
     expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_first_sync_complete', {
-      dataType: 'vitals',
-      days: 1,
-    });
-  });
-
-  it('activity first-sync-complete fires for activity', async () => {
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'rec-a1' });
-    spyState.queueSelectRow({ c: 1 });
-
-    await ingestActivity('user-A', 'conn-1', 'whoop', {
-      startedAt: '2026-05-06T10:00:00Z',
-      durationMinutes: 30,
-      sourceRecordId: 'rec-a1',
-    });
-
-    expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_first_sync_complete', {
-      dataType: 'activity',
+      dataType: 'body_composition',
       days: 1,
     });
   });
@@ -245,33 +331,36 @@ describe('first_sync_complete dispatch — happy path', () => {
 
 // ===========================================================================
 // Dispatch condition #2: re-delivery (inserted=false) → NO notification
-// === This is the MUTATION TEST TARGET
+// === MUTATION TEST TARGET (the `if (inserted)` gate)
 // ===========================================================================
 
 describe('first_sync_complete dispatch — re-delivery (inserted=false) MUST NOT fire', () => {
   beforeEach(() => {
     spyState.reset();
     dispatchMock.mockClear();
-    recordSuccessfulSyncMock.mockClear();
   });
 
-  it('inserted=false (UPDATE not INSERT) AND zero prior rows → NO notification', async () => {
-    // UPDATE path — even though count would be 1, the inserted gate blocks dispatch.
-    spyState.queueExecuteRow({ inserted: false, source_record_id: 'rec-1' });
-    // Note: no queueSelectRow needed — maybeDispatchFirstSyncComplete is GATED
-    // by `if (inserted)` and is never called.
+  it('workout: inserted=false (UPDATE not INSERT) AND zero prior rows → NO notification', async () => {
+    spyState.queueExecuteRow({ inserted: false });
+    spyState.queueSelectRow({ id: 'wc-1' });
 
-    await ingestSleepSession('user-A', 'conn-1', 'whoop', {
-      date: '2026-05-06',
-      sourceRecordId: 'rec-1',
-    });
+    await ingestWorkoutCreated(WORKOUT_PAYLOAD);
+
+    expect(dispatchMock).not.toHaveBeenCalled();
+  });
+
+  it('sleep: inserted=false → NO notification', async () => {
+    spyState.queueExecuteRow({ inserted: false });
+    spyState.queueSelectRow({ id: 'wc-1' });
+
+    await ingestSleepCreated(SLEEP_PAYLOAD);
 
     expect(dispatchMock).not.toHaveBeenCalled();
   });
 });
 
 // ===========================================================================
-// Dispatch condition #3: already had data (count > 1) → NO notification
+// Dispatch condition #3: count > 1 → NO notification
 // ===========================================================================
 
 describe('first_sync_complete dispatch — already had prior rows (count > 1)', () => {
@@ -280,137 +369,148 @@ describe('first_sync_complete dispatch — already had prior rows (count > 1)', 
     dispatchMock.mockClear();
   });
 
-  it('inserted=true BUT user already had sleep rows (count===5 after insert) → NO notification', async () => {
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'rec-1' });
-    spyState.queueSelectRow({ c: 5 }); // user already had 4, this is the 5th
+  it('inserted=true BUT count===5 → NO notification', async () => {
+    spyState.queueExecuteRow({ inserted: true });
+    spyState.queueSelectRow({ c: 5 });
+    spyState.queueSelectRow({ id: 'wc-1' });
 
-    await ingestSleepSession('user-A', 'conn-1', 'whoop', {
-      date: '2026-05-06',
-      sourceRecordId: 'rec-1',
-    });
+    await ingestWorkoutCreated(WORKOUT_PAYLOAD);
 
     expect(dispatchMock).not.toHaveBeenCalled();
   });
 });
 
 // ===========================================================================
-// Dispatch condition #4: per-data-type, not per-connection
+// Dispatch condition #4: per-data-type counter
 // ===========================================================================
 
-describe('first_sync_complete dispatch — per-data-type, NOT per-connection', () => {
+describe('first_sync_complete dispatch — per-data-type counter', () => {
   beforeEach(() => {
     spyState.reset();
     dispatchMock.mockClear();
   });
 
-  it('user has prior sleep rows; ingesting their FIRST vitals row → notification fires for vitals', async () => {
-    // Vitals ingest. The "count" is for daily_vitals — even if the user has
-    // sleep rows from the same connection, vitals is a separate counter.
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'rec-v1' });
-    spyState.queueSelectRow({ c: 1 }); // first vitals row
+  it('user has prior workout rows; ingesting first sleep row → notification fires for sleep (separate counter)', async () => {
+    // Sleep ingest. The "count" is for sleep_sessions — even if the user
+    // has workout rows, sleep is a separate counter.
+    spyState.queueExecuteRow({ inserted: true });
+    spyState.queueSelectRow({ c: 1 }); // first sleep row
+    spyState.queueSelectRow({ id: 'wc-1' });
 
-    await ingestDailyVitals('user-A', 'conn-1', 'whoop', {
-      date: '2026-05-06',
-      sourceRecordId: 'rec-v1',
-    });
+    await ingestSleepCreated(SLEEP_PAYLOAD);
 
     expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_first_sync_complete', {
-      dataType: 'vitals',
+      dataType: 'sleep',
       days: 1,
     });
   });
 });
 
 // ===========================================================================
-// Smart-scale: vitals with weightKg writes ALSO to bodyMetrics
+// connection.created — UPSERT + dispatch on transition
 // ===========================================================================
 
-describe('vitals smart-scale path — weightKg writes to bodyMetrics', () => {
+describe('ingestConnectionCreated — UPSERT + dispatch on transition', () => {
   beforeEach(() => {
     spyState.reset();
     dispatchMock.mockClear();
   });
 
-  it('vitals payload with weightKg → bodyMetrics insert is called', async () => {
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'rec-v1' });
-    spyState.queueSelectRow({ c: 1 });
+  it('row does not exist (empty SELECT) → INSERT + dispatch wearable_connected', async () => {
+    spyState.queueSelectEmpty(); // SELECT before-status returns []
 
-    await ingestDailyVitals('user-A', 'conn-1', 'withings', {
-      date: '2026-05-06',
-      weightKg: 75.5,
-      bodyFatPercentage: 18.2,
-      sourceRecordId: 'rec-v1',
-    });
+    await ingestConnectionCreated(CONNECTION_PAYLOAD);
 
-    // bodyMetrics insert should have been called with the weight + provider
-    expect(spyState.insertCalls.length).toBeGreaterThanOrEqual(1);
-    const bmInsert = spyState.insertCalls.find((c) => {
-      const v = c.values as Record<string, unknown>;
-      return v.userId === 'user-A' && v.weightKg !== undefined;
+    expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_connected', {
+      provider: 'garmin',
     });
-    expect(bmInsert).toBeDefined();
-    const v = bmInsert!.values as Record<string, unknown>;
-    expect(v.weightKg).toBe('75.5');
-    expect(v.bodyFatPercentage).toBe('18.2');
-    expect(v.source).toBe('wearable');
-    expect(v.sourceProvider).toBe('withings');
+    // INSERT was called with the right base fields
+    expect(spyState.insertCalls.length).toBeGreaterThan(0);
+    const v = spyState.insertCalls[0]!.values as Record<string, unknown>;
+    expect(v.userId).toBe('user-A');
+    expect(v.provider).toBe('garmin');
+    expect(v.status).toBe('connected');
   });
 
-  it('vitals payload WITHOUT weightKg → bodyMetrics insert is NOT called', async () => {
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'rec-v1' });
-    spyState.queueSelectRow({ c: 1 });
+  it('row already at status=expired → UPSERT transitions to connected + dispatch fires', async () => {
+    spyState.queueSelectRow({ status: 'expired' });
 
-    await ingestDailyVitals('user-A', 'conn-1', 'whoop', {
-      date: '2026-05-06',
-      restingHeartRate: 58,
-      sourceRecordId: 'rec-v1',
+    await ingestConnectionCreated(CONNECTION_PAYLOAD);
+
+    expect(dispatchMock).toHaveBeenCalledWith('user-A', 'wearable_connected', {
+      provider: 'garmin',
     });
+  });
 
-    // No bodyMetrics insert
-    expect(spyState.insertCalls).toHaveLength(0);
+  it('row already at status=connected → UPSERT idempotent ack + NO dispatch (no transition)', async () => {
+    spyState.queueSelectRow({ status: 'connected' });
+
+    await ingestConnectionCreated(CONNECTION_PAYLOAD);
+
+    // Dispatch should NOT have been called — already connected, no transition
+    expect(dispatchMock).not.toHaveBeenCalled();
   });
 });
 
 // ===========================================================================
-// Partial payload tolerance
+// body_composition: sample iteration + UPSERT + sample-type mapping
 // ===========================================================================
 
-describe('partial payload tolerance', () => {
+describe('ingestBodyCompositionCreated — sample iteration + mapping', () => {
   beforeEach(() => {
     spyState.reset();
     dispatchMock.mockClear();
+    recordSuccessfulSyncMock.mockClear();
   });
 
-  it('sleep ingest tolerates a payload with only date + sourceRecordId (other fields → null)', async () => {
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'rec-1' });
-    spyState.queueSelectRow({ c: 1 });
+  it('2 samples → 2 execute calls; inserted_count is sum of inserted=true', async () => {
+    spyState.queueExecuteRow({ inserted: true });
+    spyState.queueExecuteRow({ inserted: true });
+    spyState.queueSelectRow({ c: 1 }); // body_composition count
+    spyState.queueSelectRow({ id: 'wc-1' }); // findConnectionId
 
-    const result = await ingestSleepSession('user-A', 'conn-1', 'oura', {
-      date: '2026-05-06',
-      sourceRecordId: 'rec-1',
-    });
+    const r = await ingestBodyCompositionCreated(BODY_COMP_PAYLOAD);
 
-    expect(result.inserted).toBe(true);
-    expect(result.recordId).toBe('rec-1');
-    // No throw, dispatch fired, sync recorded
-    expect(recordSuccessfulSyncMock).toHaveBeenCalledWith('conn-1');
+    expect(r.inserted_count).toBe(2);
+    // Two execute calls for the UPSERT (one per sample). Plus possibly a
+    // count + connection-lookup. Assert at least 2 execute ops happened.
+    const executeOps = spyState.operations.filter((o) => o.op === 'execute');
+    expect(executeOps.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('activity ingest tolerates a payload with only startedAt + sourceRecordId', async () => {
-    spyState.queueExecuteRow({ inserted: true, source_record_id: 'rec-a1' });
-    spyState.queueSelectRow({ c: 1 });
+  it('payload with no recognized samples → inserted_count=0; no dispatch', async () => {
+    // Empty samples → no execute, no dispatch
+    spyState.queueSelectRow({ id: 'wc-1' });
 
-    const result = await ingestActivity('user-A', 'conn-1', 'strava', {
-      startedAt: '2026-05-06T10:00:00Z',
-      sourceRecordId: 'rec-a1',
+    const r = await ingestBodyCompositionCreated({
+      ...BODY_COMP_PAYLOAD,
+      samples: [],
     });
 
-    expect(result.inserted).toBe(true);
+    expect(r.inserted_count).toBe(0);
+    expect(dispatchMock).not.toHaveBeenCalled();
+  });
+
+  it('unknown sample type is skipped, not thrown', async () => {
+    // 1 known + 1 unknown → 1 execute call
+    spyState.queueExecuteRow({ inserted: true });
+    spyState.queueSelectRow({ c: 1 });
+    spyState.queueSelectRow({ id: 'wc-1' });
+
+    const r = await ingestBodyCompositionCreated({
+      ...BODY_COMP_PAYLOAD,
+      samples: [
+        { timestamp: '2026-05-06T07:00:00Z', type: 'weight', value: 75, unit: 'kg' },
+        { timestamp: '2026-05-06T07:00:00Z', type: 'unknown_metric', value: 1, unit: 'rating' },
+      ],
+    });
+
+    expect(r.inserted_count).toBe(1);
   });
 });
 
 // ===========================================================================
-// recordSuccessfulSync is called at end of every ingest
+// recordSuccessfulSync invocation per ingest path
 // ===========================================================================
 
 describe('recordSuccessfulSync invocation', () => {
@@ -419,30 +519,27 @@ describe('recordSuccessfulSync invocation', () => {
     recordSuccessfulSyncMock.mockClear();
   });
 
-  it('sleep ingest → recordSuccessfulSync(connectionId)', async () => {
-    spyState.queueExecuteRow({ inserted: false, source_record_id: 'r' });
-    await ingestSleepSession('user-A', 'conn-77', 'whoop', {
-      date: '2026-05-06',
-      sourceRecordId: 'r',
-    });
-    expect(recordSuccessfulSyncMock).toHaveBeenCalledWith('conn-77');
+  it('workout ingest with matching connection → recordSuccessfulSync(connectionId)', async () => {
+    spyState.queueExecuteRow({ inserted: false });
+    spyState.queueSelectRow({ id: 'wc-77' });
+
+    await ingestWorkoutCreated(WORKOUT_PAYLOAD);
+    expect(recordSuccessfulSyncMock).toHaveBeenCalledWith('wc-77');
   });
 
-  it('vitals ingest → recordSuccessfulSync', async () => {
-    spyState.queueExecuteRow({ inserted: false, source_record_id: 'r' });
-    await ingestDailyVitals('user-A', 'conn-77', 'whoop', {
-      date: '2026-05-06',
-      sourceRecordId: 'r',
-    });
-    expect(recordSuccessfulSyncMock).toHaveBeenCalledWith('conn-77');
+  it('sleep ingest with matching connection → recordSuccessfulSync', async () => {
+    spyState.queueExecuteRow({ inserted: false });
+    spyState.queueSelectRow({ id: 'wc-77' });
+
+    await ingestSleepCreated(SLEEP_PAYLOAD);
+    expect(recordSuccessfulSyncMock).toHaveBeenCalledWith('wc-77');
   });
 
-  it('activity ingest → recordSuccessfulSync', async () => {
-    spyState.queueExecuteRow({ inserted: false, source_record_id: 'r' });
-    await ingestActivity('user-A', 'conn-77', 'strava', {
-      startedAt: '2026-05-06T10:00:00Z',
-      sourceRecordId: 'r',
-    });
-    expect(recordSuccessfulSyncMock).toHaveBeenCalledWith('conn-77');
+  it('workout ingest WITHOUT matching connection → recordSuccessfulSync NOT called (logged + tolerated)', async () => {
+    spyState.queueExecuteRow({ inserted: false });
+    spyState.queueSelectEmpty(); // findConnectionId returns null
+
+    await ingestWorkoutCreated(WORKOUT_PAYLOAD);
+    expect(recordSuccessfulSyncMock).not.toHaveBeenCalled();
   });
 });
