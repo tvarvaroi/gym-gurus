@@ -923,13 +923,42 @@ Garmin/Polar/Suunto scanned for analogous bugs at the same scan time:
 
 ---
 
-## Sprint 4 BATCH 5 spike findings (PLACEHOLDER — fill in on spike completion)
+## Sprint 4 BATCH 5 spike findings (IN FLIGHT — early source-level answers captured 2026-05-07; full close after live-OW verification)
 
-**Status:** placeholder. Spike has not yet run as of 2026-05-07. This entry is reserved so the spike findings have a documented home — the alternative (capture in MEMORY.md or in a one-off plan-doc note) loses them as institutional knowledge. When the spike completes, replace this placeholder with the actual findings.
+**Status:** in flight. Source-level inspection of `the-momentum/open-wearables` master HEAD (commit `34df8a5` at scan time) answered Q1, Q3, Q5, and Q6.5 below without needing the live docker-compose spin-up. Q2, Q4, Q6 (live request/response confirmation) and Q7 (provider portal approval timing) still await live-OW work and Garmin/Polar/Suunto OAuth credentials. The four answered findings are folded back into the BATCH 5a plan (commit landing alongside this entry).
 
-**Spike target:** Garmin OAuth + sync + webhook delivery against `the-momentum/open-wearables` master HEAD (capture commit SHA at spike start). Polar substitutes if Garmin developer portal approval lags.
+### Early findings (source-level inspection, 2026-05-07)
 
-**Verification targets (must be answered by spike):**
+**Q1 reconfirmation — RECONFIRMED.** `gh issue list --repo the-momentum/open-wearables --search "session committed in:title,body" --state open` at 2026-05-07 returned **only #930 (Whoop) and #948 (Oura)** — same scan result as α-pivot decision day. No new `session committed` issues against Garmin / Polar / Suunto. The bug class is provider-specific to Whoop/Oura sync code paths; α substrate stays solid. Re-run this scan at full spike close (live-OW phase) for final reconfirmation.
+
+**Q3 — LOCKED: `OPEN_WEARABLES_AUTH_MODE=api_key` with custom header `X-Open-Wearables-API-Key`.** Source inspection confirms:
+
+- `backend/app/services/api_key_service.py` — `_generate_key_value` returns `sk-<32 hex>`. Generated via OW Credentials tab in the developer portal.
+- `backend/app/api/routes/v1/connections.py` (and ~all v1 routes) — auth dependency injection is `_api_key: ApiKeyDep` on every endpoint we need (e.g., `get_connections_endpoint`, `disconnect_provider_endpoint`).
+- OW docs pattern (per `docs/providers/coverage.mdx`, `docs/api-reference/guides/provider-setup.mdx`, multiple provider integration guides): `curl -H "X-Open-Wearables-API-Key: YOUR_API_KEY"`.
+- **NOT `Authorization: Bearer`.** The plan's original Task 5a.5 sketch used `Authorization: Bearer ${apiKey}` which would be rejected by OW. Plan amended pre-dispatch to use the correct custom header.
+
+JWT path (POST /api/v1/auth/login → bearer token) is preserved in code as a fallback for any runtime route NOT covered by ApiKeyDep that we discover later, but it's NOT the production path. Set `OPEN_WEARABLES_AUTH_MODE=api_key` on GymGurus production in BATCH 5b Task 5b.0.
+
+**Q5 — `SUUNTO_SUBSCRIPTION_KEY` is required at every Suunto API call (runtime).** Source confirms:
+
+- `backend/app/services/providers/suunto/workouts.py` and `data_247.py` both define `_get_suunto_headers` which reads `self.oauth.credentials.subscription_key` and sets `Ocp-Apim-Subscription-Key: <key>` on every outbound request to `https://cloudapi.suunto.com`.
+- Tests in `backend/tests/integrations/test_suunto_import.py` and `backend/tests/providers/suunto/test_suunto_workouts.py` confirm this header is required for every workout import / 247-data fetch.
+- **Operational implication:** rotating `SUUNTO_SUBSCRIPTION_KEY` env var requires restarting OW's `app` + `celery-worker` + `celery-beat` services to pick up the new value. Capture in BATCH 5b runbook section "Secrets rotation — provider subscription keys" alongside the SECRET_KEY ↔ SVIX_JWT_SECRET pattern.
+
+**Q6.5 — LOCKED: Cron Case 3 uses Semantic (b) (count consecutive error-status ticks ourselves).** Source confirms:
+
+- `backend/app/schemas/model_crud/user_management/user_connection.py` — `UserConnectionWithCapabilities` schema fields: `id, user_id, provider, provider_user_id, provider_username, scope, status, last_synced_at, created_at, updated_at, max_historical_days, rest_pull, webhook_stream, webhook_ping, webhook_callback, live_sync_mode`.
+- **NO `sync_error_count` field. NO `last_sync_error` field.** Only `status` (enum) and `last_synced_at` (timestamp) are useful for our Case 3 detection.
+- BATCH 5a Task 5a.6 implementation note `determineSyncErrorState` abstraction handles both semantics at runtime. Optional-chained access to `(matching as any).sync_error_count` returns undefined under current OW schema → falls through to Semantic (b). If OW adds the field in a future version, the abstraction starts returning Semantic (a) automatically. Defense-in-depth against schema drift without paying the abstraction cost.
+
+**Provider implementations confirmed in OW source** (`backend/app/services/providers/`): `apple, fitbit, garmin, google, oura, polar, samsung, strava, suunto, ultrahuman` (plus `templates`). **No `withings` directory** — confirms the Withings → Fitbit substitution captured in α pivot. Fitbit / Strava / Ultrahuman are scaffolded in source even though the README marks them less prominently than Garmin / Polar / Suunto; readiness for Sprint 4.5 expansion is partial-source-confirmed.
+
+### Still in flight (require live-OW spike with running docker-compose)
+
+**Spike target:** Garmin OAuth + sync + webhook delivery against `the-momentum/open-wearables` master HEAD (commit captured at spike start). Polar substitutes if Garmin developer portal approval lags.
+
+**Verification targets remaining:**
 
 1. **Cross-provider issue scan reconfirmation** — re-run `gh issue list --search "session committed in:title,body"` against OW upstream at spike start. Confirm the bug class is still provider-specific to Whoop/Oura sync code paths (not surfacing in Garmin/Polar/Suunto). If a new `session committed` issue lands against α providers between α-pivot decision (2026-05-07) and spike start, STOP and re-evaluate the α substrate choice.
 

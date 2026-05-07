@@ -2394,29 +2394,37 @@ git commit -m "feat(wearables): SPRINT 4 BATCH 5a Task 4.5 — migration 014.5 p
 
 #### Auth approach with explicit fallback
 
-- **Primary path: API key from OW Credentials tab.** OW's developer portal exposes a Credentials tab where the operator generates long-lived API keys. The runtime API may accept these keys directly via `Authorization: Bearer <api-key>` (or `X-Open-Wearables-API-Key: <api-key>` header — verify on spike from OW source). Lower operational complexity (one env var, one rotation procedure, no expiry handling).
-- **Fallback path: JWT bearer via `POST /api/v1/auth/login`.** OW's auth route returns a JWT on successful login with admin/dev credentials. JWT has TTL — our client must refresh before expiry. Operational complexity: storing admin credentials (which we'd need anyway to mint JWTs), refresh logic, "JWT expired mid-sync" failure handling.
+- **Primary path: API key from OW Credentials tab.** OW's developer portal exposes a Credentials tab where the operator generates long-lived API keys. **Spike-confirmed (2026-05-07 source inspection):** API keys are the documented runtime auth method, used via the **custom `X-Open-Wearables-API-Key: <api-key>` header** (NOT `Authorization: Bearer`). API key format is `sk-<32-hex>` (per `backend/app/services/api_key_service.py:_generate_key_value`). The header is enforced via FastAPI's `ApiKeyDep` dependency on essentially every v1 route (e.g. `backend/app/api/routes/v1/connections.py` route handlers take `_api_key: ApiKeyDep`). Lower operational complexity (one env var, one rotation procedure, no expiry handling).
+- **Fallback path: JWT bearer via `POST /api/v1/auth/login`.** OW's auth route returns a JWT on successful login with admin/dev credentials. JWT has TTL — our client must refresh before expiry. Operational complexity: storing admin credentials (which we'd need anyway to mint JWTs), refresh logic, "JWT expired mid-sync" failure handling. Use this path only if the spike reveals a runtime route NOT covered by ApiKeyDep that we need to call.
 
-**Decision is locked at spike completion** (see BATCH 5b Task 5b.0). The plan documents both code paths so 5a's implementation supports either cleanly via env var:
+**Decision lock (early-spike, 2026-05-07):** `OPEN_WEARABLES_AUTH_MODE=api_key` is the production path. JWT fallback ships in code for defense-in-depth but is NOT the runtime mode. Set the env var on GymGurus production accordingly in BATCH 5b Task 5b.0.
 
 ```ts
 const AUTH_MODE = process.env.OPEN_WEARABLES_AUTH_MODE ?? 'api_key'; // 'api_key' | 'jwt'
 
 class OpenWearablesClient {
-  private async authHeader(): Promise<string> {
+  // Returns a headers object (NOT a single Authorization-header string), because
+  // OW's API-key path uses a custom header `X-Open-Wearables-API-Key`, not the
+  // standard Authorization-Bearer scheme. Spike-confirmed via OW source —
+  // backend/app/services/api_key_service.py + ApiKeyDep dependency.
+  private async authHeaders(): Promise<Record<string, string>> {
     if (AUTH_MODE === 'api_key') {
       const apiKey = process.env.OPEN_WEARABLES_API_KEY;
       if (!apiKey)
         throw new Error('OPEN_WEARABLES_API_KEY required when OPEN_WEARABLES_AUTH_MODE=api_key');
-      return `Bearer ${apiKey}`;
+      return { 'X-Open-Wearables-API-Key': apiKey };
     } else {
-      // JWT path: cache token in memory, refresh on expiry
-      return `Bearer ${await this.getOrRefreshJwt()}`;
+      // JWT path: cache token in memory, refresh on expiry. JWT goes in
+      // `Authorization: Bearer` per OW's standard auth/login flow.
+      const jwt = await this.getOrRefreshJwt();
+      return { Authorization: `Bearer ${jwt}` };
     }
   }
   // ...
 }
 ```
+
+**Implementation note for 5a.5:** every outbound `fetch` / `httpClient` call must spread the `authHeaders()` result into the request headers object — don't hard-code `Authorization: Bearer` anywhere in the client. Tests must cover both modes (mock the env var) and assert the correct header name appears on the outbound request.
 
 #### Methods needed
 
@@ -2509,6 +2517,37 @@ Capture the threshold + refactor options in `_brain/notes/gotchas.md` after firs
 #### BATCH 3 cron interaction
 
 There is no second cron. The BATCH 3 cron file IS the BATCH 5a cron — same mount, same lifecycle, same SIGTERM handler. The tick body is rewritten in place.
+
+#### Implementation hint — `determineSyncErrorState` abstraction (Cron Case 3 robustness)
+
+**Spike-confirmed (2026-05-07 source inspection):** `UserConnectionWithCapabilities` schema (the response shape of `GET /api/v1/users/{user_id}/connections`) exposes `status` + `last_synced_at` only. **NO `sync_error_count` or `last_sync_error` fields.** Decision lock at spike close: **Cron Case 3 uses Semantic (b)** — count consecutive error-status ticks ourselves.
+
+Even though the runtime answer is locked, implement the count-source as a small abstraction so the cron stays robust against OW exposing the field later (or against a future OW version changing the response shape). One function in front of the count source:
+
+```ts
+function determineSyncErrorState(
+  matching: UserConnectionWithCapabilities,
+  ourRow: WearableConnection
+): { newCount: number; statusFromCount: 'healthy' | 'errored' } {
+  // Semantic (a) preferred if OW ever exposes it: mirror their count.
+  // The schema field doesn't exist today (per OW source as of 2026-05-07);
+  // the optional-chained access just returns undefined and we fall through
+  // to (b). Defense-in-depth against schema changes.
+  const owCount = (matching as any).sync_error_count;
+  if (typeof owCount === 'number') {
+    return { newCount: owCount, statusFromCount: owCount >= 3 ? 'errored' : 'healthy' };
+  }
+  // Semantic (b) — the actual current path. Increment on each tick where
+  // OW reports status === 'error'; reset to 0 if status flips back to 'connected'.
+  if (matching.status === 'error') {
+    const newCount = ourRow.syncErrorCount + 1;
+    return { newCount, statusFromCount: newCount >= 3 ? 'errored' : 'healthy' };
+  }
+  return { newCount: 0, statusFromCount: 'healthy' };
+}
+```
+
+The cron's tick body calls this once per matching connection and uses `newCount` to UPDATE `wearable_connections.syncErrorCount` and `statusFromCount` to decide whether to dispatch `wearable_sync_failed`. Keeps the runtime branch clean and the future-OW-schema-change cost low.
 
 - [ ] **Step 1: Rewrite tick body of `server/jobs/wearableSyncMonitor.ts`**
 - [ ] **Step 2: Rewrite `server/test/jobs/wearableSyncMonitor.test.ts`** for the new state-diff semantics; preserve concurrency-safety tests (SKIP LOCKED, isTickInFlight)
