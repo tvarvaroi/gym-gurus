@@ -6,6 +6,22 @@ import { getRequestId } from './requestLogger';
 import * as Sentry from '@sentry/node';
 
 /**
+ * Read a PostgreSQL driver error code from either a raw pg error OR a wrapped
+ * `DrizzleQueryError` (drizzle-orm 0.43+). Drizzle wraps every driver error in
+ * a `DrizzleQueryError` whose `.cause` holds the original pg error — so reading
+ * `err.code` directly returns `undefined` for wrapped errors. Read both shapes
+ * to stay correct across the wrap boundary AND forward-compatible if drizzle
+ * ever stops wrapping.
+ *
+ * Exported for direct unit-test of the unwrap behavior — the middleware's six
+ * `err.code` call sites are all routed through this helper. See
+ * `_brain/notes/gotchas.md` "Dependency upgrades that wrap driver errors".
+ */
+export function getPgErrorCode(err: any): string | undefined {
+  return err?.code ?? err?.cause?.code;
+}
+
+/**
  * Structured error context suitable for Sentry or any error-tracking service.
  * Contains everything needed to diagnose the issue without leaking secrets.
  */
@@ -64,12 +80,12 @@ function resolveStatusCode(err: any): number {
   }
 
   // PostgreSQL unique-constraint violation
-  if (err.code === '23505') {
+  if (getPgErrorCode(err) === '23505') {
     return 409;
   }
 
   // PostgreSQL foreign-key violation
-  if (err.code === '23503') {
+  if (getPgErrorCode(err) === '23503') {
     return 400;
   }
 
@@ -87,10 +103,10 @@ function resolveErrorCode(err: any, statusCode: number): string {
   if (err.name === 'ZodError') {
     return 'VALIDATION_ERROR';
   }
-  if (err.code === '23505') {
+  if (getPgErrorCode(err) === '23505') {
     return 'CONFLICT';
   }
-  if (err.code === '23503') {
+  if (getPgErrorCode(err) === '23503') {
     return 'FK_VIOLATION';
   }
 
@@ -131,10 +147,10 @@ function resolveMessage(err: any, statusCode: number): string {
   }
 
   // Database constraint errors
-  if (err.code === '23505') {
+  if (getPgErrorCode(err) === '23505') {
     return 'Resource already exists';
   }
-  if (err.code === '23503') {
+  if (getPgErrorCode(err) === '23503') {
     return 'Referenced resource does not exist';
   }
 

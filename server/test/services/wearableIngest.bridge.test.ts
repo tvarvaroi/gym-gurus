@@ -215,14 +215,18 @@ const { simState, makeDbWrapper, dispatchMock, recordSuccessfulSyncMock } = vi.h
   }
 
   // ─── SQL chunk extractor ────────────────────────────────────────────────
-  // FRAGILE: assumes drizzle-orm v0.30 queryChunks structure (StringChunks
-  // alongside raw param values intermixed in the same array, NOT wrapped
-  // in Param objects). Verified 2026-05-07 against the version in this
-  // repo's package.json. Drizzle upgrades MUST re-verify this walker
-  // against the new internal shape — bump drizzle-orm and run this test
-  // file FIRST before assuming anything else still works. If a second
-  // test file needs this pattern, extract to a shared helper and capture
-  // the version-coupling in _brain/notes/gotchas.md.
+  // FRAGILE: verified drizzle-orm 0.39.1 → 0.45.2 inclusive. The walker
+  // structure has been stable across this range, but future upgrades MUST
+  // re-verify against drizzle-orm/sql/sql.js queryChunks shape. If a second
+  // test file needs this pattern, extract to shared helper + capture in
+  // _brain/notes/gotchas.md.
+  //
+  // The walker's load-bearing assumption: queryChunks intermix StringChunk
+  // objects (containing static SQL text) with raw bound-param values
+  // (strings, numbers, null, undefined, booleans — NOT wrapped in Param
+  // objects in this version range). Nested SQL fragments expose their own
+  // queryChunks and are recursed into. Bump drizzle-orm and run this test
+  // file FIRST before assuming anything else still works.
   //
   // Drizzle's sql template tag produces an SQL object with internal
   // queryChunks. We walk it and split into static text + Param values.

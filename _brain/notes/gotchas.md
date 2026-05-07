@@ -495,6 +495,35 @@ First captured: Sprint 4 Q2 spike completion (2026-05-07).
 
 ---
 
+## Dependency upgrades that wrap driver errors break code that reads driver-specific fields directly
+
+`drizzle-orm` 0.43+ wraps every pg query error in `DrizzleQueryError`. The original pg error lives on `.cause`, **not** on the wrapped error directly. Code reading `err.code === '23505'` etc. silently breaks because the wrapped error has `code === undefined`. Tests that don't exercise the error path miss this entirely.
+
+**Pattern:** when an upgrade introduces an error-wrapping layer, audit every site that reads driver-specific error fields (`code`, `detail`, `constraint`, etc.) and add an unwrap helper that reads via `?? .cause?.X`:
+
+```ts
+// Forward-compat across raw driver errors AND wrapped errors:
+function getPgErrorCode(err: any): string | undefined {
+  return err?.code ?? err?.cause?.code;
+}
+```
+
+**Why it escapes test gates:** the runtime test suite often doesn't exercise error paths through to the response shape (e.g., "POST with duplicate email → expect 409"). Type-check passes too — `err: any` swallows the shape change. Both gates are silent.
+
+**First caught:** drizzle-orm 0.39.1 → 0.45.2 deck-clearing upgrade (2026-05-08). `server/middleware/errorHandler.ts` had 6 sites reading `err.code` for pg violation codes (23505 unique, 23503 FK); all silently broken until `getPgErrorCode` was added. Three regression tests + one guard test on the helper now lock the unwrap behavior.
+
+**Future upgrades** — when bumping ANY DB driver or ORM (drizzle, prisma, raw `pg`, mysql2, etc.), scan the CHANGELOG for:
+
+- "wraps errors" / "introduces a new ...QueryError" / "BaseError" / similar wrapping primitives
+- "stack trace" or "error context" or "driver error" sections in major releases
+- Any release notes that mention "errors" alongside an internal class name
+
+**Same risk applies to:** future Prisma upgrades (`Prisma.PrismaClientKnownRequestError` already wraps; pattern matches), future `pg` driver upgrades that change error class hierarchy, MongoDB driver bumps, anywhere downstream code reads a driver-specific error field via `err.X` instead of going through a helper.
+
+**Generalized rule:** read driver-specific error fields via a helper that handles both wrapped and unwrapped shapes. Add a guard test asserting the unwrap (mutation-style — fails explicitly if someone reverts the helper). Add at least one route-level regression test that exercises the field actually being read in production (otherwise the regression is invisible to TS + tests).
+
+---
+
 ## Related Notes
 
 - [[decisions]]
