@@ -43,20 +43,25 @@
  *   BATCH 5a paths align with OW's actual route structure. Note: the spike
  *   may refine these once we verify against live OW; capture deviations there.
  *
- * OW user ID bridge — Path A vs Path B (verification target Q2):
+ * OW user ID bridge — Path B locked at Q2 spike close (2026-05-07):
  *
- *   Path A (preferred, no migration): OW supports `external_id` lookup. We
- *     POST /api/v1/users with {external_id: <our user UUID>} on first
- *     connection. The `createUser` function exposes this. Subsequent calls
- *     pass our UUID directly as `ow_user_id` in URL paths.
+ *   OW's `external_user_id` field is officially deprecated (Pydantic
+ *   `deprecated=True`) and accepted only as a filter on `GET /users` — not
+ *   on any data-fetching endpoint. Per OW's integration guide we MUST store
+ *   the OW UUID returned by POST /users in our DB. This is Path B.
  *
- *   Path B (fallback): OW does not echo external_id, has its own UUID system.
- *     We'd need to store OW's UUID in a new wearable_connections.open_wearables_user_id
- *     column (migration 015 — held in reserve, not shipped in 5a). Lookups
- *     would then go through that column.
+ *   `createUser({external_user_id: <our user UUID>})` accepts the field as a
+ *   debug-convenience (operators can find a Disciple in the OW portal by
+ *   our internal UUID). It is NOT a runtime lookup mechanism; the response
+ *   `id` (OW's UUID) MUST be persisted to
+ *   `wearable_connections.open_wearables_user_id` (migration 015).
  *
- * For BATCH 5a both code paths are wired so the spike-resolved choice flips
- * cheaply post-confirmation.
+ *   All data-fetching client methods (`getConnections`, `triggerSync`,
+ *   `disconnectProvider`) take `owUserId` (OW's UUID) as their input. The
+ *   caller resolves OW's UUID via the persisted column.
+ *
+ *   See `_brain/notes/decisions.md` "Sprint 4 BATCH 5 spike findings —
+ *   Q2 LOCKED Path B" for full rationale.
  *
  * Failure model: when OW returns non-2xx, we LOG (with truncated body) then
  * THROW. Do not silently return defaults — the caller decides how to surface
@@ -192,20 +197,24 @@ async function call<T = unknown>(path: string, init: FetchInit = {}): Promise<T>
 // ─── New methods (Sprint 4 BATCH 5a) ────────────────────────────────────────
 
 /**
- * Create an OW user with our internal user UUID as `external_id` (Path A).
- * Called when a Disciple first initiates an OAuth flow. OW echoes back our
- * UUID in subsequent webhook payloads (`data.user_id`).
+ * Create an OW user. Path B (locked at Q2 spike close, 2026-05-07).
  *
- * If Path B is confirmed at spike (OW does NOT support external_id), this
- * function still works as the user-creation entry point but the response
- * shape is what we'd persist into wearable_connections.open_wearables_user_id.
+ * Called when a Disciple first initiates an OAuth flow. The returned `id`
+ * is OW's internal UUID — it MUST be persisted to
+ * `wearable_connections.open_wearables_user_id` for the bridge to function.
+ *
+ * `external_user_id` is set to our internal user UUID as a debug-convenience
+ * (OW operators can grep a Disciple in the portal by it) but is NOT a
+ * runtime lookup mechanism. The field name `external_user_id` matches OW's
+ * actual User model — NOT `external_id` (the BATCH 5a misname, corrected
+ * here).
  */
 export async function createUser(opts: {
-  external_id: string;
-}): Promise<{ id: string; external_id?: string }> {
+  external_user_id: string;
+}): Promise<{ id: string; external_user_id?: string }> {
   return call('/api/v1/users', {
     method: 'POST',
-    body: JSON.stringify({ external_id: opts.external_id }),
+    body: JSON.stringify({ external_user_id: opts.external_user_id }),
   });
 }
 
@@ -241,11 +250,10 @@ export async function getConnections(
  *
  * URL signature: POST /api/v1/providers/{provider}/users/{ow_user_id}/sync
  *
- * Note the argument order: `(provider, owUserId)`. Existing callers pass
- * `(provider, userId)` where `userId` is OUR internal UUID (Path A —
- * external_id is our UUID, OW echoes back). If Path B applies post-spike,
- * the cron + routes layer will look up the OW UUID and pass that instead;
- * this function's signature stays the same.
+ * Argument: `owUserId` is OW's internal UUID (NOT our internal user UUID).
+ * Callers MUST resolve our user → OW UUID via
+ * `wearable_connections.open_wearables_user_id` before calling. Path B
+ * (locked at Q2 spike close).
  */
 export async function triggerSync(provider: string, owUserId: string): Promise<{ ok: boolean }> {
   return call(

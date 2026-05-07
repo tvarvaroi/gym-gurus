@@ -7,7 +7,7 @@
  *      (NOT `Authorization: Bearer`). MUTATION TARGET: hardcoding Bearer breaks this.
  *   2. jwt mode → POST /api/v1/auth/login first, then `Authorization: Bearer <token>`
  *      on the actual call. Cached: second call within ttl skips re-login.
- *   3. createUser → POST /api/v1/users with {external_id} body
+ *   3. createUser → POST /api/v1/users with {external_user_id} body (Path B)
  *   4. getConnections → GET /api/v1/users/{ow_user_id}/connections, returns
  *      {connections: [...]}
  *   5. triggerSync → POST /api/v1/providers/{provider}/users/{ow_user_id}/sync
@@ -163,15 +163,19 @@ describe('Open Wearables auth — jwt mode (fallback)', () => {
 // ===========================================================================
 
 describe('OpenWearablesClient — method URL/body shape', () => {
-  it('createUser POST /api/v1/users with {external_id} body', async () => {
-    mockFetchOk({ id: 'ow-uuid', external_id: 'gg-uuid' });
+  it('createUser POST /api/v1/users with {external_user_id} body (Path B — Q2 spike close 2026-05-07)', async () => {
+    // OW's User model uses `external_user_id` (NOT `external_id`); the field
+    // is officially deprecated for runtime lookups but still accepted as a
+    // portal debug-convenience. The response `id` is OW's UUID — that's the
+    // bridge we persist to wearable_connections.open_wearables_user_id.
+    mockFetchOk({ id: 'ow-uuid', external_user_id: 'gg-uuid' });
 
-    await createUser({ external_id: 'gg-uuid' });
+    await createUser({ external_user_id: 'gg-uuid' });
 
     const [url, init] = fetchSpy.mock.calls[0]! as [string, { method?: string; body?: string }];
     expect(url).toBe('https://ow.example.test/api/v1/users');
     expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body!)).toEqual({ external_id: 'gg-uuid' });
+    expect(JSON.parse(init.body!)).toEqual({ external_user_id: 'gg-uuid' });
   });
 
   it('getConnections GET /api/v1/users/{ow_user_id}/connections', async () => {

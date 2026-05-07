@@ -65,8 +65,8 @@ const { spyState, makeDbWrapper } = vi.hoisted(() => {
     return qb;
   }
 
-  function makeDbWrapper() {
-    return {
+  function makeDbWrapper(): Record<string, unknown> {
+    const wrapper: Record<string, unknown> = {
       select: (...args: unknown[]) => {
         spyState.operations.push({ op: 'select', args });
         return makeQueryBuilder();
@@ -84,6 +84,14 @@ const { spyState, makeDbWrapper } = vi.hoisted(() => {
         return makeQueryBuilder();
       },
     };
+    // Sprint 4 Task 5a.10 — initiateOAuth wraps INSERT + createUser + UPDATE
+    // in db.transaction(async tx => ...). Mock supplies the same wrapper as
+    // tx so spyState captures every operation inside the txn.
+    wrapper.transaction = async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+      spyState.operations.push({ op: 'transaction', args: [] });
+      return fn(wrapper);
+    };
+    return wrapper;
   }
 
   return { spyState, makeDbWrapper };
@@ -129,6 +137,7 @@ const { dispatchMock, owMock } = vi.hoisted(() => ({
     })),
     triggerSync: vi.fn(async () => ({ ok: true })),
     revokeConnection: vi.fn(async () => ({ ok: true })),
+    createUser: vi.fn(async () => ({ id: 'ow-uuid-mock', external_user_id: 'user-A' })),
   },
 }));
 vi.mock('../../services/notificationDispatcher', () => ({
@@ -206,11 +215,18 @@ describe('initiateOAuth', () => {
   beforeEach(() => {
     spyState.reset();
     owMock.requestConnectUrl.mockClear();
+    owMock.createUser.mockClear();
+    owMock.createUser.mockResolvedValue({ id: 'ow-uuid-mock', external_user_id: 'user-A' });
   });
 
-  it('pre-creates a disconnected row with onConflictDoNothing on (userId, provider)', async () => {
-    spyState.queueResults([]); // INSERT chain
+  it('pre-creates a disconnected row with onConflictDoNothing on (userId, provider) inside a transaction', async () => {
+    spyState.queueResults([]); // INSERT chain awaited
+    spyState.queueResults([]); // UPDATE chain (UUID persistence)
     const result = await initiateOAuth('user-A', 'whoop');
+    // Verify transaction was opened (Sprint 4 Task 5a.10 — atomicity gate
+    // covering INSERT + createUser + UPDATE).
+    const txnOps = spyState.operations.filter((o) => o.op === 'transaction');
+    expect(txnOps).toHaveLength(1);
     const insertOps = spyState.operations.filter((o) => o.op === 'insert');
     expect(insertOps).toHaveLength(1);
     const conflictOp = spyState.operations.find((o) => o.op === 'onConflictDoNothing');
@@ -220,8 +236,42 @@ describe('initiateOAuth', () => {
 
   it('forwards (provider, userId) to Open Wearables connect URL endpoint', async () => {
     spyState.queueResults([]);
+    spyState.queueResults([]);
     await initiateOAuth('user-A', 'oura');
     expect(owMock.requestConnectUrl).toHaveBeenCalledWith('oura', 'user-A');
+  });
+
+  it('persists OW UUID via createUser → UPDATE inside same transaction (Path B)', async () => {
+    spyState.queueResults([]); // INSERT chain
+    spyState.queueResults([]); // UPDATE chain
+    owMock.createUser.mockResolvedValueOnce({
+      id: 'ow-uuid-persist-test',
+      external_user_id: 'user-A',
+    });
+
+    await initiateOAuth('user-A', 'garmin');
+
+    // createUser called with our internal user UUID as external_user_id
+    expect(owMock.createUser).toHaveBeenCalledWith({ external_user_id: 'user-A' });
+
+    // Inside the same transaction, an UPDATE was issued setting
+    // openWearablesUserId from the createUser response.
+    const txnOps = spyState.operations.filter((o) => o.op === 'transaction');
+    expect(txnOps).toHaveLength(1);
+    const updateOps = spyState.operations.filter((o) => o.op === 'update');
+    expect(updateOps).toHaveLength(1);
+    const setOp = spyState.operations.find((o) => o.op === 'set');
+    expect(setOp).toBeDefined();
+    const setArg = setOp?.args[0] as Record<string, unknown>;
+    expect(setArg.openWearablesUserId).toBe('ow-uuid-persist-test');
+  });
+
+  it('throws if createUser returns no id (cannot persist OW UUID bridge)', async () => {
+    spyState.queueResults([]); // INSERT chain
+    spyState.queueResults([]); // UPDATE chain (won't be hit)
+    owMock.createUser.mockResolvedValueOnce({ id: '', external_user_id: 'user-A' });
+
+    await expect(initiateOAuth('user-A', 'polar')).rejects.toThrow(/createUser returned no/);
   });
 });
 
@@ -244,6 +294,7 @@ describe('handleOAuthCallback', () => {
       capabilities: ['sleep', 'hrv'],
     });
     spyState.queueResults([]); // UPDATE chain awaited
+    spyState.queueResults([{ owUserId: 'ow-uuid-mock' }]); // SELECT for triggerSync
 
     await handleOAuthCallback('user-A', 'whoop');
 
@@ -261,12 +312,22 @@ describe('handleOAuthCallback', () => {
     expect(dispatchMock).not.toHaveBeenCalled();
   });
 
-  it('async-fires triggerSync (no await — does not block return)', async () => {
+  it('async-fires triggerSync with OW UUID (Path B) — does not block return', async () => {
     owMock.getConnectionStatus.mockResolvedValueOnce({ connected: true });
-    spyState.queueResults([]);
+    spyState.queueResults([]); // UPDATE chain
+    spyState.queueResults([{ owUserId: 'ow-uuid-async' }]); // SELECT row
     await handleOAuthCallback('user-A', 'whoop');
-    // triggerSync was called but not awaited; we can verify it was called.
-    expect(owMock.triggerSync).toHaveBeenCalledWith('whoop', 'user-A');
+    // triggerSync uses OW's UUID, NOT our internal user UUID. Path B locks
+    // OW data-fetching endpoints to OW's UUID.
+    expect(owMock.triggerSync).toHaveBeenCalledWith('whoop', 'ow-uuid-async');
+  });
+
+  it('skips triggerSync when row has no open_wearables_user_id (warns instead)', async () => {
+    owMock.getConnectionStatus.mockResolvedValueOnce({ connected: true });
+    spyState.queueResults([]); // UPDATE chain
+    spyState.queueResults([{ owUserId: null }]); // SELECT — no UUID persisted
+    await handleOAuthCallback('user-A', 'whoop');
+    expect(owMock.triggerSync).not.toHaveBeenCalled();
   });
 });
 
@@ -281,7 +342,14 @@ describe('disconnect', () => {
   });
 
   it('SELECTs with BOTH eq(id, connectionId) AND eq(userId, callerId) — IDOR mutation target', async () => {
-    spyState.queueResults([{ id: 'conn-1', userId: 'user-A', provider: 'whoop' }]);
+    spyState.queueResults([
+      {
+        id: 'conn-1',
+        userId: 'user-A',
+        provider: 'whoop',
+        openWearablesUserId: 'ow-uuid-1',
+      },
+    ]);
     spyState.queueResults([]); // UPDATE chain
 
     await disconnect('user-A', 'conn-1');
@@ -293,8 +361,46 @@ describe('disconnect', () => {
     expectOwnershipClause(wearableConnections.userId, 'user-A');
   });
 
+  it('calls OW revokeConnection with OW UUID (Path B), not our user UUID', async () => {
+    spyState.queueResults([
+      {
+        id: 'conn-1',
+        userId: 'user-A',
+        provider: 'whoop',
+        openWearablesUserId: 'ow-uuid-revoke',
+      },
+    ]);
+    spyState.queueResults([]);
+
+    await disconnect('user-A', 'conn-1');
+    // Path B: revoke endpoint requires OW's UUID, not our internal UUID.
+    expect(owMock.revokeConnection).toHaveBeenCalledWith('whoop', 'ow-uuid-revoke');
+  });
+
+  it('skips OW revoke when row has no open_wearables_user_id (local-only disconnect)', async () => {
+    spyState.queueResults([
+      {
+        id: 'conn-1',
+        userId: 'user-A',
+        provider: 'whoop',
+        openWearablesUserId: null,
+      },
+    ]);
+    spyState.queueResults([]);
+
+    await disconnect('user-A', 'conn-1');
+    expect(owMock.revokeConnection).not.toHaveBeenCalled();
+  });
+
   it('UPDATEs with BOTH eq(id, connectionId) AND eq(userId, callerId)', async () => {
-    spyState.queueResults([{ id: 'conn-1', userId: 'user-A', provider: 'whoop' }]);
+    spyState.queueResults([
+      {
+        id: 'conn-1',
+        userId: 'user-A',
+        provider: 'whoop',
+        openWearablesUserId: 'ow-uuid-1',
+      },
+    ]);
     spyState.queueResults([]);
     await disconnect('user-A', 'conn-1');
 
@@ -321,7 +427,14 @@ describe('disconnect', () => {
   });
 
   it('continues with local disconnect even if Open Wearables revoke fails (best-effort)', async () => {
-    spyState.queueResults([{ id: 'conn-1', userId: 'user-A', provider: 'whoop' }]);
+    spyState.queueResults([
+      {
+        id: 'conn-1',
+        userId: 'user-A',
+        provider: 'whoop',
+        openWearablesUserId: 'ow-uuid-best-effort',
+      },
+    ]);
     spyState.queueResults([]);
     owMock.revokeConnection.mockRejectedValueOnce(new Error('OW unreachable'));
 
