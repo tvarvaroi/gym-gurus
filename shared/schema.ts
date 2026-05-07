@@ -2433,6 +2433,14 @@ export const bodyMetrics = pgTable(
   (table) => [
     index('idx_body_metrics_user_id').on(table.userId),
     index('idx_body_metrics_user_recorded_at').on(table.userId, table.recordedAt),
+    // Sprint 4 BATCH 5a — partial UNIQUE for wearable-sourced dedup. Only
+    // enforces uniqueness for `source IN ('wearable', 'smart_scale')`; manual
+    // entries keep multi-per-day semantics. Conflict target for the
+    // body_composition.created ingest UPSERT path. Migration 014.5 creates
+    // the underlying CREATE UNIQUE INDEX ... WHERE expression.
+    uniqueIndex('idx_body_metrics_wearable_dedup')
+      .on(table.userId, table.sourceProvider, sql`(${table.recordedAt}::date)`)
+      .where(sql`${table.source} IN ('wearable', 'smart_scale')`),
   ]
 );
 

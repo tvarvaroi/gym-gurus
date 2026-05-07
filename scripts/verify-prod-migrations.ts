@@ -53,7 +53,9 @@ type Phase =
   | 'baseline-013'
   | 'post-013'
   | 'baseline-014'
-  | 'post-014';
+  | 'post-014'
+  | 'baseline-014.5'
+  | 'post-014.5';
 
 const EXISTING_TABLES_TO_COUNT = [
   'users',
@@ -1374,6 +1376,174 @@ async function post014() {
   console.log(`  clients (deleted_at IS NULL) : ${clientsLiveCount}`);
 }
 
+// ─── Migration 014.5 verifier phases (Sprint 4 BATCH 5a) ────────────────────
+// 014.5 adds a partial UNIQUE index on body_metrics for wearable dedup.
+// Index def example: CREATE UNIQUE INDEX idx_body_metrics_wearable_dedup
+//   ON public.body_metrics USING btree (user_id, source_provider, ((recorded_at)::date))
+//   WHERE ((source)::text = ANY ((ARRAY['wearable'::character varying,
+//   'smart_scale'::character varying])::text[]));
+
+async function baseline0145() {
+  const db = await getDb();
+  console.log('=== BASELINE-014.5 ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}\n`);
+
+  // Index must NOT exist yet
+  const idxOk = await indexExists(db, 'idx_body_metrics_wearable_dedup');
+  console.log('014.5 index (must be absent before run):');
+  console.log(
+    `  idx_body_metrics_wearable_dedup     : ${idxOk ? 'PRESENT (UNEXPECTED)' : 'absent ✓'}`
+  );
+
+  // Snapshot wearable-sourced row count (must match exactly post-run since up()
+  // is index-only — no row writes).
+  const r: any = await db.execute(sql`
+    SELECT COUNT(*)::text AS c FROM body_metrics
+    WHERE source IN ('wearable', 'smart_scale')
+  `);
+  const wearableCount = parseInt(r.rows?.[0]?.c ?? r[0]?.c ?? '0', 10);
+  console.log(
+    `\nbody_metrics wearable-sourced rows (snapshot for post-014.5 drift check): ${wearableCount}`
+  );
+
+  console.log('\nExisting-table row counts (snapshot for post-014.5 drift detection):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+  console.log('\nSAVE THESE NUMBERS — used as the baseline for post-014.5 drift checks.');
+}
+
+async function post0145() {
+  const db = await getDb();
+  console.log('=== POST-014.5 ===\n');
+
+  const ident: any = await db.execute(sql`SELECT current_database() AS db`);
+  console.log(`Database: ${ident.rows?.[0]?.db ?? ident[0]?.db}\n`);
+
+  // ─── (a) Index exists + UNIQUE + partial WHERE clause ───────────────────
+  const idxOk = await indexExists(db, 'idx_body_metrics_wearable_dedup');
+  console.log('(a) Partial UNIQUE index on body_metrics:');
+  console.log(
+    `  idx_body_metrics_wearable_dedup     : ${idxOk ? 'present ✓' : 'MISSING — CATASTROPHIC'}`
+  );
+
+  if (idxOk) {
+    const def = (await indexDef(db, 'idx_body_metrics_wearable_dedup')) ?? '';
+    const isUnique = /CREATE UNIQUE INDEX/i.test(def);
+    const hasPartialWhere = /WHERE\s*\(\s*\(?source\)?/i.test(def);
+    const hasDateExpression = /\(\s*recorded_at\s*\)\s*::\s*date/i.test(def);
+    console.log(
+      `  is UNIQUE?                          : ${isUnique ? '✓' : 'NO — index is NOT unique'}`
+    );
+    console.log(
+      `  has partial WHERE clause?           : ${hasPartialWhere ? '✓' : 'NO — index is full-table (BREAKS manual-entry semantics)'}`
+    );
+    console.log(
+      `  uses (recorded_at::date) expression : ${hasDateExpression ? '✓' : 'NO — index does NOT collapse intra-day'}`
+    );
+    console.log(`  raw indexdef                        : ${def.slice(0, 200)}`);
+  }
+
+  // ─── (b) UPSERT round-trip probe ─────────────────────────────────────────
+  // Insert a wearable-sourced probe row twice with same (user, provider, day).
+  // Second insert MUST UPSERT not duplicate. Cleanup at end. All in a single
+  // transaction (BEGIN/ROLLBACK) so nothing persists. We can't ROLLBACK and
+  // also assert the count stayed at 1 because the rollback erases evidence —
+  // instead use a dedicated probe source_provider + DELETE cleanup.
+  console.log('\n(b) UPSERT round-trip probe (wearable dedup behavior):');
+
+  const userRow: any = await db.execute(sql`SELECT id FROM users WHERE deleted_at IS NULL LIMIT 1`);
+  const probeUserRows = (userRow.rows ?? userRow) as Array<{ id: string }>;
+  if (probeUserRows.length === 0) {
+    console.log('  ⚠ no user available to probe — skipping UPSERT round-trip test');
+  } else {
+    const probeUserId = probeUserRows[0].id;
+    const PROBE_PROVIDER = 'verifier_probe_5a';
+
+    try {
+      // Cleanup any leftover probe rows from a previous abandoned run
+      await db.execute(sql`
+        DELETE FROM body_metrics WHERE source_provider = ${PROBE_PROVIDER}
+      `);
+
+      const beforeR: any = await db.execute(sql`
+        SELECT COUNT(*)::text AS c FROM body_metrics WHERE source_provider = ${PROBE_PROVIDER}
+      `);
+      const before = parseInt(beforeR.rows?.[0]?.c ?? beforeR[0]?.c ?? '0', 10);
+
+      // INSERT 1
+      await db.execute(sql`
+        INSERT INTO body_metrics (user_id, recorded_at, weight_kg, source, source_provider)
+        VALUES (${probeUserId}, NOW(), 75.0, 'wearable', ${PROBE_PROVIDER})
+        ON CONFLICT (user_id, source_provider, (recorded_at::date))
+          WHERE source IN ('wearable', 'smart_scale')
+        DO UPDATE SET weight_kg = EXCLUDED.weight_kg, updated_at = NOW();
+      `);
+      // INSERT 2 — same day, should UPSERT not insert
+      await db.execute(sql`
+        INSERT INTO body_metrics (user_id, recorded_at, weight_kg, source, source_provider)
+        VALUES (${probeUserId}, NOW(), 76.0, 'wearable', ${PROBE_PROVIDER})
+        ON CONFLICT (user_id, source_provider, (recorded_at::date))
+          WHERE source IN ('wearable', 'smart_scale')
+        DO UPDATE SET weight_kg = EXCLUDED.weight_kg, updated_at = NOW();
+      `);
+
+      const afterR: any = await db.execute(sql`
+        SELECT COUNT(*)::text AS c FROM body_metrics WHERE source_provider = ${PROBE_PROVIDER}
+      `);
+      const after = parseInt(afterR.rows?.[0]?.c ?? afterR[0]?.c ?? '0', 10);
+
+      // Verify the value was updated (76.0, not 75.0)
+      const valueR: any = await db.execute(sql`
+        SELECT weight_kg::text AS w FROM body_metrics WHERE source_provider = ${PROBE_PROVIDER}
+      `);
+      const finalWeight = valueR.rows?.[0]?.w ?? valueR[0]?.w ?? '?';
+
+      console.log(`  before INSERTs                      : ${before} rows (probe namespace)`);
+      console.log(
+        `  after 2 INSERTs (same day)          : ${after} rows ${after === before + 1 ? '✓ (UPSERTed correctly)' : '— UNEXPECTED, dedup BROKEN'}`
+      );
+      console.log(
+        `  final weight_kg value               : ${finalWeight} ${finalWeight === '76.00' || finalWeight === '76' ? '✓ (UPDATE took)' : `— UNEXPECTED, expected 76.00 got ${finalWeight}`}`
+      );
+
+      // Cleanup
+      await db.execute(sql`
+        DELETE FROM body_metrics WHERE source_provider = ${PROBE_PROVIDER}
+      `);
+      console.log(`  cleanup                             : probe row deleted ✓`);
+    } catch (e: any) {
+      // Always attempt cleanup even on failure
+      try {
+        await db.execute(sql`
+          DELETE FROM body_metrics WHERE source_provider = 'verifier_probe_5a'
+        `);
+      } catch {
+        // ignore
+      }
+      console.log(`  ⚠ UPSERT probe error: ${e?.message ?? e}`);
+    }
+  }
+
+  // ─── (c) Existing-table row counts unchanged from baseline ───────────────
+  console.log('\n(c) Existing-table row counts (compare to baseline-014.5 — MUST match exactly):');
+  const counts = await rowCounts(db);
+  for (const [t, c] of Object.entries(counts)) {
+    console.log(`  ${t.padEnd(28)} : ${c}`);
+  }
+  // Wearable-sourced body_metrics count (must match baseline-014.5 exactly —
+  // up() is index-only)
+  const r: any = await db.execute(sql`
+    SELECT COUNT(*)::text AS c FROM body_metrics
+    WHERE source IN ('wearable', 'smart_scale')
+  `);
+  const wearableCount = parseInt(r.rows?.[0]?.c ?? r[0]?.c ?? '0', 10);
+  console.log(`  body_metrics (wearable-sourced) : ${wearableCount}`);
+}
+
 const phase = (process.argv[2] ?? '') as Phase;
 const phases: Record<Phase, () => Promise<void>> = {
   baseline,
@@ -1385,12 +1555,14 @@ const phases: Record<Phase, () => Promise<void>> = {
   'post-013': post013,
   'baseline-014': baseline014,
   'post-014': post014,
+  'baseline-014.5': baseline0145,
+  'post-014.5': post0145,
 };
 
 const fn = phases[phase];
 if (!fn) {
   console.error(
-    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012|baseline-013|post-013|baseline-014|post-014>`
+    `Usage: npx tsx scripts/verify-prod-migrations.ts <baseline|post-010|post-011|baseline-012|post-012|baseline-013|post-013|baseline-014|post-014|baseline-014.5|post-014.5>`
   );
   process.exit(2);
 }
