@@ -598,6 +598,58 @@ Newer Apple Health exports (post-iOS 15-ish) include `HKAttributeKeyExternalUUID
 
 ---
 
+## Vite dev server can serve dual React module instances when deps cache gets stuck
+
+**Symptom:** client console shows "Invalid hook call... You might have more than one copy of React in the same app" and the network tab shows TWO different `chunk-*.js?v=...` files, each containing a copy of React (e.g. `chunk-QCHXOAYK.js` + `chunk-RPCDYKBN.js` co-existing).
+
+**Diagnosis:** Vite's dependency optimizer (`node_modules/.vite/deps/`) entered a partial-rebuild state. Two chunks ship two React module instances; `useContext` (and other hook-internal calls) fail because each chunk holds a distinct module identity for `react` itself.
+
+**Resolution:**
+
+1. Stop the dev server.
+2. Delete `node_modules/.vite/deps/` (the `.vite` cache directory).
+3. Restart the dev server. Vite rebuilds the deps cleanly on the next request.
+
+**Production unaffected:** prod builds (`npm run build`) produce a single React bundle in the chunk graph; the issue is dev-server-only.
+
+**When to fix:** opportunistically on the next planned dev-server restart. Do NOT bounce mid-session unilaterally if someone is actively developing — they lose in-flight HMR state, unsaved client-side scratch state, and any open in-browser sessions. Coordinate.
+
+**First captured:** Sprint 5 BATCH 6 (2026-05-08) — Playwright screenshots could not be captured for the new BiometricsPage hint-card mount and Settings imports tab; production build was clean (804.1kb, 0 errors), confirming the failure was dev-server-only. Screenshots deferred to BATCH 8 visual QA pass.
+
+---
+
+## Apple Health parser permissiveness — three known hardening gaps (BATCH 8 surface)
+
+The Sprint 5 BATCH 7 fuzz suite surfaced three places where the parser is permissive in ways that could matter for adversarial inputs. None are crashes; all have the cron's outer `try/catch` in `processOneImport` as the safety net. Documented for BATCH 8 hardening.
+
+### 1. `parseHealthDate` accepts out-of-range field values
+
+**Behavior:** the regex validates SHAPE only (4-digit year, 2-digit MM/DD/HH/MM/SS, ±HHMM offset). Out-of-range values (month=13, day=99, hour=99) are syntactically correct but get rolled forward by `Date.UTC` semantics — `Date.UTC(2026, 12, 99, 99, 99, 99)` yields a valid Date in 2027.
+
+**Practical impact:** maliciously-crafted exports with insane dates would be ingested with rolled-over timestamps, polluting date-bucketed columns and skewing charts. The schema doesn't have CHECK constraints against future-far dates either.
+
+**Fix shape:** add bounds check after the regex match — `1<=M<=12 && 1<=D<=31 && 0<=h<=23 && 0<=mm<=59 && 0<=ss<=59`. Optionally also bound the year to a reasonable window (e.g. 1990-current+1y) to defend against accidental year typos.
+
+### 2. SAX permissiveness on truncated input
+
+**Behavior:** sax 1.4.1 does NOT always trigger `onerror` on truncated input. Mid-attribute and unclosed-root truncations sometimes complete parsing what was seen and emit `onend`, returning zero-record stats instead of rejecting.
+
+**Practical impact:** an upload that yielded a truncated XML stream (corrupt zip, partial download, intentionally-truncated file) would be marked `status='completed'` with 0 records, which is misleading — the user sees "import succeeded" with no data and no error.
+
+**Fix shape:** add a sentinel — track whether the parser saw a `</HealthData>` close tag before resolving. If not, reject with a clear "Truncated or malformed export" error so the import row is marked `status='failed'` with an actionable error_message.
+
+### 3. Empty stream silently completes as success
+
+**Behavior:** an empty input stream (zero bytes) resolves with stats showing 0 records — no error.
+
+**Practical impact:** same UX issue as #2. A misuploaded empty file looks like a successful import with no data.
+
+**Fix shape:** same as #2 — assert `recordsParsed > 0` OR sentinel close-tag was seen, else mark failed.
+
+**All three captured:** Sprint 5 BATCH 7 (2026-05-08) parser fuzz suite. Tests document the current behavior with `FINDING:` comments; tests pass against actual behavior, no regressions. Hardening fix is BATCH 8 work — single small PR can address all three (parseHealthDate bounds + close-tag sentinel + non-empty-stream assertion in `parseHealthExport`).
+
+---
+
 ## Related Notes
 
 - [[decisions]]

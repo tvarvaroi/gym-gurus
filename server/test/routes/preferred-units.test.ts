@@ -394,3 +394,51 @@ describe('POST /api/settings/dismiss-hint', () => {
     expect(userAMatches.length).toBe(0);
   });
 });
+
+// ===========================================================================
+// BATCH 7 — IDOR mutation tests for dismiss-hint (Site 7 of 7)
+// ===========================================================================
+//
+// The 7th site in the BATCH 7 mutation-test ledger. The cross-user shape is
+// already covered above; this section adds the "request-payload spoof" check
+// — the route must not read userId/email/etc. from req.body, only req.user.
+
+describe('BATCH 7 IDOR mutation tests — POST /api/settings/dismiss-hint', () => {
+  beforeEach(() => spyState.reset());
+
+  it('rejects body-supplied userId field (must come from req.user, not payload)', async () => {
+    // Mutation proof: if a future developer were to read userId from req.body
+    // (e.g. as part of an admin/impersonation workflow) without an
+    // authorisation check, this would IDOR. Test asserts that even when the
+    // body supplies a different userId, the route uses req.user.id.
+    spyState.queueResults([{ notificationPreferences: null }]);
+    spyState.queueResults([]);
+    await request(makeTestApp(userA()))
+      .post('/api/settings/dismiss-hint')
+      .send({ hintId: 'appleHealthImport', userId: 'user-B' }); // body spoof attempt
+
+    // The eq() calls must be on user-A (session caller); user-B (body field)
+    // must NEVER appear regardless of how the route reads its inputs.
+    expectOwnershipClause(users.id, 'user-A');
+    const userBMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === users.id && val === 'user-B'
+    );
+    expect(userBMatches.length).toBe(0);
+  });
+
+  it('UPDATE filter is the load-bearing IDOR predicate (proof: userId appears in BOTH SELECT and UPDATE)', async () => {
+    // Mutation proof: removing eq(users.id, userId) from EITHER the SELECT
+    // (line ~398) OR the UPDATE (line ~432) of the route handler would re-
+    // open IDOR. The test asserts the user's id appears in eqCalls at least
+    // twice — once for the SELECT WHERE, once for the UPDATE WHERE.
+    spyState.queueResults([{ notificationPreferences: null }]);
+    spyState.queueResults([]);
+    await request(makeTestApp(userA()))
+      .post('/api/settings/dismiss-hint')
+      .send({ hintId: 'appleHealthImport' });
+    const userIdMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === users.id && val === 'user-A'
+    );
+    expect(userIdMatches.length).toBeGreaterThanOrEqual(2);
+  });
+});

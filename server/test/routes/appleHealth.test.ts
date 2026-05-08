@@ -138,7 +138,7 @@ vi.mock('../../logger', () => ({
 // ---------------------------------------------------------------------------
 
 import appleHealthRouter from '../../routes/appleHealth';
-import { appleHealthImports } from '../../../shared/schema';
+import { appleHealthImports, wearableConnections, users } from '../../../shared/schema';
 
 // ---------------------------------------------------------------------------
 // Test app factory
@@ -581,5 +581,226 @@ describe('DELETE /api/apple-health/imports/:id', () => {
     );
     expect(idMatches.length).toBeGreaterThanOrEqual(2);
     expect(userIdMatches.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ===========================================================================
+// BATCH 7 — IDOR mutation testing
+// ===========================================================================
+//
+// Each test below proves that the ownership predicate `eq(table.userId, callerId)`
+// in the corresponding route is LOAD-BEARING. The mutation proof:
+//
+//   If a developer rewrites the route to remove the `eq(userId, ...)` filter,
+//   the assertion `expectOwnershipClause(table.userId, callerId)` would fail
+//   (the spy's eqCalls array would not contain the (column, value) pair the
+//   test asserts on).
+//
+//   The cross-user shape is the converse: when caller IS user-B, user-A's id
+//   must NEVER appear in the eq() spy. If the route were to substitute a
+//   client-supplied userId (e.g. from req.body or req.params) into the WHERE
+//   clause, this assertion would fail at runtime.
+//
+// Coverage map (7 sub-sites, fifth IDOR mutation-test ledger after biometrics
+// / wellness / wearables / notifications):
+//
+//   1. POST   /upload                   — INSERT VALUES userId comes from session
+//   2. GET    /imports                  — SELECT WHERE eq(userId)
+//   3. GET    /imports/:id              — SELECT WHERE eq(id) AND eq(userId)
+//   4. POST   /imports/:id/cancel       — SELECT + UPDATE both filter by userId
+//   5. POST   /imports/:id/retry        — SELECT + UPDATE both filter by userId
+//   6. DELETE /imports/:id              — SELECT + DELETE both filter by userId
+//   7. GET    /hint-card/visibility     — three SELECTs all filter by userId
+
+describe('BATCH 7 IDOR mutation tests — POST /api/apple-health/upload (Site 1)', () => {
+  beforeEach(() => spyState.reset());
+
+  it('INSERT VALUES().userId comes from req.user (NEVER from request body)', async () => {
+    // The upload route uses `userId: req.user!.id` in `.values()`. The IDOR
+    // surface here is "could a user impersonate another user via request
+    // payload?" The route never reads userId from req.body — it's hard-coded
+    // to req.user.id. This test proves the captured INSERT values has the
+    // session's user id and not whatever the multipart body might supply.
+    spyState.queueResults([{ id: 'imp-A1', userId: 'user-A', status: 'uploaded' }]);
+    spyState.queueResults([
+      { id: 'imp-A1', userId: 'user-A', status: 'uploaded', fileR2Key: '/tmp/x.zip' },
+    ]);
+    await request(makeTestApp(userA()))
+      .post('/api/apple-health/upload')
+      .field('userId', 'user-B') // attempt to spoof another user via body
+      .attach('file', Buffer.from('PK\x03\x04 fake zip body'), {
+        filename: 'export.zip',
+        contentType: 'application/zip',
+      });
+    // Find the .values() operation captured by the spy
+    const valuesOp = spyState.operations.find((o) => o.op === 'values');
+    expect(valuesOp).toBeDefined();
+    const valuesArg = valuesOp!.args[0] as { userId: string };
+    expect(valuesArg.userId).toBe('user-A');
+    // user-B (the spoofed body field) is NEVER referenced as a userId in the spy
+    const userBInValues = spyState.operations
+      .filter((o) => o.op === 'values')
+      .some((o) => (o.args[0] as { userId?: string })?.userId === 'user-B');
+    expect(userBInValues).toBe(false);
+  });
+});
+
+describe('BATCH 7 IDOR mutation tests — GET /api/apple-health/imports (Site 2)', () => {
+  beforeEach(() => spyState.reset());
+
+  it('cross-user mutation: caller userB triggers eq(userId, user-B); user-A NEVER in eq calls', async () => {
+    // Mutation proof: removing `where(eq(appleHealthImports.userId, ...))` from
+    // the list route would surface ALL imports across users. This test asserts
+    // user-A's id never appears when caller is user-B — i.e., the eq() filter
+    // is the ONLY thing scoping the result set.
+    spyState.queueResults([{ id: 'imp-B1', userId: 'user-B', status: 'completed' }]);
+    await request(makeTestApp(userB())).get('/api/apple-health/imports');
+    expectOwnershipClause(appleHealthImports.userId, 'user-B');
+    const userAOnImports = spyState.eqCalls.find(
+      ([col, val]) => col === appleHealthImports.userId && val === 'user-A'
+    );
+    expect(userAOnImports).toBeUndefined();
+  });
+});
+
+describe('BATCH 7 IDOR mutation tests — GET /api/apple-health/imports/:id (Site 3)', () => {
+  beforeEach(() => spyState.reset());
+
+  it('cross-user mutation: caller userB cannot fetch userA-owned import even with valid id', async () => {
+    // Caller is userB but tries to fetch an id they don't own. The route's
+    // and(eq(id), eq(userId)) WHERE filters out the row, yielding 404. The
+    // mutation proof: if a developer rewrote the WHERE to use only eq(id),
+    // userB would see userA's row → IDOR. This test asserts the filter
+    // includes user-B (NOT user-A) in the eq calls.
+    spyState.queueResults([]); // simulating row filtered out by userId predicate
+    const res = await request(makeTestApp(userB())).get('/api/apple-health/imports/userA-imp-1');
+    expect(res.status).toBe(404);
+    expectOwnershipClause(appleHealthImports.userId, 'user-B');
+    // user-A is NEVER in the eq() calls — caller's id is the only scope
+    const userAMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === appleHealthImports.userId && val === 'user-A'
+    );
+    expect(userAMatches).toHaveLength(0);
+  });
+});
+
+describe('BATCH 7 IDOR mutation tests — POST /imports/:id/cancel (Site 4)', () => {
+  beforeEach(() => spyState.reset());
+
+  it('UPDATE has eq(userId) — not just SELECT (defense against double-filter regression)', async () => {
+    // Mutation proof: the cancel route does SELECT-existing then UPDATE. If a
+    // developer were to drop the userId filter from EITHER the SELECT or the
+    // UPDATE, IDOR would re-emerge. Test asserts user-A appears in eq() calls
+    // at LEAST twice (once for SELECT WHERE, once for UPDATE WHERE).
+    spyState.queueResults([{ id: 'imp-1', userId: 'user-A', status: 'parsing' }]);
+    spyState.queueResults([{ id: 'imp-1', userId: 'user-A', status: 'cancelled' }]);
+    await request(makeTestApp(userA())).post('/api/apple-health/imports/imp-1/cancel');
+    const userIdMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === appleHealthImports.userId && val === 'user-A'
+    );
+    expect(userIdMatches.length).toBeGreaterThanOrEqual(2);
+    const idMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === appleHealthImports.id && val === 'imp-1'
+    );
+    expect(idMatches.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('cross-user mutation: caller userB triggers user-B in eq calls; user-A NEVER referenced', async () => {
+    spyState.queueResults([]); // row not found for user-B (correctly scoped)
+    await request(makeTestApp(userB())).post('/api/apple-health/imports/userA-imp-1/cancel');
+    const userBMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === appleHealthImports.userId && val === 'user-B'
+    );
+    const userAMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === appleHealthImports.userId && val === 'user-A'
+    );
+    expect(userBMatches.length).toBeGreaterThanOrEqual(1);
+    expect(userAMatches).toHaveLength(0);
+  });
+});
+
+describe('BATCH 7 IDOR mutation tests — POST /imports/:id/retry (Site 5)', () => {
+  beforeEach(() => spyState.reset());
+
+  it('UPDATE has eq(userId) — not just SELECT', async () => {
+    spyState.queueResults([
+      { id: 'imp-1', userId: 'user-A', status: 'failed', fileR2Key: '/tmp/x.zip' },
+    ]);
+    spyState.queueResults([
+      { id: 'imp-1', userId: 'user-A', status: 'uploaded', fileR2Key: '/tmp/x.zip' },
+    ]);
+    await request(makeTestApp(userA())).post('/api/apple-health/imports/imp-1/retry');
+    const userIdMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === appleHealthImports.userId && val === 'user-A'
+    );
+    expect(userIdMatches.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('cross-user mutation: caller userB cannot retry userA-owned import', async () => {
+    spyState.queueResults([]); // row scoped out
+    await request(makeTestApp(userB())).post('/api/apple-health/imports/userA-imp-1/retry');
+    const userAMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === appleHealthImports.userId && val === 'user-A'
+    );
+    expect(userAMatches).toHaveLength(0);
+    expectOwnershipClause(appleHealthImports.userId, 'user-B');
+  });
+});
+
+describe('BATCH 7 IDOR mutation tests — DELETE /imports/:id (Site 6)', () => {
+  beforeEach(() => spyState.reset());
+
+  it('cross-user mutation: caller userB DELETE attempt against userA row → user-A NEVER in eq calls', async () => {
+    spyState.queueResults([]); // SELECT returns empty (row out of scope)
+    const res = await request(makeTestApp(userB())).delete('/api/apple-health/imports/userA-imp-1');
+    expect(res.status).toBe(404);
+    const userAMatches = spyState.eqCalls.filter(
+      ([col, val]) => col === appleHealthImports.userId && val === 'user-A'
+    );
+    expect(userAMatches).toHaveLength(0);
+    expectOwnershipClause(appleHealthImports.userId, 'user-B');
+  });
+});
+
+describe('BATCH 7 IDOR mutation tests — GET /hint-card/visibility (Site 7)', () => {
+  beforeEach(() => spyState.reset());
+
+  it('all three SELECTs (imports, wearables, users) filter by callerId', async () => {
+    // Visibility endpoint reads from THREE tables: appleHealthImports,
+    // wearableConnections, users. Each must filter by req.user.id. Mutation
+    // proof: drop the eq(userId) on any of the three and a user could see
+    // hint-card state derived from another user's data — equally an IDOR.
+    spyState.queueResults([{ c: 0 }]); // imports = 0
+    spyState.queueResults([{ c: 0 }]); // wearables = 0
+    spyState.queueResults([{ notificationPreferences: null }]); // user prefs
+    await request(makeTestApp(userA())).get('/api/apple-health/hint-card/visibility');
+    expectOwnershipClause(appleHealthImports.userId, 'user-A');
+    expectOwnershipClause(wearableConnections.userId, 'user-A');
+    expectOwnershipClause(users.id, 'user-A');
+  });
+
+  it('cross-user mutation: caller userB never triggers any user-A predicate across the three tables', async () => {
+    spyState.queueResults([{ c: 0 }]);
+    spyState.queueResults([{ c: 0 }]);
+    spyState.queueResults([{ notificationPreferences: null }]);
+    await request(makeTestApp(userB())).get('/api/apple-health/hint-card/visibility');
+    // user-A is never in eq() calls regardless of which table's predicate it
+    // would be on — the only valid scope is the caller's id.
+    const userAMatches = spyState.eqCalls.filter(([_col, val]) => val === 'user-A');
+    expect(userAMatches).toHaveLength(0);
+    // user-B IS the caller — appears at least 3× (one per table predicate)
+    const userBMatches = spyState.eqCalls.filter(([_col, val]) => val === 'user-B');
+    expect(userBMatches.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('role gate short-circuits BEFORE any DB read (Guru never triggers eq calls)', async () => {
+    // Trainer is filtered out by the role gate; the route returns
+    // visible=false WITHOUT reading any of the three tables. Defense against
+    // a future regression that moves the role gate AFTER DB reads — would
+    // surface as wasted DB calls + a slowly-degrading visibility endpoint.
+    const trainer = { id: 'user-T', email: 't@test.com', role: 'trainer' as const };
+    await request(makeTestApp(trainer)).get('/api/apple-health/hint-card/visibility');
+    expect(spyState.eqCalls).toHaveLength(0); // zero DB reads
+    expect(spyState.operations).toHaveLength(0);
   });
 });
