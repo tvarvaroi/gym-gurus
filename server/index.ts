@@ -52,6 +52,7 @@ import {
   stopWellnessReengagementCron,
 } from './jobs/wellnessReengagement';
 import { startWearableSyncMonitor, stopWearableSyncMonitor } from './jobs/wearableSyncMonitor';
+import { startAppleHealthCron, stopAppleHealthCron } from './jobs/processAppleHealthImports';
 
 // Initialize Sentry error monitoring (production only)
 initSentry();
@@ -379,6 +380,13 @@ app.use(performanceMonitor);
     // Safe even when OPEN_WEARABLES_BASE_URL is unset — the call throws,
     // markSyncError absorbs the throw, the cron logs and continues.
     startWearableSyncMonitor();
+
+    // Sprint 5: Apple Health import processor. Polls apple_health_imports
+    // for status='uploaded' rows, stream-parses the .zip, ingests into the
+    // existing wearable schema. SKIP LOCKED claim, isTickInFlight re-entrancy
+    // guard, env-overridable interval (APPLE_HEALTH_CRON_INTERVAL_MS), 30s
+    // default. Safe even when no imports are pending — it just no-ops.
+    startAppleHealthCron();
   });
 
   // Graceful shutdown — clear the cron interval so the process exits cleanly.
@@ -389,6 +397,7 @@ app.use(performanceMonitor);
     stopWellnessNudgeCron();
     stopWellnessReengagementCron();
     stopWearableSyncMonitor();
+    stopAppleHealthCron();
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(1), 10000).unref();
   };

@@ -45,6 +45,7 @@ import programRoutes from './routes/programsRouter';
 import biometricsRoutes from './routes/biometrics';
 import wellnessRoutes from './routes/wellness';
 import wearableRoutes from './routes/wearables';
+import appleHealthRoutes from './routes/appleHealth';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ─── Health check — public, NO rate limiting, NO auth ───────────────────
@@ -112,6 +113,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/biometrics', secureAuth, apiRateLimit, biometricsRoutes);
   app.use('/api/wellness', secureAuth, apiRateLimit, wellnessRoutes);
   app.use('/api/wearables', secureAuth, apiRateLimit, wearableRoutes);
+  // Sprint 5 — Apple Health import. The /upload route uses writeRateLimit (one
+  // big upload per request); the read routes use apiRateLimit. Both inherit
+  // secureAuth via the router-level mount.
+  app.use('/api/apple-health', secureAuth, writeRateLimit, appleHealthRoutes);
 
   // ─── Contact form (public, rate-limited) ────────────────────────────────
   app.post('/api/contact', strictRateLimit, async (req: Request, res: Response) => {

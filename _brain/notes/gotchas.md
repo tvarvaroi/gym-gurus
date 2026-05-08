@@ -4,6 +4,31 @@ Hard-won lessons. Check this before touching anything.
 
 ---
 
+## Apple Health / Wearable Ingest
+
+**Per-record vs per-session ingest shape divergence between providers.**
+Apple Health stores sleep as per-stage records (~5 records per night for iOS 16+ Apple Watch: InBed, AsleepCore, AsleepDeep, AsleepREM, Awake). Open Wearables / Whoop / Oura webhooks deliver pre-aggregated per-session payloads. Our `sleep_sessions` schema is per-session.
+
+_Implication:_ ingest from per-record sources requires aggregation BEFORE UPSERT. Aggregation must be in-memory at cron-tick scope (see `server/services/appleHealthSleepAggregator.ts`), NOT incremental UPSERT-with-INCREMENT. The latter has a hidden idempotency bug: re-import would 2× the stage minutes on the second pass because the same record consumed twice would each fire `+stage_minutes`.
+
+_Pattern:_ session-key derivation anchored to the source's session-start record (Apple's InBed record's startDate; OW's `data.id`), with stage records folded into the session in a single forward-pass before any DB write. `source_record_id` derived from session anchor for idempotency. Multi-segment-night handling (3am wakeup → go-back-to-sleep) needs the InBed envelope to disambiguate; pure `wakeLocalDate` grouping collapses segments and produces bizarre stage totals.
+
+_Memory bound:_ session map size = number of sessions in import = bounded by file size limit (200MB → ~50k sessions worst case). The aggregator throws on >50,000 sessions to prevent pathological-input DoS.
+
+_Future sprints:_ if a new source ships per-record sleep data, this aggregation pattern is reusable. Extract to a shared helper if a third source needs it (sleep_sessions ← Apple Health + future-source).
+
+First captured: Sprint 5 BATCH 3 (2026-05-08).
+
+**Apple Health `Workout.duration` is a decimal in minutes, but `activity_sessions.duration_minutes` is INTEGER.**
+A 32:30 run serialises as `duration="32.5"`. The wearable schema's `duration_minutes` column is `integer`. Passing the decimal directly to drizzle's `INSERT` raises `invalid input syntax for type integer: "32.5"`. Workaround: round at the ingest layer (`Math.round(record.durationMinutes)`). Sub-minute precision lost on workouts; acceptable trade-off — duration in minutes is rarely a load-bearing metric at sub-minute resolution. First caught by `scripts/smoke-apple-health.ts` against dev DB on 2026-05-08.
+
+**`Promise.all` over per-record ingest aborts the cron's sleep-aggregation phase on first rejection.**
+The Apple Health cron fires per-record ingest promises during streaming parse, then awaits them all before the sleep-aggregation flush. `await Promise.all(ingestPromises)` rejects on the first failed promise — even though the other promises continue running, the catch block fires immediately and the sleep-aggregation phase is skipped. One bad record (e.g. a workout with an unexpected unit) would silently lose the entire night's sleep data.
+
+_Fix:_ `Promise.allSettled` so individual record failures get logged + counted as warnings without short-circuiting the import. The import still completes with partial-success semantics. Caught by `scripts/smoke-apple-health.ts` BEFORE the duration_minutes integer fix exposed it (the workout was failing, taking sleep down with it). First captured Sprint 5 BATCH 3 (2026-05-08).
+
+---
+
 ## Layout
 
 **`overflow-y: auto` on main clips `position: absolute` children with translate transforms.**

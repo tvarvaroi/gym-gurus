@@ -58,6 +58,9 @@ export const NOTIFICATION_TYPES = [
   'wearable_sync_failed',
   'wearable_expired',
   'wearable_first_sync_complete',
+  // New (Sprint 5 — Apple Health import)
+  'apple_health_import_complete',
+  'apple_health_import_failed',
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -97,6 +100,12 @@ export const TYPE_TO_CATEGORY = {
   wearable_sync_failed: 'social',
   wearable_expired: 'social',
   wearable_first_sync_complete: 'social',
+  // Sprint 5 — Apple Health import lifecycle. Mapped to 'social' to mirror
+  // the wearable lifecycle category (informational events about the user's
+  // own data flows). Users can mute the whole 'social' category to silence
+  // both. Email backup is NOT eligible — see EMAIL_FALLBACK_HIGH_PRIORITY_TYPES.
+  apple_health_import_complete: 'social',
+  apple_health_import_failed: 'social',
 } as const satisfies Record<NotificationType, NotificationCategory>;
 
 export function categoryForType(type: NotificationType): NotificationCategory {
@@ -308,6 +317,23 @@ export const NOTIFICATION_TEMPLATES = {
     body: `We pulled ${n(d, 'days', 1)} days of your ${s(d, 'dataType', 'wearable')} data. View it now.`,
     actionUrl: '/biometrics?tab=trends',
     tag: `wearable_first_sync_complete:${s(d, 'dataType')}`,
+  }),
+  // Sprint 5 — Apple Health import lifecycle. Tag is single-per-import-id so
+  // the OS notification tray collapses duplicates if dispatch fires twice
+  // for the same import (cron retry edge cases).
+  apple_health_import_complete: (d) => ({
+    title: 'Apple Health import complete',
+    body: `${n(d, 'recordsTotal')} records${
+      s(d, 'dateRange') ? ` across ${s(d, 'dateRange')}` : ''
+    }. View your trends.`,
+    actionUrl: '/biometrics?tab=trends',
+    tag: `apple_health_import_complete:${s(d, 'importId')}`,
+  }),
+  apple_health_import_failed: (d) => ({
+    title: 'Apple Health import failed',
+    body: 'Tap for details — most issues are file size or format.',
+    actionUrl: '/settings?tab=imports',
+    tag: `apple_health_import_failed:${s(d, 'importId')}`,
   }),
 } as const satisfies Record<NotificationType, Renderer>;
 

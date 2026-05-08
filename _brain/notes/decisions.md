@@ -4,6 +4,25 @@ Key architectural decisions made during the audit and refactor. Each entry expla
 
 ---
 
+## sax dependency pinned exact at 1.4.1 (Sprint 5 BATCH 2, 2026-05-08)
+
+**Decided**: `sax` pinned to `"1.4.1"` (no caret, no tilde) in `package.json`. Same pin applies to any future patch refresh — bump only after license re-verification.
+**Rejected**: `^1.4.1` (would float to 1.4.2+ on the next `npm install`).
+**Why**: sax was relicensed from ISC → BlueOak-1.0.0 at version 1.4.2. BlueOak-1.0.0 is NOT in our license allowlist (MIT / Apache-2.0 / BSD-2/3 / ISC). A floating caret-range install on a fresh CI machine could pull 1.4.2+ and silently introduce a license-policy violation that the build doesn't catch. Pinning exact + license-verifying at every bump is the only safe pattern for upstream-relicensed deps.
+**How to apply**: any future sax bump → `npm view sax@<new-version> license` BEFORE installing. If license != ISC, either find a fork that stays ISC or carry the BlueOak entry in the license allowlist with explicit reasoning.
+
+---
+
+## Apple Health sleep aggregation: in-memory, InBed-anchored (Sprint 5 BATCH 3, 2026-05-08)
+
+**Decided**: Apple Health sleep records (one per stage: InBed/AsleepCore/AsleepDeep/AsleepREM/Awake) are aggregated in memory at cron-tick scope BEFORE any DB write. Aggregation strategy is InBed-anchored: walk records sorted by `startDate ASC`, open a session whenever an InBed record opens, fold in-window stage records into that session, close on the next InBed record OR a 3+ hour gap with no in-window records. For exports without InBed records (older iOS, third-party apps), fall back to `wakeLocalDate` as the session key. Session source_record_id derived from the InBed start timestamp (or wake local date in the fallback path) — stable across re-imports. 50,000-session safety threshold prevents pathological-input DoS.
+**Rejected (Option B)**: per-record UPSERT with INCREMENT on stage minutes. Looked equivalent but had a hidden idempotency bug — re-import would 2× the stage totals on the second pass.
+**Rejected (Option C)**: defer sleep ingestion entirely. Would have shipped half the sprint's promise.
+**Why**: Apple Health stores sleep as per-stage records but `sleep_sessions` is per-session aggregate. Pre-aggregation is the only path that preserves idempotency on re-import (same export → identical session keys → ON CONFLICT no-op). InBed anchoring (vs naive wakeLocalDate grouping) handles iOS's multi-segment-night case correctly (3am wake + go-back-to-sleep at 3:30am produces two distinct sessions, not one collapsed session with bizarre stage minutes).
+**How to apply**: any future per-record sleep source (e.g. a third-party app shipping per-stage records via webhook) reuses `appleHealthSleepAggregator.ts`. Wearables (Open Wearables, Whoop, Oura) deliver pre-aggregated session payloads via webhook and skip this path entirely — `wearableIngest.ingestSleepCreated` consumes session-shape directly.
+
+---
+
 ## Single `isPublicRoute` source → `routeConfig.ts`
 
 **Decided**: Consolidate all three `isPublicPage` checks into `client/src/lib/routeConfig.ts`.
