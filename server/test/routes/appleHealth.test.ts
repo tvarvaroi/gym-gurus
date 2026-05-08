@@ -198,6 +198,7 @@ describe('Apple Health routes — 401 unauthenticated', () => {
     { method: 'get' as const, path: '/api/apple-health/imports' },
     { method: 'get' as const, path: '/api/apple-health/imports/some-id' },
     { method: 'post' as const, path: '/api/apple-health/imports/some-id/cancel' },
+    { method: 'post' as const, path: '/api/apple-health/imports/some-id/retry' },
     { method: 'delete' as const, path: '/api/apple-health/imports/some-id' },
   ];
   for (const { method, path } of cases) {
@@ -366,6 +367,93 @@ describe('POST /api/apple-health/imports/:id/cancel', () => {
     spyState.queueResults([{ id: 'imp-1', userId: 'user-A', status: 'parsing' }]);
     spyState.queueResults([{ id: 'imp-1', userId: 'user-A', status: 'cancelled' }]);
     await request(makeTestApp(userA())).post('/api/apple-health/imports/imp-1/cancel');
+    expectOwnershipClause(appleHealthImports.id, 'imp-1');
+    expectOwnershipClause(appleHealthImports.userId, 'user-A');
+  });
+});
+
+// ===========================================================================
+// POST /imports/:id/retry — IDOR + status guard + file-still-exists guard (BATCH 5)
+// ===========================================================================
+
+describe('POST /api/apple-health/imports/:id/retry', () => {
+  beforeEach(() => spyState.reset());
+
+  it('retries a failed import (status flips to uploaded, error_message cleared)', async () => {
+    spyState.queueResults([
+      {
+        id: 'imp-1',
+        userId: 'user-A',
+        status: 'failed',
+        fileR2Key: '/tmp/x.zip',
+        errorMessage: 'parse error',
+      },
+    ]);
+    spyState.queueResults([
+      {
+        id: 'imp-1',
+        userId: 'user-A',
+        status: 'uploaded',
+        fileR2Key: '/tmp/x.zip',
+        errorMessage: null,
+      },
+    ]);
+    const res = await request(makeTestApp(userA())).post('/api/apple-health/imports/imp-1/retry');
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('uploaded');
+    expect(res.body.errorMessage).toBeNull();
+  });
+
+  it('rejects retry on completed import with 400', async () => {
+    spyState.queueResults([
+      { id: 'imp-1', userId: 'user-A', status: 'completed', fileR2Key: null },
+    ]);
+    const res = await request(makeTestApp(userA())).post('/api/apple-health/imports/imp-1/retry');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Cannot retry/);
+  });
+
+  it('rejects retry on parsing import with 400', async () => {
+    spyState.queueResults([
+      { id: 'imp-1', userId: 'user-A', status: 'parsing', fileR2Key: '/tmp/x.zip' },
+    ]);
+    const res = await request(makeTestApp(userA())).post('/api/apple-health/imports/imp-1/retry');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Cannot retry/);
+  });
+
+  it('rejects retry when file_r2_key is null with 400 (file no longer available)', async () => {
+    // Edge case: a completed import was later marked failed somehow (shouldn't
+    // happen but defensive), OR a failed import had its file cleaned up by a
+    // future sweep cron. Either way: no underlying file = retry is impossible.
+    spyState.queueResults([{ id: 'imp-1', userId: 'user-A', status: 'failed', fileR2Key: null }]);
+    const res = await request(makeTestApp(userA())).post('/api/apple-health/imports/imp-1/retry');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/no longer available|re-upload/i);
+  });
+
+  it('returns 404 when import not found (cross-user simulated)', async () => {
+    spyState.queueResults([]);
+    const res = await request(makeTestApp(userA())).post(
+      '/api/apple-health/imports/userB-import/retry'
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it('issues eq(id) AND eq(userId) on SELECT-existing — IDOR ownership clause', async () => {
+    spyState.queueResults([
+      { id: 'imp-1', userId: 'user-A', status: 'failed', fileR2Key: '/tmp/x.zip' },
+    ]);
+    spyState.queueResults([
+      {
+        id: 'imp-1',
+        userId: 'user-A',
+        status: 'uploaded',
+        fileR2Key: '/tmp/x.zip',
+        errorMessage: null,
+      },
+    ]);
+    await request(makeTestApp(userA())).post('/api/apple-health/imports/imp-1/retry');
     expectOwnershipClause(appleHealthImports.id, 'imp-1');
     expectOwnershipClause(appleHealthImports.userId, 'user-A');
   });

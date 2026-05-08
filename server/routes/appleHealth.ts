@@ -353,6 +353,66 @@ router.post('/imports/:id/cancel', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/apple-health/imports/:id/retry — Sprint 5 BATCH 5 (sub-question 8)
+ *
+ * Re-queues a failed import for the cron to pick up. Validates:
+ *   - Caller owns the import row (IDOR-safe via and(eq(id), eq(userId)))
+ *   - Current status is 'failed' (only failed imports are retryable;
+ *     completed/cancelled/parsing/uploaded are NOT — would be a state-machine
+ *     violation)
+ *   - file_r2_key IS NOT NULL (the underlying .zip is still in storage —
+ *     completed imports clear this column, so a retry on a row whose file
+ *     was already cleaned up correctly fails here rather than producing a
+ *     misleading "trying to re-parse a deleted file" error)
+ *
+ * On success: status flips to 'uploaded', error_message is cleared. The cron
+ * picks up on its next tick (default 30s) and processes via the same path
+ * as a fresh upload.
+ *
+ * Why this exists rather than "delete + re-upload": the storage error class
+ * (D4 in BATCH 4 brainstorm) means the file is fine, just the parse path
+ * choked transiently. Re-uploading would create a new R2 object unnecessarily.
+ * Mirrors the cancel endpoint pattern — same ownership-checked SELECT then
+ * scoped UPDATE.
+ */
+router.post('/imports/:id/retry', async (req: Request, res: Response) => {
+  try {
+    const { id } = idParamSchema.parse(req.params);
+    const db = await getDb();
+
+    const [existing] = await db
+      .select()
+      .from(appleHealthImports)
+      .where(and(eq(appleHealthImports.id, id), eq(appleHealthImports.userId, req.user!.id)));
+    if (!existing) return res.status(404).json({ error: 'Not found' });
+    if (existing.status !== 'failed') {
+      return res
+        .status(400)
+        .json({ error: `Cannot retry an import in status='${existing.status}'` });
+    }
+    if (!existing.fileR2Key) {
+      return res.status(400).json({
+        error:
+          'The underlying file is no longer available. Please re-upload your Apple Health export.',
+      });
+    }
+
+    const [updated] = await db
+      .update(appleHealthImports)
+      .set({ status: 'uploaded', errorMessage: null })
+      .where(and(eq(appleHealthImports.id, id), eq(appleHealthImports.userId, req.user!.id)))
+      .returning();
+    return res.json(updated);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: err.errors });
+    }
+    logger.error('[appleHealth] retry import error', err);
+    return res.status(500).json({ error: 'Failed to retry import' });
+  }
+});
+
+/**
  * DELETE /api/apple-health/imports/:id
  *
  * Removes the tracking row + the underlying .zip from storage. Does NOT
