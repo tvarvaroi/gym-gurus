@@ -1,6 +1,6 @@
 # CLAUDE.md — GymGurus Developer Reference
 
-> Last updated: 2026-03-18 | Full skills inventory — 139+ skills across 5 locations including frontend-design plugin + ui-ux-pro-max
+> Last updated: 2026-05-08 | Sprint 5 (Apple Health XML Import) shipped to production. Sprint 6 (Two Products restructure) BATCH 1 in flight. Full skills inventory — 139+ skills across 5 locations including frontend-design plugin + ui-ux-pro-max
 
 ---
 
@@ -37,18 +37,34 @@ Claude Code automatically loads installed plugins. Reference them explicitly in 
 
 ## Sprint History
 
-| Sprint               | Focus                                                                                    | Status     | Date       |
-| -------------------- | ---------------------------------------------------------------------------------------- | ---------- | ---------- |
-| Sprint 1             | Foundation — Disciple login, Stripe Checkout, CSP nonce                                  | ✅ Done    | 2026-03-15 |
-| Sprint 2             | Design system — Playfair Display, role accent consistency, Phase 1 Magic UI              | ✅ Done    | 2026-03-15 |
-| Sprint 3             | Visual language — full-bleed execution, zone-band charts, status hero, muscle anatomy    | ✅ Done    | 2026-03-18 |
-| Sprint 4             | Core features — ACWR readiness, equipment SVG chips, ExerciseDetailPage, streak calendar | ✅ Done    | 2026-03-18 |
-| Sprint 5             | Architecture debt — routes split, framer-motion cleanup, volume type fix, schema sync    | ✅ Done    | 2026-03-18 |
-| Sprint 6             | Platform reliability — CI/CD, SLOs, error monitoring, Stripe webhook reliability         | ✅ Done    | 2026-03-18 |
-| Visual pass          | Ronin deep audit — 135 screenshots, 47 issues, 14 fixes applied                          | ✅ Done    | 2026-03-18 |
-| Guru visual pass     | Guru role deep audit                                                                     | 🔜 Next    | —          |
-| Disciple visual pass | Disciple role deep audit                                                                 | 🔜 Next    | —          |
-| Q2                   | Apple Health, sleep logging, body metrics, program builder                               | 📋 Planned | —          |
+The active sprint series is the **Q2 May 2026 master roadmap** (`docs/plans/2026-05-02-q2-q3-master-roadmap.md`). Sprints below execute that roadmap. Earlier "Sprint 1–6" foundation work from Spring 2026 (March 2026) is preserved as a separate series at the bottom of this section.
+
+### Q2 May 2026 master roadmap series (active)
+
+| Sprint                                                        | Plan                                                    | Status                | Notes                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------- | ------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **1 — Body Metrics Foundation**                               | `docs/plans/2026-05-02-sprint-1-biometrics.md`          | ✅ Shipped 2026-05-03 | Migration 011, polymorphic `progress_entries`, `body_metrics` + `progress_photos`, BiometricsPage 3-tab, single `share_body_metrics_with_trainer` consent, `useUnits` localStorage v1                                                      |
+| **1.5 — Audit Hot-Fix**                                       | `docs/plans/2026-05-03-sprint-1.5-audit-hotfix.md`      | ✅ Shipped 2026-05-04 | 7 audit findings closed: photos-by-client privacy gap, IDOR + upload + consent + date tests, MIME allow-list (no SVG), EXIF strip, recordedAt validation, down-migration safety, audit log on consent toggle                               |
+| **2 — Notification Engine + cross-device units + R2 cleanup** | `docs/plans/2026-05-05-sprint-2-notification-engine.md` | ✅ Shipped 2026-05-06 | Migration 012, web-push (VAPID), `push_subscriptions`, `users.preferred_units` server-backed, notification_preferences reshape, quiet-hours queue cron, email fallback allowlist, userDeletion audit-first                                 |
+| **2.5 — AGPL deck-clearing**                                  | (no plan file — surgical fix, commit `f55e45f`)         | ✅ Shipped 2026-05-06 | Removed `@imgly/background-removal-node` (AGPL-3.0); profile-photo BG removal feature paused for MIT alternative                                                                                                                           |
+| **3 — Daily Wellness Check-In**                               | `docs/plans/2026-05-06-sprint-3-wellness-checkin.md`    | ✅ Shipped 2026-05-06 | Migration 013, `daily_wellness_log` keystone (UNIQUE per user-day), v0 readiness algorithm, wellness streak parallel to workout streak, ReadinessHero streak-aware animation, two crons, RolePill primitive                                |
+| **4 — Wearable Integration via Open Wearables**               | `docs/plans/2026-05-06-sprint-4-wearables.md`           | ⏸️ PAUSED 2026-05-07  | Schema landed (014 + 014.5 dev-only via Sprint 5; 015 dev-only): 4 wearable tables, `clients.user_id` FK + 4 sibling consent flags. Token encryption + ingest layer + IDOR mutation. Resumes on user demand.                               |
+| **5 — Apple Health XML Import**                               | `docs/plans/2026-05-08-sprint-5-apple-health-import.md` | ✅ Shipped 2026-05-08 | Migrations 014/014.5/014.6/016 to prod, Path C per-record dedup, sax 1.4.1 streaming parser + field bounds + close-tag sentinel, in-memory InBed-anchored sleep aggregation, Promise.allSettled, INSERT IDOR shape                         |
+| **6 — Two Products restructure (Coaching Dialogue + Mirror)** | `docs/plans/2026-05-08-sprint-6-two-products-vision.md` | 🚧 BATCH 1 in flight  | Vision doc + sprint history refresh + decisions update. BATCH 2 = brainstorm HARD GATE. BATCH 3 = schema (3 new tables + 1 consent flag, migration 017). Sidebar simplification, 5 Guru-Disciple patterns, Ronin Home five-chapter scroll. |
+
+### Spring 2026 foundation work (pre-roadmap, historical)
+
+These six sprints from March 2026 predate the Q2 master roadmap and addressed foundation/design/visual/architecture-debt work. Preserved here for context; not part of the active sprint series. Items resolved by these sprints (CSP nonce, role accent system, ZoneBandChart, ACWR readiness, routes split, framer-motion cleanup, CI/CD, SLOs) are still in production and referenced throughout this doc.
+
+| Sprint                                                                                   | Focus      | Date |
+| ---------------------------------------------------------------------------------------- | ---------- | ---- |
+| Foundation — Disciple login, Stripe Checkout, CSP nonce                                  | 2026-03-15 |
+| Design system — Playfair Display, role accent consistency, Phase 1 Magic UI              | 2026-03-15 |
+| Visual language — full-bleed execution, zone-band charts, status hero, muscle anatomy    | 2026-03-18 |
+| Core features — ACWR readiness, equipment SVG chips, ExerciseDetailPage, streak calendar | 2026-03-18 |
+| Architecture debt — routes split, framer-motion cleanup, volume type fix, schema sync    | 2026-03-18 |
+| Platform reliability — CI/CD, SLOs, error monitoring, Stripe webhook reliability         | 2026-03-18 |
+| Visual pass — Ronin deep audit (135 screenshots, 47 issues, 14 fixes applied)            | 2026-03-18 |
 
 ---
 
@@ -1064,15 +1080,31 @@ Current manual process:
 
 ## Open Questions
 
-- [x] Is `/disciple-login` intentionally separate from main login? → RESOLVED Sprint 1 — separate by design, fixed (§ VA-1)
+### Sprint 6 in flight (active)
+
+- [ ] **BATCH 2 brainstorm HARD GATE** — vision doc at `docs/plans/2026-05-08-sprint-6-two-products-vision.md` awaits user review + refinement before BATCH 3 schema work.
+- [ ] **Migration 017** — three new tables (`client_goals`, `program_change_log`, `data_view_log`) + `clients.share_wellness_with_trainer` flag. BATCH 3 deliverable; prod migration in BATCH 11.
+- [ ] **Sprint 6 BATCH 4 chart primitives library** — 8 components in `client/src/components/charts/sprint6/`. Library split locked (5 recharts + 2 custom SVG + 1 shadcn Table; no d3 added).
+- [ ] **Sprint 6 IA restructure** — three sidebars from 9–14 items down to 5 each. New top-level routes (`/today`, `/coach`, `/my-story`, `/business`, `/training`); existing routes stay reachable.
+
+### Carried-forward (still pending)
+
+- [ ] `shopping.ts` — ship or delete? Run RICE scoring (`product-manager-toolkit`). Schema orphans (`shoppingLists`, `shoppingListItems`, `groceryStores`) still in `shared/schema.ts`.
+- [ ] Is Capacitor/mobile actively in development? Sprint 12 owns the native shell; until then `cap:*` scripts in `package.json` should be confirmed working OR documented as future-Sprint-12 setup.
+- [ ] **Guru visual pass** — covered substantively by Sprint 6 IA restructure + per-client view BATCH 6. Consider closed when Sprint 6 ships.
+- [ ] **Disciple visual pass** — covered substantively by Sprint 6 IA restructure + Disciple Today/Coach/My Story BATCH 8–9. Consider closed when Sprint 6 ships.
+- [ ] **Sprint 4 resumption trigger** — gated on documented user demand (≥3 production users requesting wearable support OR paying-tier upgrade gated on wearable support OR strategic positioning pivot). Migration 015 stays prod-gated until then.
+- [ ] **CI cleanup (deferred)** — `aiService.test.ts` meal-plan fallback test (missing `calories` property since Sprint 2 commit `1bba3fb`) and `appleHealthParser.test.ts:390` heap-growth ratio threshold (false-positives on GitHub-hosted runners; passes locally with `--expose-gc`). ~30 min total. Opportunistic in Sprint 6 BATCH 11 OR its own follow-up.
+- [ ] **iOS Safari real-device verifications** (3 carried over): Sprint 3 keyboard/textarea/sticky-CTA timing on `/wellness`, Sprint 5 `accept=".zip"` file picker behavior on `/settings?tab=imports`, Sprint 5 BATCH 6/8 dual-React Vite cache screenshot pack. Each unblocks a separate gate when physical iPhone access is available.
+
+### Resolved
+
+- [x] Is `/disciple-login` intentionally separate from main login? → RESOLVED Sprint 1 (March arc) — separate by design, fixed (§ VA-1)
 - [x] Is `redesign/` an active migration or abandoned? → RESOLVED — active production code, 5 dead files deleted (§ FE-3)
-- [ ] `shopping.ts` — ship or delete? Run RICE scoring (`product-manager-toolkit`)
-- [x] Is `STRIPE_WEBHOOK_SECRET` set in Railway? → CONFIRMED — Sprint 6 webhook reliability verified
-- [ ] Is Capacitor/mobile actively in development? If not, remove
-- [ ] Guru visual pass — pending
-- [ ] Disciple visual pass — pending
-- [x] No runbooks exist → Sprint 6 — `docs/slos.md` created, deployment runbook in CLAUDE.md
-- [x] No SLOs defined → RESOLVED Sprint 6 — see `docs/slos.md`
+- [x] Is `STRIPE_WEBHOOK_SECRET` set in Railway? → CONFIRMED — Spring 2026 Platform reliability sprint webhook reliability verified
+- [x] No runbooks exist → `docs/slos.md` created, deployment runbook in CLAUDE.md
+- [x] No SLOs defined → RESOLVED — see `docs/slos.md`
+- [x] **Q2: Apple Health, sleep logging, body metrics, program builder** → HISTORICAL. Apple Health import shipped Sprint 5 (May arc, 2026-05-08). Body metrics shipped Sprint 1 (May arc, 2026-05-03). Program builder shipped pre-roadmap (March arc, migration 010). Sleep logging foundation shipped Sprint 4 schema (014, dev-only) — full sleep ingestion lives behind Sprint 4 resumption AND Sprint 5 Apple Health import (sleep_sessions ingest path is live for `source='apple_health'`).
 
 ---
 

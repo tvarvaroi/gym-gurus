@@ -1208,6 +1208,456 @@ Captured at Sprint 5 close (BATCH 8). Each is load-bearing for the import path.
 
 ---
 
+---
+
+## Sprint 6 — Two Products framing as architectural invariant (2026-05-08)
+
+**Decided:** GymGurus is two products with three roles, NOT one product with three roles. Product A is the Coaching Dialogue (Guru ↔ Disciple, two humans mediated by data). Product B is The Mirror (Ronin alone, one human mediated by AI). The role determines which product the user is in. This framing drives every Sprint 6 IA, surface, and schema decision.
+
+**Rejected:**
+
+1. Continue treating Disciple as "Ronin with a trainer-share toggle" — produces an IA where Disciple's primary surface duplicates Ronin's self-tracking and bolts on a sharing flag. Wrong mental model: a Disciple's primary surface is their relationship with their Guru.
+2. Treat Guru as "an admin role over Ronin" — produces a CRM workspace bolted onto a fitness app. Wrong: a Guru is in a coaching relationship, not an admin position.
+
+**Why:** the May 2026 sprint arc (Sprints 1–5) built data substrate but didn't answer "what is GymGurus actually for." The answer is two distinct products bound by the data lake. Sprint 6 reorganizes the IA, surfaces, and patterns around this truth. Source: `docs/plans/2026-05-08-sprint-6-two-products-vision.md` Sections 1–2.
+
+**Rule for future sprints:** any new feature lands in either Product A (coaching dialogue) or Product B (mirror), not both indiscriminately. If a feature genuinely serves both, surface it differently in each product context — don't assume cross-product UX parity.
+
+---
+
+## Sprint 6 — Five Guru-Disciple patterns as Product A's unique selling point (2026-05-08)
+
+**Decided:** Product A's differentiator is FIVE specific patterns. Each has a concrete schema dependency and implementation surface (catalogued in vision doc Section 3):
+
+1. **Two-Way Mirror** — every shared data surface carries asynchronous "last viewed by" annotation. Schema: new `data_view_log` table.
+2. **Compliance with Compassion** — missed-workout alerts surface in Guru triage WITH wellness/HRV/sentiment context. No new schema; reads existing tables. Existing `Dashboard.tsx:37` `NeedsAttentionCard` is the seed.
+3. **Adjustment with Reasoning** — every Guru program edit accepts optional `reason_text`; Disciple sees change AND reason. Schema: new `program_change_log` table with polymorphic XOR FK (program_enrollment_id OR workout_assignment_id).
+4. **Shared Goal Hierarchy** — Guru-writable, Disciple-readable goal tree. Schema: new `client_goals` table.
+5. **Coaching Timeline** — read-time aggregator across all event sources, default tab on Guru's per-Disciple view. No new schema; reads existing tables.
+
+**Rejected:** generic "messaging + task assignment" framing common in trainer-software competitors (Trainerize, TrueCoach, etc.). That framing is solved space; competing on it loses on incumbents' integrations + brand. The five patterns are unique because they make the data BE the conversation, not just back the conversation.
+
+**Why:** the patterns are testable, ship-able, and structurally distinct from competitors. Each one passes the "doesn't survive without intent" test — building a competitor that has all five in 6 months is non-trivial, building any one of them as an isolated feature undermines the whole.
+
+**Rule for future sprints:** when a coaching-side feature is proposed, validate it against the five patterns first. If it doesn't extend or compose with one of them, ask whether it should ship at all OR whether it belongs in Product B (Ronin/Mirror).
+
+---
+
+## Sprint 6 — Coaching Timeline reads progress_entries AND body_metrics indefinitely (2026-05-08)
+
+**Decided:** Pattern 5 (Coaching Timeline) reads from BOTH `progress_entries` (legacy clientId-keyed, kept since Sprint 1 polymorphic refactor) AND `body_metrics` (current user_id-keyed, primary write target since Sprint 1) for chronological aggregation. Aggregator response carries a `sourceTable` discriminator. NO migration of `progress_entries` data into `body_metrics` happens during Sprint 6.
+
+**Rejected:**
+
+1. Migrate `progress_entries` legacy rows into `body_metrics` as a Sprint 6 BATCH 3 side-effect. Rejected because data movement is its own scope (dedupe rules, value-unit normalization, lossy-coercion handling, rollback playbook). Doing it as a side-effect amplifies blast radius and complicates rollback.
+2. Read only `body_metrics` and ignore legacy `progress_entries` rows. Rejected because pre-Sprint-1 Disciple data would disappear from the Coaching Timeline — a regression for the relationship-focused surface.
+
+**Why:** read-time aggregation across both tables is cheap (UNION ALL with `source_table` discriminator), bounded by per-page cursor pagination, and structurally low-risk. Migrating data is a strictly bigger problem than reading both tables, and that problem doesn't need to block Sprint 6.
+
+**Rule for future maintainers:** **DO NOT** consolidate the Coaching Timeline aggregator into a single-table read against `body_metrics` "for performance reasons" without a separate proposal that includes a data migration plan, dedupe rules, and rollback playbook. The performance argument is theoretical; the regression risk of premature consolidation is real. The aggregator file (`server/services/coachingTimeline.ts`) carries this comment inline at the top.
+
+---
+
+## Sprint 6 — IA restructure: sidebar simplifies, routes stay reachable (2026-05-08)
+
+**Decided:** Sprint 6 reduces all three sidebars from 9–14 items down to 5 items each (Guru: Today / Clients / Programming / Schedule / Business; Disciple: Today / My Plan / My Story / Coach / Settings; Ronin: Home / AI Coach / Training / My Story / Settings). Existing pages stay reachable via their existing routes. Sidebar removal is a _menu_ simplification, not a route deletion.
+
+**Rejected:**
+
+1. Delete the routes that are removed from the sidebar. Rejected because deep-links from emails, push notifications, browser bookmarks, and existing in-app navigation would break — inflicts pain on existing users for zero benefit.
+2. Keep the existing 13/9/14 sidebars and just add the new top-level routes (`/today`, `/coach`, `/my-story`, `/business`, `/training`). Rejected because the IA bloat _is_ the problem — adding without subtracting makes the existing surface worse, not better.
+
+**Why:** the IA restructure is largely a sidebar concern. The Two Products framing organizes _attention_, not _capability_. Pages stay where they are; the menu reorganizes what's foregrounded for each role.
+
+**New top-level routes added:** `/today` (Guru triage view), `/coach` (Disciple relationship surface), `/my-story` (Disciple + Ronin merged data narrative — same component, role-aware), `/business` (Guru retired-dashboard catch-all), `/training` (Ronin training timescales). Optional: `/programming` for Guru programming hub if the dropdown form doesn't fit.
+
+**Rule for future maintainers:** **DO NOT** delete pages or routes during a future "sidebar cleanup" pass without first auditing inbound links across (a) email templates in `server/services/notificationTemplates.ts` and email backfill, (b) push notification deep-links, (c) any in-app `<Link to>` references. Sidebar visibility ≠ route reachability. The routing config (`client/src/components/RouterConfig.tsx`) carries this comment at the top of the new-routes section.
+
+---
+
+## Sprint 6 — Chart library split: recharts + custom SVG + shadcn Table; NO d3 added (2026-05-08)
+
+**Decided:** Sprint 6's eight chart primitives split as follows: 5 use Recharts (Composite Radar, Stacked Area, Annotated Timeline, Correlation Scatter, simple Sparkline variant), 2 use Custom SVG (Calendar Heatmap, Adherence Gantt), 1 uses shadcn Table (Sortable Client Roster). NO d3 dependency added.
+
+**Rejected:**
+
+1. Add d3 for the Calendar Heatmap and Adherence Gantt. Rejected because d3 is a 70KB+ dependency that buys force-directed graphs, geo, chord diagrams — capabilities Sprint 6 doesn't need. The two chart types Recharts can't model are small enough for hand-rolled SVG (Calendar Heatmap is 12-month grid of boxes; Adherence Gantt is week × day rectangles).
+2. Build all 8 charts as custom SVG for visual control. Rejected because Recharts is already proven in the codebase (ProgressPage, BodyMetricsTrends, WellnessMiniTrend), supports all 5 of the Recharts-suitable chart shapes natively, and rolling 5 net-new SVG components is engineering overhead with no aesthetic upside.
+3. Add a third charting library (vega-lite, observable plot). Rejected for the same dependency-cost reason.
+
+**Why:** Recharts already installed (`^2.15.2`); the codebase has 5+ years of evidence it survives upgrades cleanly. Custom SVG is the established escape valve for shapes Recharts doesn't model (precedent: Sprint 3's `ZoneBandChart`). shadcn Table is already used across the app (PRs table, etc.).
+
+**Component location:** all 8 primitives ship in a new `client/src/components/charts/sprint6/` directory in BATCH 4. They are _primitives_ — opinionated about visual style, agnostic about data source. Pages in BATCH 5–10 supply data via props.
+
+**Rule for future maintainers:** **DO NOT** introduce a new chart library to add a chart type until the current split fails to express a needed shape AND the new library replaces (not supplements) one of the three approaches above. Adding a fourth approach for a one-off chart is debt.
+
+---
+
+## Sprint 6 — Ronin Home replaces SoloDashboard on `/dashboard`, NOT a parallel route (2026-05-08)
+
+**Decided:** the Ronin Home five-chapter scroll narrative replaces the existing `client/src/pages/solo/SoloDashboard.tsx` on the same `/dashboard` route. Existing components are absorbed into chapters where they fit (ActionZone + WellnessHintCard → Chapter 1; WeekStrip + QuickStats → Chapter 2; RecoveryBodyStatus + BodyIntelligencePanel → Chapter 3; RecentActivityFeed + StreakCalendar → Chapter 4). New components for chapter 5 (the rotating element). WidgetScroller retires (sidebar IS the nav now).
+
+**Rejected:**
+
+1. Build Ronin Home at a new route `/home` and keep `SoloDashboard` at `/dashboard`. Rejected because two parallel "home" routes is bad UX — users have to learn which is "the new one." Replacement on the existing route is cleaner.
+2. Build Ronin Home as a strict superset that wraps `SoloDashboard` (e.g., chapter 1 renders `SoloDashboard` inside a hero frame). Rejected because the chapter narrative requires reframing the existing card stack; strict-wrap would carry the old structure into the new shape and undermine the reading experience.
+3. Keep `SoloDashboard` as a fallback for users who prefer the old shape (preference toggle). Rejected because shipping two home variants doubles the maintenance surface for a v1 redesign.
+
+**Why:** the Two Products framing says Product B's primary surface is a reading experience, not a dashboard. Replacing on the existing route preserves deep-links, satisfies in-app navigation, and is the cleanest path to the new shape.
+
+**Rule for future maintainers:** **DO NOT** split the chapters into separate routes "for direct linkability" or "for performance." Anchor links (`#today`, `#week`, `#trend`, `#arc`, `#quiet`) handle deep-linking; the chapters are one contiguous scroll experience. The component file (`client/src/pages/solo/RoninHome.tsx`) carries this comment at the top.
+
+---
+
+## Sprint 6 — `data_view_log` is upsert state table, NOT append-only event log (2026-05-08)
+
+**Decided:** Pattern 1 (Two-Way Mirror) data tracking ships as a 4-column table with UNIQUE on `(viewer_user_id, viewed_user_id, surface)` and UPSERT semantics — every view writes (or updates) the `last_viewed_at` of the matching row. NOT an append-only event log.
+
+**Rejected:** append-only event log shape (`data_view_events` with `(id, viewer, viewee, surface, viewed_at)` and no UNIQUE). Rejected because the use case is "when did the coach last look at body metrics", not "what's the audit trail of every view." Append-only would explode row count for zero product value and require periodic compaction crons to bound table size.
+
+**Why:** the read pattern is "give me the most recent view per (viewer, viewee, surface) tuple" — that's a state, not a log. Modeling as state directly avoids the indirection cost of every read computing `MAX(viewed_at) GROUP BY ...`.
+
+**Throttle:** the service writes at most once per (viewer, viewee, surface) per minute (in-process LRU + DB UPSERT). Prevents page-render churn from inflating the table or inflating UPDATE traffic.
+
+**Rule for future maintainers:** **DO NOT** promote `data_view_log` to an append-only event log without a separate product justification (e.g., "we need the full view history for compliance"). The use case today is "last viewed" annotation; the schema matches that use case. The service file (`server/services/dataViewLogService.ts`) carries this comment at the top. Captured early to prevent a future "let's not lose data" instinct from inflating the table shape.
+
+---
+
+## Sprint 6 — Pattern 3 `reason_text` is OPTIONAL on every program edit endpoint (2026-05-08)
+
+**Decided:** every program/workout/assignment edit endpoint that lands a `program_change_log` row accepts `reason_text` as an OPTIONAL field (Zod `.optional()`, max 500 chars). The UI nudges with strong copy ("Add a reason — your client values context") but does not block submit if absent.
+
+**Rejected:** require `reason_text` on every program edit. Rejected because coaching is human; sometimes a Guru just adjusts a number and the reasoning is "I just know." Required reasoning would either produce noise ("changed because") or block legitimate quick edits.
+
+**Why:** Pattern 3 is about creating space for transparency, not enforcing it. The Disciple sees the change banner whether or not there's a reason; if the Guru added a reason, it lands. If not, the banner says "change made" without elaboration.
+
+**Rule for future maintainers:** **DO NOT** add a `reasonText: z.string().min(1)` constraint in a future "tighten validation" pass. The optionality is intentional. Each program edit handler that accepts the field carries an inline `// reason_text intentionally optional — see decisions.md` comment.
+
+---
+
+## Sprint 6 — `share_wellness_with_trainer` consent flag completes the granular set (2026-05-08)
+
+**Decided:** migration 017 adds `clients.share_wellness_with_trainer BOOLEAN NOT NULL DEFAULT true` alongside the existing 5 share\_\*\_with_trainer flags (body_metrics, sleep, hrv, activity, photos). Default-on follows the established Sprint 4 pattern.
+
+**Rejected:** introduce wellness sharing as a separate consent column with non-default semantics, OR roll it into one of the existing flags (e.g., extend "body_metrics" to cover wellness). Rejected because wellness data has its own granular consent semantics in Sprint 6's Coaching Timeline (Disciples can opt out of wellness visibility while keeping body metrics shared, or vice versa); cramming into an existing flag erases that.
+
+**Why:** Sprint 6's Coaching Timeline (Pattern 5) and Compliance with Compassion (Pattern 2) both surface wellness data on the Guru side. Without an opt-out, Disciples who want to journal privately have no path. Default-on aligns with the locked roadmap decision (Disciple → Guru data sharing default-on with granular per-data-type opt-out).
+
+**Rule for future maintainers:** if Sprint 6+ surfaces a new data type to the trainer (e.g., habits in Sprint 9, mood/RPE standalone in Sprint 11), it gets its own `share_<type>_with_trainer` flag. The 5-now-6 pattern of granular columns is the established consent model. **DO NOT** consolidate them into a JSON config column "for flexibility" — flat boolean columns are queryable, indexable, and audit-loggable; JSON breaks all three.
+
+---
+
+---
+
+## Sprint 6 BATCH 2 brainstorm — gate locked (2026-05-08)
+
+**Brainstorm output**: `docs/plans/2026-05-08-sprint-6-two-products-vision.md` Sections 1–14 are the canonical spec; entries below are the architectural decisions that emerged during the BATCH 2 HARD GATE review and must not be re-litigated downstream. 30 calls across 6 sections; each is the locked answer to a specific design question.
+
+**Sprint 6 grew from 11 → 13 batches** with two new insertions:
+
+- **BATCH 3.5** — set_comments + coach inbox schema (migration 018)
+- **BATCH 4.5** — WorkoutExecution UX layer to Hevy bar (migration 019 lands here)
+
+Three Sprint 6 migrations confirmed: **017** (vision-doc 4 — client_goals + program_change_log + data_view_log + share_wellness_with_trainer) → **018** (set_comments) → **019** (user_exercise_notes). Migrations are split by feature scope, not bundled, matching Sprint 5's 014/014.5/014.6 split discipline. 015 stays prod-gated separately (Sprint 4 resumption).
+
+---
+
+## Sprint 6 — set_comments architecture (BATCH 3.5, 2026-05-08)
+
+**Decided:** new `set_comments` table with these load-bearing properties:
+
+1. **Threading via `parent_comment_id` self-FK + depth=1 enforcement at TWO layers**: Zod validation at API boundary asserts `parent_comment_id` references a top-level comment, AND a DB-level CHECK constraint provides belt-and-suspenders. Implementation choice between (a) `depth INTEGER CHECK (depth IN (0, 1))` column + trigger to set on insert, or (b) subquery-based CHECK constraint, lands at BATCH 3 schema-author's discretion — pick whichever drizzle expresses cleanly. Single-thread parent matches TrueCoach's pattern; deeper nesting changes inbox UX significantly and stays out of v0.
+2. **Media via `media_urls TEXT[]`**: max 3 R2 keys per comment, enforced at the API boundary via Zod `.max(3)`. MIME allowlist `image/jpeg, image/png, video/mp4, video/quicktime` mirrors Sprint 1.5 BATCH 2 pattern with `application/zip` excluded. 50MB per-file cap matches Sprint 5 Apple Health upload pattern. R2 lifecycle on comment deletion uses Sprint 2 `userDeletion`-style audit-first ordering: log the deletion intent + R2 keys before unlinking. Orphan cleanup handled by Sprint 2's `orphanCleanup` service pattern.
+3. **`read_at` column** for Pattern 1 Two-Way Mirror integration: when recipient opens the comment in inbox/set view, `read_at` is set + `data_view_log` upsert fires for `surface='comments'`. Drives the "Coach saw your comment" indicator on Disciple's view + the unread badge on Coach's inbox.
+
+**Rejected:**
+
+1. Separate `set_comment_attachments` join table — over-engineered for the realistic 0–3 attachment shape; JOIN cost on every comment-list query (Coach inbox, set-detail view) for a feature that never has more than 3 children is wrong tradeoff. Inline TEXT[] reads in one row.
+2. Flat-per-set comments (no replies) — request/response shape is inherent to coaching dialogue ("felt knee tweak" → "swap to leg curls week 2"). Pure flat ordering breaks the visual reply affordance.
+3. Audio voice notes in v0 — adds MIME entries + transcoding considerations + accessibility (transcripts) without clear demand. Captured as future enhancement.
+
+**Rule for future maintainers:** **DO NOT** drop the depth=1 enforcement in a future "let users reply to replies" instinct without a separate product proposal. Nested threads change inbox UX significantly (badge counting, deep-link rendering, conversation grouping). The schema CHECK + Zod validation + the `set_comments` header comment all carry the depth=1 invariant.
+
+---
+
+## Sprint 6 — Pattern 1 Two-Way Mirror visibility (2026-05-08)
+
+**Decided:** comment indicator (💬) renders on BOTH the Disciple's logger AND the Coach's per-client view of the same workout. Same component, same data source, same render logic. The icon's accent state ("Coach has read this comment") is driven by the comment's `read_at` field; the unread state shows the icon at full saturation.
+
+**Rejected:** Coach-side-only indicator (the Coach sees comments but the Disciple doesn't see "this set has a comment"). Asymmetry undermines Pattern 1's mutual-visibility framing — the whole point is that both sides know what's been said.
+
+**Why:** the Coach scrolling through a client's workout history sees at-a-glance which sets have comments. The Disciple opening the same workout later sees the same indicators on their own logger, AND can see which of THEIR comments the Coach has read (read_at-driven accent). Symmetric visibility is the load-bearing primitive.
+
+**Rule for future maintainers:** **DO NOT** split the indicator implementation into Coach-only and Disciple-only variants. The component reads from `set_comments.read_at` + the comment count for the set; both roles consume the same query. Component lives at `client/src/components/coaching/SetCommentIndicator.tsx` (BATCH 3.5 ships).
+
+---
+
+## Sprint 6 — Coach inbox shape: aggregated-by-client inside `/today` (BATCH 5, 2026-05-08)
+
+**Decided:** Coach inbox is a section/tab inside the `/today` page (NOT a standalone sidebar item). Aggregated-by-client rows: one row per client with unread count badge + most-recent-comment text preview + relative timestamp. Tap row → expands inline OR navigates to that client's most-recent unread comment in workout context (deep-link to `/clients/:id` Plan tab scrolled to the relevant set). Sidebar count badge on "Today" item sums needs-attention + unread comments.
+
+**🚨 Urgent keyword-pinned section** at the top of Inbox: comments containing keywords from `URGENT_COMMENT_KEYWORDS` in the last 24h surface first regardless of client grouping. Heuristic with intentional false-positive bias ("better to over-surface than miss an injury").
+
+**`URGENT_COMMENT_KEYWORDS` constant location:** lives at `shared/constants/coachingTriage.ts` as a single named export. Initial list: `['pain', 'injury', 'tweak', 'hurt', 'off', 'sharp']`. Discoverable, tunable, future per-coach customization. Future sprint may extend to per-coach customization (some coaches care about "fatigue" or "burnout" keywords).
+
+**Rejected:**
+
+1. Standalone "Inbox" sidebar item — breaks the 5-item Guru sidebar lock from BATCH 1 + creates false competition between Today triage and Inbox for the Coach's first-glance attention. Both surface "stuff that needs your attention," they should live together.
+2. Pure chronological inbox — hides the relationship and makes the Coach scan timestamps. Coaching mental model is per-client ("has Sarah pinged me?"), not per-comment.
+3. Inline keyword list in rendering logic — scatters the source-of-truth across files; tuning requires hunting. Single named constant is the only correct shape.
+
+**Rule for future maintainers:** **DO NOT** scatter the urgent keyword list across rendering logic. ALL keyword-matching code reads from `shared/constants/coachingTriage.ts:URGENT_COMMENT_KEYWORDS`. Future per-coach customization extends the constant to a tuple `[default: string[], perCoachOverrides: Map<userId, string[]>]` without breaking the import shape.
+
+---
+
+## Sprint 6 — Comment dispatch: push immediate, quiet-hours, coalescing, no email v0 (BATCH 3.5, 2026-05-08)
+
+**Decided:** new notification type `set_comment_posted`, category `social`. Dispatched through existing Sprint 2 `notificationDispatcher`:
+
+- Push immediate (user's quiet hours respected per Sprint 3 invariant)
+- NO email fallback in v0 (not added to `EMAIL_FALLBACK_HIGH_PRIORITY_TYPES`)
+- **Server-side coalescing** per (recipient, sender) tuple within 10-minute window: when dispatching a `set_comment_posted` for tuple T, check for existing undelivered notification of same type + same tuple in last 10 minutes. If exists, increment `data.commentCount` + update `data.previewText` to most-recent. If not, create new. Single user-facing notification row carries the coalesced count.
+- Symmetrical Coach↔Disciple: same dispatch rules in both directions.
+
+**Rejected:**
+
+1. Email fallback v0 — comments aren't payment-tier critical. Email-fallback firing on every comment would be spammy enough to drive `prefs.email-channel` toggles off, breaking the genuinely-critical email fallback for `payment_received` / `workout_assigned` / `appointment_reminder`. Better to keep email fallback narrow.
+2. Separate notification row per comment without coalescing — Disciple posting 5 comments across 10 sets in a workout would produce 5 push notifications to the Coach. Noise → mute. Coalescing is the prevention.
+
+**Why coalescing the right primitive:** fits Sprint 2's "one row + many push subscriptions" decision (`decisions.md` Sprint 2 BATCH 2 entry). The notification row stays a single user-facing event. Pattern reusable for any future high-frequency notification type.
+
+**Rule for future maintainers:** **DO NOT** add `set_comment_posted` to `EMAIL_FALLBACK_HIGH_PRIORITY_TYPES` without first confirming via post-launch metrics that comments are being missed AND that adding email fallback won't drive the email channel disable rate. Conservative gate: revisit only if Coach-side comment-read latency exceeds 24h median in production for >10% of comments.
+
+---
+
+## Sprint 6 — Comment composer offline drafts (BATCH 3.5, 2026-05-08)
+
+**Decided:** comment composer supports "Save draft locally" affordance for failed uploads. Drafts persist client-side via IndexedDB keyed by `(userId, setId, draftCreatedAt)`. On reconnect, drafts retry upload automatically; user can also manually retry from a drafts list. Partial offline-first wedge — scoped to set comments only, not full WorkoutExecution offline-first.
+
+**Why:** gym dead zones are real. Disciple records form video, types comment, hits Send, upload fails on weak wifi. Without local drafts, the user loses the work + retypes from scratch (or gives up). Local drafts let them leave the gym, finish uploading from home wifi later.
+
+**Why partial wedge, not full offline-first:** full offline-first execution (BATCH 4.5 entire WorkoutExecution operating offline) is multi-week scope on its own. Comments-only drafts are days, not weeks. Captures 80% of the offline value at 10% of the cost. Full offline-first execution stays as deck-clearing first item after Sprint 6 closes if BATCH 4.5 ships network-required.
+
+**Schema:** no DB changes — drafts live entirely client-side. The IndexedDB table schema: `{id (autoincrement), userId, setId, textContent, mediaBlobs[], createdAt, lastRetryAt, retryCount, error}`. On successful upload, the draft is purged from IndexedDB + the comment is INSERTed server-side as normal.
+
+**Rule for future maintainers:** **DO NOT** scope-creep this into general offline-first execution without a separate brainstorm gate. The partial wedge is the deliberate v0 bound. If WorkoutExecution offline-first becomes a priority, that's its own multi-week sprint with its own schema considerations (set logs queue, conflict resolution, etc.).
+
+---
+
+## Sprint 6 — WorkoutExecution UX layer to Hevy bar (BATCH 4.5, 2026-05-08)
+
+**Decided:** BATCH 4.5 ships these UX upgrades to `WorkoutExecution.tsx` and dependent components. Each is independent; partial completion is acceptable if scope tightens.
+
+1. **Plate calculator (standard barbell only)**: opens for `exerciseType='weighted_reps'` exercises tagged with `barbell` in `equipment` array. Greedy plate algorithm against user-editable plate inventory in Settings. Default plate set: 45/35/25/10/5/2.5 imperial; 25/20/15/10/5/2.5/1.25 metric. Default bar weight: 45lb / 20kg. Smith / EZ / safety squat / trap bar deferred — "ship nothing rather than ship wrong numbers" discipline.
+2. **Superset visual**: 4px color band on left edge of each grouped exercise card, extending the full card height + continuing through the gap between cards. Distinct neutral color per concurrent group (purple-300, blue-300, teal-300 — never `primary`). Small label above first card: "Superset A · 3 rounds" or "Circuit · 4 exercises". Auto-scroll on set complete via `scrollIntoView({block: 'center', behavior: 'smooth'})` with 100ms iOS Safari delay handling, `prefers-reduced-motion: reduce` respect.
+3. **Mid-session swap**: bottom sheet shows three sections — Curated alternatives (top, max 5 from `exercises.alternativeExercises[]`, ordered by Disciple's recency-of-use), Same primary muscle (filtered by `primaryMuscles` overlap, max 10), Search all (free-text). Movement-pattern × equipment intersection deferred to Sprint 7+ (requires `exercises.movementPattern` enum + backfill, not Sprint 6 scope).
+4. **Per-set RPE/RIR column**: default OFF for all users. Single Settings → Advanced Tracking toggle. Coach view shows whatever Disciple logged regardless of Disciple's display toggle (data presence drives Coach UI, not Disciple's UI toggle). **First-toggle inline explainer card** (one-shot dismissable) the first session after Disciple enables — Settings tooltip alone isn't enough for the value to click.
+5. **Set-type pill UI**: warmup/normal/failure/drop. Schema fields already exist (`workout_set_logs.isWarmup`, `isDropSet`, `isFailure` — Sprint 5 finding). UI exposes them; no schema work.
+6. **Layered notes** — three distinct surfaces:
+   - Per-set comment via `set_comments` (BATCH 3.5 schema)
+   - Per-exercise persistent note via `user_exercise_notes` (BATCH 4.5 schema, migration 019; UNIQUE (user_id, exercise_id))
+   - Per-workout note via existing `workout_sessions.notes`
+
+**Three-dot menu on every set row** is the consolidated home for all set-level actions (💬 Add comment, 📝 Add note, 🔄 Swap exercise, ⚠️ Flag injury, ✏️ Edit set). Discoverable, doesn't clutter the set row's existing visual elements.
+
+**Exercise-level note privacy**: coach-visible default with per-note `is_private BOOLEAN NOT NULL DEFAULT false` toggle. Coach view filters private rows out entirely (no "[private note]" placeholder — performance-anxiety risk). Lock icon next to saved note in Disciple's view when private.
+
+**Rejected:**
+
+1. Smith / EZ / safety bar plate calc in v0 — counterbalance varies by manufacturer; default "barbell semantics" produces wrong answers.
+2. Permanent inline `<input>` composer per set — explodes vertical space, prompts comment-noise.
+3. Permanent 💬 icon button alongside three-dot menu — two icons on a row that already has 5 visual elements at 390px width is overcrowded.
+4. Movement-pattern × equipment swap filter — requires schema migration adding `movementPattern` enum + backfill of all existing exercises. Sprint 6 doesn't add this; pre-curated `alternativeExercises[]` is higher quality than algorithmic substitution anyway.
+5. Default-ON RPE for all users — beginners don't understand RPE; UI clutter without value.
+6. Default-private exercise notes — over-friction for the common case (most notes are coaching-relevant). Per-note privacy toggle gives agency without onerous default.
+
+**Rule for future maintainers:** **DO NOT** add the 💬 icon affordance permanently to set rows in a future "improve discoverability" pass without first measuring comment adoption rate. If post-Sprint-6 analytics show <10% of active Disciples post any comment in 30 days, the discoverability problem is real; otherwise the menu is sufficient.
+
+---
+
+## Sprint 6 — ProgramBuilder calendar rebuild (BATCH 7, 2026-05-08)
+
+**Decided:** BATCH 7 replaces `ProgramBuilderPage.tsx` (form-based, 460 lines) in-place at `/programs/builder/:id` with a calendar drag-and-drop rebuild. Existing form-based page moves to `/programs/builder-legacy/:id` as a rollback escape hatch for Sprint 6 + the first deck-clearing sprint after; **legacy URL removal scheduled for Sprint 7 BATCH 1 cleanup pending no rollback signal in 30 days**. Dead-link from sidebar; legacy URL accessible only by direct navigation (Coach in production trouble can manually type `/programs/builder-legacy/:id`).
+
+**Phased programs only** in Sprint 6 BATCH 7. On-Demand programs (library + picker pattern) deferred to Sprint 7+ as a focused unit (schema enum `programs.programType` + library UI + picker UX). Existing schema sufficient for Phased; no DDL migration in BATCH 7.
+
+**Master/Variant/Live three-layer model deferred to Sprint 7+.** Sprint 6 workaround: "Duplicate program" affordance in the calendar UI lets coaches fork a master into a per-client variant manually. Crude but functional; captures the variant use case without snapshot-copy semantics + diff workflow + master-changed notifications.
+
+**Two progression schemes** in BATCH 7: **double-progression + RPE-target**. JSONB shape evolves additively — new `progressionScheme` field inside the exercise object in `program_weeks.days[].exercises[]`. Existing programs render with `progressionScheme: null = Custom (manual progression)`. No DDL migration. Per-exercise picker label: **"Progression: [Custom / Double-progression / RPE-target]"** (Custom not Manual — frames absence as deliberate choice). Default Custom. Coach selects scheme; UI shows preview of next-week's prescribed values inferred from scheme; no auto-fill — Coach validates and confirms. `%1RM` and `linear+deload` deferred to Sprint 7+.
+
+**Pattern 3 (Adjustment with Reasoning) STAYS in Sprint 6 BATCH 7 as manual coach-driven.** The deferral is specifically for ALGORITHM-driven auto-adjustment (recovery → deload, RPE history → load auto-adjust). Pattern 3 + adaptive programming share UI affordance (the reason annotation) but differ in trigger source: Pattern 3 is the Coach saying "I changed this because [reason]"; algorithmic adaptation is the system saying "your data suggests this change." Sprint 6 ships Pattern 3; Sprint 7 owns the algorithmic layer.
+
+**Rejected:**
+
+1. Build new calendar page alongside old form page at parallel route — UX confusion ("which one do I use?") + double maintenance burden. Two pages doing the same job dilutes both.
+2. Hybrid form/calendar toggle inside one page — keeps form code maintained + signals the team isn't committed to the new mental model.
+3. Phased + On-Demand both in Sprint 6 — On-Demand is a structurally different mental model (library + picker) from Phased (calendar + schedule). Trying to do both in the same UI rebuild produces a mediocre version of each.
+4. Master/Variant model in BATCH 7 — multi-batch deliverable on its own (snapshot-copy semantics + diff UI + workflow + notification dispatch). Deferring to Sprint 7+ keeps BATCH 7 focused on the calendar.
+5. All 4 progression schemes in BATCH 7 — over-loads the batch. Two cover ~80% of modern program design styles and validate the UI pattern.
+6. Conditional logic / adaptive programming in BATCH 7 — would conflate Sprint 6 and Sprint 7. Sprint 7 captures the auto-adjustment layer as its marquee deliverable.
+
+**Rule for future maintainers:** **DO NOT** restore the form-based ProgramBuilderPage as an "alternative view" in a future "respect coach preferences" pass. The calendar IS the v1 mental model. The legacy URL exists for production rollback only, removed Sprint 7 BATCH 1.
+
+---
+
+## Sprint 6 — Voice-of-Ronin narrative engine (BATCH 10, 2026-05-08)
+
+**Decided:** Ronin Home Chapters 1, 3, 5 carry LLM-generated narrative through a defined pipeline:
+
+1. **Model: Haiku** (`claude-haiku-4-5-*` — confirm exact model string at BATCH 10 dispatch; Haiku 5 may ship before Sprint 6 closes). Cost at v0 scale (6 production users, all could be Ronin) is trivial; at 1,000 users ~$30/month. New `server/services/narrativeService.ts` orchestrates: gather context → call Haiku → validate → cache → return. Templated fallback path on Haiku error / rate-limit produces identical output schema; consumers don't branch.
+2. **Caching: once per day per user, TTL until midnight in user-local timezone**, lazy generation on first view, Redis cache. **Cache key includes model version suffix** for clean invalidation on model upgrade: `narrative:${userId}:${userLocalDate}:${chapter}:${modelVersion}`. No mid-day regeneration on fresh data — that feeds tomorrow's narrative. Mental model: "today's daily essay about you" — narrative stability through the day.
+3. **Falsifiability via structured JSON output + programmatic validator + ground-truth check**:
+   - Output shape: `{chapter, sentences: [{text, cited_data: {metric, value, source, comparison?}}]}`
+   - At most ONE no-cite sentence per chapter (the closing imperative slot like "Today is for hard work"). All other sentences MUST have `cited_data`.
+   - Ground-truth check: `cited_data.value` validated against actual data context with **5% tolerance** for rounding noise.
+   - Validator failure → retry once with stricter prompt → still fail → templated fallback for that chapter.
+   - **Observability**: `narrative_fallback_fired{user_id, chapter, reason}` metric counter on every fallback path. Target <2% fallback rate; >2% means LLM prompt or validator needs tuning.
+4. **Cold-start: progressive per-chapter activation with hand-authored copy** (NOT LLM-generated). Per-chapter thresholds: Ch1 any data 7d, Ch2 any data 7d, Ch3 wellness 14d OR body 30d, Ch4 any data 30d, Ch5 first wellness note. Chapter 3 partial-radar UX (some axes active, some grayed) **flagged for BATCH 10 design** — does it feel meaningful or broken? Cold-start copy still gets cached.
+5. **Tone: clinical-with-warmth** with explicit ban lists in system prompt — no "great job/crushing it/amazing/incredible/way to go", no diagnostic mental-health language ("you seem anxious/depression/crisis"), no body-image judgment (weight changes are observational facts). First-person second-person framing ("you" not "we"). 3–5 hand-curated few-shot examples per chapter covering high/low/mixed/cold-start/post-PR/post-illness scenarios.
+
+**Time-of-day awareness DEFERRED.** v0 ships morning-flavored narrative regardless of view time. Document deliberately deferred (NOT overlooked). Multi-segment generation (morning vs evening) is a future enhancement; doubles cost + adds caching complexity.
+
+**Why hardcoded thresholds + LLM-generated explanation:** the DECISION (when to activate, what to say) follows deterministic rules; the EXPLANATION (the human-readable narrative the user reads) is LLM-generated. This is the same separation Section 6 applies to recovery auto-adjustment: deterministic decision, LLM explanation.
+
+**Rule for future maintainers:** **DO NOT** allow narrative sentences to ship with `cited_data: null` beyond the one closing-imperative slot per chapter. Falsifiability is the load-bearing primitive. If the LLM hallucinates "your sleep has been improving" without a numeric anchor, user trust in the entire surface collapses. Validator gates this; the validator failure observability metric tracks regression.
+
+---
+
+## Sprint 6 — Recovery-aware auto-adjustment engine (BATCH 10, 2026-05-08)
+
+**Decided:** Ronin-only auto-adjustment banner on Ronin Home + Training surfaces. Banner renders when deterministic engine flags an adjustment; explanatory narrative generated by Voice-of-Ronin pipeline (same Haiku + structured output + validator + ground-truth check). Disciples never see the banner.
+
+**Engine architecture (`server/services/recoveryEngine.ts`):**
+
+- **Data-source-agnostic**: reads from `sleep_sessions`, `daily_vitals` (any `source`), `daily_wellness_log`, `userMuscleFatigue`, `workout_sessions`. Engine never branches on source. Forward-proof for Sprint 4 wearable resumption — zero engine code changes when `source='whoop'` / `source='garmin'` / `source='oura'` rows appear; same engine logic consumes them.
+- **Three signal tiers in priority order**: objective HRV/sleep (when present) → subjective wellness (`daily_wellness_log` sliders, always available if user checks in) → training-load context (`userMuscleFatigue` + recent `workout_sessions.totalVolumeKg`).
+- **Pure function**: `evaluateRecovery(userId, date): RecoveryDecision` reads context once, applies rules, returns structured decision. Fully unit-testable with synthetic context structs.
+- **Graceful degradation**: when no recent data (<3 days history) exists, engine returns `{adjust: 'none', reason: 'insufficient_data'}`; banner doesn't render; narrative says so honestly per Section 5.5 falsifiability.
+
+**Three v0 rules:**
+
+1. **HRV breach** — objective HRV ≥15% below 14-day baseline OR (no objective + subjective `sleepQualitySubjective` ≤4/10) → `{adjust: 'reduce_load', magnitude: 0.10, reason: 'hrv_breach'}`
+2. **Severe-fatigue breach** — HRV ≥25% below baseline OR sleep <5h (objective or subjective ≤3/10) OR `sorenessOverall` ≥9/10 → `{adjust: 'deload', magnitude: 0.20, drop_set: true, reason: 'severe_fatigue'}`
+3. **No-adjustment default** — `{adjust: 'none'}`. Banner doesn't render.
+
+**Separation of concerns: LLM never picks magnitude or decides whether to adjust.** LLM only writes the sentence explaining what the engine decided. This is the falsifiability discipline applied to auto-adjustment: every adjustment cites a deterministic rule + a specific data point.
+
+**Banner gate: `if (user.role !== 'solo') return null` at the render path.** Disciples never see the banner; Sprint 7 owns Disciple-wearable opt-in if/when product evidence justifies. Dual-mode (Ronin + Coach) is not a schema/product reality today; future sprint owns dual-mode merge.
+
+**Rejected:**
+
+1. ML-based or heuristic-learning auto-adjustment in v0 — Sprint 7+ owns when/if production data justifies. v0 hardcoded is testable, reviewable, falsifiable.
+2. LLM picks adjustment magnitude — opens the door to ungrounded "my data says I need a deload" claims. Deterministic rules + LLM narrative is the discipline.
+3. Disciple-side auto-adjustment with Guru opt-in — Two Products framing locks: Product A (Disciple) is human-driven via Pattern 3. Algorithm-injected adjustments compete with Coach authority. Sprint 7 design call.
+4. Source-specific branches (Apple Health-only path / Whoop-only path) — engine reads source-agnostically. Adding source branches couples Sprint 6 engine logic to Sprint 5 / Sprint 4 ingest paths in ways that produce schema drift.
+
+**Rule for future maintainers:** **DO NOT** add LLM-generated adjustment magnitudes in a future "more nuanced auto-adjustment" pass. The deterministic decision + LLM narrative separation is load-bearing for falsifiability. New rules extend the engine's rule set; the LLM's role stays at "write the sentence explaining what was decided." Capture role-transition copy gap separately (next entry).
+
+---
+
+## Sprint 6 BATCH 10 recovery thresholds — v0 starting points with citations (2026-05-08)
+
+**Decided:** the three v0 recovery rule thresholds are deliberate starting points, not vibes-based. Each threshold has a documented basis. Future Claude reading `server/services/recoveryEngine.ts` finds the rationale here without verbose code comments.
+
+**Rule 1 — HRV breach: 15% deviation below 14-day baseline.**
+
+- _Basis_: Plews et al. (2017) "Monitoring Training With Heart Rate-Variability" — recommends 7-to-14-day rolling HRV baselines for detecting meaningful drops. Daily fluctuation noise is ~5–10% in healthy athletes; persistent deviation beyond this band signals genuine recovery debt.
+- _Whoop yellow-zone equivalent_: Whoop's "Recovery" metric flags amber roughly when daily HRV is >1 SD below 30-day rolling mean — 15% from a 14-day baseline corresponds approximately to 1 SD for typical Apple Health-quality consumer data. Conservative match.
+- _Subjective fallback_: `sleepQualitySubjective ≤4/10` (the subjective branch when no objective HRV is present) selected because users self-rate in a 1–10 distribution that empirically clusters around 6–8 for "normal" sleep; 4 or below maps to "noticeably poor."
+
+**Rule 2 — Severe-fatigue breach: HRV ≥25% below baseline OR sleep <5h OR soreness ≥9/10.**
+
+- _Basis (HRV side)_: 2 SD below baseline corresponds approximately to "this is unusual enough to act on" — Plews et al. (2017) flag this as the threshold where exercise scientists recommend reducing volume. Whoop's red-zone equivalent.
+- _Basis (sleep side)_: <5h total sleep correlates strongly with elevated cortisol, suppressed glycogen synthesis, increased injury risk per multiple sleep-and-recovery meta-analyses (Knufinke et al. 2018, Watson 2017). 5h is the established floor for "training is unwise."
+- _Basis (soreness side)_: 9–10/10 soreness self-report indicates pain-level discomfort, not muscle fatigue. Training through that is counterproductive.
+
+**Rule 3 — No-adjustment default**: when none of the breaches trigger, AND when <3 days of history exist (insufficient data to compute deviations meaningfully). Conservative — the engine errs on "no banner" rather than false-positive adjustments.
+
+**v0 magnitude calibration:**
+
+- HRV breach → -10% load: industry-standard "reduce one notch" heuristic. Aligns with autoregulated programs (RP, Mike Israetel methodology) that propose 10% reductions on flagged days.
+- Severe-fatigue → deload (-20% load + drop one set): standard deload magnitudes per powerlifting literature (5/3/1, Sheiko deload weeks).
+
+**Sprint 7+ work:**
+
+- Tune thresholds based on production data after 30 days of observation. If false-positive rate (banner shows but user reports feeling fine) exceeds 30%, thresholds widen. If false-negative rate (no banner but user reports overtraining) is significant, thresholds tighten.
+- Add multi-day pattern rules (e.g., "3 consecutive days of HRV decline even if no single day breaches" → preemptive flag).
+- Add training-load context (ACWR ratio integration with HRV signals).
+
+**References cited inline as named constants in `server/services/recoveryEngine.ts`:**
+
+```ts
+// Plews et al. 2017 — 7-to-14-day rolling HRV baseline; ~1 SD below = amber
+const HRV_BREACH_THRESHOLD_PCT = 0.15;
+// 2 SD below baseline / Whoop red-zone equivalent
+const HRV_SEVERE_THRESHOLD_PCT = 0.25;
+// Knufinke et al. 2018, Watson 2017 — <5h sleep = training-unwise floor
+const SLEEP_SEVERE_THRESHOLD_HOURS = 5;
+// Standard "reduce one notch" magnitude (RP / Mike Israetel methodology)
+const LOAD_REDUCTION_PCT = 0.1;
+// Standard deload magnitude (5/3/1, Sheiko literature)
+const DELOAD_REDUCTION_PCT = 0.2;
+```
+
+**Rule for future maintainers:** **DO NOT** tune these thresholds without updating both the constants AND this entry. The citations are the auditable basis; vibes-based tuning erodes that. If production observation justifies a change, document the rationale alongside the new value here.
+
+---
+
+## Sprint 6 — Auto-adjustment banner role-coupling + role-transition copy gap (2026-05-08)
+
+**Decided:** auto-adjustment banner visibility is role-coupled. Render gate: `if (user.role !== 'solo') return null`. When a user transitions roles (Ronin → Disciple via hiring a coach, OR Disciple → Ronin via ending a coaching relationship), the banner appearance/disappearance becomes user-visible state.
+
+**Captured for future role-transition flows:**
+
+- **Ronin → Disciple transition** (user hires a coach): the banner disappears. UX needs explicit copy explaining the change so the disappearance feels intentional, not broken. Suggested copy: "Your coach now drives adjustments — talk to them about today's training." Surface this as a one-time post-transition card or in the Coach view's first-time onboarding.
+- **Disciple → Ronin transition** (user ends coaching relationship): the banner appears. Probably fine without ceremony — it just shows up as a feature of the new role. Worth confirming in design when role-transition flows ship.
+
+**Status:** dual-mode (Ronin + Coach simultaneously) does not exist in v0. `users.role` enum is single-valued; a user is exactly one role. The "if dual mode" question from Section 6.4 is theoretical — no schema or product reality today.
+
+**Future sprint scope (when role-transition flows ship — likely Sprint 12 native shell or earlier deck-clearing):**
+
+- Define exact role-transition triggers (when does role flip? who initiates?)
+- Define one-time post-transition explainer cards
+- If dual-mode (Ronin + Coach) ever ships: define the auto-adjustment merge — "if Coach has assigned today's workout, suppress auto-adjustment banner (Coach has authority); else banner renders (Ronin context dominates)." Coach sees "your Disciple's data suggests low recovery today" in their Today triage view (Pattern 2 enrichment).
+
+**Rule for future maintainers:** **DO NOT** ship role-transition flows without addressing the auto-adjustment banner appearance/disappearance copy. Silent disappearance after a Ronin hires a coach reads as a bug. The explicit copy is the trust signal.
+
+---
+
+## Sprint 6 — BATCH 2 brainstorm consolidated deferred items (2026-05-08)
+
+Captured during the BATCH 2 brainstorm gate. Each is explicitly NOT Sprint 6 scope; future-Claude reading this list knows where the lines are drawn.
+
+**Schema / data:**
+
+- Movement-pattern × equipment swap filter (Sprint 7+; needs `exercises.movementPattern` enum + backfill)
+- On-Demand program type (Sprint 7+; schema enum + library UI + picker UX as focused unit)
+- Master/Variant/Live three-layer program model (Sprint 7+; snapshot-copy + diff UI + workflow)
+- Multi-note exercise structure (when single-note constraint surfaces friction)
+- Sprint 4 wearable integration deploy (paused, demand-driven resumption)
+- `expectOwnershipClause` extraction to shared helper (architectural invariant: inline-per-test-file pattern stays)
+
+**UX / behavior:**
+
+- `%1RM` and `linear+deload` progression schemes (Sprint 7+)
+- Algorithm-driven adaptive programming for Disciples (Sprint 7 — Q2 PHASE C)
+- Multi-segment time-of-day narrative (future enhancement; v0 morning-flavored)
+- Dual-mode (Ronin + Coach) auto-adjustment merge (future when dual-mode ships)
+- Soft-archive for set_comments (when storage cost becomes real)
+- Email fallback for `set_comment_posted` (only if production metrics show comments being missed at scale)
+- Apple Watch companion app (Sprint 7 or later — phone-side execution to Hevy bar first)
+- Full offline-first execution (deck-clearing first item after Sprint 6 if BATCH 4.5 ships network-required; comment composer's IndexedDB drafts is the partial wedge)
+
+**Anti-patterns explicitly out of scope (do NOT introduce in Sprint 6):**
+
+- Real-time presence indicators ("Coach is viewing this right now") — Pattern 1 is asynchronous, not surveillance
+- Required `reasonText` on program edits — Pattern 3 anti-pattern; reasoning stays optional with UI nudge
+- Chapters as separate routes — Ronin Home is one scroll, anchor links handle deep-linking
+- Photos becoming trainer-visible — Sprint 6 introduces Pattern 1 view-tracking but does NOT relax "photos NEVER trainer-visible v1"
+- Append-only event log shape for `data_view_log` — upsert state-table is the load-bearing pattern
+
+---
+
 ## Related Notes
 
 - [[gotchas]]
