@@ -20,12 +20,40 @@ _Future sprints:_ if a new source ships per-record sleep data, this aggregation 
 First captured: Sprint 5 BATCH 3 (2026-05-08).
 
 **Apple Health `Workout.duration` is a decimal in minutes, but `activity_sessions.duration_minutes` is INTEGER.**
-A 32:30 run serialises as `duration="32.5"`. The wearable schema's `duration_minutes` column is `integer`. Passing the decimal directly to drizzle's `INSERT` raises `invalid input syntax for type integer: "32.5"`. Workaround: round at the ingest layer (`Math.round(record.durationMinutes)`). Sub-minute precision lost on workouts; acceptable trade-off — duration in minutes is rarely a load-bearing metric at sub-minute resolution. First caught by `scripts/smoke-apple-health.ts` against dev DB on 2026-05-08.
+A 32:30 run serialises as `duration="32.5"`. The wearable schema's `duration_minutes` column is `integer`. Passing the decimal directly to drizzle's `INSERT` raises `invalid input syntax for type integer: "32.5"`. Workaround: round at the ingest layer (`Math.round(record.durationMinutes)`). Sub-minute precision lost on workouts.
+
+_Why this is OK for v1:_ duration_minutes is consumed primarily by trend visualization (chart axes, weekly totals) where sub-minute resolution is invisible. Not a training-load math input v1.
+
+_Reversibility (load-bearing — don't re-litigate):_ this is a REVERSIBLE design choice. If a future sprint (Sprint 6 Recovery Engine, Sprint 8 AI Coach, or any sprint surfacing strain/training-load math) needs sub-minute precision, the migration path is one of:
+
+1. `ALTER COLUMN duration_minutes TYPE numeric(8,2)` — preserves all historical rows, just widens the column type. Drizzle schema: change `integer` → `decimal({ precision: 8, scale: 2 })`. Existing integer rows widen losslessly.
+2. Add a sibling column `duration_seconds INTEGER` — keeps duration_minutes as integer for chart-display compat, adds higher resolution alongside.
+   The Math.round() at ingest is a one-line revert when the demand materializes; future Claude shouldn't re-debate "should we have done this differently" — the answer was "no, this was right for v1."
+
+First caught by `scripts/smoke-apple-health.ts` against dev DB on 2026-05-08.
 
 **`Promise.all` over per-record ingest aborts the cron's sleep-aggregation phase on first rejection.**
 The Apple Health cron fires per-record ingest promises during streaming parse, then awaits them all before the sleep-aggregation flush. `await Promise.all(ingestPromises)` rejects on the first failed promise — even though the other promises continue running, the catch block fires immediately and the sleep-aggregation phase is skipped. One bad record (e.g. a workout with an unexpected unit) would silently lose the entire night's sleep data.
 
 _Fix:_ `Promise.allSettled` so individual record failures get logged + counted as warnings without short-circuiting the import. The import still completes with partial-success semantics. Caught by `scripts/smoke-apple-health.ts` BEFORE the duration_minutes integer fix exposed it (the workout was failing, taking sleep down with it). First captured Sprint 5 BATCH 3 (2026-05-08).
+
+---
+
+**`Promise.all` on per-record processing aborts on first failure; use `Promise.allSettled`.** _(generalized rule)_
+Ingest pipelines that process N independent records (Apple Health import here, future bulk operations / batch backfills) MUST use `Promise.allSettled`, NOT `Promise.all`. `Promise.all` rejects on the first failed record, aborting the rest of the batch. `allSettled` lets the batch complete, returning `{status: 'fulfilled' | 'rejected'}` per record. Failed records get logged + counted, successful records get persisted.
+
+_Pattern:_ wrap per-record work in allSettled; iterate results; log rejections with record context (source_record_id, type, error); increment skipped/unparseable counter on the batch's tracking row; never let one bad record sink the batch.
+
+_Anti-pattern:_ `Promise.all` over per-record promises. Looks identical until production data hits an edge case the tests didn't cover (e.g. a unit string the parser accepts but the schema rejects, a null where the column says NOT NULL, a precision overflow). Tests pass with synthetic clean fixtures; one corrupt record in real-world data takes down the batch.
+
+_Where this applies in the project:_
+
+- Sprint 5 Apple Health import (this is the first hit).
+- Future bulk-ingest sprints — Sprint 9 Habits backfill, Sprint 11 Mood/RPE bulk import, any data import / backfill cron.
+- Multi-recipient notification dispatch (already uses allSettled in Sprint 2 quiet-hours retry cron).
+- Webhook fan-out where independent subscribers consume the same event.
+
+_First captured:_ Sprint 5 BATCH 3 (2026-05-08) — sleep aggregation phase silently losing entire night's data on first per-record parse error. Smoke test against dev DB caught it; would have shipped silently with synthetic-fixture-only test coverage.
 
 ---
 

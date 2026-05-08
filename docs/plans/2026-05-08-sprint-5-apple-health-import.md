@@ -644,3 +644,208 @@ After BATCH 4 approval:
 Plan saved to `docs/plans/2026-05-08-sprint-5-apple-health-import.md`.
 
 Per kickoff: execute inline with checkpoint discipline (one BATCH at a time, push after each user approval). Begin BATCH 1: schema + migration 016 + 014.6 decision surfaced. Stop at checkpoint with the artifacts listed in BATCH 1 Step 9.
+
+---
+
+# BATCH 4 — Import Flow UI Design Brainstorm
+
+> **HARD GATE.** This section is the brainstorm proposal. No UI code, no component names, no library picks. Decisions captured here lock the user-facing flow shape; BATCH 5 implements within those constraints.
+>
+> Status: **awaiting user review** before BATCH 5 dispatch.
+
+The substrate is proven (BATCH 3 closed: pipeline parses → ingests → idempotent re-import works on dev DB). The remaining design surface is genuinely user-facing: what does the human see, click, wait for, recover from.
+
+Six interconnected decisions follow. Each: **Question / Options / Recommendation / Rationale**.
+
+---
+
+## Decision 1 — Upload entry point
+
+**Question:** Where does a user land to start an import?
+
+**Options:**
+
+- **A. Settings only** — `/settings?tab=imports` is the canonical home. Discoverability via the Settings nav.
+- **B. Biometrics only** — `/biometrics?tab=trends` empty state hosts the upload card. Contextual; the user is already looking at the data.
+- **C. Both** — primary management UI lives in `/settings?tab=imports` (history, retry, delete). A dismissable hint card on `/biometrics` empty state for Disciples and Ronins points users to the canonical upload UI. The hint card disappears once the user has any imported data (from any source).
+
+**Recommendation: C — Both, with Settings as the canonical home.**
+
+The hint card surfaces when ALL of the following are true:
+
+1. User has zero `apple_health_imports` rows.
+2. User has zero rows in `body_metrics` / `sleep_sessions` / `activity_sessions` / `daily_vitals` from any source (i.e. the user has no biometric data at all yet).
+3. User role is `solo` or `client` (Disciple or Ronin). Gurus do not see the hint card — they manage their clients' data, not their own import flow at this stage.
+
+The hint card's CTA is `/settings?tab=imports`. It NEVER initiates upload directly — there is exactly one upload UI, and the hint card is a pointer to it.
+
+**Rationale:** Discoverability where the user feels the absence of data (the empty `/biometrics` state). Management where the user thinks about settings and integrations. One canonical upload surface keeps the implementation, copy, and error handling on a single code path. The hint card naturally goes away once the user has imported, so it's not perpetual visual debt.
+
+The role-gating on the hint card matters: Gurus' empty-biometrics state ALREADY shows client-roster prompts (Sprint 1) and doesn't need a personal-import hint diluting that surface.
+
+---
+
+## Decision 2 — Mobile vs desktop upload UX (especially iOS Safari .zip)
+
+**Question:** What does the upload UI surface on each platform, given iOS Safari's `.zip` constraints?
+
+**Two real-world flows the UI must serve:**
+
+1. **All-iOS path:** iPhone → Apple Health Export → save to Files → open GymGurus in iOS Safari → upload from Files via document picker.
+2. **Cross-device path:** iPhone → Apple Health Export → AirDrop / iCloud Drive to Mac → drag-drop into GymGurus on desktop browser.
+
+**Options:**
+
+- **A. Always-visible step-by-step instructions.** Every user, every platform, sees the iOS export instructions inline. Cluttered for desktop-first users.
+- **B. Platform-detected guidance.** iOS users see an inline numbered checklist for the all-iOS path (Health → Export → Files → upload). Desktop users see a drag-drop zone with a collapsible "How to get this file from your iPhone" section that reveals the same iOS instructions on demand.
+- **C. Help link only.** Minimal default UI, instructions hidden behind a help link. Lowest visual friction; highest discovery friction.
+
+**Recommendation: B — platform-detected guidance.**
+
+User-Agent gates which surface renders:
+
+- **iOS detected** (iPhone/iPad/iPod in UA): inline numbered checklist as the primary content. The file picker uses `<input type="file" accept=".zip,application/zip">`. The checklist explicitly tells the user to "tap Browse → Files → pick the export.zip" because iOS Safari's default picker behavior surfaces Photos first.
+- **Desktop detected**: drag-drop zone as the primary content, with file picker fallback button. A "Get this file from your iPhone" expandable section below holds the iOS-flow instructions for users on the cross-device path.
+- **Android detected** (Android in UA): drag-drop zone falls back to file picker. Standard Android file picker handles `.zip` cleanly.
+
+**Rationale:** iOS is the primary device for this flow (users with Apple Health data own iPhones). Inline guidance reduces support burden because the all-iOS path has the highest failure rate without scaffolding ("I tapped upload and only saw my photos"). Desktop users on the cross-device path are typically more technical and need less hand-holding; collapsed instructions stay out of their way.
+
+**Open verification (BATCH 5 implementation note):** iOS Safari historically had inconsistent `accept=".zip"` behavior across versions. BATCH 5 must verify on a real iOS device that the file picker correctly surfaces Files when accept hints at zip. If the accept attribute is unreliable, the fallback is to omit the accept hint and rely on user-side file selection (the upload route already validates mime + extension server-side, so client-side accept is convenience-only, not security).
+
+---
+
+## Decision 3 — Parsing progress UX during the wait
+
+**Question:** What does the user see between upload-complete and import-complete (typically 30s–3min)?
+
+**Options:**
+
+- **A. Stay-on-page polling.** User stays on the import page; client polls `GET /api/apple-health/imports/:id` every few seconds; live progress (records_parsed counter, status pill, optional ETA). User can navigate away and come back; polling resumes. Disadvantage: keeps the user "captive" during a wait that may be 3+ minutes.
+- **B. Background + push notification on completion.** User uploads, sees a confirmation card "We'll notify you when import is complete," can leave the app entirely. The Sprint 2 push infra fires `apple_health_import_complete` / `apple_health_import_failed`. Disadvantage: requires push permission for a good UX; users without push see no signal until they navigate back.
+- **C. Hybrid — page-aware progressive escalation.** Stay-on-page polling is the default during the upload-confirmation flow. After 60 seconds of polling without completion, surface a "Still working — you can leave this page. We'll notify you when complete." card. The card has a "Notify me" button that triggers the push permission prompt IF the user hasn't granted it. Push notifications fire regardless of whether the user is on-page (they're the asynchronous backup + the historical record).
+
+**Recommendation: C — Hybrid with progressive escalation and opportunistic push permission.**
+
+Concrete behavior:
+
+- Upload completes → "Upload received. Processing now (typically 30s to 3 minutes)." Spinner/progress bar shown.
+- Polling cadence: every 3 seconds (not 2 — at 30s+ wait the higher cadence is wasteful; verify against `apiRateLimit` in BATCH 5).
+- 0–60s on page: live progress, no escalation.
+- 60s+ on page: "Still working — you can leave this page. We'll let you know when it's done." card appears alongside the progress. Push-permission prompt is offered at this moment IF not already granted (highest-leverage moment to ask: the user has demonstrated patience and explicit interest in the operation).
+- User navigates away: notifications are the only signal. `apple_health_import_complete` fires on done; user re-opens the app and lands in the in-app feed where the notification points to `/biometrics?tab=trends`.
+- User returns to `/settings?tab=imports`: the import row's status is canonical truth. They see whatever state the import is in, including final stats.
+- Push permission denied or not granted: the only signal is in-app on next visit. Acceptable degradation — the user opted out of push.
+
+**Rationale:** Most imports complete in <60 seconds (small/recent exports), and the user stays on page seeing live progress with low cognitive load. Long imports (multi-year power users) get an honest exit. Push permission is requested at the moment of highest perceived value, not as a startup-blocker. The historical record (in-app notifications feed + the import row itself) is always the source of truth, so push is an enhancement, not a dependency.
+
+This decision intersects with Sprint 2's notification engine: the dispatch already happens regardless of polling state. BATCH 3 wired both completion notifications. BATCH 4 just decides where the user-facing UX leans.
+
+---
+
+## Decision 4 — Failure recovery UX
+
+**Question:** For each failure mode, what does the user see, and what can they do?
+
+**Failure modes and their UX surfaces:**
+
+| #   | Failure mode                          | Where caught         | Tracking row state                 | UX strategy                                                                                |
+| --- | ------------------------------------- | -------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------ |
+| 1   | File too large (>200MB)               | Upload route, multer | No row created                     | Inline error in upload form. Actionable copy.                                              |
+| 2   | Wrong file type (.xml, etc.)          | Upload route, multer | No row created                     | Inline error in upload form. Actionable copy.                                              |
+| 3   | Storage fetch fails during cron       | Cron, parse phase    | status='failed', error_message set | Card on imports list with Retry button (re-runs cron on same fileR2Key — file still there) |
+| 4   | Parse error / corrupt XML             | Cron, parse phase    | status='failed', error_message set | Card on imports list with Re-upload button (file is corrupt; same retry won't help)        |
+| 5   | Empty result (zero supported records) | Cron, post-parse     | status='completed', counters all 0 | Card with help link explaining how to export full Health data; no retry button             |
+
+**Error message taxonomy (5 user-facing classes, mapped from raw error_message):**
+
+| Class          | User-visible copy                                                                                                     | Action                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| File too large | "Your export is X MB. Maximum is 200 MB. Try exporting a smaller date range from Health → Profile → Export."          | Upload form retry            |
+| Wrong format   | "Please upload the .zip file from Apple Health (not a single .xml or other format)."                                  | Upload form retry            |
+| Storage error  | "We couldn't read your uploaded file. This is a server-side issue — please retry."                                    | Retry button (same file)     |
+| Parse error    | "We couldn't parse your export.xml. The file may be incomplete or from an unsupported iOS version. Try re-exporting." | Re-upload button + help link |
+| Empty result   | "No supported records were found. Make sure you exported full Health data — see help."                                | Help link only; no retry     |
+
+The raw `error_message` from the failed import row stays available behind a "Show details" expander for power users / support diagnostics. Default UI shows the friendly class-mapped copy.
+
+**Recommendation: typed errors with class-specific copy and class-specific actions.**
+
+Five classes is small enough to maintain as a switch in the BATCH 5 UI. Each class has clear actionable copy + a single primary action button + (where applicable) a help link. Don't conflate retry semantics: "retry on the same file" (storage error) and "re-upload because the file is bad" (parse error) are different flows — the UI surfaces them as different buttons.
+
+**Rationale:** "Import failed — try again" is useless. Class-specific copy removes guesswork from the user's recovery path. Five classes covers all the practical failure surfaces without combinatorial explosion. The friendly copy + raw-details-on-demand pattern serves both novice users (who need actionable text) and support (who need the raw error for debugging).
+
+**Retry semantics, locked:**
+
+- Storage-error retry: the API needs a `POST /api/apple-health/imports/:id/retry` endpoint that flips status from `failed` back to `uploaded` (or `parsing` directly). The cron picks it up on the next tick. **NOTE for BATCH 5:** this endpoint does NOT exist yet — BATCH 3 deferred it. BATCH 5 implementation either adds the endpoint OR has the user delete + re-upload (less elegant but doesn't add API surface). Recommend adding the endpoint.
+- Re-upload retry (parse error): user clicks "Re-upload" → DELETE the failed import row + storage cleanup → return to upload form. Existing DELETE endpoint covers this.
+- Empty-result no retry: only "Delete this attempt" available, removing the row.
+
+---
+
+## Decision 5 — Re-import semantics surfaced in UI
+
+**Question:** When a user re-imports the same export (intentionally or accidentally), how loudly does the UI announce that duplicates were detected?
+
+**Options:**
+
+- **A. Loud banner.** "5 of 9 records were duplicates from your previous import." Big visible call-out on the import-complete state.
+- **B. Inline counter with help link.** Stats card shows "X records ingested, Y duplicates skipped" alongside the success state. A small help link explains what "duplicates" means.
+- **C. Silent.** Just shows "X records ingested" without surfacing the duplicate count. Cleanest UI; loses important information.
+
+**Recommendation: B — Inline counter with help link.**
+
+UI surface:
+
+- The completion card shows the breakdown: e.g. "4 new records imported, 5 duplicates skipped."
+- A small help link below the counters: "Why are some records duplicates?"
+- Help-link content explains:
+  > "Re-importing your Apple Health data is safe. Records you've already imported won't be added again — we identify each record by its Apple Health ID. If you edited records in Apple Health and re-exported, those edits will appear as new entries because Apple Health can't tell us which records are corrections vs. additions."
+
+**Rationale:** Re-import-with-duplicates is the **expected happy path**, not an anomaly. A loud banner implies something is wrong, which it isn't. A silent UI loses information the user may want (re-import for a recent month: "did my last 30 days actually land?"). Inline counters are honest without alarming.
+
+The Apple Health UUID stability gotcha (BATCH 1) makes the help-link copy load-bearing: edited-record edge case is real and would otherwise confuse a user counting records and finding "extras." The help text manages that expectation.
+
+For a re-import that produces ZERO new records (everything was already there), the same inline counter format applies: "0 new records imported, 9 duplicates skipped." No banner. The user uploaded a file that didn't add anything; the UI tells them honestly.
+
+---
+
+## Decision 6 — bodyMetrics multi-per-day rendering — defer to BATCH 5
+
+**Status:** Decided at BATCH 1 (Path C, per-record source_record_id, migration 014.6 landed). The schema preserves multi-per-day fidelity; the UI surface is what BATCH 5 must implement.
+
+**The implementation question (NOT a brainstorm decision):** `/biometrics?tab=trends` weight chart now needs to handle 2+ readings per day from the same source. Sub-options for BATCH 5 to evaluate against the existing chart code:
+
+- **All points rendered.** Honest, can look busy on a 5-year history chart with 3 daily weights.
+- **Per-day average.** Clean, smoothed, hides the underlying multi-reading reality.
+- **Per-day last reading.** Closest to what a user "remembers" about their weight that day.
+- **Source-grouped lines.** Multiple lines on the chart, one per source (Apple Watch, Withings, manual).
+- **User-configurable.** Chart settings let the user pick. More UI surface; flexibility for power users.
+
+**Default recommendation for BATCH 5 implementation:** all points rendered (fidelity over smoothness — extends the Path C rationale that drove the schema choice). The implementer should explore the existing chart code and propose the final pick with screenshots.
+
+This is the only Decision 6-class question. Capture it in BATCH 5 sub-questions below; do not block BATCH 4 approval on it.
+
+---
+
+## BATCH 5 sub-questions (capture-but-defer)
+
+These don't need brainstorm decisions; they need to be explicit so they don't get lost in implementation:
+
+1. **Multi-per-day chart rendering** (Decision 6 above) — implementer's choice during BATCH 5, default to all-points.
+2. **Polling cadence vs. rate limit.** 3 seconds suggested; verify against `apiRateLimit` headers — if the rate limit allows 60/min and we have one in-flight import, 3s polling = 20 requests/min, fine. With multiple active imports this scales linearly; cap concurrent in-flight imports per user (see #6 below).
+3. **Push permission prompt timing.** At the "We'll notify you" 60s escalation card, NOT at upload-form load. Don't ask before it's relevant.
+4. **Help-link content destination.** In-app modal vs. external knowledge-base article. v1: in-app modal — keeps the user in flow, no external dependencies. Future iteration may move to a hosted KB.
+5. **iOS Safari `accept=".zip"` verification.** Real-device test before locking the inline-instruction copy. If accept hint is unreliable, omit it and rely on server-side validation (already in place).
+6. **Concurrent imports per user.** Cap the user at 1 active import (status='uploaded' or 'parsing') at a time. Upload route refuses (returns 409 with "An import is already in progress") if a non-terminal import row exists. Prevents storage-cost runaway and avoids cron-resource contention. Cron processes ONE import per tick anyway, so concurrent uploads queue up regardless.
+7. **Failed-import storage TTL.** Failed imports keep their .zip in storage so retry works without re-upload. BATCH 5 implementation note: should there be a 30-day TTL after which storage is cleaned up automatically? Recommend yes — adds a small cron sweep, reduces storage cost from abandoned failed imports. Not required for v1 launch; tracking issue.
+8. **Retry endpoint API.** Decision 4 noted that BATCH 3 doesn't have `POST /api/apple-health/imports/:id/retry`. BATCH 5 should add it: validates ownership, checks status='failed' AND fileR2Key is not null, sets status='uploaded' so the cron picks it up. Mirrors the cancel endpoint pattern.
+9. **Hint card dismissal.** The /biometrics empty-state hint card (Decision 1) — does dismissing it persist? Recommend: dismissal saved to user preferences (small column or part of an existing prefs JSON column), so the user doesn't see it again across sessions. Per-user preference, not browser-local.
+10. **Empty state copy on /biometrics.** Existing empty state may need updating to incorporate the hint card without breaking visual hierarchy. BATCH 5 design pass should screenshot both states (hint visible / hint dismissed) and verify against ui-ux-pro-max checklist.
+
+---
+
+## BATCH 4 close — what user reviews and approves
+
+The five user-facing decisions above (Decisions 1–5) are the brainstorm gate. Decision 6 is already locked. The 10 sub-questions are implementation surface that BATCH 5 absorbs.
+
+**Awaiting user review.** No UI code begins until explicit approval here. After approval, BATCH 5 dispatch is the next step in the kickoff sequence.
