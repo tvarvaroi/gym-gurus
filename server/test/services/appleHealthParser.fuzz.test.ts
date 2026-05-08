@@ -1,33 +1,21 @@
 /**
- * Apple Health Parser Fuzz Tests — Sprint 5 BATCH 7
+ * Apple Health Parser Fuzz Tests — Sprint 5 BATCH 7 + 8
  *
  * Coverage targets — each is a focused proof against a real failure mode that
  * could surface in production if Apple ships a malformed export OR if a
- * malicious user crafts a zip designed to crash the cron worker:
+ * malicious user crafts a zip designed to crash the cron worker.
  *
- *   1.  Empty XML envelope             — completes with 0 records, no crash
- *   2.  Empty input stream             — fail-safe via SAX onerror
- *   3.  Truncated mid-record           — onError fires + promise rejects
- *   4.  Truncated mid-attribute        — onError fires + promise rejects
- *   5.  Missing required attributes    — counter increments, parsing continues
- *   6.  Malformed timestamps           — counter increments, parsing continues
- *   7.  Unrecognized HK types          — silently ignored (NOT unparseable)
- *   8.  Negative numeric values        — pass through (ingest layer guards)
- *   9.  Deeply nested elements         — parser doesn't recurse, ignores cleanly
- *  10.  Oversized single attribute     — handled bounded
- *  11.  Stray non-UTF-8 byte sequence  — fail-safe via SAX onerror
- *  12.  Zip-slip path traversal entry  — isExportXmlEntry rejects
- *  13.  Zip with no export.xml entry   — streamExportXml rejects clearly
- *  14.  Workout missing duration unit  — counted unparseable (not crash)
- *  15.  Multiple workouts interleaved with malformed records — partial success
+ * Sprint 5 BATCH 8 hardened the parser to address three permissiveness
+ * findings surfaced by BATCH 7:
+ *   1. parseHealthDate bounds check (out-of-range fields → null)
+ *   2. Close-tag sentinel (`</HealthData>` required → reject if absent)
+ *   3. Non-empty assertion (folded into close-tag sentinel — empty stream
+ *      can't have a close tag, so it's caught by the same gate)
  *
- * The point: if Apple ships an export format change that produces malformed-
- * by-our-parser records, OR if a malicious user crafts a zip designed to
- * crash the cron worker, the cron stays up + the import row gets
- * status='failed' with a useful error_message + operator visibility holds.
- *
- * This is a defense-in-depth test layer. The parser itself is the first line;
- * the cron's try/catch in processOneImport is the second.
+ * Tests flipped from "FINDING: documents permissiveness" to assert-rejection
+ * style after BATCH 8 hardening — see the four below tagged "BATCH 8
+ * hardened". The cron's outer try/catch in processOneImport remains the
+ * second line of defense; this layer is now reliably the first.
  */
 import { describe, it, expect } from 'vitest';
 import { Readable } from 'node:stream';
@@ -64,55 +52,33 @@ describe('Apple Health parser fuzz — empty envelope', () => {
 
 // ─── 2. Truncated input ─────────────────────────────────────────────────────
 
-describe('Apple Health parser fuzz — truncated input', () => {
-  it('handles XML truncated mid-attribute (sax permissively completes — cron try/catch is the safety net)', async () => {
-    // FINDING (BATCH 7 — surfaced to BATCH 8 hardening): sax 1.4.1 does NOT
-    // always trigger onerror on truncated input. Mid-attribute truncation
-    // here completes parsing what was seen + emits onend. The cron's outer
-    // try/catch in processOneImport is the actual safety net for malformed
-    // input; the parser's contract is "best-effort, don't crash". Documented
-    // here so that future hardening (e.g. add a "did I see </HealthData>?"
-    // sentinel check before declaring success) has a known starting point.
+describe('Apple Health parser fuzz — truncated input (BATCH 8 hardened)', () => {
+  it('rejects XML truncated mid-attribute via close-tag sentinel', async () => {
+    // BATCH 8 hardening: parser now tracks whether </HealthData> was seen
+    // before resolving. Mid-attribute truncation never reaches the close
+    // tag → reject with "Truncated or malformed export" so the cron marks
+    // the import 'failed' with a useful error_message instead of
+    // 'completed' with 0 records.
     const xml = HEALTH_HEAD + '<Record type="HKQuantity'; // truncated
-    let resolved = false;
-    let rejected = false;
-    try {
-      await parseHealthExport(streamFromString(xml), {});
-      resolved = true;
-    } catch {
-      rejected = true;
-    }
-    // The contract is "doesn't hang or crash"; either outcome is acceptable
-    // and both are bounded behaviours the cron can recover from.
-    expect(resolved || rejected).toBe(true);
+    await expect(parseHealthExport(streamFromString(xml), {})).rejects.toThrow(
+      /Truncated|SAX parse/
+    );
   });
 
-  it('handles XML unclosed root (resolves OR rejects, never hangs)', async () => {
-    // Same finding class as above — sax permissiveness. The cron's try/catch
-    // is the safety net.
+  it('rejects XML with unclosed root via close-tag sentinel', async () => {
+    // BATCH 8 hardening: same gate. An unclosed <HealthData> is the most
+    // common shape of "file got truncated mid-export"; surface clearly.
     const xml = HEALTH_HEAD + '<Record type="HKQuantityTypeIdentifierBodyMass" />';
-    let resolved = false;
-    let rejected = false;
-    try {
-      await parseHealthExport(streamFromString(xml), {});
-      resolved = true;
-    } catch {
-      rejected = true;
-    }
-    expect(resolved || rejected).toBe(true);
+    await expect(parseHealthExport(streamFromString(xml), {})).rejects.toThrow(
+      /Truncated|SAX parse/
+    );
   });
 
-  it('completely empty stream — parser permissively completes with zero records (cron emits "no records" stat)', async () => {
-    // FINDING (BATCH 7 — surfaced to BATCH 8 hardening): sax considers an
-    // empty input valid (zero events to emit), so parseHealthExport resolves
-    // with zero stats rather than rejecting. Practical impact: a malformed
-    // upload that yielded an empty XML stream would be marked as 'completed'
-    // with 0 records, which is misleading. Hardening fix: assert
-    // recordsParsed > 0 OR a sentinel HealthData close-tag was seen, else
-    // mark the import as 'failed' with a clear error_message.
-    const stats = await parseHealthExport(streamFromString(''), {});
-    expect(stats.recordsParsed).toBe(0);
-    expect(stats.dateRangeStart).toBeNull();
+  it('rejects completely empty stream via close-tag sentinel', async () => {
+    // BATCH 8 hardening: empty stream produces no events, so close tag is
+    // never seen → same rejection path. UX: mis-uploaded empty file no
+    // longer looks like a successful import with no data.
+    await expect(parseHealthExport(streamFromString(''), {})).rejects.toThrow(/Truncated/);
   });
 });
 
@@ -179,33 +145,55 @@ describe('Apple Health parser fuzz — malformed timestamps', () => {
     expect(parseHealthDate('')).toBeNull();
   });
 
-  it('FINDING: parseHealthDate accepts out-of-range field values via JS Date rollover (BATCH 8 hardening)', () => {
-    // The regex validates SHAPE only (4-digit year, 2-digit MM/DD/HH/MM/SS,
-    // ±HHMM offset). Fields that are syntactically correct but semantically
-    // out-of-range (month=13, day=99, hour=99) get accepted because JS
-    // Date.UTC rolls them forward (e.g. month 13 → year+1 month 1).
+  it('parseHealthDate rejects out-of-range field values (BATCH 8 hardened)', () => {
+    // BATCH 8 hardening: field-level bounds check after regex match.
+    // Out-of-range values (month=13, day=99, hour=99, minute=60, second=60,
+    // offset=±9999) are now rejected instead of being silently rolled forward
+    // by JS Date.UTC.
     //
-    // Practical impact: a maliciously-crafted export with insane dates could
-    // pollute date-bucketed columns and skew charts. NOT a crash; the
-    // resulting Date is valid UTC. Hardening fix in BATCH 8: add bounds
-    // checks (1<=M<=12, 1<=D<=31, 0<=h<=23, 0<=mm<=59, 0<=ss<=59) after the
-    // regex match.
-    //
-    // Documented as test rather than as fix because: (a) Apple's exports never
-    // contain such strings, (b) the schema doesn't have CHECK constraints
-    // against future-far dates either — this is an end-to-end hardening,
-    // not a parser-only fix.
-    const insane = parseHealthDate('2026-13-99 99:99:99 -9999');
-    expect(insane).not.toBeNull();
-    // The rolled-over date is far in the future — operator tip-off if it
-    // appears in production.
-    expect(insane!.utc.getUTCFullYear()).toBeGreaterThan(2026);
+    // Note: month-day combinations within the bounds box (e.g. Feb 30)
+    // are NOT caught — that would require month-aware day validation
+    // (Feb=28/29, Apr/Jun/Sep/Nov=30). We deliberately stop at field-level
+    // bounds; Apple Health never produces Feb-30 records, and a malicious
+    // export with that shape would still be caught downstream by the
+    // ingest-side schema check (or just produce a Mar-2 record, which is
+    // semantically harmless versus the year-2099 case BATCH 7 surfaced).
+    expect(parseHealthDate('2026-13-99 99:99:99 -9999')).toBeNull(); // every field nuts
+    expect(parseHealthDate('2026-13-15 08:00:00 -0500')).toBeNull(); // month=13
+    expect(parseHealthDate('2026-01-15 25:00:00 -0500')).toBeNull(); // hour=25
+    expect(parseHealthDate('2026-01-15 08:60:00 -0500')).toBeNull(); // minute=60
+    expect(parseHealthDate('2026-01-15 08:00:60 -0500')).toBeNull(); // second=60
+    expect(parseHealthDate('2026-01-15 08:00:00 -9999')).toBeNull(); // offset nuts
+  });
+
+  it('parseHealthDate rejects year out of [1990, currentYear+1] window', () => {
+    // BATCH 8 hardening: defends against year-typo (e.g. a 1900-dated record
+    // from a buggy export) AND far-future records (a 2099 record someone
+    // crafted maliciously to skew charts).
+    expect(parseHealthDate('1989-01-15 08:00:00 -0500')).toBeNull(); // pre-1990
+    expect(parseHealthDate('2099-01-15 08:00:00 -0500')).toBeNull(); // far future
+  });
+
+  it('parseHealthDate accepts boundary values (year currentYear+1, edge fields)', () => {
+    const nextYear = new Date().getUTCFullYear() + 1;
+    expect(parseHealthDate(`${nextYear}-12-31 23:59:59 +1400`)).not.toBeNull();
+    expect(parseHealthDate('1990-01-01 00:00:00 +0000')).not.toBeNull();
   });
 
   it('counts records with shape-malformed timestamps as unparseable', async () => {
     const xml = wrap(
       `<Record type="HKQuantityTypeIdentifierBodyMass" sourceName="X" unit="kg" startDate="not-a-date" endDate="also-not-a-date" value="80"/>`,
       `<Record type="HKQuantityTypeIdentifierBodyMass" sourceName="X" unit="kg" startDate="2026/01/15 08:00:00 -0500" endDate="2026/01/15 08:00:00 -0500" value="80"/>`
+    );
+    const stats = await parseHealthExport(streamFromString(xml), { onBodyMass: () => {} });
+    expect(stats.recordsSkippedUnparseable).toBe(2);
+    expect(stats.recordsEmittedBody).toBe(0);
+  });
+
+  it('counts records with out-of-range field values (post-BATCH 8) as unparseable', async () => {
+    const xml = wrap(
+      `<Record type="HKQuantityTypeIdentifierBodyMass" sourceName="X" unit="kg" startDate="2026-13-15 08:00:00 -0500" endDate="2026-13-15 08:00:00 -0500" value="80"/>`,
+      `<Record type="HKQuantityTypeIdentifierBodyMass" sourceName="X" unit="kg" startDate="2099-01-15 08:00:00 -0500" endDate="2099-01-15 08:00:00 -0500" value="80"/>`
     );
     const stats = await parseHealthExport(streamFromString(xml), { onBodyMass: () => {} });
     expect(stats.recordsSkippedUnparseable).toBe(2);

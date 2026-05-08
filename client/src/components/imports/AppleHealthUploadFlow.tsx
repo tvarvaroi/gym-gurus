@@ -384,6 +384,7 @@ export function AppleHealthUploadFlow({ onImportCreated }: AppleHealthUploadFlow
         <div
           className="bg-muted relative h-2 w-full overflow-hidden rounded-full"
           role="progressbar"
+          aria-label="Apple Health upload progress"
           aria-valuenow={uploadPercent}
           aria-valuemin={0}
           aria-valuemax={100}

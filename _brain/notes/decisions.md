@@ -759,12 +759,18 @@ export const EMAIL_FALLBACK_HIGH_PRIORITY_TYPES = [
 - Sprint 1.5 BATCH 4 — biometrics routes
 - Sprint 2 BATCH 7 — notifications routes
 - Sprint 3 BATCH 7 — wellness routes (sprint3-batch7/mutation-test.log)
+- **Sprint 4 BATCH 5a — wearable routes (server/test/routes/wearables.test.ts)**
+- **Sprint 5 BATCH 7 — apple-health routes + dismiss-hint (server/test/routes/appleHealth.test.ts + preferred-units.test.ts)**
 
-**Why mandatory going forward:** Three sprints of evidence shows the pattern catches real IDOR drift. The column-aware variant of `expectOwnershipClause(table.userId, expectedValue)` matters because it distinguishes "any `eq()` on userId" from "the load-bearing `eq()` on the data table being read" — a route can pass a generic "userId mentioned in WHERE" test while still missing IDOR on the resource itself. The Sprint 3 mutation test directly demonstrated this: 5 of 6 surviving `eq("user-A")` calls landed on `userGamification.userId` and `users.id`, leaving the regression on `dailyWellnessLog.userId` that the column-aware helper detected.
+**Upgraded framing — five sprints of evidence (architectural invariant, not habit):** Every user-data route across Sprint 1.5 → Sprint 5 has its ownership predicate proven load-bearing via `expectOwnershipClause` helper. Mutation = test fails = predicate is not decorative. Future user-data routes ship with mutation test on the ownership predicate, not as optional polish. "Is this an architectural invariant?" is the answer to future code reviews — not a per-route negotiation.
 
-**Rule:** Sprint 4 wearables, Sprint 5 program imports, and every future resource-owning sprint MUST include this gate. The pattern is now first-class architectural invariant rather than per-sprint reinvention. The pattern slot-in cost is near-zero — copy the vi.hoisted spy block from `server/test/routes/wellness.test.ts`, swap the column references, write the assertions.
+**Why mandatory going forward:** Five sprints of evidence shows the pattern catches real IDOR drift. The column-aware variant of `expectOwnershipClause(table.userId, expectedValue)` matters because it distinguishes "any `eq()` on userId" from "the load-bearing `eq()` on the data table being read" — a route can pass a generic "userId mentioned in WHERE" test while still missing IDOR on the resource itself. The Sprint 3 mutation test directly demonstrated this: 5 of 6 surviving `eq("user-A")` calls landed on `userGamification.userId` and `users.id`, leaving the regression on `dailyWellnessLog.userId` that the column-aware helper detected.
 
-**See also:** `expectOwnershipClause` helper definition in `server/test/routes/biometrics.test.ts` (original site), `server/test/routes/notifications.test.ts` (Sprint 2), `server/test/routes/wellness.test.ts` (Sprint 3).
+**Sprint 5 extension — INSERT-route IDOR shape:** The Apple Health POST /upload route uses `.values({ userId: req.user.id, ... })` for INSERT, NOT `.where(eq(userId, ...))`. Forcing it into the eq-spy pattern would either test nothing meaningful (the eq spy returns empty, mutation passes vacuously) OR require brittle plumbing. Sprint 5 BATCH 7 introduced the body-spoof shape: client sends `{userId: 'attacker'}` in body, test asserts the captured INSERT VALUES has `userId === req.user.id` regardless. **Same discipline, different shape.** Future INSERT routes follow this pattern; SELECT/UPDATE/DELETE routes follow the eq-spy pattern.
+
+**Rule:** Every future resource-owning sprint MUST include this gate. The pattern slot-in cost is near-zero — copy the vi.hoisted spy block from any prior site, swap the column references, write the assertions. For INSERT routes, copy the body-spoof shape from `server/test/routes/appleHealth.test.ts` (BATCH 7 mutation tests).
+
+**See also:** `expectOwnershipClause` helper definition in `server/test/routes/biometrics.test.ts` (original site), `server/test/routes/notifications.test.ts` (Sprint 2), `server/test/routes/wellness.test.ts` (Sprint 3), `server/test/routes/wearables.test.ts` (Sprint 4), `server/test/routes/appleHealth.test.ts` (Sprint 5 — eq-spy + INSERT body-spoof shapes), `server/test/routes/preferred-units.test.ts` (Sprint 5 — dismiss-hint endpoint, dual SELECT+UPDATE coverage).
 
 ---
 
@@ -1127,6 +1133,78 @@ Use this whenever visual constraints require sub-44px rendered elements that nee
 - Don't use when the expanded hit area would overlap a sibling interactive element. Check parent gap — `gap-2` (8px) accommodates `-inset-1` (4px each side, no overlap). `gap-1` (4px) doesn't — pseudo-elements would touch.
 
 **Promote a third site to this pattern when surfaced.** When a future sprint introduces a sub-44px tappable element, the right move is to apply this pattern, not to carry a fourth one-off fix. If three or more sites adopt the pattern with consistent `relative before:absolute before:-inset-{N} before:content-['']` shape, extract to a shared `useExpandedHitArea` className helper or a `TapTargetExpander` wrapper. Don't extract eagerly — two sites with consistent shape isn't enough yet.
+
+---
+
+## Sprint 5 — Apple Health XML Import architectural decisions (2026-05-08)
+
+Captured at Sprint 5 close (BATCH 8). Each is load-bearing for the import path.
+
+### Path C — per-record dedup over day-bucketed (2026-05-04, BATCH 1)
+
+**Decided:** `body_metrics` uses `(user_id, source, source_record_id)` partial UNIQUE WHERE source != 'manual' for de-duplication. Migration 014.6 introduces this column + index, drops 014.5's day-bucketed `(user_id, source_provider, recorded_at::date)` index.
+
+**Why:** Apple Health users with smart-scale apps writing multiple weighings per day expect re-import to preserve every measurement. Path A/B (widen day-bucketed) silently collapses multi-per-day records. Path C preserves them via per-record key. Also aligns body_metrics with siblings — `sleep_sessions`/`daily_vitals`/`activity_sessions` already use `(user_id, source, source_record_id)` UNIQUE; Path C ends a one-off divergence.
+
+**Source_record_id derivation:**
+
+- iOS 15+ exports: `HKAttributeKeyExternalUUID` attribute (Apple's per-record UUID)
+- Older exports OR records missing UUID: `sha256(sourceName || startDate || value || recordType)` fallback hash
+
+**Stability LIMIT:** Documented in gotchas — "edit and re-export" produces ghost duplicates because Apple doesn't expose record-edit lineage. Better to be honest about the limit than silently merge.
+
+### sax 1.4.1 pinned for streaming XML (2026-05-04, BATCH 2)
+
+**Decided:** `server/services/appleHealthParser.ts` uses sax (ISC, pinned exact). Streaming SAX parser, never loads full document.
+
+**Why:** Apple Health exports for power users hit 100MB+. Non-streaming would OOM. Verified with 10MB synthetic profile — heap delta <1% of input (parsing 5 years of records uses constant memory).
+
+**Pinned exact** because BATCH 7 fuzz tests surfaced sax permissiveness on truncated input — behavior is version-specific. Pinning ensures the BATCH 8 close-tag sentinel hardening doesn't regress on a future minor bump.
+
+### Option A — in-memory InBed-anchored sleep aggregation (2026-05-04, BATCH 3)
+
+**Decided:** Sleep records buffered during parsing; aggregated + flushed via `aggregateSleepRecords` AFTER parser's onComplete. InBed envelope anchors session keying for multi-segment-night handling. Hard cap at 50,000 sessions per import (safety threshold).
+
+**Why considered + rejected: per-record UPSERT during parsing.** Would let cron stream sessions to DB without buffering. Rejected because Apple's per-stage record format requires seeing all records sorted by startDate to correctly assign stages to the right session; you can't decide "stage X belongs to session Y" without seeing if there's a later InBed envelope that would re-anchor it.
+
+**Why rejected: bucket by wakeLocalDate.** Trivial keying — one session per "wake date" — but breaks for multi-segment nights (user gets up at 3am for 30min, goes back to bed; record's wake-date depends on which segment). InBed envelopes resolve this correctly.
+
+### Hint card 4-condition AND server-side (2026-05-08, BATCH 6)
+
+**Decided:** `GET /api/apple-health/hint-card/visibility` computes the 4-condition AND server-side and returns `{visible, reason}`. Conditions:
+
+1. Role IS 'solo' OR 'client' (Disciple/Ronin only — Gurus excluded)
+2. Zero `apple_health_imports` rows in status='completed'
+3. Zero `wearable_connections` rows in status IN ('connected','expired','revoked') (NOT 'disconnected' — that user actively chose to disconnect)
+4. `notification_preferences.hintCards.appleHealthImport.dismissedAt` is null/missing
+
+**Why:** Single round-trip from `/biometrics` empty-state mount, 3 index scans (apple_health_imports user+status, wearable_connections user, users PK). No N+1, no full-table scans. Role gate short-circuits BEFORE any DB read — Gurus never trigger queries for visibility checks they're ineligible for.
+
+**WearableStatus enum substitution:** Original BATCH 6 dispatch said `status IN ('connected','expired','error')`. Actual enum is `'connected'|'disconnected'|'expired'|'revoked'` — no 'error'. Substituted 'revoked' as the semantically equivalent third state (provider revoked access — user has historically explored the wearable path, equivalent signal). Documented inline at server/routes/appleHealth.ts:309-316. Same shape as Sprint 4 BATCH 5a's wearableSyncMonitor `sync_error_count` substitution discipline.
+
+### Hint card dismissal — JSON namespace pattern (2026-05-08, BATCH 6)
+
+**Decided:** `notification_preferences.hintCards` JSON namespace, keyed by `HINT_CARD_IDS` enum (currently just `'appleHealthImport'`).
+
+**Why considered + rejected: separate `dismissed_hints` column.** Cleaner schema but requires migration 017 for one boolean. The JSON-namespace pattern fits in 012's `notification_preferences` shape, no migration needed, and is structurally future-proof (Sprint 6+ can add new hint IDs to the enum without schema changes).
+
+**Allowlist enforcement:** `dismissHintSchema = z.object({ hintId: z.enum(HINT_CARD_IDS) })`. Arbitrary keys rejected with 400. Future feature creep that adds new hint cards extends the enum first; the endpoint can't be tricked into writing arbitrary keys to the JSON column.
+
+### Promise.allSettled for bulk ingest (2026-05-08, BATCH 3 + generalised gotcha)
+
+**Decided:** `processOneImport` awaits `Promise.allSettled(ingestPromises)` not `Promise.all`. Per-record ingest failures logged + counted; successful records persist. Failed promises don't tank the whole import.
+
+**Generalised rule (gotchas):** Any sprint that does bulk-ingest of independent records (Apple Health body/sleep/vitals/workout, future Habits/Mood/RPE) MUST use `allSettled` not `all`. The first per-record rejection should NEVER abort the entire batch. First captured: Sprint 5 BATCH 3 smoke run #1 — first Promise.all rejection silently lost all sleep data.
+
+### Parser permissiveness hardening — BATCH 8 (2026-05-08)
+
+**Decided:** `parseHealthDate` adds field-level bounds check (1<=M<=12, 1<=D<=31, hour/min/sec/offset bounds, year ∈ [1990, currentYear+1]). `parseHealthExport` adds close-tag sentinel — rejects with "Truncated or malformed export" if `</HealthData>` not seen before onend.
+
+**Why:** BATCH 7 fuzz suite surfaced three permissiveness findings (out-of-range field rollover, sax truncation silent-success, empty stream silent-success). All three are non-crashes but produce misleading "succeeded with 0 records" outcomes when input is structurally malformed. Hardening fixes all three with minimal surface change.
+
+**Tests flipped from FINDING-marked to assert-rejection:** 4 fuzz tests (truncated mid-attribute, unclosed root, empty stream, out-of-range fields) now assert `rejects.toThrow(/Truncated/)` or `parseHealthDate(...)).toBeNull()`. The cron's outer try/catch in `processOneImport` remains the second line of defense; the parser is now reliably the first.
+
+**NOT caught by field-level bounds:** Feb 30 (day=30 within 1-31 bounds, but invalid for February). Documented as deliberate stop-point — Apple Health never produces Feb-30 records, and the existing schema-level checks would catch downstream. Adding month-aware day validation would be over-engineering for the realistic threat model.
 
 ---
 

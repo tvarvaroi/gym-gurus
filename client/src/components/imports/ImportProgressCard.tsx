@@ -293,15 +293,30 @@ export function ImportProgressCard({ importId, onReupload, onDeleted }: ImportPr
   const escalated = inFlight && elapsedMs >= ESCALATION_THRESHOLD_MS;
 
   // Tick the local clock every second WHILE the import is in-flight AND the
-  // threshold hasn't been crossed yet. Once crossed, the interval stops and
-  // `escalated` stays true (no need to keep re-rendering for the seconds
-  // counter — the escalation card is steady-state). This avoids
-  // unnecessary renders during the long tail of multi-minute imports.
+  // threshold hasn't been crossed yet. Once crossed, the interval self-clears
+  // so we don't keep re-rendering during the long tail of multi-minute
+  // imports.
+  //
+  // Sprint 5 BATCH 8 fix: the previous version relied on the effect's
+  // dependency array to re-run + clean up when threshold crossed, but neither
+  // `inFlight` nor `createdAtMs` change at the 60s mark — they stayed stable
+  // throughout. Result: the interval kept firing every second for the entire
+  // multi-minute long tail, causing unnecessary renders. The fix is to have
+  // the interval callback itself check the threshold and `clearInterval` —
+  // self-terminating cleanup, no dep-array gymnastics needed.
   useEffect(() => {
     if (!inFlight) return;
     if (createdAtMs === null) return;
     if (Date.now() - createdAtMs >= ESCALATION_THRESHOLD_MS) return;
-    const interval = setInterval(() => setNow(Date.now()), 1_000);
+    const interval = setInterval(() => {
+      if (Date.now() - createdAtMs >= ESCALATION_THRESHOLD_MS) {
+        clearInterval(interval);
+        // Final render to flip `escalated` true via the elapsedMs computation.
+        setNow(Date.now());
+        return;
+      }
+      setNow(Date.now());
+    }, 1_000);
     return () => clearInterval(interval);
   }, [inFlight, createdAtMs]);
 

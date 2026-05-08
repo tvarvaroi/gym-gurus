@@ -198,16 +198,52 @@ const APPLE_DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}) ([+-]
 
 /**
  * Parse Apple Health's date format `YYYY-MM-DD HH:MM:SS ±HHMM` into both
- * UTC Date and user-local YYYY-MM-DD. Returns null on malformed input —
- * caller should treat the record as unparseable.
+ * UTC Date and user-local YYYY-MM-DD. Returns null on malformed input or
+ * out-of-range field values — caller should treat the record as unparseable.
+ *
+ * Sprint 5 BATCH 8: regex validates SHAPE only (4-digit year, 2-digit MM/DD/HH/MM/SS,
+ * ±HHMM offset). Out-of-range values that are syntactically correct (month=13,
+ * day=99, hour=99) get rolled forward by JS Date.UTC semantics (e.g.
+ * `Date.UTC(2026, 12, 99, 99, 99, 99)` resolves to a valid Date in 2027).
+ *
+ * Without explicit bounds, a maliciously-crafted export with insane field
+ * values would be ingested with rolled-over timestamps — polluting
+ * date-bucketed columns and skewing charts. Bounds enforced here:
+ *   1<=M<=12, 1<=D<=31, 0<=h<=23, 0<=mm<=59, 0<=ss<=59
+ *   1990 <= year <= currentYear+1 (defends against year-typo + far-future)
+ *   0 <= offset minutes <= 24*60 (rejects nonsense like ±9999)
  */
 export function parseHealthDate(s: string): ParsedDate | null {
   const m = APPLE_DATE_REGEX.exec(s);
   if (!m) return null;
   const [, Y, M, D, h, mm, ss, sign, oh, om] = m;
-  const offsetMinutes = (parseInt(oh, 10) * 60 + parseInt(om, 10)) * (sign === '+' ? 1 : -1);
+
+  const year = parseInt(Y, 10);
+  const month = parseInt(M, 10);
+  const day = parseInt(D, 10);
+  const hour = parseInt(h, 10);
+  const minute = parseInt(mm, 10);
+  const second = parseInt(ss, 10);
+  const offsetH = parseInt(oh, 10);
+  const offsetM = parseInt(om, 10);
+
+  // Field bounds — reject out-of-range values that JS Date would silently
+  // roll over.
+  const currentYear = new Date().getUTCFullYear();
+  if (year < 1990 || year > currentYear + 1) return null;
+  if (month < 1 || month > 12) return null;
+  if (day < 1 || day > 31) return null;
+  if (hour < 0 || hour > 23) return null;
+  if (minute < 0 || minute > 59) return null;
+  if (second < 0 || second > 59) return null;
+  // Offset is normally in [-1200, +1400] for real-world TZs; bound generously
+  // to 24h either side, which still rejects ±9999 + similar nonsense.
+  if (offsetH < 0 || offsetH > 24) return null;
+  if (offsetM < 0 || offsetM > 59) return null;
+
+  const offsetMinutes = (offsetH * 60 + offsetM) * (sign === '+' ? 1 : -1);
   // Original string is in user-local time. UTC = local - offset.
-  const utcMs = Date.UTC(+Y, +M - 1, +D, +h, +mm, +ss) - offsetMinutes * 60 * 1000;
+  const utcMs = Date.UTC(year, month - 1, day, hour, minute, second) - offsetMinutes * 60 * 1000;
   const utc = new Date(utcMs);
   if (Number.isNaN(utc.getTime())) return null;
   // localDate is the YYYY-MM-DD already present in the string — that IS the
@@ -348,6 +384,15 @@ export async function parseHealthExport(
 
   return new Promise<ParseStats>((resolve, reject) => {
     let aborted = false;
+    // Sprint 5 BATCH 8: close-tag sentinel + non-empty stream assertion.
+    // sax permissively completes parsing on truncated input and silently
+    // resolves on empty input. Both produce misleading "succeeded with 0
+    // records" outcomes when the input is structurally malformed. We track
+    // whether </HealthData> was observed; if neither close-tag nor any
+    // emitted records were seen at onend, the input was incomplete and we
+    // reject with a clear error.
+    let sawHealthDataClose = false;
+
     const fail = (err: Error) => {
       if (aborted) return;
       aborted = true;
@@ -378,8 +423,27 @@ export async function parseHealthExport(
       // pass through silently.
     };
 
+    parser.onclosetag = (tagName: string) => {
+      if (tagName === 'HealthData') {
+        sawHealthDataClose = true;
+      }
+    };
+
     parser.onend = () => {
       if (aborted) return;
+      // Truncation guard: a structurally valid Apple Health export ends with
+      // </HealthData>. If sax reached onend without seeing the close tag,
+      // the stream was truncated mid-document — reject so the cron marks
+      // the import 'failed' with a clear error_message instead of
+      // 'completed' with misleading partial stats.
+      if (!sawHealthDataClose) {
+        fail(
+          new Error(
+            'Truncated or malformed export: input ended before </HealthData> close tag was observed.'
+          )
+        );
+        return;
+      }
       callbacks.onComplete?.(stats);
       resolve(stats);
     };

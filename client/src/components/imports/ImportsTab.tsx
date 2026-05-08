@@ -227,7 +227,11 @@ export function ImportsTab() {
   });
 
   // ─── Derived state ────────────────────────────────────────────────────────
-  const imports = importsQuery.data ?? [];
+  // Wrap `imports` in useMemo so the `?? []` fallback returns a stable
+  // reference when data is undefined (otherwise a fresh array on every
+  // render would invalidate the downstream useMemos for inFlight/history,
+  // wasting work during the loading state).
+  const imports = useMemo(() => importsQuery.data ?? [], [importsQuery.data]);
   const inFlight = useMemo(
     () => imports.find((r) => !TERMINAL_STATUSES.has(r.status)) ?? null,
     [imports]
