@@ -671,17 +671,18 @@ Six interconnected decisions follow. Each: **Question / Options / Recommendation
 
 **Recommendation: C — Both, with Settings as the canonical home.**
 
-The hint card surfaces when ALL of the following are true:
+The hint card surfaces when ALL of the following four conditions are true (AND):
 
-1. User has zero `apple_health_imports` rows.
-2. User has zero rows in `body_metrics` / `sleep_sessions` / `activity_sessions` / `daily_vitals` from any source (i.e. the user has no biometric data at all yet).
-3. User role is `solo` or `client` (Disciple or Ronin). Gurus do not see the hint card — they manage their clients' data, not their own import flow at this stage.
+1. **No completed imports.** User has zero `apple_health_imports` rows in status='completed'. (Pending or failed imports still hide the card — they're already on the upload journey.)
+2. **No active wearable connections.** User has zero `wearable_connections` rows in status='connected' (Sprint 4 schema). Users who have a wearable connected are already getting biometric data flowing in; importing static Apple Health data on top is a different value-add and isn't the discovery path the hint serves.
+3. **Hint not dismissed.** User has not previously dismissed this card (per-user preference, persisted — see BATCH 5 sub-question 9).
+4. **Role gate.** User role is `solo` or `client` (Disciple or Ronin). Gurus do not see the hint card — they manage their clients' data, not their own import flow at this stage. Their empty-biometrics state ALREADY shows client-roster prompts (Sprint 1) and doesn't need a personal-import hint diluting that surface.
+
+**NOTE:** "user has manual biometric data only" does NOT hide the card. A Disciple who's been logging weight manually still benefits from importing their Apple Health history — manual logs are a thin slice; an Apple Health import adds years of context. The hint says "discover an import path" not "fill the empty chart"; the relevant trigger is the absence of an import or a wearable connection, not the presence of any biometric data at all.
 
 The hint card's CTA is `/settings?tab=imports`. It NEVER initiates upload directly — there is exactly one upload UI, and the hint card is a pointer to it.
 
-**Rationale:** Discoverability where the user feels the absence of data (the empty `/biometrics` state). Management where the user thinks about settings and integrations. One canonical upload surface keeps the implementation, copy, and error handling on a single code path. The hint card naturally goes away once the user has imported, so it's not perpetual visual debt.
-
-The role-gating on the hint card matters: Gurus' empty-biometrics state ALREADY shows client-roster prompts (Sprint 1) and doesn't need a personal-import hint diluting that surface.
+**Rationale:** Discoverability where the user feels the gap (the empty `/biometrics` chart for users with no wearable + no import history). Management where the user thinks about settings and integrations. One canonical upload surface keeps the implementation, copy, and error handling on a single code path. The hint card naturally goes away once the user has imported OR connected a wearable, so it's not perpetual visual debt.
 
 ---
 
@@ -799,7 +800,7 @@ UI surface:
 - The completion card shows the breakdown: e.g. "4 new records imported, 5 duplicates skipped."
 - A small help link below the counters: "Why are some records duplicates?"
 - Help-link content explains:
-  > "Re-importing your Apple Health data is safe. Records you've already imported won't be added again — we identify each record by its Apple Health ID. If you edited records in Apple Health and re-exported, those edits will appear as new entries because Apple Health can't tell us which records are corrections vs. additions."
+  > "Re-importing your Apple Health data is safe. Records you've already imported won't be added again — we identify each record by its unique fingerprint (Apple Health ID where available, or a fingerprint based on source, type, and timing for older data). If you edited records in Apple Health and re-exported, those edits will appear as new entries because Apple Health can't tell us which records are corrections vs. additions."
 
 **Rationale:** Re-import-with-duplicates is the **expected happy path**, not an anomaly. A loud banner implies something is wrong, which it isn't. A silent UI loses information the user may want (re-import for a recent month: "did my last 30 days actually land?"). Inline counters are honest without alarming.
 
@@ -832,20 +833,29 @@ This is the only Decision 6-class question. Capture it in BATCH 5 sub-questions 
 These don't need brainstorm decisions; they need to be explicit so they don't get lost in implementation:
 
 1. **Multi-per-day chart rendering** (Decision 6 above) — implementer's choice during BATCH 5, default to all-points.
-2. **Polling cadence vs. rate limit.** 3 seconds suggested; verify against `apiRateLimit` headers — if the rate limit allows 60/min and we have one in-flight import, 3s polling = 20 requests/min, fine. With multiple active imports this scales linearly; cap concurrent in-flight imports per user (see #6 below).
+2. **Polling cadence vs. rate limit — explicit BATCH 5 verification task.** Suggested cadence is 3 seconds. **REQUIRED** before locking: BATCH 5 implementer must check the rate limit applied to `GET /api/apple-health/imports/:id` (currently mounted under `apiRateLimit` per `server/routes.ts`, but verify the actual numeric limit and any per-route overrides). If the limit allows ≥60 req/min, 3s polling = 20 req/min, comfortable headroom. If the limit is tighter (some sensitive endpoints in this codebase use lower limits), drop the cadence accordingly (5s or 10s). With sub-question 6's single-import cap in place, polling is per-user × 1 in-flight import — multi-import linear scaling is moot. Capture the verification number in the BATCH 5 closing evidence pack so the cadence is justifiable, not arbitrary.
 3. **Push permission prompt timing.** At the "We'll notify you" 60s escalation card, NOT at upload-form load. Don't ask before it's relevant.
 4. **Help-link content destination.** In-app modal vs. external knowledge-base article. v1: in-app modal — keeps the user in flow, no external dependencies. Future iteration may move to a hosted KB.
-5. **iOS Safari `accept=".zip"` verification.** Real-device test before locking the inline-instruction copy. If accept hint is unreliable, omit it and rely on server-side validation (already in place).
+5. **iOS Safari `accept=".zip"` verification.** Real-device test before locking the inline-instruction copy. If accept hint is unreliable, omit it and rely on server-side validation (already in place). **Test variant — iPad Safari with "Request Desktop Website" enabled:** that mode sends a desktop User-Agent, so platform detection (Decision 2) would render the desktop drag-drop UI, but the underlying WebKit file picker remains iOS-shaped. The iPad-with-desktop-mode user would see desktop layout + iOS file picker behavior. NOT a separate code path — the desktop drag-drop UI's file picker fallback button still works. Capture the variant in the BATCH 5 real-device matrix so it's tested explicitly, not assumed.
 6. **Concurrent imports per user.** Cap the user at 1 active import (status='uploaded' or 'parsing') at a time. Upload route refuses (returns 409 with "An import is already in progress") if a non-terminal import row exists. Prevents storage-cost runaway and avoids cron-resource contention. Cron processes ONE import per tick anyway, so concurrent uploads queue up regardless.
 7. **Failed-import storage TTL.** Failed imports keep their .zip in storage so retry works without re-upload. BATCH 5 implementation note: should there be a 30-day TTL after which storage is cleaned up automatically? Recommend yes — adds a small cron sweep, reduces storage cost from abandoned failed imports. Not required for v1 launch; tracking issue.
 8. **Retry endpoint API.** Decision 4 noted that BATCH 3 doesn't have `POST /api/apple-health/imports/:id/retry`. BATCH 5 should add it: validates ownership, checks status='failed' AND fileR2Key is not null, sets status='uploaded' so the cron picks it up. Mirrors the cancel endpoint pattern.
 9. **Hint card dismissal.** The /biometrics empty-state hint card (Decision 1) — does dismissing it persist? Recommend: dismissal saved to user preferences (small column or part of an existing prefs JSON column), so the user doesn't see it again across sessions. Per-user preference, not browser-local.
 10. **Empty state copy on /biometrics.** Existing empty state may need updating to incorporate the hint card without breaking visual hierarchy. BATCH 5 design pass should screenshot both states (hint visible / hint dismissed) and verify against ui-ux-pro-max checklist.
+11. **R2 cleanup for completed imports.** Sub-question 7 covers TTL for FAILED imports' R2 files. **Completed** imports also need symmetric cleanup. The schema's `file_r2_key` column (`varchar`, nullable) already anticipates this — the column is intentionally nullable so it can be cleared once the file is no longer needed. The BATCH 3 cron currently does best-effort cleanup immediately on `status='completed'` — but that's a same-tick operation, leaving zero grace window for "user uploaded then immediately needed to retry / re-examine the source file." Recommended grace policy: keep `file_r2_key` populated for **7 days** after `completed_at`, then a small cron sweep nullifies the column and deletes the R2 object. The import row itself stays as audit history; just the file gets cleaned. Symmetric with sub-question 7's failed-import TTL recommendation. **Caveat:** the BATCH 3 cron already deletes the file immediately on completion. BATCH 5 implementer must decide: KEEP the immediate-cleanup behavior and skip the grace window (simpler, no sweep cron needed; user retries within minutes are unlikely), OR change BATCH 3's cleanup to deferred and add the 7-day sweep. Recommendation: KEEP immediate cleanup for v1 (matches the BATCH 3 behavior already in production code; YAGNI on the sweep cron until evidence shows users want a grace window). Tracking issue: revisit if support tickets show "I imported but want to verify the original file" requests.
+
+---
+
+## Addendum (2026-05-08) — three amendments folded after BATCH 4 review
+
+The original BATCH 4 brainstorm was reviewed and approved with three amendments + one D5 copy refinement. Folded inline in the relevant sections above (D1 hint card visibility, sub-question 2 polling cadence verification, new sub-question 11). The D5 help-link copy was sharpened to acknowledge the hash-fallback path explicitly (older Apple Health exports without UUIDs use a sourceName+startDate+value+recordType hash, NOT a literal Apple Health ID). The iPad Safari "Request Desktop Website" mode test variant was added to sub-question 5 as a test-matrix entry, not a separate code path.
+
+These edits are the final state of the brainstorm. BATCH 5 implementation works against this locked design surface.
 
 ---
 
 ## BATCH 4 close — what user reviews and approves
 
-The five user-facing decisions above (Decisions 1–5) are the brainstorm gate. Decision 6 is already locked. The 10 sub-questions are implementation surface that BATCH 5 absorbs.
+The five user-facing decisions above (Decisions 1–5) are the brainstorm gate. Decision 6 is already locked. The 11 sub-questions are implementation surface that BATCH 5 absorbs.
 
 **Awaiting user review.** No UI code begins until explicit approval here. After approval, BATCH 5 dispatch is the next step in the kickoff sequence.
