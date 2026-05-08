@@ -15,6 +15,7 @@ import { BodyMetricsEmptyState } from '@/components/biometrics/BodyMetricsEmptyS
 import { LogBodyMetricsSheet } from '@/components/biometrics/LogBodyMetricsSheet';
 import { PhotosTab } from '@/components/biometrics/PhotosTab';
 import { BodyMetricsTrends } from '@/components/biometrics/BodyMetricsTrends';
+import { AppleHealthImportHintCard } from '@/components/biometrics/AppleHealthImportHintCard';
 import type { BodyMetrics } from '@shared/schema';
 
 export default function BiometricsPage() {
@@ -75,6 +76,16 @@ export default function BiometricsPage() {
         subtitle="Track your body composition over time"
         actions={<UnitsToggle units={units} onChange={setUnitsServer} loading={unitsLoading} />}
       />
+
+      {/* Sprint 5 BATCH 6 (D1) — Apple Health import discovery hint card.
+          Renders nothing unless the server-side 4-condition AND passes:
+          no completed imports + no active wearable + not dismissed + role
+          eligible. Mounted ABOVE the Tabs so it surfaces regardless of which
+          tab is active and regardless of whether the user has manual entries
+          (manual data does NOT hide the card per BATCH 4 D1 amendment 1). */}
+      <div className="mt-6 md:mt-8">
+        <AppleHealthImportHintCard />
+      </div>
 
       <Tabs defaultValue="body" className="mt-6 md:mt-8">
         <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-grid">

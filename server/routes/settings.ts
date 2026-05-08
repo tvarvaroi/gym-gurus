@@ -2,7 +2,13 @@ import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
 import { db } from '../db';
-import { users, clients, workouts } from '../../shared/schema';
+import {
+  users,
+  clients,
+  workouts,
+  HINT_CARD_IDS,
+  type NotificationPreferences,
+} from '../../shared/schema';
 import { eq, sql, isNull, and } from 'drizzle-orm';
 import { getUserById } from '../auth';
 import { uploadImage, isR2Configured } from '../services/fileUpload';
@@ -357,6 +363,81 @@ router.patch('/preferred-units', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating preferred units:', error);
     res.status(500).json({ error: 'Failed to update unit preference' });
+  }
+});
+
+// POST /api/settings/dismiss-hint — Sprint 5 BATCH 6 (sub-question 9)
+//
+// Marks a hint card dismissed for the caller. Persistence lives inside the
+// existing `notification_preferences` JSON column under the `hintCards`
+// namespace (see shared/schema.ts NotificationPreferences interface for
+// rationale). Per-user, persisted across sessions.
+//
+// IDOR-safe: SELECT and UPDATE both filter by eq(users.id, req.user.id),
+// the canonical "this is the caller" check (mirrors preferred-units pattern
+// above). The hintId is validated against the closed HINT_CARD_IDS enum so
+// arbitrary keys can't pollute the JSON namespace.
+//
+// Idempotent: dismissing an already-dismissed hint is a no-op (the
+// dismissedAt timestamp gets refreshed but the user-visible state — card
+// hidden — doesn't change).
+const dismissHintSchema = z.object({
+  hintId: z.enum(HINT_CARD_IDS),
+});
+
+router.post('/dismiss-hint', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const parsed = dismissHintSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid hintId', details: parsed.error.errors });
+    }
+    const { hintId } = parsed.data;
+
+    // SELECT existing preferences (IDOR-safe: filters by req.user.id).
+    const [existing] = await db
+      .select({ notificationPreferences: users.notificationPreferences })
+      .from(users)
+      .where(eq(users.id, userId));
+    if (!existing) return res.status(404).json({ error: 'User not found' });
+
+    // Build the merged preferences. Defensive default if existing prefs is
+    // null/malformed — match the shape that mergePrefs in notifications.ts
+    // would produce so the post-merge JSON validates against
+    // notificationPreferencesSchema if anyone re-reads via PATCH /preferences.
+    const base: NotificationPreferences =
+      existing.notificationPreferences && typeof existing.notificationPreferences === 'object'
+        ? existing.notificationPreferences
+        : {
+            categories: {
+              workouts: true,
+              recovery: true,
+              achievements: true,
+              social: true,
+              billing: true,
+            },
+            quietHours: { enabled: false, start: '22:00', end: '08:00', timezone: 'UTC' },
+            channels: { push: true, email: false },
+          };
+
+    const dismissedAt = new Date().toISOString();
+    const merged: NotificationPreferences = {
+      ...base,
+      hintCards: {
+        ...(base.hintCards ?? {}),
+        [hintId]: { dismissedAt },
+      },
+    };
+
+    await db
+      .update(users)
+      .set({ notificationPreferences: merged, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+
+    res.json({ hintId, dismissedAt });
+  } catch (error) {
+    console.error('Error dismissing hint:', error);
+    res.status(500).json({ error: 'Failed to dismiss hint' });
   }
 });
 

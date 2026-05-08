@@ -416,11 +416,23 @@ function mergePrefs(existing: unknown, patch: Record<string, unknown>): Notifica
           channels: { push: true, email: false },
         };
 
-  return {
+  // Sprint 5 BATCH 6 — merge hintCards namespace. Existing rows have no
+  // hintCards field; treat missing as `{}`. Patches replace per-key shallowly
+  // (a write to `appleHealthImport` doesn't disturb other hint IDs).
+  const baseHints = (base.hintCards ?? {}) as Record<string, { dismissedAt: string }>;
+  const patchHints =
+    (patch.hintCards as Record<string, { dismissedAt: string }> | undefined) ?? null;
+  const mergedHints = patchHints ? { ...baseHints, ...patchHints } : baseHints;
+
+  const result: NotificationPreferences = {
     categories: { ...base.categories, ...((patch.categories as object | undefined) ?? {}) },
     quietHours: { ...base.quietHours, ...((patch.quietHours as object | undefined) ?? {}) },
     channels: { ...base.channels, ...((patch.channels as object | undefined) ?? {}) },
   };
+  if (Object.keys(mergedHints).length > 0) {
+    result.hintCards = mergedHints;
+  }
+  return result;
 }
 
 export default router;

@@ -200,6 +200,7 @@ describe('Apple Health routes — 401 unauthenticated', () => {
     { method: 'post' as const, path: '/api/apple-health/imports/some-id/cancel' },
     { method: 'post' as const, path: '/api/apple-health/imports/some-id/retry' },
     { method: 'delete' as const, path: '/api/apple-health/imports/some-id' },
+    { method: 'get' as const, path: '/api/apple-health/hint-card/visibility' },
   ];
   for (const { method, path } of cases) {
     it(`${method.toUpperCase()} ${path} returns 401 unauthenticated`, async () => {
@@ -369,6 +370,91 @@ describe('POST /api/apple-health/imports/:id/cancel', () => {
     await request(makeTestApp(userA())).post('/api/apple-health/imports/imp-1/cancel');
     expectOwnershipClause(appleHealthImports.id, 'imp-1');
     expectOwnershipClause(appleHealthImports.userId, 'user-A');
+  });
+});
+
+// ===========================================================================
+// GET /hint-card/visibility — 4-condition AND server-side (BATCH 6 D1)
+// ===========================================================================
+
+describe('GET /api/apple-health/hint-card/visibility', () => {
+  beforeEach(() => spyState.reset());
+
+  it('returns visible=false reason=role-not-eligible for trainer (Guru)', async () => {
+    // Trainer is excluded by the role gate — short-circuits before any DB read.
+    const trainer = { id: 'user-T', email: 't@test.com', role: 'trainer' as const };
+    const res = await request(makeTestApp(trainer)).get('/api/apple-health/hint-card/visibility');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ visible: false, reason: 'role-not-eligible' });
+  });
+
+  it('returns visible=false reason=has-completed-imports when count>0', async () => {
+    // imports count > 0 (any positive number)
+    spyState.queueResults([{ c: 1 }]);
+    const res = await request(makeTestApp(userA())).get('/api/apple-health/hint-card/visibility');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ visible: false, reason: 'has-completed-imports' });
+  });
+
+  it('returns visible=false reason=has-active-wearable when count>0', async () => {
+    spyState.queueResults([{ c: 0 }]); // imports = 0
+    spyState.queueResults([{ c: 1 }]); // wearable connections = 1
+    const res = await request(makeTestApp(userA())).get('/api/apple-health/hint-card/visibility');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ visible: false, reason: 'has-active-wearable' });
+  });
+
+  it('returns visible=false reason=dismissed when hintCards.appleHealthImport.dismissedAt set', async () => {
+    spyState.queueResults([{ c: 0 }]);
+    spyState.queueResults([{ c: 0 }]);
+    spyState.queueResults([
+      {
+        notificationPreferences: {
+          hintCards: { appleHealthImport: { dismissedAt: '2026-05-08T00:00:00Z' } },
+        },
+      },
+    ]);
+    const res = await request(makeTestApp(userA())).get('/api/apple-health/hint-card/visibility');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ visible: false, reason: 'dismissed' });
+  });
+
+  it('returns visible=true when all 4 conditions pass (Disciple, no imports, no wearables, not dismissed)', async () => {
+    const disciple = { id: 'user-D', email: 'd@test.com', role: 'client' as const };
+    spyState.queueResults([{ c: 0 }]); // imports = 0
+    spyState.queueResults([{ c: 0 }]); // wearables = 0
+    spyState.queueResults([{ notificationPreferences: null }]); // no prefs row → no dismissal
+    const res = await request(makeTestApp(disciple)).get('/api/apple-health/hint-card/visibility');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ visible: true });
+  });
+
+  it('returns visible=true when prefs has other hintCards but not appleHealthImport', async () => {
+    spyState.queueResults([{ c: 0 }]);
+    spyState.queueResults([{ c: 0 }]);
+    spyState.queueResults([
+      {
+        notificationPreferences: {
+          hintCards: { someOtherHint: { dismissedAt: '2026-01-01T00:00:00Z' } },
+        },
+      },
+    ]);
+    const res = await request(makeTestApp(userA())).get('/api/apple-health/hint-card/visibility');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ visible: true });
+  });
+
+  it('issues eq(userId) on imports + wearables + users SELECTs — IDOR ownership clause', async () => {
+    spyState.queueResults([{ c: 0 }]);
+    spyState.queueResults([{ c: 0 }]);
+    spyState.queueResults([{ notificationPreferences: null }]);
+    await request(makeTestApp(userA())).get('/api/apple-health/hint-card/visibility');
+    expectOwnershipClause(appleHealthImports.userId, 'user-A');
+    // The wearableConnections + users column refs aren't imported here;
+    // checking the eq-call list for the userA value is sufficient — IDOR
+    // mutation testing in BATCH 7 will introspect column refs.
+    const userIdMatches = spyState.eqCalls.filter(([_col, val]) => val === 'user-A');
+    expect(userIdMatches.length).toBeGreaterThanOrEqual(3); // imports + wearables + users
   });
 });
 

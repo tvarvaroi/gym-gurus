@@ -43,7 +43,31 @@ export interface NotificationPreferences {
     push: boolean;
     email: boolean;
   };
+  /**
+   * Sprint 5 BATCH 6 — per-feature hint-card dismissal namespace. Optional
+   * for backwards compatibility (existing rows have no `hintCards` field;
+   * read sites treat missing as "no card dismissed yet").
+   *
+   * Each key is a stable hint identifier (e.g. `appleHealthImport`); the
+   * `dismissedAt` ISO 8601 timestamp captures when the user opted out. We
+   * intentionally don't model "shown count" — once dismissed, stay dismissed.
+   *
+   * Why namespaced inside notification_preferences rather than a separate
+   * column: this is the first hint-card with persisted state but probably
+   * not the last (Sprint 5 sets the pattern for future feature-introduction
+   * hint cards). A single JSON namespace captures the pattern without
+   * proliferating columns; dismissals are a write-once-per-card event with
+   * no query-by-dismissal-time use case that would justify indexed columns.
+   */
+  hintCards?: Record<string, { dismissedAt: string }>;
 }
+
+/**
+ * Closed set of valid hintId values. Adding a new hint card means adding
+ * an entry here; the dismiss endpoint validates against this enum.
+ */
+export const HINT_CARD_IDS = ['appleHealthImport'] as const;
+export type HintCardId = (typeof HINT_CARD_IDS)[number];
 
 // Session storage table for express-session with PostgreSQL
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
@@ -2238,6 +2262,18 @@ export const notificationPreferencesSchema = z.object({
     push: z.boolean(),
     email: z.boolean(),
   }),
+  // Sprint 5 BATCH 6 — optional hint-card dismissal namespace. See
+  // NotificationPreferences interface above for rationale. Validation is
+  // generous: any string keys allowed (so future hint IDs don't require a
+  // schema rev), but each value must have a valid ISO timestamp.
+  hintCards: z
+    .record(
+      z.string(),
+      z.object({
+        dismissedAt: z.string().datetime({ offset: true, message: 'must be ISO 8601 datetime' }),
+      })
+    )
+    .optional(),
 }) satisfies z.ZodType<NotificationPreferences>;
 
 // PATCH endpoint accepts `Partial<NotificationPreferences>` so the UI can update

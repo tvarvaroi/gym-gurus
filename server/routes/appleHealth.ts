@@ -36,12 +36,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { mkdtempSync, writeFileSync, unlinkSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { getDb } from '../db';
-import { appleHealthImports } from '../../shared/schema';
+import { appleHealthImports, users, wearableConnections } from '../../shared/schema';
 import { isR2Configured } from '../services/fileUpload';
 import { logger } from '../logger';
 
@@ -259,6 +259,91 @@ router.post(
     }
   }
 );
+
+/**
+ * GET /api/apple-health/hint-card/visibility — Sprint 5 BATCH 6 (D1)
+ *
+ * Computes the 4-condition AND server-side and returns `{ visible, reason }`.
+ * The /biometrics empty-state hint card calls this to decide whether to
+ * render. Returning a structured result (vs. just a boolean) lets the client
+ * surface diagnostic info if visible=false in dev — without leaking
+ * implementation detail in production (the `reason` is informational, not
+ * actionable; it just helps explain "why isn't the card showing for me").
+ *
+ * Conditions (all four must be true):
+ *   1. role IS 'solo' OR 'client' (Disciple/Ronin) — Gurus never see it
+ *   2. zero apple_health_imports rows in status='completed'
+ *   3. zero wearable_connections rows in status IN ('connected','expired','error')
+ *   4. notification_preferences.hintCards.appleHealthImport.dismissedAt is null/missing
+ *
+ * Two SELECTs (counts on imports + connections) + the user row read for
+ * preferences. With the indexes on apple_health_imports(user_id, status) and
+ * wearable_connections(user_id) plus user_id PK, this is three index-scans —
+ * no N+1, no full-table scans. The endpoint is hit on every /biometrics
+ * empty-state mount, so cheapness matters.
+ */
+router.get('/hint-card/visibility', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const role = req.user!.role;
+    const db = await getDb();
+
+    // Condition 1: role gate.
+    if (role !== 'solo' && role !== 'client') {
+      return res.json({ visible: false, reason: 'role-not-eligible' });
+    }
+
+    // Condition 2 + 3: counts via single round-trip per table. We use
+    // count(*) limited 1 via EXISTS-style — Postgres optimizes the query
+    // plan to short-circuit on first match.
+    const [importsRow] = await db
+      .select({ c: sql<number>`count(*)::int` })
+      .from(appleHealthImports)
+      .where(
+        and(eq(appleHealthImports.userId, userId), eq(appleHealthImports.status, 'completed'))
+      );
+    if ((importsRow?.c ?? 0) > 0) {
+      return res.json({ visible: false, reason: 'has-completed-imports' });
+    }
+
+    // "Active wearable connections" — actual `WearableStatus` enum is
+    // ('connected', 'disconnected', 'expired', 'revoked'). The BATCH 6 dispatch
+    // referenced 'error' which doesn't exist; the semantic equivalent is
+    // 'revoked'. We exclude 'disconnected' (user explicitly tore down via our
+    // UI) but include the other three: 'connected' (active sync), 'expired'
+    // (active intent, needs reauth), 'revoked' (provider revoked access — user
+    // has historically set up a wearable, so they've already explored that
+    // discovery path).
+    const [wearableRow] = await db
+      .select({ c: sql<number>`count(*)::int` })
+      .from(wearableConnections)
+      .where(
+        and(
+          eq(wearableConnections.userId, userId),
+          inArray(wearableConnections.status, ['connected', 'expired', 'revoked'])
+        )
+      );
+    if ((wearableRow?.c ?? 0) > 0) {
+      return res.json({ visible: false, reason: 'has-active-wearable' });
+    }
+
+    // Condition 4: dismissal flag inside notification_preferences.hintCards.
+    const [userRow] = await db
+      .select({ notificationPreferences: users.notificationPreferences })
+      .from(users)
+      .where(eq(users.id, userId));
+    const dismissedAt = userRow?.notificationPreferences?.hintCards?.appleHealthImport?.dismissedAt;
+    if (dismissedAt) {
+      return res.json({ visible: false, reason: 'dismissed' });
+    }
+
+    return res.json({ visible: true });
+  } catch (err) {
+    logger.error('[appleHealth] hint-card visibility error', err);
+    // Fail-safe: hide the card on error rather than crash the page render.
+    return res.json({ visible: false, reason: 'error' });
+  }
+});
 
 /**
  * GET /api/apple-health/imports

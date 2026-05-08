@@ -38,7 +38,9 @@ import {
   Scale,
   Settings,
   Lock,
+  FileArchive,
 } from 'lucide-react';
+import { ImportsTab } from '@/components/imports/ImportsTab';
 import { useRef } from 'react';
 import { getRoleDisplayName, getPlanDisplayName, type InternalRole } from '@/lib/roles';
 import { apiRequest } from '@/lib/queryClient';
@@ -998,9 +1000,20 @@ function readInitialTab(allowed: string[]): string {
 export default function SettingsPage() {
   const { user } = useUser();
   const isDisciple = user?.role === 'client';
-  const allowedTabs = isDisciple
-    ? ['profile', 'security', 'subscription', 'notifications', 'privacy', 'danger']
-    : ['profile', 'security', 'subscription', 'notifications', 'danger'];
+  // Sprint 5 BATCH 6 (D1) — Imports tab is visible to solo (Ronin) + client
+  // (Disciple) only. Gurus don't personally import their own data; their
+  // settings stay focused on the trainer-side surfaces. Tab position: between
+  // Notifications and Privacy, per kickoff scope split.
+  const isImportEligible = user?.role === 'solo' || user?.role === 'client';
+  const allowedTabs = [
+    'profile',
+    'security',
+    'subscription',
+    'notifications',
+    ...(isImportEligible ? ['imports'] : []),
+    ...(isDisciple ? ['privacy'] : []),
+    'danger',
+  ];
   const [activeTab, setActiveTab] = useState<string>(() => readInitialTab(allowedTabs));
 
   // Keep the URL in sync with the active tab so deep links and bookmarks work.
@@ -1032,7 +1045,8 @@ export default function SettingsPage() {
       <BlurFade delay={0.1}>
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList
-            className={`mb-6 grid w-full ${isDisciple ? 'grid-cols-6' : 'grid-cols-5'} h-11`}
+            className="mb-6 grid w-full h-11"
+            style={{ gridTemplateColumns: `repeat(${allowedTabs.length}, minmax(0, 1fr))` }}
           >
             <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm min-h-[44px]">
               <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
@@ -1050,6 +1064,16 @@ export default function SettingsPage() {
               <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
               <span className="hidden sm:inline">Alerts</span>
             </TabsTrigger>
+            {isImportEligible && (
+              <TabsTrigger
+                value="imports"
+                className="gap-1 text-xs sm:text-sm min-h-[44px]"
+                data-testid="settings-tab-imports"
+              >
+                <FileArchive className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden sm:inline">Imports</span>
+              </TabsTrigger>
+            )}
             {isDisciple && (
               <TabsTrigger value="privacy" className="gap-1 text-xs sm:text-sm min-h-[44px]">
                 <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
@@ -1077,6 +1101,11 @@ export default function SettingsPage() {
           <TabsContent value="notifications">
             <NotificationsTab />
           </TabsContent>
+          {isImportEligible && (
+            <TabsContent value="imports">
+              <ImportsTab />
+            </TabsContent>
+          )}
           {isDisciple && (
             <TabsContent value="privacy">
               <PrivacyTab />
